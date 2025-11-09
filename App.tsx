@@ -37,6 +37,7 @@ const DEFAULT_DB_NAME = DEFAULT_DB_NAME_EXPORT;
 const DEMO_DB_NAME = DEMO_DB_NAME_EXPORT;
 const SETTINGS_DB_NAME = 'essenmelia-db-settings';
 
+export const DEFAULT_ANIMATED_PLACEHOLDER = 'DEFAULT_ANIMATED_PLACEHOLDER';
 
 const dbConnections = new Map<string, IDBDatabase>();
 
@@ -213,7 +214,7 @@ const tutorialEvent: Event = {
         { id: 'step-tutorial-8', description: "🔐 数据与设置：通过顶部导航栏的设置菜单 ⚙️，您可以管理您的数据。创建多个数据库（例如“工作”和“个人”），并随时导入或导出您的数据。您的数据，由您掌控。", timestamp: new Date(), completed: false },
         { id: 'step-tutorial-9', description: "🎉 教程完成：现在您已经了解了基本布局！您可以将此导览事件标记为已完成，然后删除它。祝您使用愉快！", timestamp: new Date(), completed: false },
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?q=80&w=2070&auto=format&fit=crop',
+    imageUrl: DEFAULT_ANIMATED_PLACEHOLDER,
 };
 
 const demoEvents: Event[] = [
@@ -229,7 +230,7 @@ const demoEvents: Event[] = [
       { id: 'step-1-3', description: '与后端 API 集成', timestamp: new Date('2023-10-22T12:00:00Z'), completed: false },
       { id: 'step-1-4', description: '进行用户验收测试', timestamp: new Date('2023-10-28T16:00:00Z'), completed: false },
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1559028006-44d053215926?q=80&w=2070&auto=format&fit=crop',
+    imageUrl: DEFAULT_ANIMATED_PLACEHOLDER,
     tags: ['重要', '网页开发'],
   },
   {
@@ -241,7 +242,7 @@ const demoEvents: Event[] = [
       { id: 'step-2-1', description: '定义活动目标和关键绩效指标', timestamp: new Date('2023-09-25T10:00:00Z'), completed: true },
       { id: 'step-2-2', description: '创作广告素材和文案', timestamp: new Date('2023-10-02T15:00:00Z'), completed: true },
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?q=80&w=2076&auto=format&fit=crop',
+    imageUrl: DEFAULT_ANIMATED_PLACEHOLDER,
     tags: ['营销'],
   },
    {
@@ -287,7 +288,7 @@ const demoEvents: Event[] = [
       { id: 'step-6-1', description: '完成第1-4周的基础训练', timestamp: new Date(), completed: true },
       { id: 'step-6-2', description: '完成第5-8周的里程累积', timestamp: new Date(), completed: false },
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=2070&auto=format&fit=crop',
+    imageUrl: DEFAULT_ANIMATED_PLACEHOLDER,
     tags: ['健康', '个人项目'],
   },
   {
@@ -307,7 +308,7 @@ const demoEvents: Event[] = [
     description: '管理厨房装修项目，从设计到承包商协调，确保在预算内按时完成。',
     createdAt: new Date('2023-11-12T10:00:00Z'),
     steps: [],
-    imageUrl: 'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?q=80&w=2070&auto=format&fit=crop',
+    imageUrl: DEFAULT_ANIMATED_PLACEHOLDER,
     tags: ['家居', '重要'],
   },
   {
@@ -497,7 +498,7 @@ const App: React.FC = () => {
   const [overviewBlockSize, setOverviewBlockSize] = useState<OverviewBlockSize>('md');
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
 
-  const [isFilterBarExpanded, setIsFilterBarExpanded] = useState(false);
+  const [isFilterBarExpanded, setIsFilterBarExpanded] = useState(() => window.innerWidth >= 768);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
   const [fabMode, setFabMode] = useState<'add' | 'toTop'>('add');
@@ -1908,16 +1909,7 @@ const App: React.FC = () => {
                   <span>正在处理...</span>
                 </div>
               ) : newEventImage ? (
-                <>
-                  <img src={newEventImage} alt="预览" className="w-full h-full object-contain rounded-lg p-1" />
-                  <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setNewEventImage(null); setNewEventOriginalImage(null); }}
-                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70"
-                    aria-label="移除图片"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </>
+                <img src={newEventImage} alt="预览" className="w-full h-full object-contain rounded-lg p-1" />
               ) : (
                 <div className="text-slate-500 dark:text-slate-400 px-6">
                   <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
@@ -1927,6 +1919,16 @@ const App: React.FC = () => {
                 </div>
               )}
             </label>
+            {newEventImage && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                    <label htmlFor="add-image-upload" className="w-full text-center px-4 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-all active:scale-95 text-sm font-medium cursor-pointer">
+                        更换图片
+                    </label>
+                    <button type="button" onClick={() => { setNewEventImage(null); setNewEventOriginalImage(null); }} className="w-full text-center px-4 py-2.5 rounded-lg text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 transition-all active:scale-95 text-sm font-medium">
+                        移除图片
+                    </button>
+                </div>
+            )}
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={closeAddEventModal} className="px-5 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-all active:scale-95 text-base font-medium">取消</button>

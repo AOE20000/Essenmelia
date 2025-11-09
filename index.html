@@ -14,7 +14,6 @@
               'spin': { 'from': { transform: 'rotate(0deg)' }, 'to': { transform: 'rotate(360deg)' } },
               
               // --- Fantasy / Arcane Primitives ---
-              // Removed blur and rotate for a cleaner, more magical "materialize" feel.
               'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
               'fade-out': { '0%': { opacity: '1' }, '100%': { opacity: '0' } },
               'scale-in': { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
@@ -23,15 +22,32 @@
               'slide-to-bottom': { '0%': { opacity: '1', transform: 'translateY(0)' }, '100%': { opacity: '0', transform: 'translateY(3rem)' } },
               'slide-from-right': { '0%': { opacity: '0', transform: 'translateX(3rem)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
               'slide-to-right': { '0%': { opacity: '1', transform: 'translateX(0)' }, '100%': { opacity: '0', transform: 'translateX(3rem)' } },
-              // A more grounded entrance for cards, like being placed on a table.
               'content-enter': { '0%': { opacity: '0', transform: 'translateY(1rem)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+
+              // --- New animations for Crystal placeholder ---
+              'crystal-rotate': {
+                '0%': { transform: 'perspective(1000px) rotateY(0deg) rotateX(10deg)' },
+                '100%': { transform: 'perspective(1000px) rotateY(360deg) rotateX(10deg)' },
+              },
+              'light-ray-sweep': {
+                '0%': { transform: 'translateX(-150%) skewX(-30deg)', opacity: '0.1' },
+                '40%': { opacity: '0.4' },
+                '60%': { opacity: '0.4' },
+                '100%': { transform: 'translateX(150%) skewX(-30deg)', opacity: '0.1' },
+              },
+              'background-pulse': {
+                '0%, 100%': { opacity: '0.7' },
+                '50%': { opacity: '1' },
+              },
+              'sparkle-fade': {
+                '0%, 100%': { opacity: '0', transform: 'scale(0.5)' },
+                '50%': { opacity: '1', transform: 'scale(1.2)' },
+              },
             },
             animation: {
               'spin': 'spin 1s linear infinite',
               
               // --- Fantasy / Arcane Compositions ---
-              // Using a sharper, faster ease-out curve for a more decisive, magical feel.
-              // Durations are slightly shorter to feel more responsive.
               'backdrop-enter': `fade-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
               'backdrop-exit': `fade-out 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
               'dialog-enter': `scale-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
@@ -41,6 +57,12 @@
               'view-enter': `slide-from-right 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
               'view-exit': `slide-to-right 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
               'content-enter': `content-enter 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
+
+              // --- New animations for Crystal placeholder ---
+              'crystal-rotate': 'crystal-rotate 40s linear infinite',
+              'light-ray-sweep': 'light-ray-sweep 6s ease-in-out infinite',
+              'background-pulse': 'background-pulse 10s ease-in-out infinite',
+              'sparkle-fade': 'sparkle-fade 3.5s ease-in-out infinite',
             }
           }
         }
