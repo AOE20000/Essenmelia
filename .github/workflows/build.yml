@@ -1,0 +1,102 @@
+name: Build Apps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  build-web:
+    name: Build Web Assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+        
+      - name: Build Project
+        run: npm run build
+        
+      - name: Upload Dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-dist
+          path: dist
+
+  build-windows:
+    name: Build Windows (EXE)
+    needs: build-web
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+        
+      - name: Download Web Dist
+        uses: actions/download-artifact@v3
+        with:
+          name: web-dist
+          path: dist
+          
+      - name: Build Electron App
+        run: npm run electron:build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload EXE Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Essenmelia-Windows-Setup
+          path: release/*.exe
+
+  build-android:
+    name: Build Android (APK)
+    needs: build-web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+        
+      - name: Download Web Dist
+        uses: actions/download-artifact@v3
+        with:
+          name: web-dist
+          path: dist
+          
+      - name: Sync Capacitor
+        run: npx cap sync android
+        
+      - name: Build APK (Debug)
+        run: cd android && ./gradlew assembleDebug
+        
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Essenmelia-Android-Debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
