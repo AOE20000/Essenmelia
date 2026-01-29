@@ -4,27 +4,55 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>埃森梅莉亚 (Essenmelia)</title>
+    <title>1.0.1 埃森梅莉亚 (Essenmelia)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
+            colors: {
+              brand: {
+                50: '#f0f3ff',
+                100: '#e0e7ff',
+                200: '#c7d2fe',
+                300: '#a5b4fc',
+                400: '#818cf8',
+                500: '#6366f1',
+                600: '#4f46e5',
+                700: '#4338ca',
+                800: '#3730a3',
+                900: '#312e81',
+                950: '#1e1b4b',
+              }
+            },
+            boxShadow: {
+              'glow': '0 0 15px rgba(99, 102, 241, 0.5)',
+              'glow-sm': '0 0 8px rgba(99, 102, 241, 0.4)',
+              'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+              'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+            },
             keyframes: {
               'spin': { 'from': { transform: 'rotate(0deg)' }, 'to': { transform: 'rotate(360deg)' } },
-              
-              // --- Fantasy / Arcane Primitives ---
               'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
               'fade-out': { '0%': { opacity: '1' }, '100%': { opacity: '0' } },
               'scale-in': { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
               'scale-out': { '0%': { opacity: '1', transform: 'scale(1)' }, '100%': { opacity: '0', transform: 'scale(0.95)' } },
-              'slide-from-bottom': { '0%': { opacity: '0', transform: 'translateY(3rem)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-              'slide-to-bottom': { '0%': { opacity: '1', transform: 'translateY(0)' }, '100%': { opacity: '0', transform: 'translateY(3rem)' } },
-              'slide-from-right': { '0%': { opacity: '0', transform: 'translateX(3rem)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
-              'slide-to-right': { '0%': { opacity: '1', transform: 'translateX(0)' }, '100%': { opacity: '0', transform: 'translateX(3rem)' } },
-              'content-enter': { '0%': { opacity: '0', transform: 'translateY(1rem)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-
-              // --- New animations for Crystal placeholder ---
+              'slide-from-bottom': { '0%': { opacity: '0', transform: 'translateY(2rem)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+              'slide-to-bottom': { '0%': { opacity: '1', transform: 'translateY(0)' }, '100%': { opacity: '0', transform: 'translateY(2rem)' } },
+              'slide-from-right': { '0%': { opacity: '0', transform: 'translateX(2rem)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
+              'slide-to-right': { '0%': { opacity: '1', transform: 'translateX(0)' }, '100%': { opacity: '0', transform: 'translateX(2rem)' } },
+              'content-enter': { '0%': { opacity: '0', transform: 'translateY(0.5rem)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+              'blob': {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+              },
+              'shimmer': {
+                '0%': { backgroundPosition: '-1000px 0' },
+                '100%': { backgroundPosition: '1000px 0' }
+              },
               'crystal-rotate': {
                 '0%': { transform: 'perspective(1000px) rotateY(0deg) rotateX(10deg)' },
                 '100%': { transform: 'perspective(1000px) rotateY(360deg) rotateX(10deg)' },
@@ -46,19 +74,17 @@
             },
             animation: {
               'spin': 'spin 1s linear infinite',
-              
-              // --- Fantasy / Arcane Compositions ---
-              'backdrop-enter': `fade-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'backdrop-exit': `fade-out 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'dialog-enter': `scale-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'dialog-exit': `scale-out 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'sheet-enter': `slide-from-bottom 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'sheet-exit': `slide-to-bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'view-enter': `slide-from-right 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'view-exit': `slide-to-right 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-              'content-enter': `content-enter 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-
-              // --- New animations for Crystal placeholder ---
+              'backdrop-enter': `fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+              'backdrop-exit': `fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+              'dialog-enter': `scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+              'dialog-exit': `scale-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+              'sheet-enter': `slide-from-bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+              'sheet-exit': `slide-to-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+              'view-enter': `slide-from-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+              'view-exit': `slide-to-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+              'content-enter': `content-enter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards`,
+              'blob': 'blob 10s infinite',
+              'shimmer': 'shimmer 2s infinite linear',
               'crystal-rotate': 'crystal-rotate 40s linear infinite',
               'light-ray-sweep': 'light-ray-sweep 6s ease-in-out infinite',
               'background-pulse': 'background-pulse 10s ease-in-out infinite',
@@ -69,19 +95,35 @@
       }
     </script>
     <style>
-      html::-webkit-scrollbar {
-        display: none;
+      html::-webkit-scrollbar { display: none; }
+      html { -ms-overflow-style: none; scrollbar-width: none; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      /* Glassmorphism Utilities */
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
       }
-      html {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+      .dark .glass {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
       }
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+      .dark .glass-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.03);
       }
     </style>
   <script type="importmap">
@@ -95,7 +137,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-slate-100 dark:bg-slate-900">
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-500/30 overflow-hidden">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

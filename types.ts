@@ -1,3 +1,5 @@
+export const DEFAULT_ANIMATED_PLACEHOLDER = 'DEFAULT_ANIMATED_PLACEHOLDER';
+
 export interface ProgressStep {
   id: string;
   description: string;

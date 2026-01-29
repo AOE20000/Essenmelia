@@ -2,20 +2,10 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Event, ProgressStep, StepTemplate, StepSetTemplate, StepSetTemplateStep } from '../types';
 import { XIcon, PlusIcon, TrashIcon, SaveIcon, ChevronDownIcon, ChevronUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpTrayIcon, ArchiveBoxIcon } from './icons';
 import ContextMenu, { ContextMenuAction } from './ContextMenu';
-import Modal from './Modal';
 import useLongPress from '../hooks/useLongPress';
-import Snackbar from './Snackbar';
-
-const useWindowWidth = () => {
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-    return windowWidth;
-};
-
+import Snackbar from './ui/Snackbar';
+import { useWindow } from '../context/WindowContext';
+import { useWindowWidth } from '../hooks/useWindowWidth';
 
 // Sub-component for inline editing text
 const InlineEdit: React.FC<{
@@ -69,16 +59,23 @@ const InlineEdit: React.FC<{
                 onBlur={handleSave}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className="flex-grow bg-white dark:bg-slate-800 p-1 rounded min-w-0"
+                className="flex-grow bg-white/50 dark:bg-slate-800/50 p-1 rounded min-w-0 border border-brand-300 dark:border-brand-700 outline-none ring-2 ring-brand-500/20"
             />
         );
     }
 
     return (
-        <p onDoubleClick={() => { setIsEditing(true); onEditingChange?.(true); }} className={`flex-grow cursor-pointer select-none min-w-0 break-words ${className}`}>
+        <p onDoubleClick={() => { setIsEditing(true); onEditingChange?.(true); }} className={`flex-grow cursor-pointer select-none min-w-0 break-words hover:text-brand-600 dark:hover:text-brand-400 transition-colors ${className}`}>
             {text}
         </p>
     );
+};
+
+const DropIndicator: React.FC<{className?: string, orientation?: 'vertical' | 'horizontal'}> = ({className, orientation = 'horizontal'}) => {
+    if (orientation === 'vertical') {
+        return <div className={`w-1 h-10 bg-brand-500 rounded-full self-center shadow-[0_0_8px_rgba(99,102,241,0.6)] ${className}`} />;
+    }
+    return <div className={`w-full h-1 bg-brand-500 rounded-full my-1 shadow-[0_0_8px_rgba(99,102,241,0.6)] ${className}`} />;
 };
 
 interface DraggableItemProps {
@@ -108,7 +105,6 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, itemType, description
     };
 
     const longPressEvents = useLongPress(
-        // FIX: The onLongPress callback for useLongPress expects an event argument.
         (e) => onItemLongPress(id),
         handleBodyClick,
         { 
@@ -121,7 +117,12 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, itemType, description
         <div
             data-reorder-id={id}
             data-item-type={itemType}
-            className={`flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-700 transition-all duration-150 ${isGhost ? 'opacity-30 pointer-events-none' : 'opacity-100'} ${isSelected ? 'ring-2 ring-slate-500 shadow-lg' : 'shadow-sm'}`}
+            className={`flex items-center gap-2 p-3 rounded-xl transition-all duration-200 
+            ${isGhost ? 'opacity-30 pointer-events-none' : 'opacity-100'} 
+            ${isSelected 
+                ? 'bg-brand-50 dark:bg-brand-900/30 ring-1 ring-brand-500 shadow-md translate-x-1' 
+                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 border border-transparent hover:border-slate-200 dark:hover:border-slate-600'
+            }`}
         >
             <div
                 onClick={handleBodyClick}
@@ -135,13 +136,13 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, itemType, description
                 onTouchStart={e => e.stopPropagation()}
                 onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
                 draggable={false}
-                className="flex-shrink-0 self-stretch flex items-center p-3 -m-1 cursor-pointer"
+                className="flex-shrink-0 self-stretch flex items-center p-2 -m-2 cursor-pointer"
                 aria-label={`选择步骤 ${description}`}
             >
                 <div
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all pointer-events-none ${isSelected ? 'bg-slate-800 dark:bg-slate-200 border-slate-800 dark:border-slate-200' : 'bg-transparent border-slate-300 dark:border-slate-500'}`}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all pointer-events-none ${isSelected ? 'bg-brand-500 border-brand-500 scale-110' : 'bg-transparent border-slate-300 dark:border-slate-500 group-hover:border-brand-300'}`}
                 >
-                    {isSelected && <CheckIcon className="w-3.5 h-3.5 text-white dark:text-slate-900" />}
+                    {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
                 </div>
             </div>
 
@@ -156,6 +157,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, itemType, description
                     text={description} 
                     onSave={(newDesc) => onUpdate(id, newDesc)} 
                     onEditingChange={setIsRenaming}
+                    className="text-slate-700 dark:text-slate-200 font-medium"
                 />
             </div>
         </div>
@@ -190,7 +192,6 @@ const TemplateSetItem: React.FC<{
     };
 
     const longPressEvents = useLongPress(
-        // FIX: The onLongPress callback for useLongPress expects an event argument.
         (e) => onItemLongPress(templateSet.id),
         handleBodyClick,
         {
@@ -347,10 +348,10 @@ const TemplateSetItem: React.FC<{
         <div 
             data-reorder-id={templateSet.id}
             data-item-type="templateSet"
-            className={`bg-slate-100 dark:bg-slate-700 rounded-lg transition-all duration-150 ${isGhost ? 'opacity-30 pointer-events-none' : ''} ${isSelected ? 'ring-2 ring-slate-500 shadow-lg' : 'shadow-sm'}`}
+            className={`bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl transition-all duration-200 ${isGhost ? 'opacity-30 pointer-events-none' : ''} ${isSelected ? 'ring-2 ring-brand-500 shadow-md bg-brand-50/50' : 'shadow-sm hover:shadow-md'}`}
         >
             <header 
-                className={`flex items-center gap-2 p-2 rounded-t-lg`}
+                className={`flex items-center gap-2 p-3`}
             >
                 <div
                     onClick={handleBodyClick}
@@ -364,13 +365,13 @@ const TemplateSetItem: React.FC<{
                     onTouchStart={e => e.stopPropagation()}
                     onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
                     draggable={false}
-                    className="flex-shrink-0 self-stretch flex items-center p-3 -m-1 cursor-pointer"
+                    className="flex-shrink-0 self-stretch flex items-center p-2 -m-2 cursor-pointer"
                     aria-label={`选择模板 ${templateSet.name}`}
                 >
                     <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all pointer-events-none ${isSelected ? 'bg-slate-800 dark:bg-slate-200 border-slate-800 dark:border-slate-200' : 'bg-transparent border-slate-300 dark:border-slate-500'}`}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all pointer-events-none ${isSelected ? 'bg-brand-500 border-brand-500 scale-110' : 'bg-transparent border-slate-300 dark:border-slate-500'}`}
                     >
-                        {isSelected && <CheckIcon className="w-3.5 h-3.5 text-white dark:text-slate-900" />}
+                        {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
                     </div>
                 </div>
 
@@ -385,22 +386,23 @@ const TemplateSetItem: React.FC<{
                         <InlineEdit 
                             text={templateSet.name} 
                             onSave={handleUpdateName} 
-                            className="font-semibold" 
+                            className="font-bold text-slate-800 dark:text-slate-100" 
                             onEditingChange={setIsRenamingSet}
                         />
+                        <p className="text-xs text-slate-500">{templateSet.steps.length} 个步骤</p>
                     </div>
                     <button 
                         onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                         onMouseDown={e => e.stopPropagation()}
                         onTouchStart={e => e.stopPropagation()}
-                        className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all">
+                        className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all text-slate-500">
                         {isExpanded ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
                     </button>
                 </div>
             </header>
             {isExpanded && (
                 <div 
-                    className="p-3 border-t border-slate-200 dark:border-slate-600 space-y-2"
+                    className="p-3 border-t border-slate-200 dark:border-slate-700 space-y-2 bg-slate-50/50 dark:bg-slate-900/50 rounded-b-xl"
                     onDragOver={(e) => {e.preventDefault(); e.stopPropagation();}}
                 >
                     <div 
@@ -416,32 +418,33 @@ const TemplateSetItem: React.FC<{
                                     data-reorder-step-id={step.id}
                                     draggable={!isRenamingSet && editingInnerStepId !== step.id} 
                                     onDragStart={(e) => handleStepDragStart(e, step)}
-                                    className={`inline-flex items-center gap-1.5 text-sm p-1.5 rounded-md bg-white dark:bg-slate-600 shadow-sm transition-opacity active:scale-95 ${draggedStepIds.has(step.id) ? 'opacity-30 pointer-events-none' : ''} ${!isRenamingSet && editingInnerStepId !== step.id ? 'cursor-grab' : 'cursor-default'}`}
+                                    className={`inline-flex items-center gap-1.5 text-sm px-2 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 transition-opacity active:scale-95 ${draggedStepIds.has(step.id) ? 'opacity-30 pointer-events-none' : ''} ${!isRenamingSet && editingInnerStepId !== step.id ? 'cursor-grab' : 'cursor-default'}`}
                                 >
                                     <InlineEdit 
                                         text={step.description} 
                                         onSave={(newDesc) => handleUpdateStep(step.id, newDesc)}
                                         onEditingChange={(isEditing) => setEditingInnerStepId(isEditing ? step.id : null)}
+                                        className="max-w-[150px] truncate"
                                     />
-                                    <button onClick={() => handleDeleteStep(step.id)} className="text-red-500/70 hover:text-red-500 p-1 rounded-full">
-                                        <XIcon className="w-4 h-4" />
+                                    <button onClick={() => handleDeleteStep(step.id)} className="text-slate-400 hover:text-red-500 p-0.5 rounded-full transition-colors">
+                                        <XIcon className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             </React.Fragment>
                         ))}
                         {dropIndex === templateSet.steps.length && <DropIndicator orientation="vertical" className="h-6" />}
                     </div>
-                    {templateSet.steps.length === 0 && <p className="text-xs text-center text-slate-500">此模板为空。拖动步骤到此处。</p>}
+                    {templateSet.steps.length === 0 && <p className="text-xs text-center text-slate-400 italic py-2">此模板为空。拖动步骤到此处。</p>}
                     <div className="flex gap-2 pt-2">
                          <input
                             type="text"
                             value={newStep}
                             onChange={(e) => setNewStep(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddStep()}
-                            placeholder="添加步骤到模板..."
-                            className="flex-grow px-2 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-500 rounded-md"
+                            placeholder="添加步骤..."
+                            className="flex-grow px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500/20 outline-none"
                         />
-                        <button onClick={handleAddStep} className="px-3 py-1.5 rounded-md bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold transition-transform active:scale-95">添加</button>
+                        <button onClick={handleAddStep} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold transition-transform active:scale-95">添加</button>
                     </div>
                 </div>
             )}
@@ -482,10 +485,10 @@ const AddInput: React.FC<{
                 onChange={(e) => setValue(e.target.value)} 
                 onKeyDown={handleKeyDown} 
                 placeholder={placeholder}
-                className="flex-grow px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg" />
+                className="flex-grow px-4 py-2.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-brand-500/20 outline-none transition-all shadow-sm" />
             <button 
                 onClick={handleAdd} 
-                className={`px-4 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 transition-transform active:scale-95 ${buttonClassName} hover:opacity-90`}
+                className={`px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-1 transition-all active:scale-95 shadow-md ${buttonClassName} hover:shadow-lg`}
             >
                 {buttonIcon} {buttonText}
             </button>
@@ -503,8 +506,6 @@ const SaveAsSetInput: React.FC<{
         const success = onSave(value);
         if (success) {
             setValue('');
-        } else {
-            alert("请输入模板名称并且确保当前事件有步骤。");
         }
     };
     
@@ -516,8 +517,11 @@ const SaveAsSetInput: React.FC<{
     };
 
     return (
-        <div className="bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg flex-shrink-0">
-            <label className="text-sm font-medium mb-1 block">将当前 {currentStepCount} 个步骤保存为新的工作流模板</label>
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-900/50 p-4 rounded-xl flex-shrink-0 shadow-sm">
+            <label className="text-sm font-bold text-indigo-900 dark:text-indigo-200 mb-2 block flex items-center gap-2">
+                <SaveIcon className="w-4 h-4" />
+                将当前 {currentStepCount} 个步骤保存为模板
+            </label>
             <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                     type="text" 
@@ -525,24 +529,17 @@ const SaveAsSetInput: React.FC<{
                     onChange={(e) => setValue(e.target.value)} 
                     onKeyDown={handleKeyDown} 
                     placeholder="输入新模板名称..." 
-                    className="flex-grow px-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg"/>
+                    className="flex-grow px-3 py-2 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"/>
                 <button 
                     onClick={handleSave} 
                     disabled={currentStepCount === 0} 
-                    className="px-4 py-2.5 rounded-lg bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 font-semibold flex items-center justify-center gap-1 hover:bg-slate-700 dark:hover:bg-slate-300 disabled:bg-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400 disabled:cursor-not-allowed transition-transform active:scale-95"
+                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold text-sm flex items-center justify-center gap-1 hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md shadow-indigo-500/20"
                 >
-                    <SaveIcon className="w-5 h-5" /> 保存
+                    保存
                 </button>
             </div>
         </div>
     );
-};
-
-const DropIndicator: React.FC<{className?: string, orientation?: 'vertical' | 'horizontal'}> = ({className, orientation = 'horizontal'}) => {
-    if (orientation === 'vertical') {
-        return <div className={`w-1 h-10 bg-slate-800 dark:bg-slate-300 rounded-full self-center ${className}`} />;
-    }
-    return <div className={`w-full h-1 bg-slate-800 dark:bg-slate-300 rounded-full my-1 ${className}`} />;
 };
 
 interface UnifiedActionsHeaderProps {
@@ -585,7 +582,7 @@ const UnifiedActionsHeader: React.FC<UnifiedActionsHeaderProps> = ({
     return parts.join(', ');
   }, [selectedCurrentStepIds, selectedTemplateIds, selectedTemplateSetIds]);
 
-  const baseButtonClass = "text-sm font-semibold px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors active:scale-95 flex items-center gap-2 border-y border-slate-300 dark:border-slate-600";
+  const baseButtonClass = "text-sm font-bold px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors active:scale-95 flex items-center gap-2 border-y border-slate-300 dark:border-slate-600";
 
   // Determine which buttons are valid for the current selection mix
   const showAddToSteps = (hasArchive || hasSets);
@@ -595,31 +592,31 @@ const UnifiedActionsHeader: React.FC<UnifiedActionsHeaderProps> = ({
   const showDelete = totalSelected > 0;
 
   return (
-    <div className="flex justify-between items-center w-full animate-fade-in-up">
-      <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex-shrink-0 truncate">已选中: {selectionText}</h3>
+    <div className="flex justify-between items-center w-full animate-fade-in-up bg-brand-50 dark:bg-brand-900/30 p-2 rounded-xl border border-brand-200 dark:border-brand-800">
+      <h3 className="font-bold text-lg text-brand-900 dark:text-brand-100 flex-shrink-0 truncate pl-2">已选中: {selectionText}</h3>
       <div className="inline-flex rounded-lg shadow-sm" role="group">
         {showAddToSteps && (
-          <button onClick={hasArchive ? onAddToSteps : onAddSetsToSteps} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-700 border-l rounded-l-lg`}>
+          <button onClick={hasArchive ? onAddToSteps : onAddSetsToSteps} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border-l rounded-l-lg`}>
             <ChevronLeftIcon className="w-4 h-4" /> 步骤
           </button>
         )}
         {showMoveToArchive && (
-          <button onClick={onMoveToArchive} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-700 ${!showAddToSteps ? 'border-l rounded-l-lg' : '-ml-px'}`}>
+          <button onClick={onMoveToArchive} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 ${!showAddToSteps ? 'border-l rounded-l-lg' : '-ml-px'}`}>
             <ChevronRightIcon className="w-4 h-4" /> 归档
           </button>
         )}
          {showMoveSetsToArchive && (
-          <button onClick={onMoveSetsToArchive} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-700 ${!showAddToSteps ? 'border-l rounded-l-lg' : '-ml-px'}`}>
+          <button onClick={onMoveSetsToArchive} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 ${!showAddToSteps ? 'border-l rounded-l-lg' : '-ml-px'}`}>
             <ArrowUpTrayIcon className="w-4 h-4" /> 归档
           </button>
         )}
         {showSaveAsTemplate && (
-          <button onClick={onSaveAsTemplate} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-700 ${!showAddToSteps && !showMoveToArchive && !showMoveSetsToArchive ? 'border-l rounded-l-lg' : '-ml-px'}`}>
+          <button onClick={onSaveAsTemplate} className={`${baseButtonClass} text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 ${!showAddToSteps && !showMoveToArchive && !showMoveSetsToArchive ? 'border-l rounded-l-lg' : '-ml-px'}`}>
             <SaveIcon className="w-5 h-5" /> 模板
           </button>
         )}
         {showDelete && (
-          <button onClick={onDelete} className={`${baseButtonClass} text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/80 border-r rounded-r-lg ${!showAddToSteps && !showMoveToArchive && !showMoveSetsToArchive && !showSaveAsTemplate ? 'border-l rounded-l-lg' : '-ml-px'}`}>
+          <button onClick={onDelete} className={`${baseButtonClass} text-red-600 dark:text-red-400 bg-white dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/50 border-r rounded-r-lg ${!showAddToSteps && !showMoveToArchive && !showMoveSetsToArchive && !showSaveAsTemplate ? 'border-l rounded-l-lg' : '-ml-px'}`}>
             <TrashIcon className="w-4 h-4" /> 删除
           </button>
         )}
@@ -629,22 +626,24 @@ const UnifiedActionsHeader: React.FC<UnifiedActionsHeaderProps> = ({
 };
 
 interface StepsEditorPanelProps {
-  isOpen: boolean;
   onClose: () => void;
-  event: Event | null;
+  event: Event;
   templates: StepTemplate[];
   stepSetTemplates: StepSetTemplate[];
   onStepsChange: (eventId: string, newSteps: ProgressStep[]) => void;
   onTemplatesChange: (newTemplates: StepTemplate[]) => void;
   onStepSetTemplatesChange: (newTemplates: StepSetTemplate[]) => void;
+  setHeader: (node: React.ReactNode) => void;
+  setOverrideCloseAction: (action: (() => void) | null) => void;
 }
 
 const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({ 
-    isOpen, onClose, event, templates, stepSetTemplates, 
-    onStepsChange, onTemplatesChange, onStepSetTemplatesChange
+    onClose, event, templates, stepSetTemplates, 
+    onStepsChange, onTemplatesChange, onStepSetTemplatesChange,
+    setHeader, setOverrideCloseAction,
 }) => {
+  const { open } = useWindow();
   const prevEventIdRef = useRef<string | null>(null);
-  const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const windowWidth = useWindowWidth();
   const isMobileView = windowWidth < 1024;
   
@@ -694,11 +693,6 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'current' | 'template' | 'templateSet'; ids: Set<string> } | null>(null);
   
-  const [showClearArchiveConfirm, setShowClearArchiveConfirm] = useState(false);
-  const [showClearStepsConfirm, setShowClearStepsConfirm] = useState(false);
-  const [newTemplateModalData, setNewTemplateModalData] = useState<{ items: { description: string }[] } | null>(null);
-  const [newTemplateName, setNewTemplateName] = useState('');
-
   const [dropIndicator, setDropIndicator] = useState<{ panel: 'current' | 'archive' | 'templateSet'; index: number } | null>(null);
   const [touchDragState, setTouchDragState] = useState<{
     payload: any | null;
@@ -723,31 +717,17 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
   const panelTitles = useMemo(() => ['步骤', '归档', '模板'], []);
   
   useEffect(() => {
-    if (isOpen && event) {
-      setActiveEvent(event);
-    }
-  }, [isOpen, event]);
-
-  useEffect(() => {
-    if (activeEvent) {
-      // If the panel is opened for a new event, reset all state.
-      // Otherwise, if it's the same event, only update the current steps list
-      // to reflect changes, but preserve selections.
-      if (activeEvent.id !== prevEventIdRef.current) {
-        setCurrentSteps(activeEvent.steps.slice().sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime()));
+    if (event) {
+      if (event.id !== prevEventIdRef.current) {
+        setCurrentSteps(event.steps.slice().sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime()));
         clearAllSelections();
         setActivePanelIndex(0);
       } else {
-        setCurrentSteps(activeEvent.steps.slice().sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime()));
+        setCurrentSteps(event.steps.slice().sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime()));
       }
-      prevEventIdRef.current = activeEvent.id;
+      prevEventIdRef.current = event.id;
     }
-  }, [activeEvent]);
-
-  const handleExited = () => {
-    setActiveEvent(null);
-    prevEventIdRef.current = null; // Also clear the ref
-  };
+  }, [event]);
   
     const updateSelection = useCallback((itemType: string, itemId: string, select: boolean) => {
         const updater = (prev: Set<string>) => {
@@ -824,15 +804,15 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
   };
 
   const handleCurrentStepsChange = useCallback((newSteps: ProgressStep[]) => {
-    if (!activeEvent) return;
+    if (!event) return;
     const now = Date.now();
     const orderedSteps = newSteps.map((step, index) => ({
       ...step,
       timestamp: new Date(now + index),
     }));
     setCurrentSteps(orderedSteps);
-    onStepsChange(activeEvent.id, orderedSteps);
-  }, [activeEvent, onStepsChange]);
+    onStepsChange(event.id, orderedSteps);
+  }, [event, onStepsChange]);
 
   const addStepToCurrent = (desc: string) => {
     const newStep: ProgressStep = { id: `step-${Date.now()}`, description: desc, timestamp: new Date(), completed: false };
@@ -859,7 +839,13 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
   
   const handleClearSingleTemplates = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (templates.length > 0) setShowClearArchiveConfirm(true);
+    if (templates.length === 0) return;
+    open('confirm', {
+        message: `此操作将重置所有 ${templates.length} 个归档步骤。确定要继续吗？此操作无法撤销。`,
+        isDestructive: true,
+        confirmText: '确认重置',
+        onConfirm: confirmClearSingleTemplates
+    });
   };
 
   const confirmClearSingleTemplates = () => {
@@ -867,13 +853,18 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
     onTemplatesChange([]);
     setSelectedTemplateIds(new Set());
     setLastSelectedTemplateId(null);
-    setShowClearArchiveConfirm(false);
     if (count > 0) showSnackbar(`已重置 ${count} 个归档项`, <TrashIcon className="w-5 h-5" />);
   };
   
   const handleClearCurrentSteps = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (currentSteps.length > 0) setShowClearStepsConfirm(true);
+    if (currentSteps.length === 0) return;
+    open('confirm', {
+        message: `此操作将重置当前事件的所有 ${currentSteps.length} 个步骤。确定要继续吗？此操作无法撤销。`,
+        isDestructive: true,
+        confirmText: '确认重置',
+        onConfirm: confirmClearCurrentSteps
+    });
   };
 
   const confirmClearCurrentSteps = () => {
@@ -881,7 +872,6 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
     handleCurrentStepsChange([]);
     setSelectedCurrentStepIds(new Set());
     setLastSelectedCurrentStepId(null);
-    setShowClearStepsConfirm(false);
     if (count > 0) showSnackbar(`已重置 ${count} 个步骤`, <TrashIcon className="w-5 h-5" />);
   };
 
@@ -1298,8 +1288,26 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
           } else {
               const itemsToTemplate = [...(payload.sources.steps || []), ...(payload.sources.archive || [])];
               if (itemsToTemplate.length > 0) {
-                setNewTemplateName(`新模板 ${new Date().toLocaleTimeString()}`);
-                setNewTemplateModalData({ items: itemsToTemplate });
+                // Show Prompt using WindowContext
+                const defaultName = `新模板 ${new Date().toLocaleTimeString()}`;
+                open('prompt', {
+                    title: `为 ${itemsToTemplate.length} 个步骤创建新模板`,
+                    defaultValue: defaultName,
+                    placeholder: '模板名称',
+                    confirmText: '创建',
+                    onConfirm: (name) => {
+                        const newSet: StepSetTemplate = {
+                            id: `set-${Date.now()}`,
+                            name: name,
+                            steps: itemsToTemplate.map((item: any) => ({
+                                id: `set-step-${Date.now()}-${Math.random()}`,
+                                description: item.description
+                            }))
+                        };
+                        onStepSetTemplatesChange([...stepSetTemplates, newSet]);
+                        showSnackbar(`已创建模板 "${newSet.name}"`, <CheckIcon className="w-5 h-5" />);
+                    }
+                });
               }
           }
       } catch (error) {
@@ -1307,23 +1315,6 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
       }
   };
 
-  const handleCreateTemplateFromModal = () => {
-      if (newTemplateName.trim() && newTemplateModalData) {
-          const newSet: StepSetTemplate = {
-              id: `set-${Date.now()}`,
-              name: newTemplateName.trim(),
-              steps: newTemplateModalData.items.map((item) => ({
-                  id: `set-step-${Date.now()}-${Math.random()}`,
-                  description: item.description
-              }))
-          };
-          onStepSetTemplatesChange([...stepSetTemplates, newSet]);
-          setNewTemplateModalData(null);
-          setNewTemplateName('');
-          showSnackbar(`已创建模板 "${newSet.name}"`, <CheckIcon className="w-5 h-5" />);
-      }
-  };
-  
     const updateStepSetTemplate = (updatedSet: StepSetTemplate) => {
         onStepSetTemplatesChange(stepSetTemplates.map(s => s.id === updatedSet.id ? updatedSet : s));
     };
@@ -1497,8 +1488,25 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
 
         if(itemsToSave.length === 0) return;
         
-        setNewTemplateName(`新模板 ${new Date().toLocaleTimeString()}`);
-        setNewTemplateModalData({ items: itemsToSave });
+        const defaultName = `新模板 ${new Date().toLocaleTimeString()}`;
+        open('prompt', {
+            title: `为 ${itemsToSave.length} 个步骤创建新模板`,
+            defaultValue: defaultName,
+            placeholder: '模板名称',
+            confirmText: '创建',
+            onConfirm: (name) => {
+                const newSet: StepSetTemplate = {
+                    id: `set-${Date.now()}`,
+                    name: name,
+                    steps: itemsToSave.map((item) => ({
+                        id: `set-step-${Date.now()}-${Math.random()}`,
+                        description: item.description
+                    }))
+                };
+                onStepSetTemplatesChange([...stepSetTemplates, newSet]);
+                showSnackbar(`已创建模板 "${newSet.name}"`, <CheckIcon className="w-5 h-5" />);
+            }
+        });
     };
     
     const handleMoveSelectedSetsToArchive = () => {
@@ -1550,17 +1558,37 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
         }
     };
 
-    if (!activeEvent) {
-      return null;
-    }
+    const headerContent = useMemo(() => isSelectionMode && !isMobileView ? (
+      <UnifiedActionsHeader
+          selectedCurrentStepIds={selectedCurrentStepIds}
+          selectedTemplateIds={selectedTemplateIds}
+          selectedTemplateSetIds={selectedTemplateSetIds}
+          onMoveToArchive={handleMoveSelectedToArchive}
+          onSaveAsTemplate={handleSaveSelectedAsTemplateSet}
+          onAddToSteps={handleAddSelectedToSteps}
+          onAddSetsToSteps={handleAddSelectedToSteps}
+          onMoveSetsToArchive={handleMoveSelectedSetsToArchive}
+          onDelete={handleDeleteSelected}
+      />
+    ) : (
+      <h2 className="text-xl font-bold truncate pr-4">编辑步骤: <span className="text-brand-700 dark:text-brand-300 font-semibold">{event.title}</span></h2>
+    ), [isSelectionMode, isMobileView, selectedCurrentStepIds, selectedTemplateIds, selectedTemplateSetIds, handleMoveSelectedToArchive, handleSaveSelectedAsTemplateSet, handleAddSelectedToSteps, handleMoveSelectedSetsToArchive, handleDeleteSelected, event.title]);
+
+    useEffect(() => {
+        setHeader(headerContent);
+
+        return () => {
+          setOverrideCloseAction(null);
+        };
+    }, [headerContent, setHeader, setOverrideCloseAction]);
     
     const renderCurrentStepsPanel = () => (
-        <section ref={currentStepsPanelRef} className="border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col min-h-0 w-full animate-fade-in-up flex-grow">
+        <section ref={currentStepsPanelRef} className="glass-card rounded-2xl flex flex-col min-h-0 w-full animate-fade-in-up flex-grow border border-white/40 dark:border-white/5 shadow-glass">
             <div className="flex justify-between items-center mb-3 flex-shrink-0 p-4 pb-0">
-                <h3 className="font-bold text-lg">{panelTitles[0]}</h3>
-                <button onClick={handleClearCurrentSteps} className="text-sm text-red-500 hover:underline disabled:text-slate-400 disabled:no-underline px-2 py-1 transition-transform active:scale-95" disabled={currentSteps.length === 0}>重置</button>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{panelTitles[0]}</h3>
+                <button onClick={handleClearCurrentSteps} className="text-xs font-medium text-red-500 hover:text-red-600 disabled:text-slate-400 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95 disabled:hover:bg-transparent" disabled={currentSteps.length === 0}>全部重置</button>
             </div>
-            <div className="flex-grow flex flex-col min-h-0 bg-slate-100 dark:bg-slate-900/50 rounded-b-lg">
+            <div className="flex-grow flex flex-col min-h-0">
                 <div onDragOver={handlePanelDragOver} onDrop={(e) => handleDrop(e, 'current')} onDragLeave={() => setDropIndicator(null)} onClick={handleContainerClickToDeselect} className="flex-grow overflow-y-auto flex flex-col gap-2 content-start p-2 mx-2 cursor-default">
                 {currentSteps.map((step, index) => (
                     <React.Fragment key={step.id}>
@@ -1569,9 +1597,9 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
                     </React.Fragment>
                 ))}
                 {dropIndicator?.panel === 'current' && dropIndicator.index === currentSteps.length && <DropIndicator orientation="horizontal" />}
-                {currentSteps.length === 0 && !dropIndicator && <p className="text-slate-500 text-center py-4 w-full select-none">从归档或模板中添加，或创建新步骤。</p>}
+                {currentSteps.length === 0 && !dropIndicator && <p className="text-slate-400 text-center py-8 w-full select-none italic text-sm">从右侧拖拽或添加新步骤。</p>}
                 </div>
-                <div className="flex-shrink-0 p-4 pt-3">
+                <div className="flex-shrink-0 p-4 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
                     <AddInput placeholder="添加新步骤..." onAdd={addStepToCurrent} />
                 </div>
             </div>
@@ -1579,12 +1607,12 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
     );
 
     const renderArchivePanel = () => (
-         <section ref={archivePanelRef} className="border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col min-h-0 w-full animate-fade-in-up flex-grow" style={{ animationDelay: '100ms' }}>
+         <section ref={archivePanelRef} className="glass-card rounded-2xl flex flex-col min-h-0 w-full animate-fade-in-up flex-grow border border-white/40 dark:border-white/5 shadow-glass" style={{ animationDelay: '100ms' }}>
             <div className="flex justify-between items-center mb-3 flex-shrink-0 p-4 pb-0">
-                <h3 className="font-bold text-lg">{panelTitles[1]}</h3>
-                <button onClick={handleClearSingleTemplates} className="text-sm text-red-500 hover:underline disabled:text-slate-400 disabled:no-underline px-2 py-1 transition-transform active:scale-95" disabled={templates.length === 0}>重置</button>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{panelTitles[1]}</h3>
+                <button onClick={handleClearSingleTemplates} className="text-xs font-medium text-red-500 hover:text-red-600 disabled:text-slate-400 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95 disabled:hover:bg-transparent" disabled={templates.length === 0}>全部重置</button>
             </div>
-            <div className="flex-grow flex flex-col min-h-0 bg-slate-100 dark:bg-slate-900/50 rounded-b-lg">
+            <div className="flex-grow flex flex-col min-h-0">
                 <div onDragOver={handlePanelDragOver} onDrop={(e) => handleDrop(e, 'archive')} onDragLeave={() => setDropIndicator(null)} onClick={handleContainerClickToDeselect} className="flex-grow overflow-y-auto flex flex-col gap-2 content-start p-2 mx-2 cursor-default">
                     {templates.map((template, index) => (
                     <React.Fragment key={template.id}>
@@ -1593,18 +1621,18 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
                     </React.Fragment>
                     ))}
                     {dropIndicator?.panel === 'archive' && dropIndicator.index === templates.length && <DropIndicator orientation="horizontal" />}
-                    {templates.length === 0 && !dropIndicator && <p className="text-slate-500 text-center py-4 w-full select-none">将左侧的步骤拖到此处以备将来使用。</p>}
+                    {templates.length === 0 && !dropIndicator && <p className="text-slate-400 text-center py-8 w-full select-none italic text-sm">将左侧步骤拖至此处归档。</p>}
                 </div>
-                <div className="flex-shrink-0 p-4 pt-3">
-                    <AddInput placeholder="创建可复用的步骤..." onAdd={addSingleTemplate}/>
+                <div className="flex-shrink-0 p-4 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+                    <AddInput placeholder="添加归档项..." onAdd={addSingleTemplate}/>
                 </div>
             </div>
         </section>
     );
 
     const renderTemplatesPanel = () => (
-        <section ref={templateSetPanelRef} className={`border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col min-h-0 w-full animate-fade-in-up flex-grow`} style={{ animationDelay: '200ms' }}>
-                <h3 className="font-bold mb-3 text-lg flex-shrink-0 p-4 pb-0">{panelTitles[2]}</h3>
+        <section ref={templateSetPanelRef} className="glass-card rounded-2xl flex flex-col min-h-0 w-full animate-fade-in-up flex-grow border border-white/40 dark:border-white/5 shadow-glass" style={{ animationDelay: '200ms' }}>
+                <h3 className="font-bold mb-3 text-lg flex-shrink-0 p-4 pb-0 text-slate-800 dark:text-slate-100">{panelTitles[2]}</h3>
                 <div className="flex-grow space-y-3 overflow-y-auto px-4 pb-4" onClick={handleContainerClickToDeselect} onDrop={handleDropOnTemplatePanel} onDragOver={(e) => {
                     e.preventDefault();
                     const payloadString = e.dataTransfer.getData('application/json');
@@ -1649,7 +1677,7 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
 
     const panels = [renderCurrentStepsPanel(), renderArchivePanel(), renderTemplatesPanel()];
     
-    const mobileActionButtonClass = "flex-1 px-1 py-3 text-sm font-semibold text-center transition-all duration-300 border-b-2 border-transparent flex items-center justify-center gap-1.5";
+    const mobileActionButtonClass = "flex-1 px-1 py-3 text-sm font-semibold text-center transition-all duration-300 border-b-2 border-transparent flex items-center justify-center gap-1.5 active:bg-slate-50 dark:active:bg-slate-800";
     
     const renderMobileSelectionActions = () => {
       if (!isSelectionMode) return null;
@@ -1665,29 +1693,29 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
       const showDelete = true;
   
       return (
-          <div className="flex items-center -mb-px">
+          <div className="flex items-center -mb-px overflow-x-auto no-scrollbar">
               {showAddToSteps && (
-                  <button onClick={handleAddSelectedToSteps} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700`}>
+                  <button onClick={handleAddSelectedToSteps} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200`}>
                       <ChevronLeftIcon className="w-4 h-4"/>步骤
                   </button>
               )}
               {showMoveToArchive && (
-                   <button onClick={handleMoveSelectedToArchive} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700`}>
+                   <button onClick={handleMoveSelectedToArchive} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200`}>
                       <ChevronRightIcon className="w-4 h-4"/>归档
                   </button>
               )}
                {showMoveSetsToArchive && (
-                  <button onClick={handleMoveSelectedSetsToArchive} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700`}>
+                  <button onClick={handleMoveSelectedSetsToArchive} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200`}>
                       <ArrowUpTrayIcon className="w-4 h-4"/>归档
                   </button>
               )}
               {showSaveAsTemplate && (
-                  <button onClick={handleSaveSelectedAsTemplateSet} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700`}>
+                  <button onClick={handleSaveSelectedAsTemplateSet} className={`${mobileActionButtonClass} text-slate-700 dark:text-slate-200`}>
                       <SaveIcon className="w-4 h-4"/>模板
                   </button>
               )}
               {showDelete && (
-                  <button onClick={handleDeleteSelected} className={`${mobileActionButtonClass} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50`}>
+                  <button onClick={handleDeleteSelected} className={`${mobileActionButtonClass} text-red-600 dark:text-red-400`}>
                       <TrashIcon className="w-4 h-4"/>删除
                   </button>
               )}
@@ -1695,124 +1723,63 @@ const StepsEditorPanel: React.FC<StepsEditorPanelProps> = ({
       );
     };
 
-    const handleHeaderCloseOrClearSelectionClick = () => {
-        if (isSelectionMode) {
-            clearAllSelections();
-        } else {
-            handleClose();
-        }
-    };
-
-    const headerContent = isSelectionMode && !isMobileView ? (
-      <UnifiedActionsHeader
-          selectedCurrentStepIds={selectedCurrentStepIds}
-          selectedTemplateIds={selectedTemplateIds}
-          selectedTemplateSetIds={selectedTemplateSetIds}
-          onMoveToArchive={handleMoveSelectedToArchive}
-          onSaveAsTemplate={handleSaveSelectedAsTemplateSet}
-          onAddToSteps={handleAddSelectedToSteps}
-          onAddSetsToSteps={handleAddSelectedToSteps}
-          onMoveSetsToArchive={handleMoveSelectedSetsToArchive}
-          onDelete={handleDeleteSelected}
-      />
-    ) : (
-      <h2 className="text-xl font-bold truncate pr-4">编辑步骤: <span className="text-slate-800 dark:text-slate-200 font-semibold">{activeEvent.title}</span></h2>
-    );
+    if (!event) {
+        return null;
+    }
 
     return (
       <>
-        <Modal 
-            isOpen={isOpen} 
-            onClose={handleClose} 
-            variant="sheet" 
-            maxWidthClass="lg:max-w-7xl" 
-            contentClass="h-full max-h-[95vh] lg:h-full lg:max-h-[90vh]"
-            headerContent={headerContent}
-            overrideCloseAction={handleHeaderCloseOrClearSelectionClick}
-            onExited={handleExited}
+        <div 
+          className="flex flex-col h-full bg-slate-50 dark:bg-slate-950"
+          onDragEnd={handleDragEnd} 
+          onClick={handleCloseContextMenu}
         >
-          <div 
-            className="flex flex-col h-full"
-            onDragEnd={handleDragEnd} 
-            onClick={handleCloseContextMenu}
-          >
-              {isMobileView ? (
-                  <div className="flex-grow flex flex-col min-h-0" onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
-                      <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-700 px-2">
-                          {isSelectionMode ? renderMobileSelectionActions() : (
-                              <div className="flex items-center -mb-px">
-                                  {panelTitles.map((title, index) => (
-                                      <button
-                                          key={title}
-                                          onClick={() => setActivePanelIndex(index)}
-                                          className={`flex-1 px-1 py-3 text-base font-semibold text-center transition-all duration-300 border-b-2 ${
-                                              activePanelIndex === index
-                                                  ? 'text-slate-800 dark:text-slate-100 border-slate-800 dark:border-slate-100'
-                                                  : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
-                                          }`}
-                                      >
-                                          {title}
-                                      </button>
-                                  ))}
-                              </div>
-                          )}
-                      </div>
-                      <div className="flex-grow overflow-hidden relative">
-                          <div className="flex h-full transition-transform duration-300 ease-in-out" style={{ width: `${panels.length * 100}%`, transform: `translateX(-${activePanelIndex * (100 / panels.length)}%)`}}>
-                              {panels.map((panel, index) => <div key={index} className="w-full h-full p-4 flex flex-col">{panel}</div>)}
-                          </div>
-                      </div>
-                  </div>
-              ) : (
-                  <div className="flex-grow flex flex-col min-h-0">
-                      <div className="flex-grow lg:grid lg:grid-cols-3 gap-4 min-h-0">
-                          {panels.map((panel, index) => <React.Fragment key={index}>{panel}</React.Fragment>)}
-                      </div>
-                  </div>
-              )}
-               
-               {touchDragState && (
-                  <div 
-                      id="touch-drag-ghost"
-                      className="fixed top-0 left-0 pointer-events-none z-50" 
-                      style={{ transform: `translate(${touchDragState.position.x - touchDragState.offset.x}px, ${touchDragState.position.y - touchDragState.offset.y}px)` }}
-                  >
-                      {touchDragState.ghostElement}
-                  </div>
-              )}
-              {contextMenu && <ContextMenu x={contextMenu.x} y={contextMenu.y} actions={contextMenuActions} onClose={handleCloseContextMenu}/>}
-              <Modal isOpen={showClearStepsConfirm} onClose={() => setShowClearStepsConfirm(false)} title="确认重置步骤" variant="dialog">
-                  <div className="space-y-4">
-                      <p>此操作将重置当前事件的所有 {currentSteps.length} 个步骤。确定要继续吗？此操作无法撤销。</p>
-                      <div className="flex justify-end gap-3 pt-2">
-                          <button onClick={() => setShowClearStepsConfirm(false)} className="px-5 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-all active:scale-95 text-base font-medium">取消</button>
-                          <button onClick={confirmClearCurrentSteps} className="px-5 py-2.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-all active:scale-95 text-base">确认重置</button>
-                      </div>
-                  </div>
-              </Modal>
-              <Modal isOpen={showClearArchiveConfirm} onClose={() => setShowClearArchiveConfirm(false)} title="确认重置归档" variant="dialog">
-                  <div className="space-y-4">
-                      <p>此操作将重置所有 {templates.length} 个归档步骤。确定要继续吗？此操作无法撤销。</p>
-                      <div className="flex justify-end gap-3 pt-2">
-                          <button onClick={() => setShowClearArchiveConfirm(false)} className="px-5 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-all active:scale-95 text-base font-medium">取消</button>
-                          <button onClick={confirmClearSingleTemplates} className="px-5 py-2.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-all active:scale-95 text-base">确认重置</button>
-                      </div>
-                  </div>
-              </Modal>
-              <Modal isOpen={!!newTemplateModalData} onClose={() => setNewTemplateModalData(null)} title={`为 ${newTemplateModalData?.items.length || 0} 个步骤创建新模板`} variant="sheet">
-                  <div className="space-y-4">
-                      <div>
-                          <label htmlFor="newTemplateName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">模板名称</label>
-                          <input type="text" id="newTemplateName" value={newTemplateName} onChange={(e) => setNewTemplateName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateTemplateFromModal()} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-slate-500 focus:border-slate-500"/>
-                      </div>
-                      <div className="flex justify-end gap-3 pt-2">
-                          <button onClick={() => setNewTemplateModalData(null)} className="px-5 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-all active:scale-95 text-base font-medium">取消</button>
-                          <button onClick={handleCreateTemplateFromModal} className="px-5 py-2.5 rounded-lg bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 font-semibold hover:bg-slate-700 dark:hover:bg-slate-300 transition-all active:scale-95 text-base">创建</button>
-                      </div>
-                  </div>
-              </Modal>
-          </div>
-        </Modal>
+            {isMobileView ? (
+                <div className="flex-grow flex flex-col min-h-0" onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
+                    <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 px-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
+                        {isSelectionMode ? renderMobileSelectionActions() : (
+                            <div className="flex items-center -mb-px">
+                                {panelTitles.map((title, index) => (
+                                    <button
+                                        key={title}
+                                        onClick={() => setActivePanelIndex(index)}
+                                        className={`flex-1 px-1 py-3 text-base font-bold text-center transition-all duration-300 border-b-2 ${
+                                            activePanelIndex === index
+                                                ? 'text-brand-600 dark:text-brand-400 border-brand-500'
+                                                : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200'
+                                        }`}
+                                    >
+                                        {title}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-grow overflow-hidden relative">
+                        <div className="flex h-full transition-transform duration-300 ease-out" style={{ width: `${panels.length * 100}%`, transform: `translateX(-${activePanelIndex * (100 / panels.length)}%)`}}>
+                            {panels.map((panel, index) => <div key={index} className="w-full h-full p-4 flex flex-col">{panel}</div>)}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex-grow flex flex-col min-h-0 p-6">
+                    <div className="flex-grow lg:grid lg:grid-cols-3 gap-6 min-h-0">
+                        {panels.map((panel, index) => <React.Fragment key={index}>{panel}</React.Fragment>)}
+                    </div>
+                </div>
+            )}
+             
+             {touchDragState && (
+                <div 
+                    id="touch-drag-ghost"
+                    className="fixed top-0 left-0 pointer-events-none z-[100]" 
+                    style={{ transform: `translate(${touchDragState.position.x - touchDragState.offset.x}px, ${touchDragState.position.y - touchDragState.offset.y}px)` }}
+                >
+                    {touchDragState.ghostElement}
+                </div>
+            )}
+            {contextMenu && <ContextMenu x={contextMenu.x} y={contextMenu.y} actions={contextMenuActions} onClose={handleCloseContextMenu}/>}
+        </div>
         <Snackbar
             isOpen={!!snackbar}
             message={snackbar?.message || ''}

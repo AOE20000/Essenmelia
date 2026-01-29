@@ -49,10 +49,10 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <header className="w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-300 py-4 sm:h-16">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-300 py-4 sm:h-20">
           {isSelectionMode ? (
-            <div className="flex items-center justify-between w-full animate-content-enter">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className="flex items-center justify-between w-full animate-content-enter bg-brand-50/50 dark:bg-brand-900/20 p-2 rounded-xl border border-brand-200 dark:border-brand-800">
+              <h2 className="text-xl font-bold text-brand-900 dark:text-brand-100 pl-2">
                 已选中: {selectedCount} 个项目
               </h2>
               <div className="flex items-center gap-2">
@@ -67,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({
                   </button>
                   <button
                     onClick={onDeleteSelection}
-                    className="text-sm font-semibold px-4 py-2 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 text-red-600 dark:text-red-400 transition-colors active:scale-95 flex items-center gap-2 rounded-r-lg border border-l-0 border-slate-300 dark:border-slate-600"
+                    className="text-sm font-semibold px-4 py-2 bg-white dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors active:scale-95 flex items-center gap-2 rounded-r-lg border border-l-0 border-slate-300 dark:border-slate-600"
                     aria-label="删除选中项目"
                   >
                     <TrashIcon className="w-5 h-5" />
@@ -85,20 +85,22 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           ) : (
             <>
-              <h1 className="font-bold text-slate-900 dark:text-slate-50 flex-shrink-0 truncate text-2xl [text-shadow:0_1px_2px_rgb(0_0_0_/_0.2)] dark:[text-shadow:0_2px_4px_rgb(0_0_0_/_0.5)]">埃森梅莉亚 (Essenmelia)</h1>
+              <h1 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-purple-600 dark:from-brand-300 dark:to-purple-300 flex-shrink-0 truncate text-3xl tracking-tight">
+                埃森梅莉亚 <span className="text-slate-300 dark:text-slate-700 text-lg font-light tracking-normal">Essenmelia</span>
+              </h1>
               
-              <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 {/* Search Input */}
-                <div className="relative flex-1 sm:flex-initial sm:w-full sm:max-w-xs">
+                <div className="relative flex-1 sm:flex-initial sm:w-full sm:max-w-xs group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon className="h-5 w-5 text-slate-400" />
+                    <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" />
                   </div>
                   <input
                     type="text"
                     placeholder="搜索事件..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
-                    className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition text-sm"
+                    className="block w-full pl-10 pr-10 py-2.5 border border-transparent bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-md rounded-xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm shadow-inner"
                   />
                   {searchQuery && (
                     <button
@@ -115,14 +117,14 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="relative" ref={sortMenuRef}>
                   <button
                     onClick={() => setIsSortOpen(!isSortOpen)}
-                    className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2.5 bg-white/70 dark:bg-slate-800/70 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 dark:focus:ring-offset-slate-900 text-sm whitespace-nowrap transition-transform active:scale-95"
+                    className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-md border border-transparent rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 text-sm whitespace-nowrap transition-all active:scale-95"
                   >
                     <span className="font-semibold hidden sm:inline">{activeSortLabel}</span>
                     <span className="font-semibold sm:hidden">排序</span>
                     <ChevronDownIcon className={`w-5 h-5 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isSortOpen && (
-                    <div className="absolute z-10 top-full mt-2 w-56 right-0 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-2">
+                    <div className="absolute z-50 top-full mt-2 w-56 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-xl shadow-xl border border-white/20 dark:border-slate-700 p-2 animate-dialog-enter">
                       <ul>
                         {sortOptions.map(option => (
                           <li key={option.id}>
@@ -131,10 +133,10 @@ const Header: React.FC<HeaderProps> = ({
                                 onSortChange(option.id);
                                 setIsSortOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between text-left px-3 py-2.5 rounded-md text-sm ${
+                              className={`w-full flex items-center justify-between text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                                 sortOrder === option.id
-                                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-50 font-semibold'
-                                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                  ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold'
+                                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                               }`}
                             >
                               {option.label}
@@ -149,7 +151,7 @@ const Header: React.FC<HeaderProps> = ({
                  {/* Settings Button */}
                 <button
                   onClick={onOpenSettings}
-                  className="flex-shrink-0 p-2.5 bg-white/70 dark:bg-slate-800/70 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 dark:focus:ring-offset-slate-900 transition-transform active:scale-95"
+                  className="flex-shrink-0 p-2.5 bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-md border border-transparent rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:text-brand-600 dark:hover:text-brand-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all active:scale-95"
                   aria-label="打开设置"
                 >
                   <SettingsIcon className="w-5 h-5" />

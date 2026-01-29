@@ -1,111 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
 import { PlusIcon, PencilIcon, ArchiveBoxIcon, SettingsIcon } from './icons';
 
 interface WelcomeModalProps {
-  isOpen: boolean;
   onClose: () => void;
   onEnterDemo: () => void;
 }
 
-const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onEnterDemo }) => {
+const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose, onEnterDemo }) => {
   const [browserName, setBrowserName] = useState('您的浏览器');
 
   useEffect(() => {
-    if (isOpen) {
-        const getBrowserName = () => {
-          const userAgent = navigator.userAgent;
-          if (userAgent.includes("Firefox/")) return "Firefox";
-          if (userAgent.includes("Edg/")) return "Edge";
-          if (userAgent.includes("Chrome/") && !userAgent.includes("Edg/")) return "Chrome";
-          if (userAgent.includes("Safari/") && !userAgent.includes("Chrome/")) return "Safari";
-          return "您的浏览器";
-        };
-        setBrowserName(getBrowserName());
-    }
-  }, [isOpen]);
+      const getBrowserName = () => {
+        const userAgent = navigator.userAgent;
+        if (userAgent.includes("Firefox/")) return "Firefox";
+        if (userAgent.includes("Edg/")) return "Edge";
+        if (userAgent.includes("Chrome/") && !userAgent.includes("Edg/")) return "Chrome";
+        if (userAgent.includes("Safari/") && !userAgent.includes("Chrome/")) return "Safari";
+        return "您的浏览器";
+      };
+      setBrowserName(getBrowserName());
+  }, []);
 
-  const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string }> = ({ icon, title, description }) => (
-    <div className="flex items-start gap-4">
-      <div className="flex-shrink-0 w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+  const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; color: string }> = ({ icon, title, description, color }) => (
+    <div className="flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+      <div className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm text-white ${color}`}>
         {icon}
       </div>
       <div>
-        <h4 className="font-semibold text-slate-800 dark:text-slate-100">{title}</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+        <h4 className="font-bold text-slate-900 dark:text-slate-100">{title}</h4>
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">{description}</p>
       </div>
     </div>
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="欢迎来到 埃森梅莉亚！" variant="sheet">
-      <div className="space-y-6">
-        <p className="text-center text-lg text-slate-600 dark:text-slate-400 -mt-2">
-          一个优雅的进度跟踪器，助您掌控一切。
-        </p>
-        
-        <div className="space-y-5">
-          <Feature
-            icon={<PlusIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />}
-            title="1. 创建您的第一个项目"
-            description="点击右下角的 “+” 按钮开始一个新的事件或目标。"
-          />
-          <Feature
-            icon={<PencilIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />}
-            title="2. 分解任务"
-            description="点击一个事件卡片查看详情，然后使用“编辑步骤”按钮将其分解为可管理的步骤。"
-          />
-          <Feature
-            icon={<ArchiveBoxIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />}
-            title="3. 重用工作流程"
-            description="在步骤编辑器中，您可以将常用步骤拖到“归档”中，或将一组步骤保存为“模板”以便快速复用。"
-          />
-           <Feature
-            icon={<div className="font-bold text-lg text-slate-600 dark:text-slate-300 select-none">꾹</div>}
-            title="4. 高级操作"
-            description="长按任何卡片或项目以进入多选模式或打开上下文菜单，进行批量删除等操作。"
-          />
-          <Feature
-            icon={<SettingsIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />}
-            title="5. 管理您的数据"
-            description="通过设置菜单，您可以创建多个数据库（例如“工作”和“个人”），并随时导入/导出您的数据。"
-          />
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-2">关于数据库模式</h4>
-            <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <p>
-                <strong>临时存储:</strong> 如果没有可用的数据库（例如在隐私模式下），您的更改将临时保存在此会话中。关闭标签页将丢失数据。
-            </p>
-            <p>
-                <strong>演示模式:</strong> 探索一个包含示例数据的预填充数据库。您在此模式下所做的任何更改都不会被保存。
-            </p>
-            <p>
-                您可以随时通过 <strong className="text-slate-700 dark:text-slate-300">设置 &gt; 管理数据库</strong> 切换模式或创建新数据库。
-            </p>
-            <p className="!mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/80">
-                <strong className="text-slate-700 dark:text-slate-300">当前数据库位于：</strong>{browserName} 中。您的所有数据都安全地存储在本地，并且永远不会发送到任何服务器。
-            </p>
-            </div>
-        </div>
-
-        <div className="pt-4 space-y-3">
-          <button
-            onClick={onClose}
-            className="w-full px-5 py-3 rounded-lg bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 font-semibold hover:bg-slate-700 dark:hover:bg-slate-300 transition-all active:scale-95 text-base"
-          >
-            开始使用 (我的数据库)
-          </button>
-          <button
-            onClick={onEnterDemo}
-            className="w-full px-5 py-3 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-all active:scale-95 text-base"
-          >
-            进入演示模式
-          </button>
-        </div>
+    <div className="space-y-8">
+      <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-purple-600 dark:from-brand-300 dark:to-purple-300">
+            欢迎来到 Essenmelia 档案馆
+          </h2>
+          <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">
+            编织你的史诗，铭刻你的旅程。
+          </p>
       </div>
-    </Modal>
+      
+      <div className="space-y-2">
+        <Feature
+          icon={<PlusIcon className="w-6 h-6" />}
+          title="1. 开启新编年史"
+          description="点击右下角的法阵（+按钮）开始记录一个新的事件、故事或目标。"
+          color="bg-gradient-to-br from-blue-500 to-blue-600"
+        />
+        <Feature
+          icon={<PencilIcon className="w-6 h-6" />}
+          title="2. 拆解符文步骤"
+          description="点击卡片进入详情，使用“规划步骤”将宏大的任务拆解为可执行的节点。"
+          color="bg-gradient-to-br from-purple-500 to-purple-600"
+        />
+        <Feature
+          icon={<ArchiveBoxIcon className="w-6 h-6" />}
+          title="3. 传承智慧"
+          description="将常用的流程拖入“归档”或保存为模板，在未来的旅程中复用这些智慧。"
+          color="bg-gradient-to-br from-orange-500 to-orange-600"
+        />
+         <Feature
+          icon={<div className="font-bold text-xl select-none">꾹</div>}
+          title="4. 掌控之力"
+          description="长按卡片或列表项以进入多选模式，批量管理你的档案。"
+          color="bg-gradient-to-br from-slate-600 to-slate-700"
+        />
+      </div>
+
+      <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+             <SettingsIcon className="w-5 h-5 text-slate-500" />
+             <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">位面存储说明</h4>
+          </div>
+          <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p>您的所有数据都安全地封存在 <strong>{browserName}</strong> 的本地水晶（数据库）中，绝不会通过星界传送（上传）至任何服务器。您随时可以在设置中导出档案备份。</p>
+          </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+        <button
+          onClick={onEnterDemo}
+          className="w-full px-5 py-3.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-all active:scale-95"
+        >
+          参观演示档案馆
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full px-5 py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold hover:shadow-lg hover:shadow-brand-500/30 transition-all active:scale-95"
+        >
+          开始铭刻
+        </button>
+      </div>
+    </div>
   );
 };
 

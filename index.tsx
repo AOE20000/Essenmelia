@@ -1,7 +1,10 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { ToastProvider } from './context/ToastContext';
+import { DatabaseProvider } from './context/DatabaseContext';
+import { EventsProvider } from './context/EventsContext';
+import { WindowProvider } from './context/WindowContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,6 +14,14 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <ToastProvider>
+      <DatabaseProvider>
+        <EventsProvider>
+          <WindowProvider>
+            <App />
+          </WindowProvider>
+        </EventsProvider>
+      </DatabaseProvider>
+    </ToastProvider>
   </React.StrictMode>
 );
