@@ -15,7 +15,7 @@ const useLongPress = (
   onClick: (e: React.MouseEvent | React.TouchEvent) => void,
   { shouldPreventDefault = true, delay = 300, onDrag }: LongPressOptions = {}
 ) => {
-  const timeout = useRef<ReturnType<typeof window.setTimeout>>();
+  const timeout = useRef<number | undefined>(undefined);
   const pressCoordinates = useRef<{ x: number; y: number } | null>(null);
   const isLongPressTriggered = useRef(false);
   const isSwipe = useRef(false);

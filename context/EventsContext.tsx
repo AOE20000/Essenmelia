@@ -112,6 +112,7 @@ interface EventsContextType {
   stepTemplates: StepTemplate[];
   stepSetTemplates: StepSetTemplate[];
   isSyncing: boolean;
+  isLoading: boolean;
   addEvent: (event: Event, originalImage?: File) => void;
   updateEvent: (event: Event, originalImage?: File | 'remove') => void;
   deleteEvent: (eventId: string) => void;
@@ -341,6 +342,7 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <EventsContext.Provider value={{
       events, tags, stepTemplates, stepSetTemplates, isSyncing,
+      isLoading: isDbLoading, // Include isLoading here
       addEvent, updateEvent, deleteEvent, updateEventSteps,
       addTag, deleteTags, renameTag, reorderTags,
       updateStepTemplates, updateStepSetTemplates,

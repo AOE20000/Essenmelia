@@ -18,17 +18,17 @@ import { useDatabase } from './DatabaseContext';
 // Define Registry
 export type WindowRegistry = {
   'edit-event': { eventId?: string };
-  'settings': undefined;
-  'db-manager': undefined;
-  'manage-tags': undefined;
+  'settings': Record<string, never>; // Empty object
+  'db-manager': Record<string, never>;
+  'manage-tags': Record<string, never>;
   'manage-selection-tags': { selectedEventIds: string[] };
   'steps-editor': { eventId: string };
-  'welcome': undefined;
-  'create-db': undefined;
+  'welcome': Record<string, never>;
+  'create-db': Record<string, never>;
   'notification': { title?: string, message: string, type?: 'success'|'error'|'info', onConfirm?: () => void };
   'confirm': { title?: string, message: string, confirmText?: string, isDestructive?: boolean, onConfirm: () => void };
   'prompt': { title?: string, message?: string, defaultValue?: string, placeholder?: string, confirmText?: string, onConfirm: (val: string) => void };
-  'import-confirm': { file: File };
+  'import-confirm': { file: File, onConfirm?: () => void };
 };
 
 type WindowKey = keyof WindowRegistry;

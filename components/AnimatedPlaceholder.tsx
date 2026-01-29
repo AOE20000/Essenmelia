@@ -34,7 +34,7 @@ const AnimatedPlaceholder: React.FC<{ className?: string }> = ({ className }) =>
           backgroundImage: 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
           '--tw-gradient-from': 'rgba(199, 210, 254, 0.6)', // indigo-200
           '--tw-gradient-to': 'transparent',
-        }}
+        } as React.CSSProperties}
       />
       <div 
         className="absolute inset-0 animate-background-pulse dark:opacity-50"
@@ -43,7 +43,7 @@ const AnimatedPlaceholder: React.FC<{ className?: string }> = ({ className }) =>
           '--tw-gradient-from': 'rgba(30, 41, 59, 1)', // slate-800
           '--tw-gradient-to': 'transparent',
            animationDelay: '-5s'
-        }}
+        } as React.CSSProperties}
       />
       
       {/* Sparkles */}
