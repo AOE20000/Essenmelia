@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  # 允许手动触发
   workflow_dispatch:
 
 jobs:
@@ -13,10 +12,10 @@ jobs:
     name: Build Web Assets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4 # 升级到 v4
+      - uses: actions/setup-node@v4 # 升级到 v4
         with:
-          node-version: 18
+          node-version: 18 # 如果本地开发顺利，建议以后尝试改为 20 LTS
           cache: 'npm'
       
       - name: Install Dependencies
@@ -26,7 +25,7 @@ jobs:
         run: npm run build
         
       - name: Upload Dist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # 必须升级到 v4
         with:
           name: web-dist
           path: dist
@@ -36,9 +35,8 @@ jobs:
     needs: build-web
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
@@ -47,7 +45,7 @@ jobs:
         run: npm ci --legacy-peer-deps
         
       - name: Download Web Dist
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4 # 必须升级到 v4
         with:
           name: web-dist
           path: dist
@@ -58,7 +56,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Upload EXE Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Essenmelia-Windows-Setup
           path: release/*.exe
@@ -68,14 +66,14 @@ jobs:
     needs: build-web
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
           
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4 # 升级到 v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -84,7 +82,7 @@ jobs:
         run: npm ci --legacy-peer-deps
         
       - name: Download Web Dist
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: web-dist
           path: dist
@@ -93,10 +91,13 @@ jobs:
         run: npx cap sync android
         
       - name: Build APK (Debug)
-        run: cd android && ./gradlew assembleDebug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
         
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Essenmelia-Android-Debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
