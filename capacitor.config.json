@@ -1,5 +1,8 @@
 {
   "appId": "com.essenmelia.app",
   "appName": "Essenmelia",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
 }
