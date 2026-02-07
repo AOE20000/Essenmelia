@@ -1,4 +1,4 @@
-![Logo](.Essenmelia.svg)
+![Logo](Essenmelia.svg)
 
 # 埃森梅莉亚 (Essenmelia)
 
