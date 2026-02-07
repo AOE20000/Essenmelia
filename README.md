@@ -1,4 +1,4 @@
-![Logo]([./assets/logo_red.png](https://github.com/user-attachments/assets/2cf8aff2-b902-4a37-8098-c36bffdbea01))
+![Logo](.Essenmelia.svg)
 
 # 埃森梅莉亚 (Essenmelia)
 
