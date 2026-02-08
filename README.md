@@ -12,13 +12,8 @@
 ## 状态
 - 正在重构为Flutter应用程序
 
-## 未打包版的安装与使用（即将移除）
-- 下载项目文件
-- 在项目目录使用powershell运行：
-- npm install
-- npm run dev
-- 在浏览器访问：
-- http://localhost:3000
+## WEB版本
+- React old version分支
 
 ## 开源协议
 本项目使用 **Apache License 2.0** 开源
