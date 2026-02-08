@@ -12,9 +12,6 @@
 ## 状态
 - 正在重构为Flutter应用程序
 
-## WEB版本
-- React old version分支
-
 ## 开源协议
 本项目使用 **Apache License 2.0** 开源
 请保留署名及 NOTICE 文件以尊重原作者
