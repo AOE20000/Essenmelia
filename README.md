@@ -1,21 +1,16 @@
-![Logo](Essenmelia.svg)
+# essenmelia_flutter
 
-# 埃森梅莉亚 (Essenmelia)
+A new Flutter project.
 
-欢迎来到 埃森梅莉亚 (Essenmelia) —— 一个记录与追踪你追过的故事、番剧、小说、电影、电视剧甚至事件的工具。
+## Getting Started
 
-## 功能
-- 导入和导出本地记录，轻松管理你的追踪清单
-- 支持多种内容类型：事件、小说、番剧、电视剧、电影等
-- 不作恶、跨平台
+This project is a starting point for a Flutter application.
 
-## 状态
-- 正在重构为Flutter应用程序
+A few resources to get you started if this is your first Flutter project:
 
-## 开源协议
-本项目使用 **Apache License 2.0** 开源
-请保留署名及 NOTICE 文件以尊重原作者
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-## 关于作者
-- AOE20000
-- Gemini
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
