@@ -9,8 +9,6 @@ import '../models/event.dart';
 import '../providers/filtered_events_provider.dart';
 import '../providers/selection_provider.dart';
 import '../providers/settings_provider.dart';
-import '../widgets/background_orbs.dart';
-import '../widgets/glass_container.dart';
 import '../widgets/filter_chips.dart';
 import '../widgets/universal_image.dart';
 import '../widgets/welcome_overlay.dart';
@@ -45,7 +43,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final displaySettings = ref.watch(displaySettingsProvider);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       floatingActionButton: isSelectionMode
           ? null
           : FloatingActionButton(
@@ -53,223 +50,214 @@ class _HomePageState extends ConsumerState<HomePage> {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
                   builder: (context) => const EditEventSheet(),
                 );
               },
               child: const Icon(Icons.add),
             ),
-      body: Stack(
-        children: [
-          const BackgroundOrbs(),
-          SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: isSelectionMode
-                        ? _buildSelectionBar(context, selectedIds.length)
-                        : _buildHeader(context),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              sliver: SliverToBoxAdapter(
+                child: isSelectionMode
+                    ? _buildSelectionBar(context, selectedIds.length)
+                    : _buildHeader(context),
+              ),
+            ),
+            if (!isSelectionMode) ...[
+              const SliverToBoxAdapter(child: WelcomeCard()),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _FilterHeaderDelegate(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: FilterChips(
+                      selectedFilters: ref.watch(searchProvider).selectedTags,
+                      onSelected: _toggleFilter,
+                    ),
                   ),
                 ),
-                if (!isSelectionMode) ...[
-                  const SliverToBoxAdapter(child: WelcomeCard()),
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _FilterHeaderDelegate(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: FilterChips(
-                          selectedFilters: ref
-                              .watch(searchProvider)
-                              .selectedTags,
-                          onSelected: _toggleFilter,
-                        ),
-                      ),
+              ),
+            ],
+            if (filteredEvents.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.noEventsFound,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
                     ),
                   ),
-                ],
-                if (filteredEvents.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.noEventsFound,
-                        style: const TextStyle(color: Colors.white54),
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverMasonryGrid.count(
-                      crossAxisCount: displaySettings.itemsPerRow,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childCount: filteredEvents.length,
-                      itemBuilder: (context, index) {
-                        return _EventCard(
-                              event: filteredEvents[index],
-                              collapseImage: displaySettings.collapseImages,
-                            )
-                            .animate()
-                            .fadeIn(delay: (50 * index).ms)
-                            .slideY(begin: 0.1, end: 0);
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverMasonryGrid.count(
+                  crossAxisCount: displaySettings.itemsPerRow,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childCount: filteredEvents.length,
+                  itemBuilder: (context, index) {
+                    return _EventCard(
+                          event: filteredEvents[index],
+                          collapseImage: displaySettings.collapseImages,
+                        )
+                        .animate()
+                        .fadeIn(delay: (50 * index).ms)
+                        .slideY(begin: 0.1, end: 0);
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSelectionBar(BuildContext context, int count) {
-    return GlassContainer(
-      color: Theme.of(
-        context,
-      ).colorScheme.primaryContainer.withValues(alpha: 0.5),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => ref.read(selectionProvider.notifier).clear(),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$count ${AppLocalizations.of(context)!.selected}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(
-                    AppLocalizations.of(context)!.deleteSelectedConfirmation,
-                  ),
-                  content: Text(
-                    AppLocalizations.of(context)!.deleteSelectedMessage(count),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text(AppLocalizations.of(context)!.cancel),
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => ref.read(selectionProvider.notifier).clear(),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$count ${AppLocalizations.of(context)!.selected}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text(
+                      AppLocalizations.of(context)!.deleteSelectedConfirmation,
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(
-                        AppLocalizations.of(context)!.delete,
-                        style: const TextStyle(color: Colors.redAccent),
+                    content: Text(
+                      AppLocalizations.of(
+                        context,
+                      )!.deleteSelectedMessage(count),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(AppLocalizations.of(context)!.cancel),
                       ),
-                    ),
-                  ],
-                ),
-              );
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text(
+                          AppLocalizations.of(context)!.delete,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
 
-              if (confirm == true) {
-                await ref.read(batchActionsProvider).deleteSelected();
-              }
-            },
-          ),
-        ],
+                if (confirm == true) {
+                  await ref.read(batchActionsProvider).deleteSelected();
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
-    return GlassContainer(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                AppLocalizations.of(context)!.appTitle,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(
+              AppLocalizations.of(context)!.appTitle,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => const SettingsSheet(),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.searchPlaceholder,
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const SettingsSheet(),
-                  );
+                onChanged: (val) {
+                  ref.read(searchProvider.notifier).setQuery(val);
                 },
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.searchPlaceholder,
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Theme.of(
-                      context,
-                    ).colorScheme.surface.withValues(alpha: 0.5),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  ),
-                  onChanged: (val) {
-                    ref.read(searchProvider.notifier).setQuery(val);
-                  },
+            ),
+            const SizedBox(width: 8),
+            PopupMenuButton<SortOrder>(
+              icon: const Icon(Icons.sort),
+              tooltip: AppLocalizations.of(context)!.sort,
+              onSelected: (order) {
+                ref.read(searchProvider.notifier).setSortOrder(order);
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: SortOrder.createdAtDesc,
+                  child: Text(AppLocalizations.of(context)!.sortNewest),
                 ),
-              ),
-              const SizedBox(width: 8),
-              PopupMenuButton<SortOrder>(
-                icon: const Icon(Icons.sort),
-                tooltip: AppLocalizations.of(context)!.sort,
-                onSelected: (order) {
-                  ref.read(searchProvider.notifier).setSortOrder(order);
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: SortOrder.createdAtDesc,
-                    child: Text(AppLocalizations.of(context)!.sortNewest),
-                  ),
-                  PopupMenuItem(
-                    value: SortOrder.createdAtAsc,
-                    child: Text(AppLocalizations.of(context)!.sortOldest),
-                  ),
-                  PopupMenuItem(
-                    value: SortOrder.titleAsc,
-                    child: Text(AppLocalizations.of(context)!.sortTitleAZ),
-                  ),
-                  PopupMenuItem(
-                    value: SortOrder.titleDesc,
-                    child: Text(AppLocalizations.of(context)!.sortTitleZA),
-                  ),
-                  PopupMenuItem(
-                    value: SortOrder.progressDesc,
-                    child: Text(AppLocalizations.of(context)!.sortProgressHigh),
-                  ),
-                  PopupMenuItem(
-                    value: SortOrder.progressAsc,
-                    child: Text(AppLocalizations.of(context)!.sortProgressLow),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+                PopupMenuItem(
+                  value: SortOrder.createdAtAsc,
+                  child: Text(AppLocalizations.of(context)!.sortOldest),
+                ),
+                PopupMenuItem(
+                  value: SortOrder.titleAsc,
+                  child: Text(AppLocalizations.of(context)!.sortTitleAZ),
+                ),
+                PopupMenuItem(
+                  value: SortOrder.titleDesc,
+                  child: Text(AppLocalizations.of(context)!.sortTitleZA),
+                ),
+                PopupMenuItem(
+                  value: SortOrder.progressDesc,
+                  child: Text(AppLocalizations.of(context)!.sortProgressHigh),
+                ),
+                PopupMenuItem(
+                  value: SortOrder.progressAsc,
+                  child: Text(AppLocalizations.of(context)!.sortProgressLow),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -335,8 +323,8 @@ class _EventCard extends ConsumerWidget {
       },
       child: Stack(
         children: [
-          GlassContainer(
-            padding: EdgeInsets.zero,
+          Card(
+            clipBehavior: Clip.antiAlias,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -382,7 +370,9 @@ class _EventCard extends ConsumerWidget {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white10,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -403,7 +393,6 @@ class _EventCard extends ConsumerWidget {
                           children: [
                             LinearProgressIndicator(
                               value: progress,
-                              backgroundColor: Colors.white10,
                               borderRadius: BorderRadius.circular(2),
                             ),
                             const SizedBox(height: 4),
@@ -418,9 +407,9 @@ class _EventCard extends ConsumerWidget {
                         DateFormat.yMMMd(
                           Localizations.localeOf(context).toString(),
                         ).format(event.createdAt),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelSmall?.copyWith(color: Colors.white54),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                     ],
                   ),
@@ -435,7 +424,7 @@ class _EventCard extends ConsumerWidget {
                   color: Theme.of(
                     context,
                   ).colorScheme.primary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary,
                     width: 2,

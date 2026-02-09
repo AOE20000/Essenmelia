@@ -34,23 +34,7 @@ class FilterChips extends ConsumerWidget {
                 label: Text(tag),
                 selected: isSelected,
                 onSelected: (val) => onSelected(tag, val),
-                backgroundColor: Colors.white10,
-                selectedColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.5),
-                checkmarkColor: Colors.white,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white70,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.white24,
-                  ),
-                ),
-                showCheckmark: false,
+                showCheckmark: true,
               );
             },
           ),

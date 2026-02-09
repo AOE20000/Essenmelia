@@ -118,49 +118,40 @@ class _TagInputState extends ConsumerState<TagInput> {
             labelText: AppLocalizations.of(context)!.tags,
             hintText: AppLocalizations.of(context)!.tagsPlaceholder,
             prefixIcon: const Icon(Icons.tag),
-            filled: true,
-            fillColor: Colors.white10,
-            border: const OutlineInputBorder(),
           ),
           onSubmitted: _addTag,
         ),
 
         if (_showSuggestions)
-          Container(
-            constraints: const BoxConstraints(maxHeight: 200),
+          Card(
             margin: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ListView(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              children: [
-                if (_suggestions.isEmpty)
-                  ListTile(
-                    leading: const Icon(Icons.add),
-                    title: Text(
-                      AppLocalizations.of(context)!.createTag(_controller.text),
+            elevation: 4,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                children: [
+                  if (_suggestions.isEmpty)
+                    ListTile(
+                      leading: const Icon(Icons.add),
+                      title: Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.createTag(_controller.text),
+                      ),
+                      onTap: () => _addTag(_controller.text),
+                    )
+                  else
+                    ..._suggestions.map(
+                      (tag) => ListTile(
+                        leading: const Icon(Icons.label_outline),
+                        title: Text(tag),
+                        onTap: () => _addTag(tag),
+                      ),
                     ),
-                    onTap: () => _addTag(_controller.text),
-                  )
-                else
-                  ..._suggestions.map(
-                    (tag) => ListTile(
-                      leading: const Icon(Icons.label_outline),
-                      title: Text(tag),
-                      onTap: () => _addTag(tag),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
       ],

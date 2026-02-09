@@ -3,7 +3,6 @@ import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
-import '../widgets/glass_container.dart';
 
 class StepsEditorScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -45,9 +44,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     if (event == null) return const SizedBox.shrink();
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         title: Text(AppLocalizations.of(context)!.editSteps),
         bottom: TabBar(
           controller: _tabController,
@@ -92,7 +89,6 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                 key: ValueKey(
                   '${step.description}_$index',
                 ), // Better key strategy needed in real app
-                color: Colors.white10,
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: Text(step.description),
@@ -135,7 +131,6 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
               itemBuilder: (context, index) {
                 final template = templates[index];
                 return Card(
-                  color: Colors.white10,
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     title: Text(template.description),
@@ -143,9 +138,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.add,
-                            color: Colors.greenAccent,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                           onPressed: () {
                             ref
@@ -201,7 +196,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
           if (event.steps.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 icon: const Icon(Icons.save),
                 label: Text(
                   AppLocalizations.of(context)!.saveCurrentStepsAsSet,
@@ -231,7 +226,11 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Text(
                                 '• ${s.description}',
-                                style: const TextStyle(color: Colors.white70),
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
@@ -240,14 +239,14 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               TextButton.icon(
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.delete,
-                                  color: Colors.redAccent,
+                                  color: Theme.of(context).colorScheme.error,
                                 ),
                                 label: Text(
                                   AppLocalizations.of(context)!.delete,
-                                  style: const TextStyle(
-                                    color: Colors.redAccent,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
                                   ),
                                 ),
                                 onPressed: () {
@@ -257,7 +256,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                 },
                               ),
                               const SizedBox(width: 8),
-                              ElevatedButton.icon(
+                              FilledButton.icon(
                                 icon: const Icon(Icons.add),
                                 label: Text(
                                   AppLocalizations.of(context)!.addAllToSteps,
@@ -307,15 +306,18 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     required String hint,
     required Function(String) onSubmitted,
   }) {
-    return GlassContainer(
+    return Container(
       margin: EdgeInsets.only(
         left: 16,
         right: 16,
         bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
         top: 8,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      borderRadius: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(28),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -324,6 +326,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
               decoration: InputDecoration(
                 hintText: hint,
                 border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
               onSubmitted: (val) {
                 if (val.trim().isNotEmpty) {
@@ -335,6 +338,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
           ),
           IconButton(
             icon: const Icon(Icons.send),
+            color: Theme.of(context).colorScheme.primary,
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
                 onSubmitted(controller.text.trim());
@@ -365,7 +369,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
             onPressed: () => Navigator.pop(context),
             child: Text(AppLocalizations.of(context)!.cancel),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
                 ref

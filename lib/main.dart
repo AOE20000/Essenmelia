@@ -71,12 +71,6 @@ class MyApp extends ConsumerWidget {
           seedColor: Colors.indigo,
           brightness: isDarkMode ? Brightness.dark : Brightness.light,
         ),
-        // textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-        fontFamily: 'Segoe UI',
-        fontFamilyFallback: const ['Arial', 'Microsoft YaHei', 'sans-serif'],
-        scaffoldBackgroundColor: isDarkMode
-            ? const Color(0xFF0F172A)
-            : const Color(0xFFF1F5F9), // Slate 900 vs Slate 100
       ),
       routerConfig: _router,
     );

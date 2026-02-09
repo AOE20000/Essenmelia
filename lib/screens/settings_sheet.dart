@@ -14,7 +14,6 @@ import '../providers/locale_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/file_service.dart';
-import '../widgets/glass_container.dart';
 import 'db_manager_screen.dart';
 import 'manage_tags_screen.dart';
 
@@ -220,11 +219,18 @@ class SettingsSheet extends ConsumerWidget {
     final isDarkMode = ref.watch(themeProvider);
     final displaySettings = ref.watch(displaySettingsProvider);
 
-    return GlassContainer(
-      margin: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      borderRadius: 24,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -332,7 +338,7 @@ class SettingsSheet extends ConsumerWidget {
               title: Text(AppLocalizations.of(context)!.importData),
               onTap: () => _importData(context, ref),
             ),
-            const Divider(color: Colors.white24),
+            const Divider(),
             ListTile(
               leading: const Icon(
                 Icons.delete_forever,

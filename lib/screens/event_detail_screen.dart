@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
-import '../widgets/background_orbs.dart';
-import '../widgets/glass_container.dart';
 import '../widgets/universal_image.dart';
 import 'edit_event_sheet.dart';
 import 'steps_editor_screen.dart';
@@ -31,10 +29,8 @@ class EventDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: Text(event.title),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -46,7 +42,6 @@ class EventDetailScreen extends ConsumerWidget {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                backgroundColor: Colors.transparent,
                 builder: (context) => EditEventSheet(event: event),
               );
             },
@@ -60,102 +55,96 @@ class EventDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          const BackgroundOrbs(),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (event.imageUrl != null)
-                    UniversalImage(
-                      imageUrl: event.imageUrl!,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  const SizedBox(height: 16),
-                  GlassContainer(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event.title,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        if (event.tags != null && event.tags!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: event.tags!
-                                  .map(
-                                    (tag) => Chip(
-                                      label: Text(tag),
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primaryContainer
-                                          .withValues(alpha: 0.5),
-                                      labelStyle: Theme.of(
-                                        context,
-                                      ).textTheme.labelSmall,
-                                      padding: EdgeInsets.zero,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
-                        if (event.description != null) Text(event.description!),
-                        const SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.createdOn(
-                            DateFormat.yMMMd(
-                              Localizations.localeOf(context).toString(),
-                            ).format(event.createdAt),
-                          ),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (event.imageUrl != null)
+                UniversalImage(
+                  imageUrl: event.imageUrl!,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        AppLocalizations.of(context)!.steps,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        event.title,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_note),
-                        tooltip: AppLocalizations.of(context)!.manageSteps,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  StepsEditorScreen(eventId: event.id),
-                            ),
-                          );
-                        },
+                      const SizedBox(height: 8),
+                      if (event.tags != null && event.tags!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: event.tags!
+                                .map(
+                                  (tag) => Chip(
+                                    label: Text(tag),
+                                    labelStyle: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
+                                    padding: EdgeInsets.zero,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      if (event.description != null) Text(event.description!),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppLocalizations.of(context)!.createdOn(
+                          DateFormat.yMMMd(
+                            Localizations.localeOf(context).toString(),
+                          ).format(event.createdAt),
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _StepsList(event: event),
-                  const SizedBox(height: 16),
-                  _AddStepButton(eventId: event.id),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.steps,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_note),
+                    tooltip: AppLocalizations.of(context)!.manageSteps,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              StepsEditorScreen(eventId: event.id),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 8),
+              _StepsList(event: event),
+              const SizedBox(height: 16),
+              _AddStepButton(eventId: event.id),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -169,7 +158,7 @@ class _StepsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (event.steps.isEmpty) {
-      return GlassContainer(
+      return Card(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(AppLocalizations.of(context)!.noStepsYet),
@@ -177,10 +166,11 @@ class _StepsList extends ConsumerWidget {
       );
     }
 
-    return GlassContainer(
-      padding: EdgeInsets.zero,
+    return Card(
+      clipBehavior: Clip.antiAlias,
       child: ListView.builder(
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: event.steps.length,
         itemBuilder: (context, index) {
@@ -190,7 +180,9 @@ class _StepsList extends ConsumerWidget {
               step.description,
               style: TextStyle(
                 decoration: step.completed ? TextDecoration.lineThrough : null,
-                color: step.completed ? Colors.white54 : null,
+                color: step.completed
+                    ? Theme.of(context).colorScheme.outline
+                    : null,
               ),
             ),
             value: step.completed,
@@ -230,31 +222,34 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
   @override
   Widget build(BuildContext context) {
     if (_isAdding) {
-      return GlassContainer(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.newStepPlaceholder,
-                  border: InputBorder.none,
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.newStepPlaceholder,
+                    border: InputBorder.none,
+                  ),
+                  onSubmitted: (_) => _submit(),
                 ),
-                onSubmitted: (_) => _submit(),
               ),
-            ),
-            IconButton(icon: const Icon(Icons.check), onPressed: _submit),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _isAdding = false),
-            ),
-          ],
+              IconButton(icon: const Icon(Icons.check), onPressed: _submit),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() => _isAdding = false),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return ElevatedButton.icon(
+    return FilledButton.icon(
       onPressed: () => setState(() => _isAdding = true),
       icon: const Icon(Icons.add),
       label: Text(AppLocalizations.of(context)!.addStep),

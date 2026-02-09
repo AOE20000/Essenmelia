@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
-import '../widgets/glass_container.dart';
 import '../widgets/tag_input.dart';
 
 class EditEventSheet extends ConsumerStatefulWidget {
@@ -115,91 +114,93 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      margin: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      borderRadius: 24,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                widget.event != null
-                    ? AppLocalizations.of(context)!.editEvent
-                    : AppLocalizations.of(context)!.newEvent,
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.event != null
+                  ? AppLocalizations.of(context)!.editEvent
+                  : AppLocalizations.of(context)!.newEvent,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.title,
+                filled: true,
+                border: const OutlineInputBorder(),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)!.title,
-                  filled: true,
-                  fillColor: Colors.white10,
-                  border: const OutlineInputBorder(),
-                ),
-                autofocus: widget.event == null,
+              autofocus: widget.event == null,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descController,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.description,
+                filled: true,
+                border: const OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _descController,
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)!.description,
-                  filled: true,
-                  fillColor: Colors.white10,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _imageUrlController,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!.imageUrl,
-                        hintText: AppLocalizations.of(
-                          context,
-                        )!.imageUrlPlaceholder,
-                        filled: true,
-                        fillColor: Colors.white10,
-                        border: const OutlineInputBorder(),
-                      ),
-                      maxLines: 1,
+              maxLines: 3,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _imageUrlController,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.imageUrl,
+                      hintText: AppLocalizations.of(
+                        context,
+                      )!.imageUrlPlaceholder,
+                      filled: true,
+                      border: const OutlineInputBorder(),
                     ),
+                    maxLines: 1,
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filledTonal(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.add_photo_alternate),
-                    tooltip: AppLocalizations.of(context)!.pickImage,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TagInput(
-                initialTags: _selectedTags,
-                onChanged: (tags) {
-                  setState(() {
-                    _selectedTags = tags;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _save,
-                child: Text(
-                  widget.event != null
-                      ? AppLocalizations.of(context)!.saveChanges
-                      : AppLocalizations.of(context)!.createEvent,
                 ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.add_photo_alternate),
+                  tooltip: AppLocalizations.of(context)!.pickImage,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TagInput(
+              initialTags: _selectedTags,
+              onChanged: (tags) {
+                setState(() {
+                  _selectedTags = tags;
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _save,
+              child: Text(
+                widget.event != null
+                    ? AppLocalizations.of(context)!.saveChanges
+                    : AppLocalizations.of(context)!.createEvent,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

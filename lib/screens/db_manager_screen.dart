@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/db_provider.dart';
-import '../widgets/glass_container.dart';
 
 class DatabaseManagerScreen extends ConsumerStatefulWidget {
   const DatabaseManagerScreen({super.key});
@@ -73,7 +72,6 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.databaseManager),
-        backgroundColor: Colors.transparent,
       ),
       body: dbStateAsync.when(
         data: (state) {
@@ -92,7 +90,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 final isActive = dbName == state.activeDbPrefix;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: GlassContainer(
+                  child: Card(
                     child: ListTile(
                       title: Text(
                         dbName == kDefaultDbName
@@ -199,11 +197,11 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 );
               }),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
+              FilledButton.icon(
                 onPressed: _showCreateDialog,
                 icon: const Icon(Icons.add),
                 label: Text(AppLocalizations.of(context)!.createNewDatabase),
-                style: ElevatedButton.styleFrom(
+                style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),

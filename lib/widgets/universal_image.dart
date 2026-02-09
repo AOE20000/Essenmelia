@@ -30,10 +30,10 @@ class UniversalImage extends StatelessWidget {
           width: width,
           height: height,
           fit: fit,
-          errorBuilder: _errorBuilder,
+          errorBuilder: (context, error, stackTrace) => _errorWidget(context),
         );
       } catch (e) {
-        imageWidget = _errorWidget();
+        imageWidget = _errorWidget(context);
       }
     } else if (imageUrl.startsWith('http')) {
       imageWidget = Image.network(
@@ -41,10 +41,10 @@ class UniversalImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: _errorBuilder,
+        errorBuilder: (context, error, stackTrace) => _errorWidget(context),
       );
     } else {
-      imageWidget = _errorWidget();
+      imageWidget = _errorWidget(context);
     }
 
     if (borderRadius != null) {
@@ -54,21 +54,16 @@ class UniversalImage extends StatelessWidget {
     return imageWidget;
   }
 
-  Widget _errorBuilder(
-    BuildContext context,
-    Object error,
-    StackTrace? stackTrace,
-  ) {
-    return _errorWidget();
-  }
-
-  Widget _errorWidget() {
+  Widget _errorWidget(BuildContext context) {
     return Container(
       width: width,
       height: height,
-      color: Colors.white10,
-      child: const Center(
-        child: Icon(Icons.image_not_supported, color: Colors.white24),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          color: Theme.of(context).colorScheme.outline,
+        ),
       ),
     );
   }
