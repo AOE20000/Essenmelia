@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
@@ -90,12 +91,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ],
                 if (filteredEvents.isEmpty)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: Text(
-                        'No events found',
-                        style: TextStyle(color: Colors.white54),
+                        AppLocalizations.of(context)!.noEventsFound,
+                        style: const TextStyle(color: Colors.white54),
                       ),
                     ),
                   )
@@ -128,7 +129,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildSelectionBar(BuildContext context, int count) {
     return GlassContainer(
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.5),
       child: Row(
         children: [
           IconButton(
@@ -137,7 +140,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           const SizedBox(width: 8),
           Text(
-            '$count Selected',
+            '$count ${AppLocalizations.of(context)!.selected}',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const Spacer(),
@@ -147,18 +150,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Delete Selected?'),
-                  content: Text('Delete $count items?'),
+                  title: Text(
+                    AppLocalizations.of(context)!.deleteSelectedConfirmation,
+                  ),
+                  content: Text(
+                    AppLocalizations.of(context)!.deleteSelectedMessage(count),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.redAccent),
+                      child: Text(
+                        AppLocalizations.of(context)!.delete,
+                        style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),
                   ],
@@ -182,7 +189,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Row(
             children: [
               Text(
-                'Essenmelia',
+                AppLocalizations.of(context)!.appTitle,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -208,12 +215,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search events...',
+                    hintText: AppLocalizations.of(context)!.searchPlaceholder,
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Theme.of(
                       context,
-                    ).colorScheme.surface.withOpacity(0.5),
+                    ).colorScheme.surface.withValues(alpha: 0.5),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -228,34 +235,34 @@ class _HomePageState extends ConsumerState<HomePage> {
               const SizedBox(width: 8),
               PopupMenuButton<SortOrder>(
                 icon: const Icon(Icons.sort),
-                tooltip: 'Sort',
+                tooltip: AppLocalizations.of(context)!.sort,
                 onSelected: (order) {
                   ref.read(searchProvider.notifier).setSortOrder(order);
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: SortOrder.createdAtDesc,
-                    child: Text('Newest First'),
+                    child: Text(AppLocalizations.of(context)!.sortNewest),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: SortOrder.createdAtAsc,
-                    child: Text('Oldest First'),
+                    child: Text(AppLocalizations.of(context)!.sortOldest),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: SortOrder.titleAsc,
-                    child: Text('Title (A-Z)'),
+                    child: Text(AppLocalizations.of(context)!.sortTitleAZ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: SortOrder.titleDesc,
-                    child: Text('Title (Z-A)'),
+                    child: Text(AppLocalizations.of(context)!.sortTitleZA),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: SortOrder.progressDesc,
-                    child: Text('Progress (High-Low)'),
+                    child: Text(AppLocalizations.of(context)!.sortProgressHigh),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: SortOrder.progressAsc,
-                    child: Text('Progress (Low-High)'),
+                    child: Text(AppLocalizations.of(context)!.sortProgressLow),
                   ),
                 ],
               ),
@@ -408,7 +415,9 @@ class _EventCard extends ConsumerWidget {
                         ),
                       const SizedBox(height: 8),
                       Text(
-                        DateFormat.yMMMd().format(event.createdAt),
+                        DateFormat.yMMMd(
+                          Localizations.localeOf(context).toString(),
+                        ).format(event.createdAt),
                         style: Theme.of(
                           context,
                         ).textTheme.labelSmall?.copyWith(color: Colors.white54),
@@ -423,7 +432,9 @@ class _EventCard extends ConsumerWidget {
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary,

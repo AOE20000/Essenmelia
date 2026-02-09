@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/tags_provider.dart';
 import '../widgets/glass_container.dart';
@@ -14,7 +15,7 @@ class ManageTagsScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Manage Tags'),
+        title: Text(AppLocalizations.of(context)!.manageTags),
         elevation: 0,
       ),
       body: Container(
@@ -28,10 +29,10 @@ class ManageTagsScreen extends ConsumerWidget {
         child: tagsAsync.when(
           data: (tags) {
             if (tags.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
-                  'No tags yet',
-                  style: TextStyle(color: Colors.white54),
+                  AppLocalizations.of(context)!.noTagsYet,
+                  style: const TextStyle(color: Colors.white54),
                 ),
               );
             }
@@ -43,7 +44,7 @@ class ManageTagsScreen extends ConsumerWidget {
                 return Dismissible(
                   key: Key(tag),
                   background: Container(
-                    color: Colors.red.withOpacity(0.8),
+                    color: Colors.red.withValues(alpha: 0.8),
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 16),
                     margin: const EdgeInsets.only(bottom: 8),
@@ -54,20 +55,22 @@ class ManageTagsScreen extends ConsumerWidget {
                     return await showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Delete Tag?'),
+                        title: Text(
+                          AppLocalizations.of(context)!.deleteTagConfirmation,
+                        ),
                         content: Text(
-                          'This will remove "$tag" from all events.',
+                          AppLocalizations.of(context)!.deleteTagWarning(tag),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
+                            child: Text(AppLocalizations.of(context)!.cancel),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
-                              'Delete',
-                              style: TextStyle(color: Colors.redAccent),
+                            child: Text(
+                              AppLocalizations.of(context)!.delete,
+                              style: const TextStyle(color: Colors.redAccent),
                             ),
                           ),
                         ],
@@ -81,7 +84,10 @@ class ManageTagsScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: EdgeInsets.zero,
                     child: ListTile(
-                      leading: const Icon(Icons.label, color: Colors.indigoAccent),
+                      leading: const Icon(
+                        Icons.label,
+                        color: Colors.indigoAccent,
+                      ),
                       title: Text(tag),
                       trailing: IconButton(
                         icon: const Icon(Icons.edit, size: 20),
@@ -94,7 +100,9 @@ class ManageTagsScreen extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err')),
+          error: (err, stack) => Center(
+            child: Text(AppLocalizations.of(context)!.error(err.toString())),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -109,12 +117,12 @@ class ManageTagsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New Tag'),
+        title: Text(AppLocalizations.of(context)!.newTag),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Tag Name',
-            hintText: 'e.g., Work, Personal',
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.tagName,
+            hintText: AppLocalizations.of(context)!.tagNameHint,
           ),
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
@@ -122,7 +130,7 @@ class ManageTagsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -132,7 +140,7 @@ class ManageTagsScreen extends ConsumerWidget {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Add'),
+            child: Text(AppLocalizations.of(context)!.add),
           ),
         ],
       ),
@@ -144,11 +152,11 @@ class ManageTagsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename Tag'),
+        title: Text(AppLocalizations.of(context)!.renameTag),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Tag Name',
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.tagName,
           ),
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
@@ -156,7 +164,7 @@ class ManageTagsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -166,7 +174,7 @@ class ManageTagsScreen extends ConsumerWidget {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),

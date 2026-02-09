@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/ui_state_provider.dart';
 import 'glass_container.dart';
@@ -23,10 +24,10 @@ class WelcomeCard extends ConsumerWidget {
                 const Icon(Icons.waving_hand, color: Colors.amber),
                 const SizedBox(width: 8),
                 Text(
-                  'Welcome to Essenmelia',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  AppLocalizations.of(context)!.welcomeTitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -39,7 +40,7 @@ class WelcomeCard extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Manage your events, track steps, and organize your life with tags. Tap the + button to get started.',
+              AppLocalizations.of(context)!.welcomeMessage,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],

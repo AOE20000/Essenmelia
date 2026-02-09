@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/tags_provider.dart';
 
@@ -49,10 +50,11 @@ class _TagInputState extends ConsumerState<TagInput> {
     final allTags = ref.read(tagsProvider).value ?? [];
     setState(() {
       _suggestions = allTags.where((tag) {
-        return tag.toLowerCase().contains(query) && 
-               !_selectedTags.contains(tag);
+        return tag.toLowerCase().contains(query) &&
+            !_selectedTags.contains(tag);
       }).toList();
-      _showSuggestions = true; // Always show if there is text, even if 0 suggestions (to allow creating)
+      _showSuggestions =
+          true; // Always show if there is text, even if 0 suggestions (to allow creating)
     });
   }
 
@@ -68,7 +70,7 @@ class _TagInputState extends ConsumerState<TagInput> {
         _showSuggestions = false;
       });
       widget.onChanged(_selectedTags);
-      
+
       // Auto-add to global list
       ref.read(tagsProvider.notifier).addTag(cleanTag);
     } else {
@@ -99,7 +101,9 @@ class _TagInputState extends ConsumerState<TagInput> {
                   label: Text(tag),
                   onDeleted: () => _removeTag(tag),
                   deleteIcon: const Icon(Icons.close, size: 18),
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                   labelStyle: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
@@ -107,20 +111,20 @@ class _TagInputState extends ConsumerState<TagInput> {
               }).toList(),
             ),
           ),
-        
+
         TextField(
           controller: _controller,
-          decoration: const InputDecoration(
-            labelText: 'Tags',
-            hintText: 'Type to search or create...',
-            prefixIcon: Icon(Icons.tag),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.tags,
+            hintText: AppLocalizations.of(context)!.tagsPlaceholder,
+            prefixIcon: const Icon(Icons.tag),
             filled: true,
             fillColor: Colors.white10,
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
           ),
           onSubmitted: _addTag,
         ),
-        
+
         if (_showSuggestions)
           Container(
             constraints: const BoxConstraints(maxHeight: 200),
@@ -130,7 +134,7 @@ class _TagInputState extends ConsumerState<TagInput> {
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -143,15 +147,19 @@ class _TagInputState extends ConsumerState<TagInput> {
                 if (_suggestions.isEmpty)
                   ListTile(
                     leading: const Icon(Icons.add),
-                    title: Text('Create "${_controller.text}"'),
+                    title: Text(
+                      AppLocalizations.of(context)!.createTag(_controller.text),
+                    ),
                     onTap: () => _addTag(_controller.text),
                   )
                 else
-                  ..._suggestions.map((tag) => ListTile(
-                    leading: const Icon(Icons.label_outline),
-                    title: Text(tag),
-                    onTap: () => _addTag(tag),
-                  )),
+                  ..._suggestions.map(
+                    (tag) => ListTile(
+                      leading: const Icon(Icons.label_outline),
+                      title: Text(tag),
+                      onTap: () => _addTag(tag),
+                    ),
+                  ),
               ],
             ),
           ),

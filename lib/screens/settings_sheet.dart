@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -9,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/event.dart';
 import '../providers/db_provider.dart';
+import '../providers/locale_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/file_service.dart';
@@ -152,18 +154,24 @@ class SettingsSheet extends ConsumerWidget {
           }
 
           if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Import successful')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.importSuccess),
+              ),
+            );
             context.pop();
           }
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.importFailedDetailed(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -172,16 +180,19 @@ class SettingsSheet extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete All Data?'),
-        content: const Text('This cannot be undone.'),
+        title: Text(AppLocalizations.of(context)!.deleteAllDataTitle),
+        content: Text(AppLocalizations.of(context)!.deleteAllDataMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(
+              AppLocalizations.of(context)!.delete,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -194,9 +205,11 @@ class SettingsSheet extends ConsumerWidget {
       await Hive.box<StepSetTemplate>('set_templates').clear();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('All data deleted')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.deleteAllDataSuccess),
+          ),
+        );
         context.pop();
       }
     }
@@ -217,13 +230,38 @@ class SettingsSheet extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Settings',
+              AppLocalizations.of(context)!.settings,
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(AppLocalizations.of(context)!.language),
+              trailing: DropdownButton<Locale?>(
+                value: ref.watch(localeProvider),
+                underline: const SizedBox(),
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(AppLocalizations.of(context)!.systemLanguage),
+                  ),
+                  const DropdownMenuItem(
+                    value: Locale('en'),
+                    child: Text('English'),
+                  ),
+                  const DropdownMenuItem(
+                    value: Locale('zh'),
+                    child: Text('中文'),
+                  ),
+                ],
+                onChanged: (locale) {
+                  ref.read(localeProvider.notifier).setLocale(locale);
+                },
+              ),
+            ),
             SwitchListTile(
-              title: const Text('Dark Mode'),
+              title: Text(AppLocalizations.of(context)!.darkMode),
               secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
               value: isDarkMode,
               onChanged: (value) {
@@ -231,7 +269,7 @@ class SettingsSheet extends ConsumerWidget {
               },
             ),
             SwitchListTile(
-              title: const Text('Collapse Images'),
+              title: Text(AppLocalizations.of(context)!.collapseImages),
               secondary: const Icon(Icons.image_not_supported_outlined),
               value: displaySettings.collapseImages,
               onChanged: (value) {
@@ -242,7 +280,7 @@ class SettingsSheet extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.grid_view),
-              title: const Text('Items Per Row'),
+              title: Text(AppLocalizations.of(context)!.cardDensity),
               trailing: DropdownButton<int>(
                 value: displaySettings.itemsPerRow,
                 underline: const SizedBox(),
@@ -260,7 +298,7 @@ class SettingsSheet extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.storage),
-              title: const Text('Database Manager'),
+              title: Text(AppLocalizations.of(context)!.databaseManager),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -273,7 +311,7 @@ class SettingsSheet extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.label_outline),
-              title: const Text('Manage Tags'),
+              title: Text(AppLocalizations.of(context)!.manageTags),
               onTap: () {
                 Navigator.pop(context); // Close sheet
                 Navigator.push(
@@ -286,12 +324,12 @@ class SettingsSheet extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.download),
-              title: const Text('Export Data (JSON)'),
+              title: Text(AppLocalizations.of(context)!.exportData),
               onTap: () => _exportData(context, ref),
             ),
             ListTile(
               leading: const Icon(Icons.upload),
-              title: const Text('Import Data (JSON)'),
+              title: Text(AppLocalizations.of(context)!.importData),
               onTap: () => _importData(context, ref),
             ),
             const Divider(color: Colors.white24),
@@ -300,9 +338,9 @@ class SettingsSheet extends ConsumerWidget {
                 Icons.delete_forever,
                 color: Colors.redAccent,
               ),
-              title: const Text(
-                'Delete All Data',
-                style: TextStyle(color: Colors.redAccent),
+              title: Text(
+                AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.redAccent),
               ),
               onTap: () => _deleteAllData(context, ref),
             ),

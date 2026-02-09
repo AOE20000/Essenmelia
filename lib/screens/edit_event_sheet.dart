@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/event.dart';
@@ -101,9 +102,13 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.failedToPickImage(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -121,29 +126,31 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                widget.event != null ? 'Edit Event' : 'New Event',
+                widget.event != null
+                    ? AppLocalizations.of(context)!.editEvent
+                    : AppLocalizations.of(context)!.newEvent,
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.title,
                   filled: true,
                   fillColor: Colors.white10,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 autofocus: widget.event == null,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.description,
                   filled: true,
                   fillColor: Colors.white10,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 maxLines: 3,
               ),
@@ -153,12 +160,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                   Expanded(
                     child: TextField(
                       controller: _imageUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'Image URL',
-                        hintText: 'http://... or data:image...',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.imageUrl,
+                        hintText: AppLocalizations.of(
+                          context,
+                        )!.imageUrlPlaceholder,
                         filled: true,
                         fillColor: Colors.white10,
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 1,
                     ),
@@ -167,7 +176,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                   IconButton.filledTonal(
                     onPressed: _pickImage,
                     icon: const Icon(Icons.add_photo_alternate),
-                    tooltip: 'Pick Image',
+                    tooltip: AppLocalizations.of(context)!.pickImage,
                   ),
                 ],
               ),
@@ -184,7 +193,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               ElevatedButton(
                 onPressed: _save,
                 child: Text(
-                  widget.event != null ? 'Save Changes' : 'Create Event',
+                  widget.event != null
+                      ? AppLocalizations.of(context)!.saveChanges
+                      : AppLocalizations.of(context)!.createEvent,
                 ),
               ),
             ],

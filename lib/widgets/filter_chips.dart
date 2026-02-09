@@ -35,7 +35,9 @@ class FilterChips extends ConsumerWidget {
                 selected: isSelected,
                 onSelected: (val) => onSelected(tag, val),
                 backgroundColor: Colors.white10,
-                selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                selectedColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
                 checkmarkColor: Colors.white,
                 labelStyle: TextStyle(
                   color: isSelected ? Colors.white : Colors.white70,
@@ -43,8 +45,8 @@ class FilterChips extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: isSelected 
-                        ? Theme.of(context).colorScheme.primary 
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
                         : Colors.white24,
                   ),
                 ),
@@ -55,7 +57,7 @@ class FilterChips extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 }

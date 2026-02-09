@@ -12,50 +12,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Essenmelia';
 
   @override
-  String get settings => 'Settings';
+  String get searchPlaceholder => 'Search events...';
 
   @override
-  String get darkMode => 'Dark Mode';
-
-  @override
-  String get collapseImages => 'Collapse Images';
-
-  @override
-  String get itemsPerRow => 'Items Per Row';
-
-  @override
-  String get databaseManager => 'Database Manager';
-
-  @override
-  String get manageTags => 'Manage Tags';
-
-  @override
-  String get exportData => 'Export Data (JSON)';
-
-  @override
-  String get importData => 'Import Data (JSON)';
-
-  @override
-  String get deleteAllData => 'Delete All Data';
-
-  @override
-  String get deleteAllDataConfirmTitle => 'Delete All Data?';
-
-  @override
-  String get deleteAllDataConfirmContent =>
-      'This cannot be undone. All data will be permanently lost.';
+  String get select => 'Select';
 
   @override
   String get cancel => 'Cancel';
 
   @override
+  String get newTag => 'New Tag';
+
+  @override
+  String get tagNameHint => 'e.g., Work, Personal';
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String get renameTag => 'Rename Tag';
+
+  @override
+  String get save => 'Save';
+
+  @override
   String get delete => 'Delete';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get edit => 'Edit';
 
   @override
   String get create => 'Create';
 
   @override
-  String get switchDb => 'Switch';
+  String get settings => 'Settings';
+
+  @override
+  String get manageTags => 'Manage Tags';
+
+  @override
+  String get databaseManager => 'Database Manager';
+
+  @override
+  String get importExport => 'Import / Export';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get darkMode => 'Dark Mode';
+
+  @override
+  String get useSystemTheme => 'Use System Theme';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get systemLanguage => 'System';
+
+  @override
+  String get cardDensity => 'Card Density';
+
+  @override
+  String get compact => 'Compact';
+
+  @override
+  String get comfortable => 'Comfortable';
+
+  @override
+  String get collapseImages => 'Collapse Images';
+
+  @override
+  String get activeDatabase => 'Active Database';
 
   @override
   String get availableDatabases => 'Available Databases';
@@ -64,13 +96,230 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createNewDatabase => 'Create New Database';
 
   @override
-  String get databaseName => 'Database Name';
+  String get enterDatabaseName => 'Enter database name';
 
   @override
-  String get invalidName => 'Invalid name. Use letters, numbers, -, _';
+  String get switchDbConfirmation => 'Switch Database';
 
   @override
-  String get searchEvents => 'Search events...';
+  String switchDbMessage(String name) {
+    return 'Are you sure you want to switch to database \"$name\"?';
+  }
+
+  @override
+  String get deleteDbConfirmation => 'Delete Database';
+
+  @override
+  String deleteDbMessage(String name) {
+    return 'Are you sure you want to delete database \"$name\"? This action cannot be undone.';
+  }
+
+  @override
+  String get dbCreated => 'Database created';
+
+  @override
+  String get dbDeleted => 'Database deleted';
+
+  @override
+  String dbSwitched(String name) {
+    return 'Switched to database: $name';
+  }
+
+  @override
+  String get allTags => 'All Tags';
+
+  @override
+  String get noTags => 'No tags available';
+
+  @override
+  String createTag(String tag) {
+    return 'Create \"$tag\"';
+  }
+
+  @override
+  String get tagName => 'Tag Name';
+
+  @override
+  String get tagColor => 'Tag Color';
+
+  @override
+  String get deleteTagMessage =>
+      'Delete this tag? It will be removed from all events.';
+
+  @override
+  String get importData => 'Import Data';
+
+  @override
+  String get exportData => 'Export Data';
+
+  @override
+  String get exportSuccess => 'Export successful';
+
+  @override
+  String get importSuccess => 'Import successful';
+
+  @override
+  String get importError => 'Import failed';
+
+  @override
+  String get sortNewest => 'Newest First';
+
+  @override
+  String get sortOldest => 'Oldest First';
+
+  @override
+  String get sortTitleAZ => 'Title (A-Z)';
+
+  @override
+  String get sortTitleZA => 'Title (Z-A)';
+
+  @override
+  String get sortProgressHigh => 'Progress (High-Low)';
+
+  @override
+  String get sortProgressLow => 'Progress (Low-High)';
+
+  @override
+  String get selected => 'Selected';
+
+  @override
+  String get deleteSelectedConfirmation => 'Delete Selected?';
+
+  @override
+  String deleteSelectedMessage(int count) {
+    return 'Delete $count items?';
+  }
+
+  @override
+  String get editEvent => 'Edit Event';
+
+  @override
+  String get newEvent => 'New Event';
+
+  @override
+  String get title => 'Title';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get imageUrl => 'Image URL';
+
+  @override
+  String get imageUrlPlaceholder => 'http://... or data:image...';
+
+  @override
+  String get pickImage => 'Pick Image';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get createEvent => 'Create Event';
+
+  @override
+  String get noTagsYet => 'No tags yet';
+
+  @override
+  String get deleteTagConfirmation => 'Delete Tag?';
+
+  @override
+  String deleteTagWarning(String tag) {
+    return 'This will remove \"$tag\" from all events.';
+  }
+
+  @override
+  String get eventNotFound => 'Event not found';
+
+  @override
+  String createdOn(String date) {
+    return 'Created on $date';
+  }
+
+  @override
+  String get steps => 'Steps';
+
+  @override
+  String get manageSteps => 'Manage Steps';
+
+  @override
+  String get noStepsYet => 'No steps yet.';
+
+  @override
+  String get addStep => 'Add Step';
+
+  @override
+  String get newStepPlaceholder => 'New step...';
+
+  @override
+  String get editSteps => 'Edit Steps';
+
+  @override
+  String get archive => 'Archive';
+
+  @override
+  String get sets => 'Sets';
+
+  @override
+  String get addNewStepPlaceholder => 'Add new step...';
+
+  @override
+  String get addToArchivePlaceholder => 'Add to archive...';
+
+  @override
+  String get addedToSteps => 'Added to steps';
+
+  @override
+  String get saveCurrentStepsAsSet => 'Save current steps as Template Set';
+
+  @override
+  String get addAllToSteps => 'Add All to Steps';
+
+  @override
+  String addedStepsCount(int count) {
+    return 'Added $count steps';
+  }
+
+  @override
+  String get dbNameHint => 'e.g., project-x, archive-2023';
+
+  @override
+  String get invalidDbName => 'Invalid name. Use letters, numbers, -, _';
+
+  @override
+  String get defaultDbName => 'Main Archive (Default)';
+
+  @override
+  String get currentlyActive => 'Currently Active';
+
+  @override
+  String get inactive => 'Inactive';
+
+  @override
+  String get switchDb => 'Switch';
+
+  @override
+  String switchedToDb(String name) {
+    return 'Switched to $name';
+  }
+
+  @override
+  String deleteDbTitle(String name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get deleteDbWarning =>
+      'This action cannot be undone. All data in this database will be lost.';
+
+  @override
+  String get saveTemplateSet => 'Save Template Set';
+
+  @override
+  String get templateName => 'Template Name';
+
+  @override
+  String get templateSetSaved => 'Template Set Saved';
 
   @override
   String get noEventsFound => 'No events found';
@@ -79,51 +328,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sort => 'Sort';
 
   @override
-  String get newestFirst => 'Newest First';
+  String get welcomeTitle => 'Welcome to Essenmelia';
 
   @override
-  String get oldestFirst => 'Oldest First';
+  String get welcomeMessage =>
+      'Manage your events, track steps, and organize your life with tags. Tap the + button to get started.';
 
   @override
-  String get titleAZ => 'Title (A-Z)';
+  String get tags => 'Tags';
 
   @override
-  String get titleZA => 'Title (Z-A)';
+  String get tagsPlaceholder => 'Type to search or create...';
 
   @override
-  String get progressHighLow => 'Progress (High-Low)';
-
-  @override
-  String get progressLowHigh => 'Progress (Low-High)';
-
-  @override
-  String get selected => 'Selected';
-
-  @override
-  String get deleteSelected => 'Delete Selected?';
-
-  @override
-  String deleteSelectedCount(int count) {
-    return 'Delete $count items?';
+  String failedToPickImage(String error) {
+    return 'Failed to pick image: $error';
   }
 
   @override
-  String get steps => 'steps';
+  String get titleRequired => 'Title is required';
 
   @override
-  String stepsCount(int completed, int total) {
-    return '$completed / $total steps';
+  String error(String error) {
+    return 'Error: $error';
   }
 
   @override
-  String get language => 'Language';
+  String get deleteAllDataTitle => 'Delete All Data?';
 
   @override
-  String get system => 'System';
+  String get deleteAllDataMessage => 'This cannot be undone.';
 
   @override
-  String get english => 'English';
+  String get deleteAllDataSuccess => 'All data deleted';
 
   @override
-  String get chinese => 'Chinese';
+  String importFailedDetailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String exportFailedDetailed(String error) {
+    return 'Export failed: $error';
+  }
 }

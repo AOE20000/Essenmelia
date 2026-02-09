@@ -9,52 +9,85 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => '埃森梅莉亚';
+  String get appTitle => 'Essenmelia';
 
   @override
-  String get settings => '设置';
+  String get searchPlaceholder => '搜索事件...';
 
   @override
-  String get darkMode => '深色模式';
-
-  @override
-  String get collapseImages => '折叠图片';
-
-  @override
-  String get itemsPerRow => '每行卡片数';
-
-  @override
-  String get databaseManager => '数据库管理';
-
-  @override
-  String get manageTags => '标签管理';
-
-  @override
-  String get exportData => '导出数据 (JSON)';
-
-  @override
-  String get importData => '导入数据 (JSON)';
-
-  @override
-  String get deleteAllData => '删除所有数据';
-
-  @override
-  String get deleteAllDataConfirmTitle => '确认删除所有数据？';
-
-  @override
-  String get deleteAllDataConfirmContent => '此操作无法撤销。所有数据将永久丢失。';
+  String get select => '选择';
 
   @override
   String get cancel => '取消';
 
   @override
+  String get newTag => '新建标签';
+
+  @override
+  String get tagNameHint => '例如：工作、个人';
+
+  @override
+  String get add => '添加';
+
+  @override
+  String get renameTag => '重命名标签';
+
+  @override
+  String get save => '保存';
+
+  @override
   String get delete => '删除';
+
+  @override
+  String get confirm => '确认';
+
+  @override
+  String get edit => '编辑';
 
   @override
   String get create => '创建';
 
   @override
-  String get switchDb => '切换';
+  String get settings => '设置';
+
+  @override
+  String get manageTags => '管理标签';
+
+  @override
+  String get databaseManager => '数据库管理';
+
+  @override
+  String get importExport => '导入 / 导出';
+
+  @override
+  String get appearance => '外观';
+
+  @override
+  String get darkMode => '深色模式';
+
+  @override
+  String get useSystemTheme => '跟随系统';
+
+  @override
+  String get language => '语言';
+
+  @override
+  String get systemLanguage => '系统默认';
+
+  @override
+  String get cardDensity => '卡片密度';
+
+  @override
+  String get compact => '紧凑';
+
+  @override
+  String get comfortable => '舒适';
+
+  @override
+  String get collapseImages => '折叠图片';
+
+  @override
+  String get activeDatabase => '当前数据库';
 
   @override
   String get availableDatabases => '可用数据库';
@@ -63,66 +96,276 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createNewDatabase => '创建新数据库';
 
   @override
-  String get databaseName => '数据库名称';
+  String get enterDatabaseName => '输入数据库名称';
 
   @override
-  String get invalidName => '无效名称。请使用字母、数字、- 或 _';
+  String get switchDbConfirmation => '切换数据库';
 
   @override
-  String get searchEvents => '搜索事件...';
+  String switchDbMessage(String name) {
+    return '确定要切换到数据库 \"$name\" 吗？';
+  }
 
   @override
-  String get noEventsFound => '未找到相关事件';
+  String get deleteDbConfirmation => '删除数据库';
 
   @override
-  String get sort => '排序';
+  String deleteDbMessage(String name) {
+    return '确定要删除数据库 \"$name\" 吗？此操作无法撤销。';
+  }
 
   @override
-  String get newestFirst => '最新创建';
+  String get dbCreated => '数据库已创建';
 
   @override
-  String get oldestFirst => '最早创建';
+  String get dbDeleted => '数据库已删除';
 
   @override
-  String get titleAZ => '标题 (A-Z)';
+  String dbSwitched(String name) {
+    return '已切换到数据库: $name';
+  }
 
   @override
-  String get titleZA => '标题 (Z-A)';
+  String get allTags => '所有标签';
 
   @override
-  String get progressHighLow => '进度 (高到低)';
+  String get noTags => '暂无标签';
 
   @override
-  String get progressLowHigh => '进度 (低到高)';
+  String createTag(String tag) {
+    return '创建 \"$tag\"';
+  }
 
   @override
-  String get selected => '已选中';
+  String get tagName => '标签名称';
 
   @override
-  String get deleteSelected => '删除选中项？';
+  String get tagColor => '标签颜色';
 
   @override
-  String deleteSelectedCount(int count) {
-    return '确认删除 $count 个项目？';
+  String get deleteTagMessage => '删除此标签？它将从所有事件中移除。';
+
+  @override
+  String get importData => '导入数据';
+
+  @override
+  String get exportData => '导出数据';
+
+  @override
+  String get exportSuccess => '导出成功';
+
+  @override
+  String get importSuccess => '导入成功';
+
+  @override
+  String get importError => '导入失败';
+
+  @override
+  String get sortNewest => '最新';
+
+  @override
+  String get sortOldest => '最旧';
+
+  @override
+  String get sortTitleAZ => '标题 (A-Z)';
+
+  @override
+  String get sortTitleZA => '标题 (Z-A)';
+
+  @override
+  String get sortProgressHigh => '进度 (高-低)';
+
+  @override
+  String get sortProgressLow => '进度 (低-高)';
+
+  @override
+  String get selected => '已选择';
+
+  @override
+  String get deleteSelectedConfirmation => '删除选中项？';
+
+  @override
+  String deleteSelectedMessage(int count) {
+    return '删除 $count 项？';
+  }
+
+  @override
+  String get editEvent => '编辑事件';
+
+  @override
+  String get newEvent => '新建事件';
+
+  @override
+  String get title => '标题';
+
+  @override
+  String get description => '描述';
+
+  @override
+  String get imageUrl => '图片 URL';
+
+  @override
+  String get imageUrlPlaceholder => 'http://... 或 data:image...';
+
+  @override
+  String get pickImage => '选择图片';
+
+  @override
+  String get saveChanges => '保存更改';
+
+  @override
+  String get createEvent => '创建事件';
+
+  @override
+  String get noTagsYet => '暂无标签';
+
+  @override
+  String get deleteTagConfirmation => '删除标签？';
+
+  @override
+  String deleteTagWarning(String tag) {
+    return '这将从所有事件中移除 \"$tag\"。';
+  }
+
+  @override
+  String get eventNotFound => '未找到事件';
+
+  @override
+  String createdOn(String date) {
+    return '创建于 $date';
   }
 
   @override
   String get steps => '步骤';
 
   @override
-  String stepsCount(int completed, int total) {
-    return '$completed / $total 步骤';
+  String get manageSteps => '管理步骤';
+
+  @override
+  String get noStepsYet => '暂无步骤。';
+
+  @override
+  String get addStep => '添加步骤';
+
+  @override
+  String get newStepPlaceholder => '新步骤...';
+
+  @override
+  String get editSteps => '编辑步骤';
+
+  @override
+  String get archive => '归档';
+
+  @override
+  String get sets => '集合';
+
+  @override
+  String get addNewStepPlaceholder => '添加新步骤...';
+
+  @override
+  String get addToArchivePlaceholder => '添加到归档...';
+
+  @override
+  String get addedToSteps => '已添加到步骤';
+
+  @override
+  String get saveCurrentStepsAsSet => '保存当前步骤为模板集';
+
+  @override
+  String get addAllToSteps => '全部添加到步骤';
+
+  @override
+  String addedStepsCount(int count) {
+    return '已添加 $count 个步骤';
   }
 
   @override
-  String get language => '语言';
+  String get dbNameHint => '例如：project-x, archive-2023';
 
   @override
-  String get system => '跟随系统';
+  String get invalidDbName => '无效名称。请使用字母、数字、-、_';
 
   @override
-  String get english => 'English';
+  String get defaultDbName => '主归档 (默认)';
 
   @override
-  String get chinese => '简体中文';
+  String get currentlyActive => '当前激活';
+
+  @override
+  String get inactive => '未激活';
+
+  @override
+  String get switchDb => '切换';
+
+  @override
+  String switchedToDb(String name) {
+    return '已切换到 $name';
+  }
+
+  @override
+  String deleteDbTitle(String name) {
+    return '删除 \"$name\"?';
+  }
+
+  @override
+  String get deleteDbWarning => '此操作无法撤销。该数据库中的所有数据都将丢失。';
+
+  @override
+  String get saveTemplateSet => '保存模板集';
+
+  @override
+  String get templateName => '模板名称';
+
+  @override
+  String get templateSetSaved => '模板集已保存';
+
+  @override
+  String get noEventsFound => '未找到事件';
+
+  @override
+  String get sort => '排序';
+
+  @override
+  String get welcomeTitle => '欢迎使用 Essenmelia';
+
+  @override
+  String get welcomeMessage => '管理事件、追踪步骤、使用标签整理生活。点击 + 按钮开始。';
+
+  @override
+  String get tags => '标签';
+
+  @override
+  String get tagsPlaceholder => '输入以搜索或创建...';
+
+  @override
+  String failedToPickImage(String error) {
+    return '选择图片失败: $error';
+  }
+
+  @override
+  String get titleRequired => '标题不能为空';
+
+  @override
+  String error(String error) {
+    return '错误: $error';
+  }
+
+  @override
+  String get deleteAllDataTitle => '删除所有数据？';
+
+  @override
+  String get deleteAllDataMessage => '此操作无法撤销。';
+
+  @override
+  String get deleteAllDataSuccess => '所有数据已删除';
+
+  @override
+  String importFailedDetailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String exportFailedDetailed(String error) {
+    return '导出失败：$error';
+  }
 }

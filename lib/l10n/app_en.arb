@@ -1,0 +1,212 @@
+{
+  "appTitle": "Essenmelia",
+  "searchPlaceholder": "Search events...",
+  "select": "Select",
+  "cancel": "Cancel",
+  "newTag": "New Tag",
+  "tagNameHint": "e.g., Work, Personal",
+  "add": "Add",
+  "renameTag": "Rename Tag",
+  "save": "Save",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "edit": "Edit",
+  "create": "Create",
+  "settings": "Settings",
+  "manageTags": "Manage Tags",
+  "databaseManager": "Database Manager",
+  "importExport": "Import / Export",
+  "appearance": "Appearance",
+  "darkMode": "Dark Mode",
+  "useSystemTheme": "Use System Theme",
+  "language": "Language",
+  "systemLanguage": "System",
+  "cardDensity": "Card Density",
+  "compact": "Compact",
+  "comfortable": "Comfortable",
+  "collapseImages": "Collapse Images",
+  "activeDatabase": "Active Database",
+  "availableDatabases": "Available Databases",
+  "createNewDatabase": "Create New Database",
+  "enterDatabaseName": "Enter database name",
+  "switchDbConfirmation": "Switch Database",
+  "switchDbMessage": "Are you sure you want to switch to database \"{name}\"?",
+  "@switchDbMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDbConfirmation": "Delete Database",
+  "deleteDbMessage": "Are you sure you want to delete database \"{name}\"? This action cannot be undone.",
+  "@deleteDbMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dbCreated": "Database created",
+  "dbDeleted": "Database deleted",
+  "dbSwitched": "Switched to database: {name}",
+  "@dbSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allTags": "All Tags",
+  "noTags": "No tags available",
+  "createTag": "Create Tag",
+  "tagName": "Tag Name",
+  "tagColor": "Tag Color",
+  "deleteTagMessage": "Delete this tag? It will be removed from all events.",
+  "importData": "Import Data",
+  "exportData": "Export Data",
+  "exportSuccess": "Export successful",
+  "importSuccess": "Import successful",
+  "importError": "Import failed",
+  "sortNewest": "Newest First",
+  "sortOldest": "Oldest First",
+  "sortTitleAZ": "Title (A-Z)",
+  "sortTitleZA": "Title (Z-A)",
+  "sortProgressHigh": "Progress (High-Low)",
+  "sortProgressLow": "Progress (Low-High)",
+  "selected": "Selected",
+  "deleteSelectedConfirmation": "Delete Selected?",
+  "deleteSelectedMessage": "Delete {count} items?",
+  "@deleteSelectedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editEvent": "Edit Event",
+  "newEvent": "New Event",
+  "title": "Title",
+  "description": "Description",
+  "imageUrl": "Image URL",
+  "imageUrlPlaceholder": "http://... or data:image...",
+  "pickImage": "Pick Image",
+  "saveChanges": "Save Changes",
+  "createEvent": "Create Event",
+  "noTagsYet": "No tags yet",
+  "deleteTagConfirmation": "Delete Tag?",
+  "deleteTagWarning": "This will remove \"{tag}\" from all events.",
+  "@deleteTagWarning": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "eventNotFound": "Event not found",
+  "createdOn": "Created on {date}",
+  "@createdOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "steps": "Steps",
+  "manageSteps": "Manage Steps",
+  "noStepsYet": "No steps yet.",
+  "addStep": "Add Step",
+  "newStepPlaceholder": "New step...",
+  "editSteps": "Edit Steps",
+  "archive": "Archive",
+  "sets": "Sets",
+  "addNewStepPlaceholder": "Add new step...",
+  "addToArchivePlaceholder": "Add to archive...",
+  "addedToSteps": "Added to steps",
+  "saveCurrentStepsAsSet": "Save current steps as Template Set",
+  "addAllToSteps": "Add All to Steps",
+  "addedStepsCount": "Added {count} steps",
+  "@addedStepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dbNameHint": "e.g., project-x, archive-2023",
+  "invalidDbName": "Invalid name. Use letters, numbers, -, _",
+  "defaultDbName": "Main Archive (Default)",
+  "currentlyActive": "Currently Active",
+  "inactive": "Inactive",
+  "switchDb": "Switch",
+  "switchedToDb": "Switched to {name}",
+  "@switchedToDb": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDbTitle": "Delete \"{name}\"?",
+  "@deleteDbTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDbWarning": "This action cannot be undone. All data in this database will be lost.",
+  "saveTemplateSet": "Save Template Set",
+  "templateName": "Template Name",
+  "templateSetSaved": "Template Set Saved",
+  "noEventsFound": "No events found",
+  "sort": "Sort",
+  "welcomeTitle": "Welcome to Essenmelia",
+  "welcomeMessage": "Manage your events, track steps, and organize your life with tags. Tap the + button to get started.",
+  "tags": "Tags",
+  "tagsPlaceholder": "Type to search or create...",
+  "createTag": "Create \"{tag}\"",
+  "@createTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPickImage": "Failed to pick image: {error}",
+  "@failedToPickImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "titleRequired": "Title is required",
+  "error": "Error: {error}",
+  "@error": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAllDataTitle": "Delete All Data?",
+  "deleteAllDataMessage": "This cannot be undone.",
+  "deleteAllDataSuccess": "All data deleted",
+  "importFailedDetailed": "Import failed: {error}",
+  "@importFailedDetailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailedDetailed": "Export failed: {error}",
+  "@exportFailedDetailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
+}

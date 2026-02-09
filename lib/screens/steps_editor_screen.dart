@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
@@ -47,13 +48,13 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Edit Steps'),
+        title: Text(AppLocalizations.of(context)!.editSteps),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Steps'),
-            Tab(text: 'Archive'),
-            Tab(text: 'Sets'),
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.steps),
+            Tab(text: AppLocalizations.of(context)!.archive),
+            Tab(text: AppLocalizations.of(context)!.sets),
           ],
         ),
       ),
@@ -112,7 +113,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         ),
         _buildInputArea(
           controller: _stepController,
-          hint: 'Add new step...',
+          hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
           onSubmitted: (val) {
             ref.read(eventsProvider.notifier).addStep(event.id, val);
           },
@@ -151,9 +152,11 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                 .read(eventsProvider.notifier)
                                 .addStep(widget.eventId, template.description);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Added to steps'),
-                                duration: Duration(milliseconds: 500),
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!.addedToSteps,
+                                ),
+                                duration: const Duration(milliseconds: 500),
                               ),
                             );
                           },
@@ -175,7 +178,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
           ),
           _buildInputArea(
             controller: _templateController,
-            hint: 'Add to archive...',
+            hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
             onSubmitted: (val) {
               ref.read(templatesControllerProvider).addTemplate(val);
             },
@@ -183,7 +186,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => Center(
+        child: Text(AppLocalizations.of(context)!.error(err.toString())),
+      ),
     );
   }
 
@@ -198,7 +203,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.save),
-                label: const Text('Save current steps as Template Set'),
+                label: Text(
+                  AppLocalizations.of(context)!.saveCurrentStepsAsSet,
+                ),
                 onPressed: () {
                   _showSaveSetDialog(event);
                 },
@@ -237,9 +244,11 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                   Icons.delete,
                                   color: Colors.redAccent,
                                 ),
-                                label: const Text(
-                                  'Delete',
-                                  style: TextStyle(color: Colors.redAccent),
+                                label: Text(
+                                  AppLocalizations.of(context)!.delete,
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
+                                  ),
                                 ),
                                 onPressed: () {
                                   ref
@@ -250,7 +259,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                               const SizedBox(width: 8),
                               ElevatedButton.icon(
                                 icon: const Icon(Icons.add),
-                                label: const Text('Add All to Steps'),
+                                label: Text(
+                                  AppLocalizations.of(context)!.addAllToSteps,
+                                ),
                                 onPressed: () {
                                   for (var s in set.steps) {
                                     ref
@@ -260,7 +271,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Added ${set.steps.length} steps',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.addedStepsCount(set.steps.length),
                                       ),
                                       duration: const Duration(
                                         milliseconds: 500,
@@ -283,7 +296,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => Center(
+        child: Text(AppLocalizations.of(context)!.error(err.toString())),
+      ),
     );
   }
 
@@ -337,16 +352,18 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Save Template Set'),
+        title: Text(AppLocalizations.of(context)!.saveTemplateSet),
         content: TextField(
           controller: nameController,
-          decoration: const InputDecoration(labelText: 'Template Name'),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.templateName,
+          ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -359,11 +376,15 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     );
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Template Set Saved')),
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)!.templateSetSaved,
+                    ),
+                  ),
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),

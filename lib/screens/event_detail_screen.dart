@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -24,7 +25,9 @@ class EventDetailScreen extends ConsumerWidget {
     );
 
     if (event == null) {
-      return const Scaffold(body: Center(child: Text('Event not found')));
+      return Scaffold(
+        body: Center(child: Text(AppLocalizations.of(context)!.eventNotFound)),
+      );
     }
 
     return Scaffold(
@@ -97,7 +100,7 @@ class EventDetailScreen extends ConsumerWidget {
                                       backgroundColor: Theme.of(context)
                                           .colorScheme
                                           .primaryContainer
-                                          .withOpacity(0.5),
+                                          .withValues(alpha: 0.5),
                                       labelStyle: Theme.of(
                                         context,
                                       ).textTheme.labelSmall,
@@ -111,7 +114,11 @@ class EventDetailScreen extends ConsumerWidget {
                         if (event.description != null) Text(event.description!),
                         const SizedBox(height: 8),
                         Text(
-                          'Created on ${DateFormat.yMMMd().format(event.createdAt)}',
+                          AppLocalizations.of(context)!.createdOn(
+                            DateFormat.yMMMd(
+                              Localizations.localeOf(context).toString(),
+                            ).format(event.createdAt),
+                          ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -122,12 +129,12 @@ class EventDetailScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Steps',
+                        AppLocalizations.of(context)!.steps,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit_note),
-                        tooltip: 'Manage Steps',
+                        tooltip: AppLocalizations.of(context)!.manageSteps,
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -162,10 +169,10 @@ class _StepsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (event.steps.isEmpty) {
-      return const GlassContainer(
+      return GlassContainer(
         child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('No steps yet.'),
+          padding: const EdgeInsets.all(16.0),
+          child: Text(AppLocalizations.of(context)!.noStepsYet),
         ),
       );
     }
@@ -230,8 +237,8 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
               child: TextField(
                 controller: _controller,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'New step...',
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.newStepPlaceholder,
                   border: InputBorder.none,
                 ),
                 onSubmitted: (_) => _submit(),
@@ -250,7 +257,7 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
     return ElevatedButton.icon(
       onPressed: () => setState(() => _isAdding = true),
       icon: const Icon(Icons.add),
-      label: const Text('Add Step'),
+      label: Text(AppLocalizations.of(context)!.addStep),
     );
   }
 }

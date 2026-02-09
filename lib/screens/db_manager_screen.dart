@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/db_provider.dart';
 import '../widgets/glass_container.dart';
 
@@ -8,7 +8,8 @@ class DatabaseManagerScreen extends ConsumerStatefulWidget {
   const DatabaseManagerScreen({super.key});
 
   @override
-  ConsumerState<DatabaseManagerScreen> createState() => _DatabaseManagerScreenState();
+  ConsumerState<DatabaseManagerScreen> createState() =>
+      _DatabaseManagerScreenState();
 }
 
 class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
@@ -24,18 +25,18 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create New Database'),
+        title: Text(AppLocalizations.of(context)!.createNewDatabase),
         content: TextField(
           controller: _nameController,
-          decoration: const InputDecoration(
-            labelText: 'Database Name',
-            hintText: 'e.g., project-x, archive-2023',
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.enterDatabaseName,
+            hintText: AppLocalizations.of(context)!.dbNameHint,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -44,17 +45,21 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 // Basic validation: alphanumeric and hyphens only
                 if (!RegExp(r'^[a-zA-Z0-9-_]+$').hasMatch(name)) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invalid name. Use letters, numbers, -, _')),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.invalidDbName,
+                      ),
+                    ),
                   );
                   return;
                 }
-                
+
                 ref.read(dbControllerProvider.notifier).createDb(name);
                 _nameController.clear();
                 Navigator.pop(context);
               }
             },
-            child: const Text('Create'),
+            child: Text(AppLocalizations.of(context)!.create),
           ),
         ],
       ),
@@ -67,7 +72,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Database Manager'),
+        title: Text(AppLocalizations.of(context)!.databaseManager),
         backgroundColor: Colors.transparent,
       ),
       body: dbStateAsync.when(
@@ -75,9 +80,12 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const Text(
-                'Available Databases',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.availableDatabases,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               ...state.availableDbs.map((dbName) {
@@ -87,60 +95,105 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                   child: GlassContainer(
                     child: ListTile(
                       title: Text(
-                        dbName == kDefaultDbName ? 'Main Archive (Default)' : dbName,
+                        dbName == kDefaultDbName
+                            ? AppLocalizations.of(context)!.defaultDbName
+                            : dbName,
                         style: TextStyle(
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                          color: isActive ? Theme.of(context).colorScheme.primary : null,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isActive
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
                         ),
                       ),
-                      subtitle: Text(isActive ? 'Currently Active' : 'Inactive'),
+                      subtitle: Text(
+                        isActive
+                            ? AppLocalizations.of(context)!.currentlyActive
+                            : AppLocalizations.of(context)!.inactive,
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (!isActive)
                             TextButton(
                               onPressed: () {
-                                ref.read(dbControllerProvider.notifier).switchDb(dbName);
+                                ref
+                                    .read(dbControllerProvider.notifier)
+                                    .switchDb(dbName);
                                 // We might need to reload or pop to ensure everything refreshes correctly
                                 // But Riverpod should handle reactive updates to providers
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Switched to $dbName')),
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.switchedToDb(dbName),
+                                    ),
+                                  ),
                                 );
                               },
-                              child: const Text('Switch'),
+                              child: Text(
+                                AppLocalizations.of(context)!.switchDb,
+                              ),
                             ),
                           if (dbName != kDefaultDbName)
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                              ),
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (context) => AlertDialog(
-                                    title: Text('Delete "$dbName"?'),
-                                    content: const Text('This action cannot be undone. All data in this database will be lost.'),
+                                    title: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.deleteDbTitle(dbName),
+                                    ),
+                                    content: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.deleteDbWarning,
+                                    ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.pop(context, false),
-                                        child: const Text('Cancel'),
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: Text(
+                                          AppLocalizations.of(context)!.cancel,
+                                        ),
                                       ),
                                       TextButton(
-                                        onPressed: () => Navigator.pop(context, true),
-                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: Text(
+                                          AppLocalizations.of(context)!.delete,
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
                                 );
 
                                 if (confirm == true) {
-                                  ref.read(dbControllerProvider.notifier).deleteDb(dbName);
+                                  ref
+                                      .read(dbControllerProvider.notifier)
+                                      .deleteDb(dbName);
                                 }
                               },
                             ),
                         ],
                       ),
-                      leading: isActive 
-                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
-                        : const Icon(Icons.circle_outlined),
+                      leading: isActive
+                          ? Icon(
+                              Icons.check_circle,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : const Icon(Icons.circle_outlined),
                     ),
                   ),
                 );
@@ -149,7 +202,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
               ElevatedButton.icon(
                 onPressed: _showCreateDialog,
                 icon: const Icon(Icons.add),
-                label: const Text('Create New Database'),
+                label: Text(AppLocalizations.of(context)!.createNewDatabase),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -158,7 +211,9 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => Center(
+          child: Text(AppLocalizations.of(context)!.error(err.toString())),
+        ),
       ),
     );
   }
