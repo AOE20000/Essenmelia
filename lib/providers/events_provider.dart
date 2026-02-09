@@ -5,16 +5,20 @@ import 'db_provider.dart';
 
 class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   final Ref ref;
+  final String activePrefix;
   Box<Event>? _box;
 
-  EventsNotifier(this.ref) : super(const AsyncValue.loading()) {
+  EventsNotifier(this.ref, this.activePrefix)
+    : super(const AsyncValue.loading()) {
     _init();
   }
 
   Future<void> _init() async {
     try {
+      // Wait for database initialization
       await ref.read(dbProvider.future);
-      final activePrefix = ref.read(activePrefixProvider);
+      
+      // The prefix is already provided and boxes are opened by dbProvider
       _box = Hive.box<Event>('${activePrefix}_events');
 
       // Initial load
@@ -98,7 +102,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
 final eventsProvider =
     StateNotifierProvider<EventsNotifier, AsyncValue<List<Event>>>((ref) {
-      return EventsNotifier(ref);
+      final prefix = ref.watch(activePrefixProvider);
+      return EventsNotifier(ref, prefix);
     });
 
 // Templates Providers

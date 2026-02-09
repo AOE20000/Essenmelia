@@ -84,6 +84,21 @@
   "saveCurrentStepsAsSet": "保存当前步骤为模板集",
   "addAllToSteps": "全部添加到步骤",
   "addedStepsCount": "已添加 {count} 个步骤",
+  "@addedStepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepsCount": "{count} 个步骤",
+  "@stepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dbNameHint": "例如：project-x, archive-2023",
   "invalidDbName": "无效名称。请使用字母、数字、-、_",
   "defaultDbName": "主归档 (默认)",

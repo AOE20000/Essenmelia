@@ -3,11 +3,17 @@ import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
+import '../providers/ui_state_provider.dart';
 
 class StepsEditorScreen extends ConsumerStatefulWidget {
   final String eventId;
+  final bool isSidePanel;
 
-  const StepsEditorScreen({super.key, required this.eventId});
+  const StepsEditorScreen({
+    super.key,
+    required this.eventId,
+    this.isSidePanel = false,
+  });
 
   @override
   ConsumerState<StepsEditorScreen> createState() => _StepsEditorScreenState();
@@ -19,10 +25,22 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
   final TextEditingController _stepController = TextEditingController();
   final TextEditingController _templateController = TextEditingController();
 
+  // 多选状态
+  final Set<int> _selectedStepIndices = {};
+  final Set<String> _selectedArchiveIds = {};
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          _selectedStepIndices.clear();
+          _selectedArchiveIds.clear();
+        });
+      }
+    });
   }
 
   @override
@@ -43,9 +61,57 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
     if (event == null) return const SizedBox.shrink();
 
+    final isSelectionMode =
+        _selectedStepIndices.isNotEmpty || _selectedArchiveIds.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.editSteps),
+        leading: widget.isSidePanel
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () =>
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.none,
+              )
+            : null,
+        title: isSelectionMode
+            ? Text(
+                _tabController.index == 0
+                    ? "已选 ${_selectedStepIndices.length} 项"
+                    : "已选 ${_selectedArchiveIds.length} 项",
+              )
+            : Text(AppLocalizations.of(context)!.editSteps),
+        actions: [
+          if (isSelectionMode) ...[
+            if (_tabController.index == 0)
+              IconButton(
+                tooltip: "批量归档",
+                icon: const Icon(Icons.archive_outlined),
+                onPressed: () => _handleBatchArchive(event),
+              ),
+            if (_tabController.index == 1) ...[
+              IconButton(
+                tooltip: "批量添加",
+                icon: const Icon(Icons.add_task),
+                onPressed: () => _handleBatchAddToSteps(),
+              ),
+              IconButton(
+                tooltip: "保存为集合",
+                icon: const Icon(Icons.layers_outlined),
+                onPressed: () => _handleBatchSaveAsSet(),
+              ),
+            ],
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                setState(() {
+                  _selectedStepIndices.clear();
+                  _selectedArchiveIds.clear();
+                });
+              },
+            ),
+          ],
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -66,12 +132,172 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     );
   }
 
+  void _handleBatchArchive(Event event) {
+    final selectedDescriptions = _selectedStepIndices
+        .map((i) => event.steps[i].description)
+        .toList();
+
+    for (final desc in selectedDescriptions) {
+      ref.read(templatesControllerProvider).addTemplate(desc);
+    }
+
+    final newSteps = List<EventStep>.from(event.steps);
+    final sortedIndices = _selectedStepIndices.toList()
+      ..sort((a, b) => b.compareTo(a));
+    for (final i in sortedIndices) {
+      newSteps.removeAt(i);
+    }
+
+    ref.read(eventsProvider.notifier).updateSteps(event.id, newSteps);
+    setState(() => _selectedStepIndices.clear());
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("已将 ${selectedDescriptions.length} 项移动到归档")),
+    );
+  }
+
+  void _handleBatchAddToSteps() {
+    final templates = ref.read(templatesProvider).asData?.value ?? [];
+    final selectedTemplates = templates
+        .where((t) => _selectedArchiveIds.contains(t.id))
+        .toList();
+
+    for (final t in selectedTemplates) {
+      ref.read(eventsProvider.notifier).addStep(widget.eventId, t.description);
+    }
+
+    setState(() => _selectedArchiveIds.clear());
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("已添加 ${selectedTemplates.length} 个步骤")),
+    );
+  }
+
+  void _handleBatchSaveAsSet() {
+    final templates = ref.read(templatesProvider).asData?.value ?? [];
+    final selectedTemplates = templates
+        .where((t) => _selectedArchiveIds.contains(t.id))
+        .toList();
+
+    if (selectedTemplates.isEmpty) return;
+
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("保存为集合"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: "集合名称",
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                ref
+                    .read(setTemplatesControllerProvider)
+                    .addSetTemplate(
+                      controller.text.trim(),
+                      selectedTemplates.map((t) => t.description).toList(),
+                    );
+                setState(() => _selectedArchiveIds.clear());
+                Navigator.pop(context);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text("集合已保存")));
+              }
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditStepDialog(Event event, int index, EventStep step) {
+    final controller = TextEditingController(text: step.description);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.edit),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.description,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          maxLines: null,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                final newSteps = List<EventStep>.from(event.steps);
+                newSteps[index] = step.copyWith(
+                  description: controller.text.trim(),
+                );
+                ref
+                    .read(eventsProvider.notifier)
+                    .updateSteps(event.id, newSteps);
+                Navigator.pop(context);
+              }
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCurrentStepsTab(Event event) {
+    if (event.steps.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.checklist_rtl_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context)!.noStepsYet,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildInputArea(
+              controller: _stepController,
+              hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
+              onSubmitted: (val) {
+                ref.read(eventsProvider.notifier).addStep(event.id, val);
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Expanded(
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            buildDefaultDragHandles: true,
             itemCount: event.steps.length,
             onReorder: (oldIndex, newIndex) {
               if (oldIndex < newIndex) {
@@ -83,24 +309,89 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
               ref.read(eventsProvider.notifier).updateSteps(event.id, newSteps);
             },
+            proxyDecorator: (child, index, animation) {
+              return Material(
+                elevation: 4,
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: child,
+              );
+            },
             itemBuilder: (context, index) {
               final step = event.steps[index];
-              return Card(
+              final isSelected = _selectedStepIndices.contains(index);
+
+              return Container(
                 key: ValueKey(
-                  '${step.description}_$index',
-                ), // Better key strategy needed in real app
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(step.description),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () {
-                      final newSteps = List<EventStep>.from(event.steps);
-                      newSteps.removeAt(index);
-                      ref
-                          .read(eventsProvider.notifier)
-                          .updateSteps(event.id, newSteps);
-                    },
+                  'step_${step.timestamp.millisecondsSinceEpoch}_$index',
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: Card(
+                  elevation: 0,
+                  color: isSelected
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withOpacity(0.3)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outlineVariant,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.only(left: 8, right: 8),
+                    leading: Checkbox(
+                      value: isSelected,
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedStepIndices.add(index);
+                          } else {
+                            _selectedStepIndices.remove(index);
+                          }
+                        });
+                      },
+                    ),
+                    title: Text(
+                      step.description,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.7),
+                          ),
+                          onPressed: () =>
+                              _showEditStepDialog(event, index, step),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.error.withOpacity(0.7),
+                          ),
+                          onPressed: () {
+                            final newSteps = List<EventStep>.from(event.steps);
+                            newSteps.removeAt(index);
+                            ref
+                                .read(eventsProvider.notifier)
+                                .updateSteps(event.id, newSteps);
+                          },
+                        ),
+                        const SizedBox(width: 29), // 为默认拖动按钮预留空间
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -122,64 +413,161 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     final templatesAsync = ref.watch(templatesProvider);
 
     return templatesAsync.when(
-      data: (templates) => Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: templates.length,
-              itemBuilder: (context, index) {
-                final template = templates[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(template.description),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.add,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          onPressed: () {
-                            ref
-                                .read(eventsProvider.notifier)
-                                .addStep(widget.eventId, template.description);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  AppLocalizations.of(context)!.addedToSteps,
-                                ),
-                                duration: const Duration(milliseconds: 500),
-                              ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 20),
-                          onPressed: () {
-                            ref
-                                .read(templatesControllerProvider)
-                                .deleteTemplate(template.id);
-                          },
-                        ),
-                      ],
-                    ),
+      data: (templates) {
+        if (templates.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.archive_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "暂无存档步骤",
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
                   ),
-                );
+                ),
+                const SizedBox(height: 32),
+                _buildInputArea(
+                  controller: _templateController,
+                  hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
+                  onSubmitted: (val) {
+                    ref.read(templatesControllerProvider).addTemplate(val);
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                itemCount: templates.length,
+                itemBuilder: (context, index) {
+                  final template = templates[index];
+                  final isSelected = _selectedArchiveIds.contains(template.id);
+
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: Card(
+                      elevation: 0,
+                      color: isSelected
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer.withOpacity(0.3)
+                          : null,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outlineVariant,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.only(
+                          left: 8,
+                          right: 8,
+                        ),
+                        leading: Checkbox(
+                          value: isSelected,
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                _selectedArchiveIds.add(template.id);
+                              } else {
+                                _selectedArchiveIds.remove(template.id);
+                              }
+                            });
+                          },
+                        ),
+                        title: Text(
+                          template.description,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 18,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(eventsProvider.notifier)
+                                    .addStep(
+                                      widget.eventId,
+                                      template.description,
+                                    );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.addedToSteps,
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(milliseconds: 500),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.error.withOpacity(0.7),
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(templatesControllerProvider)
+                                    .deleteTemplate(template.id);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            _buildInputArea(
+              controller: _templateController,
+              hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
+              onSubmitted: (val) {
+                ref.read(templatesControllerProvider).addTemplate(val);
               },
             ),
-          ),
-          _buildInputArea(
-            controller: _templateController,
-            hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
-            onSubmitted: (val) {
-              ref.read(templatesControllerProvider).addTemplate(val);
-            },
-          ),
-        ],
-      ),
+          ],
+        );
+      },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(AppLocalizations.of(context)!.error(err.toString())),
@@ -191,109 +579,234 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     final setsAsync = ref.watch(stepSetTemplatesProvider);
 
     return setsAsync.when(
-      data: (sets) => Column(
-        children: [
-          if (event.steps.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: FilledButton.icon(
-                icon: const Icon(Icons.save),
-                label: Text(
-                  AppLocalizations.of(context)!.saveCurrentStepsAsSet,
+      data: (sets) {
+        if (sets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.layers_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
                 ),
-                onPressed: () {
-                  _showSaveSetDialog(event);
-                },
-              ),
+                const SizedBox(height: 16),
+                Text(
+                  "暂无步骤集",
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (event.steps.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      "你可以将当前步骤保存为集合，方便以后快速复用",
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 32),
+                if (event.steps.isNotEmpty)
+                  FilledButton.icon(
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text(
+                      AppLocalizations.of(context)!.saveCurrentStepsAsSet,
+                    ),
+                    onPressed: () => _showSaveSetDialog(event),
+                  ),
+              ],
             ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: sets.length,
-              itemBuilder: (context, index) {
-                final set = sets[index];
-                return ExpansionTile(
-                  title: Text(set.name),
-                  subtitle: Text('${set.steps.length} steps'),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ...set.steps.map(
-                            (s) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Text(
-                                '• ${s.description}',
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
+          );
+        }
+
+        return Column(
+          children: [
+            if (event.steps.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: const Icon(Icons.save_outlined),
+                  label: Text(
+                    AppLocalizations.of(context)!.saveCurrentStepsAsSet,
+                  ),
+                  onPressed: () {
+                    _showSaveSetDialog(event);
+                  },
+                ),
+              ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                itemCount: sets.length,
+                itemBuilder: (context, index) {
+                  final set = sets[index];
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      collapsedBackgroundColor: Colors.transparent,
+                      shape: const RoundedRectangleBorder(
+                        side: BorderSide.none,
+                      ),
+                      collapsedShape: const RoundedRectangleBorder(
+                        side: BorderSide.none,
+                      ),
+                      title: Text(
+                        set.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.stepsCount(set.steps.length),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.secondaryContainer,
+                        child: Text(
+                          set.name.isNotEmpty ? set.name.characters.first : "?",
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSecondaryContainer,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              TextButton.icon(
-                                icon: Icon(
-                                  Icons.delete,
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                                label: Text(
-                                  AppLocalizations.of(context)!.delete,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
+                              const Divider(),
+                              ...set.steps.map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "• ",
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          s.description,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                onPressed: () {
-                                  ref
-                                      .read(setTemplatesControllerProvider)
-                                      .deleteSetTemplate(set.id);
-                                },
                               ),
-                              const SizedBox(width: 8),
-                              FilledButton.icon(
-                                icon: const Icon(Icons.add),
-                                label: Text(
-                                  AppLocalizations.of(context)!.addAllToSteps,
-                                ),
-                                onPressed: () {
-                                  for (var s in set.steps) {
-                                    ref
-                                        .read(eventsProvider.notifier)
-                                        .addStep(widget.eventId, s.description);
-                                  }
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  IconButton.filledTonal(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                                    onPressed: () {
+                                      ref
+                                          .read(setTemplatesControllerProvider)
+                                          .deleteSetTemplate(set.id);
+                                    },
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      icon: const Icon(Icons.add),
+                                      label: Text(
                                         AppLocalizations.of(
                                           context,
-                                        )!.addedStepsCount(set.steps.length),
+                                        )!.addAllToSteps,
                                       ),
-                                      duration: const Duration(
-                                        milliseconds: 500,
-                                      ),
+                                      onPressed: () {
+                                        for (var s in set.steps) {
+                                          ref
+                                              .read(eventsProvider.notifier)
+                                              .addStep(
+                                                widget.eventId,
+                                                s.description,
+                                              );
+                                        }
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.addedStepsCount(
+                                                set.steps.length,
+                                              ),
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                            duration: const Duration(
+                                              milliseconds: 500,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(AppLocalizations.of(context)!.error(err.toString())),
@@ -313,40 +826,81 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
         top: 8,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: hint,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              onSubmitted: (val) {
-                if (val.trim().isNotEmpty) {
-                  onSubmitted(val.trim());
-                  controller.clear();
-                }
-              },
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            color: Theme.of(context).colorScheme.primary,
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                onSubmitted(controller.text.trim());
-                controller.clear();
-              }
-            },
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.7),
+                      fontSize: 15,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (val) {
+                    if (val.trim().isNotEmpty) {
+                      onSubmitted(val.trim());
+                      controller.clear();
+                    }
+                  },
+                ),
+              ),
+              AnimatedBuilder(
+                animation: controller,
+                builder: (context, child) {
+                  final isEmpty = controller.text.trim().isEmpty;
+                  return IconButton.filled(
+                    onPressed: isEmpty
+                        ? null
+                        : () {
+                            onSubmitted(controller.text.trim());
+                            controller.clear();
+                          },
+                    icon: const Icon(Icons.add, size: 24),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      disabledBackgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withOpacity(0.3),
+                      disabledForegroundColor: Theme.of(
+                        context,
+                      ).colorScheme.outline,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

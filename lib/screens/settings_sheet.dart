@@ -17,8 +17,11 @@ import '../services/file_service.dart';
 import 'db_manager_screen.dart';
 import 'manage_tags_screen.dart';
 
+import '../providers/ui_state_provider.dart';
+
 class SettingsSheet extends ConsumerWidget {
-  const SettingsSheet({super.key});
+  final bool isSidePanel;
+  const SettingsSheet({super.key, this.isSidePanel = false});
 
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     try {
@@ -219,6 +222,147 @@ class SettingsSheet extends ConsumerWidget {
     final isDarkMode = ref.watch(themeProvider);
     final displaySettings = ref.watch(displaySettingsProvider);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+    final maxDensity = isSmallScreen ? 2 : 5;
+
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(AppLocalizations.of(context)!.language),
+            trailing: DropdownButton<Locale?>(
+              value: ref.watch(localeProvider),
+              underline: const SizedBox(),
+              items: [
+                DropdownMenuItem(
+                  value: null,
+                  child: Text(AppLocalizations.of(context)!.systemLanguage),
+                ),
+                const DropdownMenuItem(
+                  value: Locale('en'),
+                  child: Text('English'),
+                ),
+                const DropdownMenuItem(value: Locale('zh'), child: Text('中文')),
+              ],
+              onChanged: (locale) {
+                ref.read(localeProvider.notifier).setLocale(locale);
+              },
+            ),
+          ),
+          SwitchListTile(
+            title: Text(AppLocalizations.of(context)!.darkMode),
+            secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+            value: isDarkMode,
+            onChanged: (value) {
+              ref.read(themeProvider.notifier).toggleTheme();
+            },
+          ),
+          SwitchListTile(
+            title: Text(AppLocalizations.of(context)!.collapseImages),
+            secondary: const Icon(Icons.image_not_supported_outlined),
+            value: displaySettings.collapseImages,
+            onChanged: (value) {
+              ref.read(displaySettingsProvider.notifier).toggleCollapseImages();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.grid_view),
+            title: Text(AppLocalizations.of(context)!.cardDensity),
+            trailing: DropdownButton<int>(
+              value: displaySettings.itemsPerRow.clamp(1, maxDensity),
+              underline: const SizedBox(),
+              items: List.generate(maxDensity, (i) => i + 1)
+                  .map((i) => DropdownMenuItem(value: i, child: Text('$i')))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  ref
+                      .read(displaySettingsProvider.notifier)
+                      .setItemsPerRow(val);
+                }
+              },
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.storage),
+            title: Text(AppLocalizations.of(context)!.databaseManager),
+            onTap: () {
+              final screenWidth = MediaQuery.of(context).size.width;
+              if (screenWidth >= 1024) {
+                ref.read(leftPanelContentProvider.notifier).state =
+                    LeftPanelContent.dbManager;
+              } else {
+                if (!isSidePanel) Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DatabaseManagerScreen(),
+                  ),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.label_outline),
+            title: Text(AppLocalizations.of(context)!.manageTags),
+            onTap: () {
+              if (!isSidePanel) Navigator.pop(context); // Close sheet
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ManageTagsScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: Text(AppLocalizations.of(context)!.exportData),
+            onTap: () => _exportData(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.upload),
+            title: Text(AppLocalizations.of(context)!.importData),
+            onTap: () => _importData(context, ref),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.redAccent),
+            title: Text(
+              AppLocalizations.of(context)!.delete,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+            onTap: () => _deleteAllData(context, ref),
+          ),
+        ],
+      ),
+    );
+
+    if (isSidePanel || screenWidth < 1024) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context)!.settings),
+          centerTitle: isSidePanel ? false : null,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          leading: isSidePanel
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  onPressed: () =>
+                      ref.read(leftPanelContentProvider.notifier).state =
+                          LeftPanelContent.none,
+                )
+              : null,
+        ),
+        body: body,
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -230,129 +374,7 @@ class SettingsSheet extends ConsumerWidget {
         right: 16,
         top: 16,
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.settings,
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.language),
-              title: Text(AppLocalizations.of(context)!.language),
-              trailing: DropdownButton<Locale?>(
-                value: ref.watch(localeProvider),
-                underline: const SizedBox(),
-                items: [
-                  DropdownMenuItem(
-                    value: null,
-                    child: Text(AppLocalizations.of(context)!.systemLanguage),
-                  ),
-                  const DropdownMenuItem(
-                    value: Locale('en'),
-                    child: Text('English'),
-                  ),
-                  const DropdownMenuItem(
-                    value: Locale('zh'),
-                    child: Text('中文'),
-                  ),
-                ],
-                onChanged: (locale) {
-                  ref.read(localeProvider.notifier).setLocale(locale);
-                },
-              ),
-            ),
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context)!.darkMode),
-              secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
-              value: isDarkMode,
-              onChanged: (value) {
-                ref.read(themeProvider.notifier).toggleTheme();
-              },
-            ),
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context)!.collapseImages),
-              secondary: const Icon(Icons.image_not_supported_outlined),
-              value: displaySettings.collapseImages,
-              onChanged: (value) {
-                ref
-                    .read(displaySettingsProvider.notifier)
-                    .toggleCollapseImages();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.grid_view),
-              title: Text(AppLocalizations.of(context)!.cardDensity),
-              trailing: DropdownButton<int>(
-                value: displaySettings.itemsPerRow,
-                underline: const SizedBox(),
-                items: [1, 2, 3, 4, 5]
-                    .map((i) => DropdownMenuItem(value: i, child: Text('$i')))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    ref
-                        .read(displaySettingsProvider.notifier)
-                        .setItemsPerRow(val);
-                  }
-                },
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.storage),
-              title: Text(AppLocalizations.of(context)!.databaseManager),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DatabaseManagerScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.label_outline),
-              title: Text(AppLocalizations.of(context)!.manageTags),
-              onTap: () {
-                Navigator.pop(context); // Close sheet
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ManageTagsScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.download),
-              title: Text(AppLocalizations.of(context)!.exportData),
-              onTap: () => _exportData(context, ref),
-            ),
-            ListTile(
-              leading: const Icon(Icons.upload),
-              title: Text(AppLocalizations.of(context)!.importData),
-              onTap: () => _importData(context, ref),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_forever,
-                color: Colors.redAccent,
-              ),
-              title: Text(
-                AppLocalizations.of(context)!.delete,
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-              onTap: () => _deleteAllData(context, ref),
-            ),
-          ],
-        ),
-      ),
+      child: body,
     );
   }
 }

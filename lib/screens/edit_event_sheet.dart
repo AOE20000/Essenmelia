@@ -7,9 +7,12 @@ import '../models/event.dart';
 import '../providers/events_provider.dart';
 import '../widgets/tag_input.dart';
 
+import '../providers/ui_state_provider.dart';
+
 class EditEventSheet extends ConsumerStatefulWidget {
   final Event? event;
-  const EditEventSheet({super.key, this.event});
+  final bool isSidePanel;
+  const EditEventSheet({super.key, this.event, this.isSidePanel = false});
 
   @override
   ConsumerState<EditEventSheet> createState() => _EditEventSheetState();
@@ -75,7 +78,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           );
     }
 
-    if (mounted) Navigator.of(context).pop();
+    if (mounted) {
+      if (widget.isSidePanel) {
+        ref.read(leftPanelContentProvider.notifier).state =
+            LeftPanelContent.none;
+      } else {
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -114,95 +124,115 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _titleController,
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.title,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _descController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.description,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _imageUrlController,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.imageUrl,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.photo_library),
+                onPressed: _pickImage,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TagInput(
+            initialTags: _selectedTags,
+            onChanged: (tags) => setState(() => _selectedTags = tags),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _save,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              widget.event == null
+                  ? AppLocalizations.of(context)!.createEvent
+                  : AppLocalizations.of(context)!.saveChanges,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.isSidePanel || screenWidth < 1024) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.event == null
+                ? AppLocalizations.of(context)!.newEvent
+                : AppLocalizations.of(context)!.editEvent,
+          ),
+          centerTitle: widget.isSidePanel ? false : null,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          leading: widget.isSidePanel
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  onPressed: () =>
+                      ref.read(leftPanelContentProvider.notifier).state =
+                          LeftPanelContent.none,
+                )
+              : null,
+          actions: [
+            TextButton(
+              onPressed: _save,
+              child: Text(AppLocalizations.of(context)!.save),
+            ),
+          ],
+        ),
+        body: body,
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        left: 16,
-        right: 16,
-        top: 16,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.event != null
-                  ? AppLocalizations.of(context)!.editEvent
-                  : AppLocalizations.of(context)!.newEvent,
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.title,
-                filled: true,
-                border: const OutlineInputBorder(),
-              ),
-              autofocus: widget.event == null,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _descController,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.description,
-                filled: true,
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _imageUrlController,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.imageUrl,
-                      hintText: AppLocalizations.of(
-                        context,
-                      )!.imageUrlPlaceholder,
-                      filled: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.add_photo_alternate),
-                  tooltip: AppLocalizations.of(context)!.pickImage,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TagInput(
-              initialTags: _selectedTags,
-              onChanged: (tags) {
-                setState(() {
-                  _selectedTags = tags;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _save,
-              child: Text(
-                widget.event != null
-                    ? AppLocalizations.of(context)!.saveChanges
-                    : AppLocalizations.of(context)!.createEvent,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: body,
     );
   }
 }

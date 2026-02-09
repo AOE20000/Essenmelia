@@ -608,6 +608,12 @@ abstract class AppLocalizations {
   /// **'Added {count} steps'**
   String addedStepsCount(int count);
 
+  /// No description provided for @stepsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} steps'**
+  String stepsCount(int count);
+
   /// No description provided for @dbNameHint.
   ///
   /// In en, this message translates to:

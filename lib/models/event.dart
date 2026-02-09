@@ -41,6 +41,18 @@ class EventStep extends HiveObject {
 
   @HiveField(2)
   bool completed = false;
+
+  EventStep copyWith({
+    String? description,
+    DateTime? timestamp,
+    bool? completed,
+  }) {
+    final step = EventStep();
+    step.description = description ?? this.description;
+    step.timestamp = timestamp ?? this.timestamp;
+    step.completed = completed ?? this.completed;
+    return step;
+  }
 }
 
 @HiveType(typeId: 2)

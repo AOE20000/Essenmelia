@@ -20,23 +20,34 @@ class FilterChips extends ConsumerWidget {
       data: (tags) {
         if (tags.isEmpty) return const SizedBox.shrink();
 
-        return SizedBox(
-          height: 40,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+        return Container(
+          height: 44, // Slightly reduced to keep it compact but enough for M3 chips
+          alignment: Alignment.centerLeft,
+          child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            itemCount: tags.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final tag = tags[index];
-              final isSelected = selectedFilters.contains(tag);
-              return FilterChip(
-                label: Text(tag),
-                selected: isSelected,
-                onSelected: (val) => onSelected(tag, val),
-                showCheckmark: true,
-              );
-            },
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: tags.map((tag) {
+                final isSelected = selectedFilters.contains(tag);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(
+                      tag,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    selected: isSelected,
+                    onSelected: (val) => onSelected(tag, val),
+                    showCheckmark: true,
+                    // Remove manual paddings to let Material 3 defaults handle centering
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.standard,
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         );
       },

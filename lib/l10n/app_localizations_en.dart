@@ -281,6 +281,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String stepsCount(int count) {
+    return '$count steps';
+  }
+
+  @override
   String get dbNameHint => 'e.g., project-x, archive-2023';
 
   @override

@@ -280,6 +280,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String stepsCount(int count) {
+    return '$count 个步骤';
+  }
+
+  @override
   String get dbNameHint => '例如：project-x, archive-2023';
 
   @override

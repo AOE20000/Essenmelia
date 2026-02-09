@@ -133,6 +133,14 @@
       }
     }
   },
+  "stepsCount": "{count} steps",
+  "@stepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dbNameHint": "e.g., project-x, archive-2023",
   "invalidDbName": "Invalid name. Use letters, numbers, -, _",
   "defaultDbName": "Main Archive (Default)",

@@ -31,3 +31,17 @@ class UiStateNotifier extends StateNotifier<bool> {
 final showWelcomeProvider = StateNotifierProvider<UiStateNotifier, bool>((ref) {
   return UiStateNotifier(ref);
 });
+
+final selectedEventIdProvider = StateProvider<String?>((ref) => null);
+
+enum LeftPanelContent {
+  none,
+  settings,
+  stepsEditor,
+  addEvent,
+  editEvent,
+  dbManager,
+}
+
+final leftPanelContentProvider = StateProvider<LeftPanelContent>((ref) => LeftPanelContent.none);
+final leftPanelEventIdProvider = StateProvider<String?>((ref) => null);
