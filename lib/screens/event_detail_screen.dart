@@ -387,7 +387,9 @@ class _StepsList extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Material(
             color: step.completed
-                ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3)
+                ? Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3)
                 : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
@@ -652,7 +654,9 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),

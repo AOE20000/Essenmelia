@@ -1,0 +1,139 @@
+name: Flutter Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.8'
+          channel: 'stable'
+          cache: true
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Run Build Runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Analyze
+        run: flutter analyze
+      - name: Run Tests
+        run: flutter test
+
+  build-android:
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.8'
+          channel: 'stable'
+          cache: true
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Run Build Runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Build APK
+        run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-web:
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.8'
+          channel: 'stable'
+          cache: true
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Run Build Runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Build Web
+        run: flutter build web --release
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-release-build
+          path: build/web
+
+  build-windows:
+    needs: analyze-and-test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.8'
+          channel: 'stable'
+          cache: true
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Run Build Runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Build Windows
+        run: flutter build windows --release
+      - name: Upload Windows Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-build
+          path: build/windows/runner/Release
+
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-android, build-web, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-apk
+      - name: Download Web Build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-release-build
+          path: web-build
+      - name: Download Windows Build
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-build
+          path: windows-build
+      - name: Zip Web Build
+        run: zip -r web-release.zip web-build
+      - name: Zip Windows Build
+        run: zip -r windows-release.zip windows-build
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app-release.apk
+            web-release.zip
+            windows-release.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

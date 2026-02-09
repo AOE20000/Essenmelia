@@ -225,7 +225,9 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                             ? Theme.of(
                                 context,
                               ).colorScheme.primary.withOpacity(0.1)
-                            : Theme.of(context).colorScheme.surfaceVariant,
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
