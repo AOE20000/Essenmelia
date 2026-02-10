@@ -28,6 +28,11 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
       }
       final metaBox = Hive.box(kMetaBoxName);
 
+      // Also ensure settings box is open as many providers depend on it
+      if (!Hive.isBoxOpen('settings')) {
+        await Hive.openBox('settings');
+      }
+
       // Load active DB
       String activeDb = metaBox.get(kActiveDbKey, defaultValue: kDefaultDbName);
 
@@ -134,17 +139,15 @@ final activePrefixProvider = Provider<String>((ref) {
 
 // Re-export legacy provider for compatibility (now waits for controller)
 final dbProvider = FutureProvider<void>((ref) async {
-  // Use .notifier to get the controller, but we actually just want to wait for the state to be loaded.
-  // We can watch the provider itself.
   final asyncState = ref.watch(dbControllerProvider);
 
   if (asyncState.isLoading) {
-    // If it's loading, we implicitly wait because this provider will re-evaluate when state changes
-    // But FutureProvider expects a Future.
-    // We await a Completer that never completes.
-    // When asyncState changes, this provider will be re-built and this execution cancelled.
-    await Completer<void>().future;
+    // Wait for the stream to emit a non-loading state
+    await ref
+        .watch(dbControllerProvider.notifier)
+        .stream
+        .firstWhere((s) => !s.isLoading);
+  } else if (asyncState.hasError) {
+    throw asyncState.error!;
   }
-
-  if (asyncState.hasError) throw asyncState.error!;
 });

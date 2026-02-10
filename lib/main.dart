@@ -22,15 +22,6 @@ void main() async {
   Hive.registerAdapter(StepSetTemplateAdapter());
   Hive.registerAdapter(StepSetTemplateStepAdapter());
 
-  // Initialization handled by DbProvider/DbController
-  // We only open settings and meta box here if needed, or let provider handle it.
-  // Actually, DbController handles DB boxes. SettingsProvider handles settings.
-  // We should just let providers initialize lazily or kick them off.
-
-  // Note: We used to open boxes here. Now we delegate to providers.
-  // However, for the very first run, we might want to ensure 'main' boxes exist or migration.
-  // But DbController._init() handles this logic.
-
   runApp(const ProviderScope(child: MyApp()));
 }
 

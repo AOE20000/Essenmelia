@@ -55,7 +55,9 @@ flutter_launcher_icons:
   image_path: "assets/images/Essenmelia.png"
   adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: "assets/images/Essenmelia.png"
-  monochrome_android: "assets/images/launcher_icon.svg"
+  # Use the same PNG for monochrome to let the tool generate the resource structure
+  # Then we will manually replace it with the correct Vector Drawable XML
+  monochrome_android: "assets/images/Essenmelia.png"
   min_sdk_android: 21
 
 flutter:

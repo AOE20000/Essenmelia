@@ -21,11 +21,9 @@ class FilterChips extends ConsumerWidget {
         if (tags.isEmpty) return const SizedBox.shrink();
 
         return Container(
-          height: 44, // Slightly reduced to keep it compact but enough for M3 chips
           alignment: Alignment.centerLeft,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,

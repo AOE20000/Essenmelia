@@ -180,6 +180,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortProgressLow => 'Progress (Low-High)';
 
   @override
+  String get statusAll => 'All';
+
+  @override
+  String get statusNotStarted => 'Not Started';
+
+  @override
+  String get statusInProgress => 'In Progress';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
   String get selected => 'Selected';
 
   @override
@@ -219,6 +231,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTagsYet => 'No tags yet';
+
+  @override
+  String tagsSelected(int count) {
+    return '$count tags selected';
+  }
+
+  @override
+  String get clearAllTags => 'Clear Selection';
 
   @override
   String get deleteTagConfirmation => 'Delete Tag?';
@@ -376,4 +396,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String exportFailedDetailed(String error) {
     return 'Export failed: $error';
   }
+
+  @override
+  String get navEvents => 'Events';
+
+  @override
+  String get navExtensions => 'Extensions';
 }

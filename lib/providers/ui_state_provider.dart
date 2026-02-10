@@ -6,14 +6,15 @@ class UiStateNotifier extends StateNotifier<bool> {
   final Ref ref;
   Box? _box;
 
-  UiStateNotifier(this.ref) : super(false) { // Start false until loaded to avoid flash
+  UiStateNotifier(this.ref) : super(false) {
+    // Start false until loaded to avoid flash
     _init();
   }
 
   Future<void> _init() async {
     await ref.read(dbProvider.future);
     _box = Hive.box('settings');
-    
+
     if (_box!.containsKey('hasSeenWelcome')) {
       state = !(_box!.get('hasSeenWelcome') as bool);
     } else {
@@ -34,6 +35,14 @@ final showWelcomeProvider = StateNotifierProvider<UiStateNotifier, bool>((ref) {
 
 final selectedEventIdProvider = StateProvider<String?>((ref) => null);
 
+enum HomeTab {
+  events,
+  extensions,
+  settings,
+}
+
+final homeTabProvider = StateProvider<HomeTab>((ref) => HomeTab.events);
+
 enum LeftPanelContent {
   none,
   settings,
@@ -43,5 +52,38 @@ enum LeftPanelContent {
   dbManager,
 }
 
-final leftPanelContentProvider = StateProvider<LeftPanelContent>((ref) => LeftPanelContent.none);
+final leftPanelContentProvider = StateProvider<LeftPanelContent>(
+  (ref) => LeftPanelContent.none,
+);
 final leftPanelEventIdProvider = StateProvider<String?>((ref) => null);
+
+// Keyboard persistence
+final keyboardTotalHeightProvider =
+    StateNotifierProvider<KeyboardHeightNotifier, double>((ref) {
+      return KeyboardHeightNotifier(ref);
+    });
+
+class KeyboardHeightNotifier extends StateNotifier<double> {
+  static const String _key = 'keyboardTotalHeight';
+  final Ref ref;
+
+  KeyboardHeightNotifier(this.ref) : super(336.0) {
+    // Default value for iOS, approx 286.0 for Android
+    _init();
+  }
+
+  Future<void> _init() async {
+    await ref.read(dbProvider.future);
+    final box = Hive.box('settings');
+    if (box.containsKey(_key)) {
+      state = box.get(_key) as double;
+    }
+  }
+
+  Future<void> updateHeight(double height) async {
+    if (height <= 0 || height == state) return;
+    state = height;
+    final box = Hive.box('settings');
+    await box.put(_key, height);
+  }
+}

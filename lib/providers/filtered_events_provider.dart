@@ -11,26 +11,32 @@ enum SortOrder {
   progressAsc,
 }
 
+enum EventStatusFilter { all, notStarted, inProgress, completed }
+
 class SearchState {
   final String query;
   final List<String> selectedTags;
   final SortOrder sortOrder;
+  final EventStatusFilter statusFilter;
 
   const SearchState({
     this.query = '',
     this.selectedTags = const [],
     this.sortOrder = SortOrder.createdAtDesc,
+    this.statusFilter = EventStatusFilter.all,
   });
 
   SearchState copyWith({
     String? query,
     List<String>? selectedTags,
     SortOrder? sortOrder,
+    EventStatusFilter? statusFilter,
   }) {
     return SearchState(
       query: query ?? this.query,
       selectedTags: selectedTags ?? this.selectedTags,
       sortOrder: sortOrder ?? this.sortOrder,
+      statusFilter: statusFilter ?? this.statusFilter,
     );
   }
 }
@@ -52,12 +58,22 @@ class SearchNotifier extends StateNotifier<SearchState> {
     state = state.copyWith(selectedTags: tags);
   }
 
+  void clearTags() {
+    state = state.copyWith(selectedTags: []);
+  }
+
   void setSortOrder(SortOrder order) {
     state = state.copyWith(sortOrder: order);
   }
+
+  void setStatusFilter(EventStatusFilter filter) {
+    state = state.copyWith(statusFilter: filter);
+  }
 }
 
-final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((ref) {
+final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
+  ref,
+) {
   return SearchNotifier();
 });
 
@@ -71,6 +87,24 @@ final filteredEventsProvider = Provider<List<Event>>((ref) {
 
   // 1. Filter
   var filtered = events.where((e) {
+    // Status Filter
+    if (searchState.statusFilter != EventStatusFilter.all) {
+      final progress = _calculateProgress(e);
+      switch (searchState.statusFilter) {
+        case EventStatusFilter.notStarted:
+          if (progress > 0) return false;
+          break;
+        case EventStatusFilter.inProgress:
+          if (progress <= 0 || progress >= 1.0) return false;
+          break;
+        case EventStatusFilter.completed:
+          if (progress < 1.0) return false;
+          break;
+        case EventStatusFilter.all:
+          break;
+      }
+    }
+
     // Tag Filter
     if (searchState.selectedTags.isNotEmpty) {
       if (e.tags == null) return false;

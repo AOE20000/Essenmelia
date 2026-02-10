@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'db_provider.dart';
 
 class LocaleNotifier extends StateNotifier<Locale?> {
   final Ref ref;
@@ -11,6 +12,7 @@ class LocaleNotifier extends StateNotifier<Locale?> {
   }
 
   Future<void> _init() async {
+    await ref.read(dbProvider.future);
     if (!Hive.isBoxOpen('settings')) {
       await Hive.openBox('settings');
     }

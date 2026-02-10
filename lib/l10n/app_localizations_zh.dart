@@ -179,6 +179,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sortProgressLow => '进度 (低-高)';
 
   @override
+  String get statusAll => '全部';
+
+  @override
+  String get statusNotStarted => '未开始';
+
+  @override
+  String get statusInProgress => '进行中';
+
+  @override
+  String get statusCompleted => '已完成';
+
+  @override
   String get selected => '已选择';
 
   @override
@@ -218,6 +230,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noTagsYet => '暂无标签';
+
+  @override
+  String tagsSelected(int count) {
+    return '已选择 $count 个标签';
+  }
+
+  @override
+  String get clearAllTags => '清空选中';
 
   @override
   String get deleteTagConfirmation => '删除标签？';
@@ -373,4 +393,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String exportFailedDetailed(String error) {
     return '导出失败：$error';
   }
+
+  @override
+  String get navEvents => '事件';
+
+  @override
+  String get navExtensions => '拓展';
 }

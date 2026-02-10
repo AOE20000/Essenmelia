@@ -53,6 +53,10 @@
   "sortTitleZA": "标题 (Z-A)",
   "sortProgressHigh": "进度 (高-低)",
   "sortProgressLow": "进度 (低-高)",
+  "statusAll": "全部",
+  "statusNotStarted": "未开始",
+  "statusInProgress": "进行中",
+  "statusCompleted": "已完成",
   "selected": "已选择",
   "deleteSelectedConfirmation": "删除选中项？",
   "deleteSelectedMessage": "删除 {count} 项？",
@@ -66,6 +70,15 @@
   "saveChanges": "保存更改",
   "createEvent": "创建事件",
   "noTagsYet": "暂无标签",
+  "tagsSelected": "已选择 {count} 个标签",
+  "@tagsSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearAllTags": "清空选中",
   "deleteTagConfirmation": "删除标签？",
   "deleteTagWarning": "这将从所有事件中移除 \"{tag}\"。",
   "eventNotFound": "未找到事件",
@@ -125,5 +138,7 @@
   "deleteAllDataMessage": "此操作无法撤销。",
   "deleteAllDataSuccess": "所有数据已删除",
   "importFailedDetailed": "导入失败：{error}",
-  "exportFailedDetailed": "导出失败：{error}"
+  "exportFailedDetailed": "导出失败：{error}",
+  "navEvents": "事件",
+  "navExtensions": "拓展"
 }

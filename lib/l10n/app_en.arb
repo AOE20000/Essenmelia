@@ -74,6 +74,10 @@
   "sortTitleZA": "Title (Z-A)",
   "sortProgressHigh": "Progress (High-Low)",
   "sortProgressLow": "Progress (Low-High)",
+  "statusAll": "All",
+  "statusNotStarted": "Not Started",
+  "statusInProgress": "In Progress",
+  "statusCompleted": "Completed",
   "selected": "Selected",
   "deleteSelectedConfirmation": "Delete Selected?",
   "deleteSelectedMessage": "Delete {count} items?",
@@ -94,6 +98,15 @@
   "saveChanges": "Save Changes",
   "createEvent": "Create Event",
   "noTagsYet": "No tags yet",
+  "tagsSelected": "{count} tags selected",
+  "@tagsSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearAllTags": "Clear Selection",
   "deleteTagConfirmation": "Delete Tag?",
   "deleteTagWarning": "This will remove \"{tag}\" from all events.",
   "@deleteTagWarning": {
@@ -216,5 +229,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "navEvents": "Events",
+  "navExtensions": "Extensions"
 }

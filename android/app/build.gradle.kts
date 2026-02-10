@@ -30,6 +30,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.essenmelia_flutter"
+        // Flutter 3.38.9 (Preview) 要求 minSdk 至少为 23 (Android 6.0)
         minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = 1
@@ -46,6 +47,14 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    // 强制 Flutter 产物输出到标准目录
+    applicationVariants.all {
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "app-${buildType.name}.apk"
         }
     }
 }

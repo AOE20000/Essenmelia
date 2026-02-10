@@ -261,19 +261,28 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     );
 
     if (widget.isSidePanel) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.databaseManager),
-          centerTitle: false,
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-            onPressed: () => ref.read(leftPanelContentProvider.notifier).state =
-                LeftPanelContent.none,
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  onPressed: () =>
+                      ref.read(leftPanelContentProvider.notifier).state =
+                          LeftPanelContent.none,
+                ),
+                Text(
+                  AppLocalizations.of(context)!.databaseManager,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
           ),
-        ),
-        body: body,
+          const Divider(height: 1),
+          Expanded(child: body),
+        ],
       );
     }
 

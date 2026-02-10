@@ -27,15 +27,3 @@ plugins {
 }
 
 include(":app")
-
-// 尝试解决 Windows 中文路径下的插件编译问题
-// 强制让 Gradle 知道 pub 缓存的正确编码路径
-gradle.beforeProject {
-    if (project.plugins.hasPlugin("kotlin-android")) {
-        project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-            kotlinOptions {
-                freeCompilerArgs += listOf("-Xuse-old-backend") // 尝试旧版后端以提高路径兼容性
-            }
-        }
-    }
-}

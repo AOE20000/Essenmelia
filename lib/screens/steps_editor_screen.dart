@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
 import '../providers/ui_state_provider.dart';
+import '../widgets/keyboard_animation_handler.dart';
 
 class StepsEditorScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -24,6 +25,8 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
   late TabController _tabController;
   final TextEditingController _stepController = TextEditingController();
   final TextEditingController _templateController = TextEditingController();
+  final FocusNode _stepFocusNode = FocusNode();
+  final FocusNode _templateFocusNode = FocusNode();
 
   // 多选状态
   final Set<int> _selectedStepIndices = {};
@@ -48,6 +51,8 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     _tabController.dispose();
     _stepController.dispose();
     _templateController.dispose();
+    _stepFocusNode.dispose();
+    _templateFocusNode.dispose();
     super.dispose();
   }
 
@@ -65,6 +70,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         _selectedStepIndices.isNotEmpty || _selectedArchiveIds.isNotEmpty;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: widget.isSidePanel
             ? IconButton(
@@ -121,13 +127,30 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildCurrentStepsTab(event),
-          _buildArchiveTab(),
-          _buildSetsTab(event),
-        ],
+      body: KeyboardAnimationBuilder(
+        keyboardTotalHeight: ref.watch(keyboardTotalHeightProvider),
+        interpolateLastPart: true,
+        focusNode: _tabController.index == 0
+            ? _stepFocusNode
+            : _templateFocusNode,
+        onChange: (height) {
+          ref.read(keyboardTotalHeightProvider.notifier).updateHeight(height);
+        },
+        builder: (context, keyboardHeight) {
+          return RepaintBoundary(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: keyboardHeight),
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildCurrentStepsTab(event),
+                  _buildArchiveTab(),
+                  _buildSetsTab(event),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -263,31 +286,35 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
   Widget _buildCurrentStepsTab(Event event) {
     if (event.steps.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.checklist_rtl_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              AppLocalizations.of(context)!.noStepsYet,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
+      return SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 64),
+              Icon(
+                Icons.checklist_rtl_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
               ),
-            ),
-            const SizedBox(height: 32),
-            _buildInputArea(
-              controller: _stepController,
-              hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
-              onSubmitted: (val) {
-                ref.read(eventsProvider.notifier).addStep(event.id, val);
-              },
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context)!.noStepsYet,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildInputArea(
+                controller: _stepController,
+                focusNode: _stepFocusNode,
+                hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
+                onSubmitted: (val) {
+                  ref.read(eventsProvider.notifier).addStep(event.id, val);
+                },
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -400,6 +427,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         ),
         _buildInputArea(
           controller: _stepController,
+          focusNode: _stepFocusNode,
           hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
           onSubmitted: (val) {
             ref.read(eventsProvider.notifier).addStep(event.id, val);
@@ -415,31 +443,37 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     return templatesAsync.when(
       data: (templates) {
         if (templates.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.archive_outlined,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "暂无存档步骤",
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
+          return SingleChildScrollView(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 64),
+                  Icon(
+                    Icons.archive_outlined,
+                    size: 64,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.5),
                   ),
-                ),
-                const SizedBox(height: 32),
-                _buildInputArea(
-                  controller: _templateController,
-                  hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
-                  onSubmitted: (val) {
-                    ref.read(templatesControllerProvider).addTemplate(val);
-                  },
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    "暂无存档步骤",
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  _buildInputArea(
+                    controller: _templateController,
+                    focusNode: _templateFocusNode,
+                    hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
+                    onSubmitted: (val) {
+                      ref.read(templatesControllerProvider).addTemplate(val);
+                    },
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -560,6 +594,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
             ),
             _buildInputArea(
               controller: _templateController,
+              focusNode: _templateFocusNode,
               hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
               onSubmitted: (val) {
                 ref.read(templatesControllerProvider).addTemplate(val);
@@ -581,44 +616,50 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     return setsAsync.when(
       data: (sets) {
         if (sets.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.layers_outlined,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "暂无步骤集",
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
+          return SingleChildScrollView(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 64),
+                  Icon(
+                    Icons.layers_outlined,
+                    size: 64,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.5),
                   ),
-                ),
-                const SizedBox(height: 16),
-                if (event.steps.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      "你可以将当前步骤保存为集合，方便以后快速复用",
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
+                  const SizedBox(height: 16),
+                  Text(
+                    "暂无步骤集",
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (event.steps.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        "你可以将当前步骤保存为集合，方便以后快速复用",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                     ),
-                  ),
-                const SizedBox(height: 32),
-                if (event.steps.isNotEmpty)
-                  FilledButton.icon(
-                    icon: const Icon(Icons.save_outlined),
-                    label: Text(
-                      AppLocalizations.of(context)!.saveCurrentStepsAsSet,
+                  const SizedBox(height: 32),
+                  if (event.steps.isNotEmpty)
+                    FilledButton.icon(
+                      icon: const Icon(Icons.save_outlined),
+                      label: Text(
+                        AppLocalizations.of(context)!.saveCurrentStepsAsSet,
+                      ),
+                      onPressed: () => _showSaveSetDialog(event),
                     ),
-                    onPressed: () => _showSaveSetDialog(event),
-                  ),
-              ],
+                  const SizedBox(height: 64),
+                ],
+              ),
             ),
           );
         }
@@ -816,16 +857,12 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
   Widget _buildInputArea({
     required TextEditingController controller,
+    required FocusNode focusNode,
     required String hint,
     required Function(String) onSubmitted,
   }) {
     return Container(
-      margin: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-        top: 8,
-      ),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
@@ -850,6 +887,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
               Expanded(
                 child: TextField(
                   controller: controller,
+                  focusNode: focusNode,
                   style: Theme.of(context).textTheme.bodyLarge,
                   decoration: InputDecoration(
                     hintText: hint,

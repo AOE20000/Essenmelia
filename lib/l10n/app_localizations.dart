@@ -422,6 +422,30 @@ abstract class AppLocalizations {
   /// **'Progress (Low-High)'**
   String get sortProgressLow;
 
+  /// No description provided for @statusAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get statusAll;
+
+  /// No description provided for @statusNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Started'**
+  String get statusNotStarted;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
   /// No description provided for @selected.
   ///
   /// In en, this message translates to:
@@ -499,6 +523,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No tags yet'**
   String get noTagsYet;
+
+  /// No description provided for @tagsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tags selected'**
+  String tagsSelected(int count);
+
+  /// No description provided for @clearAllTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Selection'**
+  String get clearAllTags;
 
   /// No description provided for @deleteTagConfirmation.
   ///
@@ -769,6 +805,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export failed: {error}'**
   String exportFailedDetailed(String error);
+
+  /// No description provided for @navEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get navEvents;
+
+  /// No description provided for @navExtensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions'**
+  String get navExtensions;
 }
 
 class _AppLocalizationsDelegate

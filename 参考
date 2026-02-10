@@ -1,0 +1,495 @@
+[Flutter] The Keyboard Animation Hack We’ve Been Waiting For.
+Ioseph Magno
+Ioseph Magno
+
+Follow
+10 min read
+·
+Nov 7, 2025
+116
+
+
+3
+
+
+
+This article demonstrates a hack that tackles one of the most frustrating issues in Flutter: the infamous stutter and unsynchronized keyboard animation. If you love Flutter, this is a moment to celebrate! 🎉
+
+The hack is still a work in progress. However, I’ve been receiving many messages asking me to share the code, so I’ve decided to at least start sharing some of it.
+
+
+Keyboard Animation Hack
+Follow the evolution of the hack at https://x.com/iosemagno, and stay tuned — I’ll eventually open-source the native text field we use in Presence Messenger. Presence is one of the most premium apps built with Flutter: we use native-looking text, native text field, and tons of deep optimizations to deliver a user experience on par with WhatsApp and other top apps.
+
+App Store: https://apps.apple.com/app/presence-messenger/id6504456930
+
+Google Play: https://play.google.com/store/apps/details?id=is.presence.app
+
+The goal is to give back to the community and see many premium Flutter apps taking the app stores by storm. 🚀
+
+The history of the hack
+Believe it or not, Flutter has been struggling with stuttered, unsmooth keyboard animations since its very first release. Over the years, many issues were opened on this topic, yet they remained unresolved and were marked as P2 — probably out of frustration.
+
+But users don’t care how an issue is classified on GitHub: a janky, unsynchronized UI during keyboard animation is an instant red flag— especially in chat apps, social media apps, AI apps, or any app where users frequently interact with text fields.
+
+Reactions vary. iOS users tend to trash the app or consider it a cheap product. Android users are more forgiving, but they won’t take your app seriously.
+
+That — along with a few other long-standing critical issues (wrong text rendering, non-native text input, poor platform views performance, occasional janks and flickering)— is exactly why many otherwise excellent Flutter apps don’t feel “native” or “premium”.
+
+The anatomy of the hack
+Integrating the hack would take you a few minutes:
+
+Add a Padding at the bottom, wrapping your moving part (eg, ChatBar). By dynamically adjusting the bottom padding, the UI will move up and down in sync with the keyboard.
+Wrap the Padding into KeyboardAnimationBuilder widget:
+- It monitors the system keyboard height via WidgetsBindingObserver and provides it to a builder.
+- It adopts several performance and warmup improvements to enhance smoothness.
+- It updates the bottom padding in real time, keeping the UI smoothly in sync with the keyboard animation.
+Wrap KeyboardAnimationBuilder inside a KeyboardProvider, which forces a rebuild whenever the keyboard’s total height changes. This is necessary to handle switching between the text keyboard and the emoji keyboard. Note: This could also be handled directly by KeyboardAnimationBuilder, which would simplify the widget tree, but in our case we needed the keyboard total height available in an external provider.
++-----------------------------------------------------+
+|                     Your UI                         |
+|                                                     |
+|  ┌───────────────────────────────────────────────┐  |
+|  |                                               |  |
+|  |                Main Content                   |  |
+|  |                                               |  |
+|  └───────────────────────────────────────────────┘  |
+|                                                     |
+| Selector<KeyboardProvider>                          |     
+|  KeyboardAnimationBuilder                           |
+|  ┌──────────────────────────────────────────────┐   |
+|  |                                              |   |
+|  |  Padding (bottom)                            |   |
+|  |  ┌─────────────────────────────────────────┐ |   |
+|  |  |                                         | |   |
+|  |  |  UI moving element (e.g., ChatBar)      | |   |
+|  |  |                                         | |   |
+|  |  └─────────────────────────────────────────┘ |   |
+|  └──────────────────────────────────────────────┘   |
++-----------------------------------------------------+
+         ^
+         |
+         |  Monitors system keyboard height
+         |  Provides real-time values to builder
+         |
+    Keyboard opens/closes
+The KeyboardAnimationBuilder:
+This is the core widget of the hack. It listens to viewInsets.bottom and provides it to a builder.
+
+Get Ioseph Magno’s stories in your inbox
+Join Medium for free to get updates from this writer.
+
+Enter your email
+Subscribe
+A few configuration flags are available:
+
+interpolateLastPart : if true, the final segment of the animation is interpolated for smoother motion. Be sure to conduct your tests with both true and false values.
+InterpolationConfig : Choose between fidelity or safe. Each option affects animation smoothness and potential jank differently.
+warmUpFrame : Experimental. Potentially helps prevent stutter on the first frame (?).
+warmupFocusState : Experimental. Pre-warms the internal focus state without attaching an input field (?).
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+
+enum InterpolationConfig {
+  fidelity, // Higher sync with keyboard system animation
+  safe,  // More conservative, less precise (similar to X and FB)
+}
+
+/// Tracks the system keyboard height and provides it to a builder.
+///
+/// The `builder` receives the current keyboard height (in logical pixels)
+/// and rebuilds whenever the keyboard moves, keeping its widget smoothly
+/// in sync with the keyboard animation.
+///
+/// Optionally, `onChange` can be used for side effects.
+///
+/// When a `FocusNode` is provided, this widget also integrates a
+/// `KeyboardPerformanceHandler` that automatically adjusts Dart
+/// performance mode:
+/// - Prioritizes frame latency (`DartPerformanceMode.latency`) while
+///   the keyboard is animating or the text field is focused, improving
+///   smoothness during typing and keyboard transitions.
+/// - Latency mode is triggered **only once per state transition**:
+///   when the keyboard opens or the text field gains focus,
+///   and reverted when the keyboard closes or focus is lost.
+/// - Reverts to balanced mode (`DartPerformanceMode.balanced`) when
+///   the keyboard is closed and the text field loses focus.
+///
+/// Wrap heavy subtrees in `RepaintBoundary` for performance.
+/// Note: keyboard animation smoothness must be observed in release mode.
+///
+/// Additionally, the optional `warmUpFrame` parameter can schedule a
+/// warm-up frame, which runs as soon as possible to pre-render layouts
+/// and shaders before keyboard animations start. Useful to prevent the first
+/// frame from stuttering due to expensive layout calculations.
+///
+/// When `interpolateLastPart` is enabled, the final segment of the keyboard
+/// animation is interpolated smoothly.
+/// This is required on iOS when using a Native TextField (PlatformView),
+/// because Flutter cannot reproduce the small wiggles at the end of the
+/// keyboard animation when PlatformViews are present.
+/// Enabling this prevents micro-bumps by producing a smooth final transition.
+class KeyboardAnimationBuilder extends StatefulWidget {
+  final Widget Function(BuildContext context, double keyboardHeight) builder;
+  final void Function(double keyboardHeight)? onChange;
+  final FocusNode? focusNode;
+  final double keyboardTotalHeight;
+  final bool interpolateLastPart;
+  final bool warmUpFrame; // optional: warm-up first frame
+  final InterpolationConfig interpolationConfig;
+
+  const KeyboardAnimationBuilder({
+    super.key,
+    required this.builder,
+    this.onChange,
+    this.focusNode,
+    required this.keyboardTotalHeight,
+    required this.interpolateLastPart,
+    this.interpolationConfig = InterpolationConfig.fidelity,
+    this.warmUpFrame = true, // Experimental: whether to pre-render a frame to potentially improve initial performance
+  });
+
+  @override
+  State<KeyboardAnimationBuilder> createState() =>
+      _KeyboardAnimationBuilderState();
+}
+
+class _KeyboardAnimationBuilderState extends State<KeyboardAnimationBuilder>
+    with WidgetsBindingObserver {
+
+  final ValueNotifier<double> _keyboardHeightNotifier = ValueNotifier<double>(0.0);
+
+  // Hidden focus node for off-screen warm-up
+  final FocusNode _hiddenFocusNode = FocusNode();
+
+  late Curve _animationCurve;
+  late double interpolationStart;
+
+  // Initialize performance handler if a focusNode is provided
+  late final _performanceHandler = widget.focusNode != null
+      ? KeyboardPerformanceHandler(focusNode: widget.focusNode!)
+      : null;
+
+
+  @override
+  void initState() {
+    super.initState();
+    // Observe metrics changes to detect keyboard height changes
+    WidgetsBinding.instance.addObserver(this);
+
+    // Set the configuration used to interpolate the last part of the animation.
+    _configureInterpolation();
+
+    // Optional: schedule a warm-up frame to pre-render layouts
+    if (widget.warmUpFrame) {
+      SchedulerBinding.instance.scheduleWarmUpFrame();
+    }
+  }
+
+  /// Sets the interpolation start and animation curve based on the current configuration.
+  /// - InterpolationConfig.fidelity:
+  ///   - Interpolates only the very last part of the animation
+  ///   - Ensures the best fidelity with keyboard animation
+  ///   - Introduces occasionally micro-bumps due to Flutter engine
+  ///
+  /// - InterpolationConfig.safe:
+  ///   - Interpolate the last 20-30% portion of the animation
+  ///   - Less fidelity with the system keyboard animation (similar to X or FB)
+  ///   - Minor micro-bumps may still occur, but they are rare
+  void _configureInterpolation() {
+    switch (widget.interpolationConfig) {
+      case InterpolationConfig.safe:
+        interpolationStart = 0.6; // 60% of total height // or 70%
+        _animationCurve = Cubic(0.5, 0.80, 0.9, 1);
+        break;
+
+      case InterpolationConfig.fidelity:
+        interpolationStart = 0.7; // 70% linear interpolation
+        _animationCurve = Curves.linear;
+        break;
+
+      default:
+        interpolationStart = 0; // Fallback to a total interpolation
+        _animationCurve = Cubic(0.46, 0.60, 0.9, 1);
+    }
+  }
+
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _performanceHandler?.dispose();
+    _hiddenFocusNode.dispose();
+    _keyboardHeightNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Future<void> didChangeMetrics() async {
+    final view = View.of(context);
+    final newHeightRaw = view.viewInsets.bottom / view.devicePixelRatio;
+
+    bool isFocused = widget.focusNode?.hasFocus ?? true; // default true if no focusNode
+
+    // Round to nearest 0.5px to avoid sub-pixel bumps caused by rendering
+    // tiny floating-point fluctuations (sub-0.5px) that are inconsistent across frames.
+    // Note: From logs, keyboard height changes like this:
+    // 334.084998 → 334.325097 → 334.535569 → 334.719998 → 334.881534 → 335.022973
+    // When we round, the values become 334.0 → 334.5 → 335.0
+    double newHeight;
+
+    if (isFocused) {
+      // Keyboard opening → round UP
+      newHeight = (newHeightRaw * 2).ceil() / 2;
+    } else {
+      // Keyboard closing → round DOWN
+      newHeight = (newHeightRaw * 2).floor() / 2;
+    }
+
+    // Enable on iOS when a Native TextField (PlatformView) is present.
+    // Interpolates the final segment of the keyboard animation to prevent micro-bumps.
+    // Note: This complements the Main Debounce updates.
+    var progress;
+    if (widget.interpolateLastPart) {
+      // Smoothly interpolate the last part of the animation
+      if (newHeight >= (widget.keyboardTotalHeight * interpolationStart)) {
+        double startHeight = widget.keyboardTotalHeight * interpolationStart;
+        // Prevent division by zero
+        final double denom = widget.keyboardTotalHeight - startHeight;
+        progress = denom.abs() < 0.0001
+            ? 1.0
+            : (newHeight - startHeight) / denom;
+        // Apply a curves
+        final curve = _animationCurve; //Cubic(0.46, 0.70, 0.9, 1) //Cubic(0.46, 0.60, 1, 1) //Cubic(0.16, 1.0, 0.3, 1.0); //Curves.easeOutSine; //Curves.easeOutCubic;
+        final smoothedProgress = curve.transform(
+            progress.clamp(0.0, 1.0));
+
+        newHeight = progress < 1.0
+            ? startHeight + smoothedProgress * (widget.keyboardTotalHeight - startHeight)
+            : progress == 1
+            ? widget.keyboardTotalHeight
+            : newHeight;
+        updateKeyboardHeight(newHeight);
+      }
+    }
+    
+    // When interpolating the final portion of the animation, only update the height
+    // if the interpolation hasn't fully completed (progress < 1.0).
+    if (!widget.interpolateLastPart || widget.interpolateLastPart && progress != 1.0) {
+      updateKeyboardHeight(newHeight);
+    }
+  }
+
+  // Update UI and ValueNotifier with adjusted height
+  void updateKeyboardHeight (double newHeight) {
+    if (_keyboardHeightNotifier.value != newHeight) {
+      _keyboardHeightNotifier.value = newHeight;
+      widget.onChange?.call(newHeight);
+      _performanceHandler?.onKeyboardHeightChanged(newHeight);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    return ValueListenableBuilder<double>(
+      valueListenable: _keyboardHeightNotifier,
+      builder: (context, height, child) {
+
+        return widget.builder(context, height);
+
+        /*
+        // By adding the Stack + off-screen widget, the engine does a tiny
+        // render pass early, which indirectly might help prevent occasional
+        // stutters during the first keyboard animation
+        return Stack(
+          children: [
+            widget.builder(context, height),
+            Positioned(
+              left: -1000,
+              top: -1000,
+              child: SizedBox(width: 1, height: 1),
+            ),
+          ],
+        );
+        */
+
+      },
+    );
+  }
+
+
+}
+
+/// Handles Dart performance mode based on keyboard animation and focus.
+class KeyboardPerformanceHandler {
+  final FocusNode focusNode;
+  bool _wasKeyboardClosed = true;
+
+  KeyboardPerformanceHandler({required this.focusNode}) {
+    // Listen to focus changes
+    focusNode.addListener(_handleFocusChange);
+  }
+
+  void dispose() {
+    focusNode.removeListener(_handleFocusChange);
+    _setBalancedMode();
+  }
+
+  void onKeyboardHeightChanged(double keyboardHeight) {
+    // Detect start/end of keyboard animation
+    if (keyboardHeight > 0 && _wasKeyboardClosed) {
+      _wasKeyboardClosed = false;
+      _setLatencyMode();
+    } else if (keyboardHeight == 0 && !_wasKeyboardClosed) {
+      _wasKeyboardClosed = true;
+      _setBalancedMode();
+    }
+  }
+
+  void _handleFocusChange() {
+    // Prioritize latency while typing
+    if (focusNode.hasFocus) {
+      _setLatencyMode();
+    } else if (_wasKeyboardClosed) {
+      _setBalancedMode();
+    }
+  }
+
+  void _setLatencyMode() {
+    // Prioritize frame latency (smoothness) for keyboard animation or typing
+    PlatformDispatcher.instance
+        .requestDartPerformanceMode(DartPerformanceMode.latency);
+  }
+
+  void _setBalancedMode() {
+    // Return to balanced mode for normal operation
+    PlatformDispatcher.instance
+        .requestDartPerformanceMode(DartPerformanceMode.balanced);
+  }
+}
+How to integrate it in your code:
+Disable automatic resizing
+Set resizeToAvoidBottomInset: false on your Scaffold to prevent the framework from automatically resizing when the keyboard appears.
+Handle keyboard manually
+Use KeyboardAnimationBuilder to listen to keyboard changes and adjust your bottom padding dynamically.
+return Selector<KeyboardProvider, double>(
+   selector: (_, provider) => provider.keyboardTotalHeight,
+   builder: (context, keyboardTotalHeight, _) {
+     // Wrap Padding inside a KeyboardAnimationBuilder to smoothly update the bottom
+     // padding in sync with the keyboard’s animation. This ensures the UI adjusts
+     // fluidly as the keyboard appears, moves, or hides.
+     //
+     // Use a provider to read `keyboardTotalHeight` (cached in Hive or SharedPreferences)
+     // so the layout can respond correctly even when switching between the text
+     // keyboard and emoji keyboard.
+     return KeyboardAnimationBuilder(
+        focusNode: focusNode,
+        interpolateLastPart: true 
+        keyboardTotalHeight: keyboardProvider.keyboardTotalHeight,
+        builder:(context, keyboardHeight) {
+           double _height = keyboardHeight;
+
+           // Extra bottom padding for Android
+           _height = focusNode.hasFocus ? _height : _height + _bottomPadding;
+
+           // Clamp the keyboard height to the maximum valid value.
+           if (keyboardHeight > keyboardProvider.keyboardTotalHeight) {
+             _height = keyboardProvider.keyboardTotalHeight;
+           }
+                
+           return RepaintBoundary(
+             child: Padding(
+               padding: EdgeInsets.only(
+               bottom: _height
+              ),
+
+              // Your moving UI here.
+              child: SafeArea(
+                bottom: true
+                minimum: EdgeInsets.zero,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+Calculate keyboardTotalHeight:
+You can use keyboard_height_emitter , or equivalent plugin, which provides the keyboard height (either zero or total value).
+
+    // Inside you screen
+    
+    // Exposes updates for native keyboard height changes
+    KeyboardHeightEmitter _keyboardHeightEmitter = KeyboardHeightEmitter();
+    bool _isKeyboardHeightListening = false;
+    
+    @override
+    void initState() {
+      super.initState();
+
+     // Listen to native keyboard changes.
+     // Complements [KeyboardAnimationBuilder] by updating the keyboard height
+     // (max and min).
+     // Handles cases where the keyboard height changes outside the builder,
+     // such as switching between emoji and text keyboard, or any other
+     // keyboard animations where [KeyboardAnimationBuilder] is not used.
+     _keyboardHeightEmitter.onKeyboardHeightChanged((double height) {
+       _isKeyboardHeightListening = true; // Stream is now active
+       Future.delayed(const Duration(milliseconds: 5), () {
+         if (height > 0.0) {
+           keyboardProvider.updateKeyboardTotalHeight(height);
+         }
+       });
+     });
+     ...
+    }
+   
+    @override
+     void dispose() {
+      if (_isKeyboardHeightListening) {
+       _keyboardHeightEmitter.dispose();
+      }
+      ...
+    }
+In your KeyboardProvider:
+
+Updating _keyboardTotalHeight causes a rebuild of the KeyboardAnimationBuilder .
+
+  // In your KeyboardProvider, update keyboarTotlaHeight
+  
+  // keyboard height
+  double _keyboardHeight = 0;
+  double get keyboardHeight => _keyboardHeight;
+
+  // Keyboard total height is initially cached with hardcoded values.
+  // It will be updated with the precise value after the first keyboard opening.
+  double get keyboarTotlaHeight => _keyboardTotaltHeight;
+  double _keyboardTotalHeight = YourHiveBox
+      .get(kKeyboardTotalHeight, defaultValue: (Platform.isIOS ? 336.0 : 286.9));
+ 
+ 
+  // Methods:
+  
+  // Updates keyboardTotalHeight using the most frequent largest value
+  void updateKeyboardTotalHeight(double value) {
+      if (value == 0.0) return;
+      _keyboardTotalHeight = value;
+      YourHiveBox.put(kKeyboardTotalHeight, _keyboardTotalHeight);
+      notifyListeners();
+      return;
+  }
+  
+  ...
+WIP — community and Flutter team help welcome
+The hack works well most of the time, but occasional micro-bumps can still occur during the first animation. This suggests that some warm-up strategies at engine level might help smooth it out.
+I’m assuming that no GC operations or other heavy work are happening in the engine during keyboard and screen animations. If that’s not the case, we should investigate whether the occasional stutter is caused by GC activity.
+KeyboardAnimationBuilder could become an official Flutter widget, specifically designed to handle this use case.
+We should also test the hack on as many devices as possible to ensure consistent behavior.
+A final note
+I urge both the community and the Flutter team to rethink their attitude toward critical voices. Increasingly, criticism is dismissed as “hating” or being an “enemy”, and this is bad.
+
+Beyond platform fanboys, who rarely contribute anything meaningful, critical voices are the ones that drive improvement:
+
+They’re the ones building premium products — uncovering real problems and demanding the improvements that actually matter.
+More often than not, they also bring solutions: fixes, ideas, and insights that move the entire ecosystem forward.
+If the platform keeps moving slowly while serious issues remain unsolved, the best community contributors will eventually walk away. And that — fading into irrelevance — would be the real end of Flutter.
