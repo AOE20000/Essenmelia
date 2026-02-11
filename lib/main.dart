@@ -9,6 +9,7 @@ import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/home_page.dart';
 import 'screens/event_detail_screen.dart';
+import 'extensions/extension_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ void main() async {
 }
 
 final _router = GoRouter(
+  navigatorKey: navigatorKey,
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomePage()),
     GoRoute(

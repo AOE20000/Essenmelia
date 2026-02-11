@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/event.dart';
 import 'db_provider.dart';
+import '../extensions/extension_manager.dart';
 
 class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   final Ref ref;
@@ -17,7 +18,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     try {
       // Wait for database initialization
       await ref.read(dbProvider.future);
-      
+
       // The prefix is already provided and boxes are opened by dbProvider
       _box = Hive.box<Event>('${activePrefix}_events');
 
@@ -50,6 +51,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       ..imageUrl = imageUrl;
 
     await _box!.put(event.id, event);
+
+    // 通知扩展管理器有新事件产生
+    ref.read(extensionManagerProvider).notifyEventAdded(event);
   }
 
   Future<void> deleteEvent(String id) async {

@@ -1,0 +1,200 @@
+{
+  "id": "com.essenmelia.data_insight",
+  "name": "智能数据洞察",
+  "description": "通过动态 UI 与逻辑引擎实时分析您的本地数据。",
+  "author": "Essenmelia Lab",
+  "version": "2.1.0",
+  "icon_code": 58390,
+  "icon_font": "MaterialIcons",
+  "permissions": [
+    "readEvents",
+    "notifications"
+  ],
+  "view": {
+    "type": "column",
+    "props": {
+      "crossAxisAlignment": "stretch"
+    },
+    "children": [
+      {
+        "type": "container",
+        "props": {
+          "padding": [24, 32, 24, 32],
+          "color": "#6366F1"
+        },
+        "child": {
+          "type": "column",
+          "props": { "crossAxisAlignment": "start" },
+          "children": [
+            {
+              "type": "text",
+              "props": {
+                "value": "智能洞察中心",
+                "fontSize": 24,
+                "bold": true,
+                "color": "#FFFFFF"
+              }
+            },
+            {
+              "type": "sizedbox",
+              "props": { "height": 4 }
+            },
+            {
+              "type": "text",
+              "props": {
+                "value": "当前状态: ${state.status}",
+                "fontSize": 14,
+                "color": "#E0E7FF"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "padding",
+        "props": { "padding": 16 },
+        "child": {
+          "type": "column",
+          "children": [
+            {
+              "type": "row",
+              "children": [
+                {
+                  "type": "expanded",
+                  "child": {
+                    "type": "card",
+                    "props": { "margin": 4, "color": "#EEF2FF" },
+                    "child": {
+                      "type": "column",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "props": { "icon": "event", "color": "#6366F1", "size": 28 }
+                        },
+                        { "type": "sizedbox", "props": { "height": 8 } },
+                        {
+                          "type": "text",
+                          "props": { "value": "${state.count}", "fontSize": 24, "bold": true }
+                        },
+                        {
+                          "type": "text",
+                          "props": { "value": "总事件数", "fontSize": 12, "color": "#6B7280" }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "expanded",
+                  "child": {
+                    "type": "card",
+                    "props": { "margin": 4, "color": "#ECFDF5" },
+                    "child": {
+                      "type": "column",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "props": { "icon": "trending_up", "color": "#10B981", "size": 28 }
+                        },
+                        { "type": "sizedbox", "props": { "height": 8 } },
+                        {
+                          "type": "text",
+                          "props": { "value": "正常", "fontSize": 24, "bold": true, "color": "#065F46" }
+                        },
+                        {
+                          "type": "text",
+                          "props": { "value": "运行健康度", "fontSize": 12, "color": "#6B7280" }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            { "type": "sizedbox", "props": { "height": 16 } },
+            {
+              "type": "card",
+              "props": { "padding": 20 },
+              "child": {
+                "type": "column",
+                "props": { "crossAxisAlignment": "start" },
+                "children": [
+                  {
+                    "type": "row",
+                    "children": [
+                      { "type": "icon", "props": { "icon": "info", "color": "#6366F1" } },
+                      { "type": "sizedbox", "props": { "width": 8 } },
+                      {
+                        "type": "text",
+                        "props": { "value": "最近活动", "fontSize": 16, "bold": true }
+                      }
+                    ]
+                  },
+                  { "type": "divider", "props": { "height": 24 } },
+                  {
+                    "type": "text",
+                    "props": {
+                      "value": "最后一次分析于: ${state.lastUpdate}",
+                      "fontSize": 13,
+                      "color": "#4B5563"
+                    }
+                  },
+                  { "type": "sizedbox", "props": { "height": 8 } },
+                  {
+                    "type": "text",
+                    "props": {
+                      "value": "分析结果: 本地数据库运行良好，建议定期清理过期缓存以保持最佳性能。",
+                      "fontSize": 13,
+                      "color": "#6B7280"
+                    }
+                  }
+                ]
+              }
+            },
+            { "type": "sizedbox", "props": { "height": 24 } },
+            {
+              "type": "button",
+              "props": {
+                "onTap": "refresh",
+                "color": "#6366F1"
+              },
+              "child": {
+                "type": "row",
+                "props": { "mainAxisAlignment": "center", "mainAxisSize": "min" },
+                "children": [
+                  { "type": "icon", "props": { "icon": "refresh", "color": "#FFFFFF", "size": 18 } },
+                  { "type": "sizedbox", "props": { "width": 8 } },
+                  {
+                    "type": "text",
+                    "props": { "value": "立即刷新分析", "color": "#FFFFFF", "bold": true }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "logic": {
+    "onLoad": [
+      "init"
+    ],
+    "actions": {
+      "init": [
+        { "call": "state.set", "params": { "value": "0" }, "assignTo": "count" },
+        { "call": "state.set", "params": { "value": "未更新" }, "assignTo": "lastUpdate" },
+        { "call": "state.set", "params": { "value": "准备就绪" }, "assignTo": "status" },
+        "refresh"
+      ],
+      "refresh": [
+        { "call": "state.set", "params": { "value": "正在扫描数据库..." }, "assignTo": "status" },
+        { "call": "api.getEvents", "assignTo": "events" },
+        { "call": "list.length", "params": { "list": "${state.events}" }, "assignTo": "count" },
+        { "call": "state.set", "params": { "value": "刚刚" }, "assignTo": "lastUpdate" },
+        { "call": "state.set", "params": { "value": "分析完成" }, "assignTo": "status" },
+        { "call": "api.showSnackBar", "params": { "message": "发现 ${state.count} 个本地事件" } }
+      ]
+    }
+  }
+}

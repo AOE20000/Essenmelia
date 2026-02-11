@@ -13,6 +13,8 @@ import '../providers/selection_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tags_provider.dart';
 import '../providers/ui_state_provider.dart';
+import '../extensions/extension_manager.dart';
+import '../screens/extension_management_screen.dart';
 import '../widgets/universal_image.dart';
 import '../widgets/welcome_overlay.dart';
 import 'edit_event_sheet.dart';
@@ -40,6 +42,164 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _toggleTagsExpanded() {
     setState(() => _isTagsExpanded = !_isTagsExpanded);
+  }
+
+  void _showAddExtensionDialog(BuildContext context) {
+    final urlController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('添加扩展'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.file_open_outlined),
+              title: const Text('从本地文件导入'),
+              subtitle: const Text('选择 .json 扩展包'),
+              onTap: () async {
+                final navigator = navigatorKey.currentState;
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(context);
+                final ext = await ref
+                    .read(extensionManagerProvider)
+                    .importFromFile();
+
+                if (ext != null && navigator != null) {
+                  navigator.push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ExtensionManagementScreen(extension: ext),
+                    ),
+                  );
+                } else if (ext == null && mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('导入取消或失败')),
+                  );
+                }
+              },
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: urlController,
+                decoration: const InputDecoration(
+                  labelText: '输入 URL 或 GitHub 链接',
+                  hintText: 'https://...',
+                  isDense: true,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.download),
+              label: const Text('从链接下载并安装'),
+              onPressed: () async {
+                final url = urlController.text.trim();
+                if (url.isNotEmpty) {
+                  final navigator = navigatorKey.currentState;
+                  Navigator.pop(context);
+                  final ext = await ref
+                      .read(extensionManagerProvider)
+                      .importFromUrl(url);
+                  if (ext != null && navigator != null) {
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ExtensionManagementScreen(extension: ext),
+                      ),
+                    );
+                  } else if (ext == null && mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('下载失败，请检查链接')));
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExtensionContextMenu(BuildContext context, dynamic ext) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('管理与权限'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ExtensionManagementScreen(extension: ext),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.ios_share),
+              title: const Text('导出扩展包'),
+              onTap: () {
+                Navigator.pop(context);
+                ref
+                    .read(extensionManagerProvider)
+                    .exportExtension(ext.metadata.id);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('卸载扩展', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmUninstall(context, ext);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmUninstall(BuildContext context, dynamic ext) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认卸载'),
+        content: Text('确定要卸载扩展 "${ext.metadata.name}" 吗？所有相关设置将被清除。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref
+                  .read(extensionAuthStateProvider.notifier)
+                  .uninstallExtension(ext.metadata.id);
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('扩展已卸载')));
+            },
+            child: const Text('卸载', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -170,30 +330,199 @@ class _HomePageState extends ConsumerState<HomePage> {
       case HomeTab.events:
         return _buildMainContent(context);
       case HomeTab.extensions:
+        final extensionManager = ref.watch(extensionManagerProvider);
+        final extensions = extensionManager.extensions;
+        final authNotifier = ref.watch(extensionAuthStateProvider.notifier);
+
         return Scaffold(
           key: const ValueKey('extensions'),
           appBar: AppBar(
             title: Text(AppLocalizations.of(context)!.navExtensions),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => _showAddExtensionDialog(context),
+                tooltip: '添加扩展',
+              ),
+            ],
           ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.extension_outlined,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "Coming Soon",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
+          body: extensions.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.extension_off_outlined,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '暂无已安装的扩展',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ],
                   ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 200,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: extensions.length,
+                  itemBuilder: (context, index) {
+                    final ext = extensions[index];
+                    final isRunning = authNotifier.isRunning(ext.metadata.id);
+
+                    return Card(
+                      clipBehavior: Clip.antiAlias,
+                      elevation: isRunning ? 2 : 0,
+                      color: isRunning
+                          ? null
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surfaceVariant.withOpacity(0.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isRunning
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1)
+                              : Colors.transparent,
+                          width: 1,
+                        ),
+                      ),
+                      child: InkWell(
+                        onLongPress: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ExtensionManagementScreen(extension: ext),
+                            ),
+                          );
+                        },
+                        onSecondaryTap: () =>
+                            _showExtensionContextMenu(context, ext),
+                        onTap: () {
+                          if (!isRunning) {
+                            // 没运行时，点击跳转到详情页以启用
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ExtensionManagementScreen(extension: ext),
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ext.build(
+                                context,
+                                extensionManager.getApiFor(ext),
+                              ),
+                            ),
+                          );
+                        },
+                        child: Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Opacity(
+                                    opacity: isRunning ? 1.0 : 0.4,
+                                    child: Icon(
+                                      ext.metadata.icon,
+                                      size: 48,
+                                      color: isRunning
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.outline,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    ext.metadata.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          color: isRunning
+                                              ? null
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.outline,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    ext.metadata.description,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline
+                                              .withOpacity(
+                                                isRunning ? 1.0 : 0.6,
+                                              ),
+                                        ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!isRunning)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceVariant,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '已停用',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          fontSize: 10,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outline,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
-          ),
         );
       case HomeTab.settings:
         return const SettingsSheet(key: ValueKey('settings'));

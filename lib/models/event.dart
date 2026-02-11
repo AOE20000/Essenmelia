@@ -26,6 +26,12 @@ class Event extends HiveObject {
   @HiveField(6)
   List<EventStep> steps = [];
 
+  bool get isCompleted => steps.isNotEmpty && steps.every((s) => s.completed);
+
+  double get completionRate => steps.isEmpty
+      ? 0.0
+      : steps.where((s) => s.completed).length / steps.length;
+
   Event() {
     id = const Uuid().v4();
   }
