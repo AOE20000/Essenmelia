@@ -44,6 +44,8 @@ dependencies:
   image_cropper: ^11.0.0
   quick_settings: ^1.0.1
   image: ^4.7.2
+  pasteboard: ^0.3.0
+  # receive_intent: ^0.2.7
 
 dev_dependencies:
   flutter_test:

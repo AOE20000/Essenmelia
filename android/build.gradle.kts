@@ -18,6 +18,7 @@ subprojects {
             force("androidx.lifecycle:lifecycle-common:2.8.7")
             force("androidx.lifecycle:lifecycle-runtime:2.8.7")
             force("androidx.lifecycle:lifecycle-viewmodel:2.8.7")
+            force("androidx.browser:browser:1.8.0")
         }
     }
 }
@@ -31,11 +32,17 @@ subprojects {
                     namespace = "com.example.plugin.${project.name.replace("-", "_")}"
                 }
                 
+                // 解决 AGP 8.x 对旧版插件 Manifest package 属性的限制
+                // 通过动态注入 namespace 来覆盖旧版 package 声明
+                if (project.name == "quick_settings") {
+                    namespace = "io.apparence.quick_settings"
+                }
+                
                 // 统一使用 SDK 35，因为本地 36 的 android.jar 缺失
                 compileSdkVersion(35)
                 
                 defaultConfig {
-                    minSdkVersion(21)
+                    minSdkVersion(24)
                     targetSdkVersion(35)
                     versionCode = 1
                     versionName = "1.0.0"

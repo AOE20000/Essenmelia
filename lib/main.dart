@@ -9,7 +9,9 @@ import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/home_page.dart';
 import 'screens/event_detail_screen.dart';
-import 'extensions/extension_manager.dart';
+import 'extensions/extension_manager.dart' show navigatorKey;
+import 'features/quick_action/quick_action_screen.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,14 +39,61 @@ final _router = GoRouter(
         return EventDetailScreen(eventId: id);
       },
     ),
+    GoRoute(
+      path: '/quick-action',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const QuickActionScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        opaque: false,
+      ),
+    ),
   ],
 );
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  static const _channel = MethodChannel('com.example.essenmelia/intent');
+
+  @override
+  void initState() {
+    super.initState();
+    _initIntentHandler();
+  }
+
+  void _initIntentHandler() async {
+    // 处理初始 Intent
+    try {
+      final String? action = await _channel.invokeMethod('getInitialIntent');
+      _handleAction(action);
+    } catch (e) {
+      debugPrint('Error getting initial intent: $e');
+    }
+
+    // 监听后续 Intent
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onNewIntent') {
+        final String? action = call.arguments as String?;
+        _handleAction(action);
+      }
+    });
+  }
+
+  void _handleAction(String? action) {
+    if (action == 'ACTION_QUICK_EVENT') {
+      _router.push('/quick-action');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDarkMode = ref.watch(themeProvider);
     final locale = ref.watch(localeProvider);
 

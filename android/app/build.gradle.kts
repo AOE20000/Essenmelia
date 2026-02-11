@@ -30,8 +30,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.essenmelia_flutter"
-        // Flutter 3.38.9 (Preview) 要求 minSdk 至少为 23 (Android 6.0)
-        minSdk = flutter.minSdkVersion
+        // Flutter 3.38.9 (Preview) 建议 minSdk 至少为 24
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
@@ -61,4 +61,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
 }
