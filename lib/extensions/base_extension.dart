@@ -8,7 +8,8 @@ enum ExtensionPermission {
   readTags('读取标签', 'Read Tags', '允许扩展查看您的标签列表。'),
   manageDb('数据库管理', 'Manage Database', '允许扩展进行数据库导出、备份或切换。'),
   fileSystem('文件访问', 'File System', '允许扩展保存文件到您的设备或读取文件。'),
-  notifications('通知权限', 'Notifications', '允许扩展向您发送桌面或系统通知。');
+  notifications('通知权限', 'Notifications', '允许扩展向您发送桌面或系统通知。'),
+  network('网络访问', 'Network Access', '允许扩展访问网络。');
 
   final String label;
   final String labelEn;
@@ -141,12 +142,80 @@ abstract class ExtensionApi {
   /// 显示通知/提示
   void showSnackBar(String message);
 
+  /// 显示确认对话框
+  Future<bool> showConfirmDialog({
+    required String title,
+    required String message,
+    String confirmLabel = '确定',
+    String cancelLabel = '取消',
+  });
+
   /// 导出数据到文件
   Future<bool> exportFile(String content, String fileName);
+
+  /// 选择文件并读取内容
+  Future<String?> pickFile({List<String>? allowedExtensions});
+
+  /// 网络 GET 请求
+  Future<String?> httpGet(String url, {Map<String, String>? headers});
+
+  /// 网络 POST 请求
+  Future<String?> httpPost(
+    String url, {
+    Map<String, String>? headers,
+    Object? body,
+  });
+
+  /// 网络 PUT 请求
+  Future<String?> httpPut(
+    String url, {
+    Map<String, String>? headers,
+    Object? body,
+  });
+
+  /// 网络 DELETE 请求
+  Future<String?> httpDelete(String url, {Map<String, String>? headers});
+
+  /// 在系统浏览器中打开 URL
+  Future<void> openUrl(String url);
+
+  /// 设置主页搜索过滤
+  void setSearchQuery(String query);
+
+  /// 创建新事件
+  Future<void> addEvent({
+    required String title,
+    String? description,
+    List<String>? tags,
+  });
+
+  /// 删除事件
+  Future<void> deleteEvent(String id);
+
+  /// 更新事件
+  Future<void> updateEvent(Event event);
+
+  /// 为事件添加步骤
+  Future<void> addStep(String eventId, String description);
+
+  /// 添加标签
+  Future<void> addTag(String tag);
+
+  /// 获取当前扩展的数据库占用大小 (字节)
+  Future<int> getDbSize();
+
+  /// 获取当前主题模式 (light/dark)
+  String getThemeMode();
+
+  /// 获取当前语言 (zh/en)
+  String getLocale();
 
   /// 获取/保存扩展专用设置
   Future<T?> getSetting<T>(String key);
   Future<void> saveSetting<T>(String key, T value);
+
+  /// 发布跨扩展事件
+  void publishEvent(String name, Map<String, dynamic> data);
 }
 
 /// 扩展基类
@@ -166,6 +235,9 @@ abstract class BaseExtension {
 
   /// 当新事件产生时触发（由 Manager 控制分发）
   void onEventAdded(Event event) {}
+
+  /// 接收跨扩展事件的回调
+  void onExtensionEvent(String name, Map<String, dynamic> data) {}
 
   /// 扩展的主界面构建方法
   Widget build(BuildContext context, ExtensionApi api);

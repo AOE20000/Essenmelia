@@ -115,6 +115,9 @@ class _ExtensionManagementScreenState
     bool isUntrusted,
     ExtensionAuthNotifier authNotifier,
   ) {
+    final sandboxId = authNotifier.getSandboxId(metadata.id);
+    final isShared = sandboxId != metadata.id;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -165,10 +168,83 @@ class _ExtensionManagementScreenState
                             : theme.colorScheme.outline),
                 ),
               ),
+              const Divider(height: 1, indent: 56),
+              ListTile(
+                onTap: () => _showSandboxConfigDialog(
+                  theme,
+                  metadata,
+                  sandboxId,
+                  authNotifier,
+                ),
+                title: const Text('沙箱隔离组'),
+                subtitle: Text(
+                  isShared ? '正在使用共用沙箱: $sandboxId' : '默认隔离 (个体沙箱)',
+                ),
+                leading: Icon(
+                  isShared ? Icons.group_work : Icons.phonelink_lock,
+                  color: isShared
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline,
+                ),
+                trailing: const Icon(Icons.edit_outlined, size: 20),
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  void _showSandboxConfigDialog(
+    ThemeData theme,
+    ExtensionMetadata metadata,
+    String currentSandboxId,
+    ExtensionAuthNotifier authNotifier,
+  ) {
+    final controller = TextEditingController(
+      text: currentSandboxId == metadata.id ? '' : currentSandboxId,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('配置沙箱组'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '通过设置相同的沙箱 ID，可以让多个扩展共享同一个“虚拟环境”。',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: '沙箱 ID (留空则恢复默认隔离)',
+                hintText: '例如: activation_group',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                helperText: '提示：激活类程序通常需要与主扩展处于同一沙箱组',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              authNotifier.setSandboxId(metadata.id, controller.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -448,7 +524,7 @@ class _ExtensionManagementScreenState
     );
 
     if (confirmed == true) {
-      await authNotifier.uninstallExtension(metadata.id);
+      await ref.read(extensionManagerProvider).removeExtension(metadata.id);
       if (mounted) Navigator.pop(context);
     }
   }

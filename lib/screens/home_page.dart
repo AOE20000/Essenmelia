@@ -58,25 +58,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               title: const Text('从本地文件导入'),
               subtitle: const Text('选择 .json 扩展包'),
               onTap: () async {
-                final navigator = navigatorKey.currentState;
-                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
-                final ext = await ref
-                    .read(extensionManagerProvider)
-                    .importFromFile();
-
-                if (ext != null && navigator != null) {
-                  navigator.push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ExtensionManagementScreen(extension: ext),
-                    ),
-                  );
-                } else if (ext == null && mounted) {
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('导入取消或失败')),
-                  );
-                }
+                await ref.read(extensionManagerProvider).importFromFile();
               },
             ),
             const Divider(),
@@ -189,8 +172,8 @@ class _HomePageState extends ConsumerState<HomePage> {
             onPressed: () {
               Navigator.pop(context);
               ref
-                  .read(extensionAuthStateProvider.notifier)
-                  .uninstallExtension(ext.metadata.id);
+                  .read(extensionManagerProvider)
+                  .removeExtension(ext.metadata.id);
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('扩展已卸载')));

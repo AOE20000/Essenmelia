@@ -1,0 +1,123 @@
+{
+  "id": "com.essenmelia.network_helper",
+  "name": "网络与文件助手",
+  "description": "测试网络请求、文件读取与高级 UI 对话框。",
+  "author": "Essenmelia Lab",
+  "version": "1.0.0",
+  "icon_code": 58895,
+  "icon_font": "MaterialIcons",
+  "permissions": [
+    "network",
+    "fileSystem",
+    "writeEvents",
+    "readEvents"
+  ],
+  "view": {
+    "type": "column",
+    "props": { "crossAxisAlignment": "stretch" },
+    "children": [
+      {
+        "type": "container",
+        "props": { "padding": 20, "color": "#10B981" },
+        "child": {
+          "type": "text",
+          "props": { "value": "工具箱", "fontSize": 20, "bold": true, "color": "#FFFFFF" }
+        }
+      },
+      {
+        "type": "padding",
+        "props": { "padding": 16 },
+        "child": {
+          "type": "column",
+          "children": [
+            {
+              "type": "card",
+              "props": { "padding": 16 },
+              "child": {
+                "type": "column",
+                "children": [
+                  { "type": "text", "props": { "value": "网络测试", "bold": true } },
+                  { "type": "sizedbox", "props": { "height": 8 } },
+                  { "type": "text", "props": { "value": "点击获取今日诗词:", "fontSize": 12 } },
+                  { "type": "text", "props": { "value": "${state.quote}", "fontSize": 14, "italic": true } },
+                  { "type": "sizedbox", "props": { "height": 8 } },
+                  { "type": "button", "props": { "value": "获取随机名言", "onTap": "fetchQuote" } }
+                ]
+              }
+            },
+            { "type": "sizedbox", "props": { "height": 16 } },
+            {
+              "type": "card",
+              "props": { "padding": 16 },
+              "child": {
+                "type": "column",
+                "children": [
+                  { "type": "text", "props": { "value": "文件与搜索", "bold": true } },
+                  { "type": "sizedbox", "props": { "height": 8 } },
+                  { "type": "button", "props": { "value": "导入文本文件", "onTap": "pickAndRead" } },
+                  { "type": "sizedbox", "props": { "height": 8 } },
+                  {
+                    "type": "row",
+                    "children": [
+                      {
+                        "type": "expanded",
+                        "child": { "type": "button", "props": { "value": "搜索 '紧急'", "onTap": "searchUrgent" } }
+                      },
+                      { "type": "sizedbox", "props": { "width": 8 } },
+                      {
+                        "type": "expanded",
+                        "child": { "type": "button", "props": { "value": "重置搜索", "onTap": "resetSearch" } }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            { "type": "sizedbox", "props": { "height": 16 } },
+            {
+              "type": "button",
+              "props": { "value": "安全删除测试", "onTap": "confirmDelete" }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "logic": {
+    "onLoad": [
+      { "call": "state.set", "params": { "value": "点击按钮获取数据" }, "assignTo": "quote" }
+    ],
+    "actions": {
+      "fetchQuote": [
+        { "call": "state.set", "params": { "value": "正在获取..." }, "assignTo": "quote" },
+        { "call": "api.httpGet", "params": { "url": "https://v1.hitokoto.cn/?c=d&encode=text" }, "assignTo": "quote" },
+        { "call": "api.showSnackBar", "params": { "message": "获取成功！" } }
+      ],
+      "pickAndRead": [
+        { "call": "api.pickFile", "params": { "allowedExtensions": ["txt", "md", "json"] }, "assignTo": "fileContent" },
+        { "call": "api.showConfirmDialog", "params": { "title": "文件内容", "message": "${state.fileContent}" } }
+      ],
+      "searchUrgent": [
+        { "call": "api.setSearchQuery", "params": { "query": "紧急" } },
+        { "call": "api.showSnackBar", "params": { "message": "已过滤紧急任务" } }
+      ],
+      "resetSearch": [
+        { "call": "api.setSearchQuery", "params": { "query": "" } }
+      ],
+      "confirmDelete": [
+        { 
+          "call": "api.showConfirmDialog", 
+          "params": { 
+            "title": "危险操作", 
+            "message": "您确定要执行此操作吗？这可能无法撤销。" 
+          },
+          "assignTo": "isConfirmed"
+        },
+        {
+          "call": "api.showSnackBar",
+          "params": { "message": "用户选择了: ${state.isConfirmed}" }
+        }
+      ]
+    }
+  }
+}

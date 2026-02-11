@@ -8,6 +8,7 @@
   "icon_font": "MaterialIcons",
   "permissions": [
     "readEvents",
+    "writeEvents",
     "notifications"
   ],
   "view": {
@@ -42,7 +43,7 @@
             {
               "type": "text",
               "props": {
-                "value": "当前状态: ${state.status}",
+                "value": "环境: ${state.locale} | 模式: ${state.theme}",
                 "fontSize": 14,
                 "color": "#E0E7FF"
               }
@@ -94,16 +95,16 @@
                       "children": [
                         {
                           "type": "icon",
-                          "props": { "icon": "trending_up", "color": "#10B981", "size": 28 }
+                          "props": { "icon": "storage", "color": "#10B981", "size": 28 }
                         },
                         { "type": "sizedbox", "props": { "height": 8 } },
                         {
                           "type": "text",
-                          "props": { "value": "正常", "fontSize": 24, "bold": true, "color": "#065F46" }
+                          "props": { "value": "${state.dbSize} B", "fontSize": 18, "bold": true }
                         },
                         {
                           "type": "text",
-                          "props": { "value": "运行健康度", "fontSize": 12, "color": "#6B7280" }
+                          "props": { "value": "扩展存储占用", "fontSize": 12, "color": "#6B7280" }
                         }
                       ]
                     }
@@ -113,62 +114,10 @@
             },
             { "type": "sizedbox", "props": { "height": 16 } },
             {
-              "type": "card",
-              "props": { "padding": 20 },
-              "child": {
-                "type": "column",
-                "props": { "crossAxisAlignment": "start" },
-                "children": [
-                  {
-                    "type": "row",
-                    "children": [
-                      { "type": "icon", "props": { "icon": "info", "color": "#6366F1" } },
-                      { "type": "sizedbox", "props": { "width": 8 } },
-                      {
-                        "type": "text",
-                        "props": { "value": "最近活动", "fontSize": 16, "bold": true }
-                      }
-                    ]
-                  },
-                  { "type": "divider", "props": { "height": 24 } },
-                  {
-                    "type": "text",
-                    "props": {
-                      "value": "最后一次分析于: ${state.lastUpdate}",
-                      "fontSize": 13,
-                      "color": "#4B5563"
-                    }
-                  },
-                  { "type": "sizedbox", "props": { "height": 8 } },
-                  {
-                    "type": "text",
-                    "props": {
-                      "value": "分析结果: 本地数据库运行良好，建议定期清理过期缓存以保持最佳性能。",
-                      "fontSize": 13,
-                      "color": "#6B7280"
-                    }
-                  }
-                ]
-              }
-            },
-            { "type": "sizedbox", "props": { "height": 24 } },
-            {
               "type": "button",
               "props": {
-                "onTap": "refresh",
-                "color": "#6366F1"
-              },
-              "child": {
-                "type": "row",
-                "props": { "mainAxisAlignment": "center", "mainAxisSize": "min" },
-                "children": [
-                  { "type": "icon", "props": { "icon": "refresh", "color": "#FFFFFF", "size": 18 } },
-                  { "type": "sizedbox", "props": { "width": 8 } },
-                  {
-                    "type": "text",
-                    "props": { "value": "立即刷新分析", "color": "#FFFFFF", "bold": true }
-                  }
-                ]
+                "value": "测试：添加随机任务",
+                "onTap": "addRandomTask"
               }
             }
           ]
@@ -178,22 +127,27 @@
   },
   "logic": {
     "onLoad": [
-      "init"
+      { "call": "state.set", "params": { "value": "分析中..." }, "assignTo": "status" },
+      { "call": "api.getEvents", "assignTo": "events" },
+      { "call": "api.getLocale", "assignTo": "locale" },
+      { "call": "api.getThemeMode", "assignTo": "theme" },
+      { "call": "api.getDbSize", "assignTo": "dbSize" },
+      { "call": "list.length", "params": { "list": "${state.events}" }, "assignTo": "count" },
+      { "call": "state.set", "params": { "value": "就绪" }, "assignTo": "status" }
     ],
     "actions": {
-      "init": [
-        { "call": "state.set", "params": { "value": "0" }, "assignTo": "count" },
-        { "call": "state.set", "params": { "value": "未更新" }, "assignTo": "lastUpdate" },
-        { "call": "state.set", "params": { "value": "准备就绪" }, "assignTo": "status" },
-        "refresh"
-      ],
-      "refresh": [
-        { "call": "state.set", "params": { "value": "正在扫描数据库..." }, "assignTo": "status" },
+      "addRandomTask": [
+        { 
+          "call": "api.addEvent", 
+          "params": {
+            "title": "来自扩展的随机任务", 
+            "description": "这是通过 api.addEvent 动态创建的任务",
+            "tags": ["扩展", "自动生成"]
+          } 
+        },
+        { "call": "api.showSnackBar", "params": { "message": "任务已添加！" } },
         { "call": "api.getEvents", "assignTo": "events" },
-        { "call": "list.length", "params": { "list": "${state.events}" }, "assignTo": "count" },
-        { "call": "state.set", "params": { "value": "刚刚" }, "assignTo": "lastUpdate" },
-        { "call": "state.set", "params": { "value": "分析完成" }, "assignTo": "status" },
-        { "call": "api.showSnackBar", "params": { "message": "发现 ${state.count} 个本地事件" } }
+        { "call": "list.length", "params": { "list": "${state.events}" }, "assignTo": "count" }
       ]
     }
   }

@@ -35,6 +35,20 @@ class Event extends HiveObject {
   Event() {
     id = const Uuid().v4();
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'createdAt': createdAt.toIso8601String(),
+      'imageUrl': imageUrl,
+      'tags': tags,
+      'steps': steps.map((s) => s.toJson()).toList(),
+      'isCompleted': isCompleted,
+      'completionRate': completionRate,
+    };
+  }
 }
 
 @HiveType(typeId: 1)
@@ -47,6 +61,14 @@ class EventStep extends HiveObject {
 
   @HiveField(2)
   bool completed = false;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'description': description,
+      'timestamp': timestamp.toIso8601String(),
+      'completed': completed,
+    };
+  }
 
   EventStep copyWith({
     String? description,

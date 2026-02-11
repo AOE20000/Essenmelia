@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,16 +9,21 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dynamic_engine.dart';
 
 import 'base_extension.dart';
 import '../models/event.dart';
+import '../providers/db_provider.dart';
 import '../providers/events_provider.dart';
 import '../providers/tags_provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/locale_provider.dart';
+import '../providers/filtered_events_provider.dart';
 import 'utils/mock_data_generator.dart';
 import 'widgets/permission_management_dialog.dart';
 
-/// 扩展授权状态 Provider (Map<extensionId, List<permissionName>>)
+/// 扩展权限状态管理
 final extensionAuthStateProvider =
     StateNotifierProvider<ExtensionAuthNotifier, Map<String, List<String>>>((
       ref,
@@ -35,6 +41,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   static const _untrustedPrefix = 'untrusted_';
   static const _runningPrefix = 'running_';
   static const _nextRunPrefix = 'next_run_';
+  static const _sandboxPrefix = 'sandbox_';
 
   /// 内存中维护的暂停状态，不需要持久化
   final Set<String> _pausedExtensions = {};
@@ -50,8 +57,31 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
         );
       }
     }
-    // 默认所有已安装扩展都是运行状态，除非明确停止
     state = loaded;
+  }
+
+  /// 获取沙箱 ID，默认为扩展 ID 本身 (个体隔离)
+  String getSandboxId(String extensionId) {
+    final key = '$_sandboxPrefix$extensionId';
+    final val = state[key]?.firstOrNull;
+    return val ?? extensionId;
+  }
+
+  /// 设置沙箱 ID
+  Future<void> setSandboxId(String extensionId, String sandboxId) async {
+    final box = await Hive.openBox(_boxName);
+    final key = '$_sandboxPrefix$extensionId';
+    // 如果设置为空或等于 extensionId，则恢复默认
+    if (sandboxId.isEmpty || sandboxId == extensionId) {
+      await box.delete(key);
+      state = Map.from(state)..remove(key);
+    } else {
+      await box.put(key, [sandboxId]);
+      state = {
+        ...state,
+        key: [sandboxId],
+      };
+    }
   }
 
   void setPaused(String extensionId, bool paused) {
@@ -91,11 +121,6 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   ) async {
     if (!hasPermission(extensionId, permission)) {
       await togglePermission(extensionId, permission);
-      // 通知已加载的实例
-      final manager = _ref.read(extensionManagerProvider);
-      manager.notifyPermissionGranted(extensionId, permission);
-      // 关键：权限授予后立即刷新 Manager，确保实例被正确加载/重载
-      manager.refresh();
     }
   }
 
@@ -125,10 +150,10 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
         newState.remove(extensionId);
         return newState;
       });
+      // 清除相关的临时状态
+      final nextRunKey = '$_nextRunPrefix$extensionId';
+      await box.delete(nextRunKey);
     }
-
-    // 通知 Manager 刷新实例状态
-    _ref.read(extensionManagerProvider).refresh();
   }
 
   bool isUntrusted(String extensionId) {
@@ -204,24 +229,25 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     // 3. 清除运行状态
     await box.delete('$_runningPrefix$extensionId');
 
-    // 4. 清除扩展私有设置
+    // 4. 清除沙箱组设置
+    await box.delete('$_sandboxPrefix$extensionId');
+
+    // 5. 清除扩展私有设置
     await Hive.deleteBoxFromDisk('ext_$extensionId');
 
-    // 5. 清除本次运行的临时授权
+    // 6. 清除本次运行的临时授权
     _ref.read(sessionPermissionsProvider.notifier).update((sessionState) {
       final newState = Map<String, Set<String>>.from(sessionState);
       newState.remove(extensionId);
       return newState;
     });
 
-    // 6. 从 Manager 中完全移除
-    _ref.read(extensionManagerProvider).removeExtension(extensionId);
-
     // 7. 更新状态触发 UI 刷新
     state = {...state}
       ..remove(extensionId)
       ..remove('$_untrustedPrefix$extensionId')
-      ..remove('$_runningPrefix$extensionId');
+      ..remove('$_runningPrefix$extensionId')
+      ..remove('$_sandboxPrefix$extensionId');
   }
 
   /// 仅用于触发 UI 刷新的辅助方法
@@ -248,6 +274,7 @@ final sessionPermissionsProvider = StateProvider<Map<String, Set<String>>>(
 
 /// 对话框显示锁，防止并发 API 调用导致多个弹窗冲突
 bool _isDialogShowing = false;
+Future<void>? _currentDialogFuture;
 
 /// 受控 API 的具体实现
 class ExtensionApiImpl implements ExtensionApi {
@@ -258,9 +285,39 @@ class ExtensionApiImpl implements ExtensionApi {
   ExtensionApiImpl(this._ref, this._metadata, this._manager);
 
   bool _checkPermission(ExtensionPermission permission) {
+    final extId = _metadata.id;
+
+    // 1. 检查持久化授权
+    final hasPersistent = _ref
+        .read(extensionAuthStateProvider.notifier)
+        .hasPermission(extId, permission);
+    if (hasPersistent) return true;
+
+    // 2. 检查本次会话的临时授权 (通过隐身盾弹窗获得的授权)
+    final sessionPerms = _ref.read(sessionPermissionsProvider)[extId] ?? {};
+    if (sessionPerms.contains('all')) return true;
+
+    // 映射权限到隐身盾类别
+    final categoryMap = {
+      ExtensionPermission.readEvents: '数据读取',
+      ExtensionPermission.writeEvents: '数据写入',
+      ExtensionPermission.readTags: '数据读取',
+      ExtensionPermission.network: '网络访问',
+      ExtensionPermission.fileSystem: '文件操作',
+    };
+
+    final category = categoryMap[permission];
+    if (category != null && sessionPerms.contains(category)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  String _getSandboxId() {
     return _ref
         .read(extensionAuthStateProvider.notifier)
-        .hasPermission(_metadata.id, permission);
+        .getSandboxId(_metadata.id);
   }
 
   /// 权限管理拦截逻辑 (非阻塞 + 事后授权模式)
@@ -305,76 +362,116 @@ class ExtensionApiImpl implements ExtensionApi {
   }
 
   void _showPrivacyDialogAsync(String operation, String category) {
+    final requestId = '${_metadata.id}_$category';
+
+    // 1. 如果当前扩展的这个类别的请求已经在处理中，直接忽略
+    if (_manager._activePrivacyRequests.contains(requestId)) {
+      return;
+    }
+
     final context = navigatorKey.currentContext;
     if (context == null) return;
 
+    _manager._activePrivacyRequests.add(requestId);
+
     Future.microtask(() async {
-      // 等待上一个对话框关闭
-      while (_isDialogShowing) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
-      _isDialogShowing = true;
-      final decision = await showDialog<PermissionManagementDecision>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => PermissionManagementDialog(
-          extensionName: _metadata.name,
-          operationDescription: operation,
-          categoryName: category,
-          isPostHoc: true, // 启用事后授权文案
-        ),
-      );
-      _isDialogShowing = false;
-
-      final authNotifier = _ref.read(extensionAuthStateProvider.notifier);
-
-      if (decision != null && decision != PermissionManagementDecision.deny) {
-        if (decision == PermissionManagementDecision.allowNextRun) {
-          // 下次运行允许（持久化，但仅下次生效）
-          await authNotifier.setNextRunPermission(_metadata.id, category);
-        } else {
-          // 更新会话权限
-          _ref.read(sessionPermissionsProvider.notifier).update((state) {
-            final newState = Map<String, Set<String>>.from(state);
-            final extPerms = Set<String>.from(newState[_metadata.id] ?? {});
-            if (decision == PermissionManagementDecision.allowCategoryOnce) {
-              extPerms.add(category);
-            } else if (decision == PermissionManagementDecision.allowAllOnce) {
-              extPerms.add('all');
-            }
-            // allowOnce 不记录在 session 中
-            newState[_metadata.id] = extPerms;
-            return newState;
-          });
-
-          // 如果是数据读取类操作，通知扩展权限已授予，可以尝试重新获取真数据
-          if (category == '数据读取') {
-            _manager.notifyPermissionGranted(
-              _metadata.id,
-              ExtensionPermission.readEvents,
-            );
-          }
+      try {
+        // 2. 等待之前的对话框关闭，增加超时机制防止多个弹窗重叠导致 ANR
+        if (_isDialogShowing && _currentDialogFuture != null) {
+          debugPrint(
+            'Shield: Waiting for previous dialog to close for $requestId',
+          );
+          await _currentDialogFuture!.timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => debugPrint('Shield: Wait timeout for $requestId'),
+          );
         }
-      }
 
-      // 无论是否允许，都恢复扩展运行并清空缓冲区
-      _manager.resumeExtension(_metadata.id);
+        // 3. 再次检查是否还需要显示（可能在等待期间已经被允许了）
+        final authNotifier = _ref.read(extensionAuthStateProvider.notifier);
+        if (!authNotifier.isPaused(_metadata.id)) {
+          return;
+        }
+
+        // 如果之前的对话框还在显示（超时后），则跳过本次，避免堆叠
+        if (_isDialogShowing) {
+          debugPrint('Shield: Skipping dialog for $requestId due to overlap');
+          return;
+        }
+
+        _isDialogShowing = true;
+        final completer = Completer<void>();
+        _currentDialogFuture = completer.future;
+
+        try {
+          final decision = await showDialog<PermissionManagementDecision>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => PermissionManagementDialog(
+              extensionName: _metadata.name,
+              operationDescription: operation,
+              categoryName: category,
+              isPostHoc: true,
+            ),
+          );
+
+          if (decision != null &&
+              decision != PermissionManagementDecision.deny) {
+            if (decision == PermissionManagementDecision.allowNextRun) {
+              await authNotifier.setNextRunPermission(_metadata.id, category);
+            } else {
+              _ref.read(sessionPermissionsProvider.notifier).update((state) {
+                final newState = Map<String, Set<String>>.from(state);
+                final extPerms = Set<String>.from(newState[_metadata.id] ?? {});
+                if (decision ==
+                    PermissionManagementDecision.allowCategoryOnce) {
+                  extPerms.add(category);
+                } else if (decision ==
+                    PermissionManagementDecision.allowAllOnce) {
+                  extPerms.add('all');
+                }
+                newState[_metadata.id] = extPerms;
+                return newState;
+              });
+
+              final permissionMapping = {
+                '数据读取': ExtensionPermission.readEvents,
+                '数据写入': ExtensionPermission.writeEvents,
+                '网络访问': ExtensionPermission.network,
+                '文件系统': ExtensionPermission.fileSystem,
+              };
+
+              final grantedPerm = permissionMapping[category];
+              if (grantedPerm != null) {
+                _manager.notifyPermissionGranted(_metadata.id, grantedPerm);
+              }
+            }
+          }
+        } finally {
+          _isDialogShowing = false;
+          completer.complete();
+        }
+      } catch (e) {
+        debugPrint('Shield: Error in privacy dialog microtask: $e');
+      } finally {
+        _manager._activePrivacyRequests.remove(requestId);
+        _manager.resumeExtension(_metadata.id);
+      }
     });
   }
 
   @override
   Future<List<Event>> getEvents() async {
+    final notifier = _ref.read(extensionAuthStateProvider.notifier);
+    final extId = _metadata.id;
+
     // 强制检查运行状态
-    if (!_ref
-        .read(extensionAuthStateProvider.notifier)
-        .isRunning(_metadata.id)) {
+    if (!notifier.isRunning(extId)) {
       return MockDataGenerator.generateEvents(count: 3);
     }
 
-    if (!await _shieldIntercept('读取您的所有任务列表和步骤', '数据读取')) {
-      return MockDataGenerator.generateEvents(count: 5); // 拒绝后返回少量假数据
-    }
+    // 隐身盾拦截 (异步非阻塞，如果拦截则立即返回 false)
+    final intercepted = !await _shieldIntercept('读取您的所有任务列表和步骤', '数据读取');
 
     final eventsAsync = _ref.read(eventsProvider);
     final realEvents = eventsAsync.when(
@@ -382,24 +479,29 @@ class ExtensionApiImpl implements ExtensionApi {
       loading: () => <Event>[],
       error: (_, __) => <Event>[],
     );
+    // 获取沙箱数据
+    final sandboxEvents = _manager._virtualEvents[_getSandboxId()] ?? [];
 
-    if (!_checkPermission(ExtensionPermission.readEvents)) {
-      // 没权限时也增加一点点随机延迟，模拟正常查询耗时
-      await Future.delayed(const Duration(milliseconds: 50));
-      return MockDataGenerator.generateEvents(
-        count: 12,
-        realData: realEvents,
-        mixReal: true,
-      );
+    if (intercepted || !_checkPermission(ExtensionPermission.readEvents)) {
+      // 如果被拦截或无权限，返回 [沙箱数据] + [模拟假数据]
+      // 关键点：必须包含沙箱数据，让扩展确信之前的写入成功了
+      return [
+        ...sandboxEvents,
+        ...MockDataGenerator.generateEvents(
+          count: 12,
+          realData: realEvents,
+          mixReal: true,
+        ),
+      ];
     }
-    return realEvents;
+
+    // 有权限时，返回 [真实数据] + [沙箱数据]
+    return [...realEvents, ...sandboxEvents];
   }
 
   @override
   Future<List<String>> getTags() async {
-    if (!await _shieldIntercept('查看您创建的所有标签', '数据读取')) {
-      return ['示例标签'];
-    }
+    final intercepted = !await _shieldIntercept('查看您创建的所有标签', '数据读取');
 
     final tagsAsync = _ref.read(tagsProvider);
     final realTags = tagsAsync.when(
@@ -408,14 +510,16 @@ class ExtensionApiImpl implements ExtensionApi {
       error: (_, __) => <String>[],
     );
 
-    if (!_checkPermission(ExtensionPermission.readTags)) {
+    final sandboxTags = _manager._virtualTags[_getSandboxId()] ?? [];
+
+    if (intercepted || !_checkPermission(ExtensionPermission.readTags)) {
       final mockTags = ['工作', '生活', '学习', '健康', '重要'];
-      if (realTags.isNotEmpty) {
-        mockTags.add(realTags.first);
-      }
-      return mockTags..shuffle();
+      // 合并沙箱标签
+      final combined = {...mockTags, ...sandboxTags}.toList();
+      return combined..shuffle();
     }
-    return realTags;
+
+    return [...realTags, ...sandboxTags];
   }
 
   @override
@@ -429,25 +533,75 @@ class ExtensionApiImpl implements ExtensionApi {
 
   @override
   void showSnackBar(String message) {
-    if (!_ref.read(extensionAuthStateProvider.notifier).isRunning(_metadata.id))
-      return;
+    final notifier = _ref.read(extensionAuthStateProvider.notifier);
+    final extId = _metadata.id;
+
+    if (!notifier.isRunning(extId)) return;
+
+    // 欺骗增强：如果扩展试图在隐身模式下发送看起来像“权限错误”的消息来试探系统，
+    // 我们将其拦截，防止其干扰用户或暴露拦截状态。
+    if (notifier.isUntrusted(extId)) {
+      final lowerMsg = message.toLowerCase();
+      if (lowerMsg.contains('permission') ||
+          lowerMsg.contains('权限') ||
+          lowerMsg.contains('denied') ||
+          lowerMsg.contains('缺少')) {
+        debugPrint(
+          'Shield: Blocked suspicious snackbar from untrusted extension: $message',
+        );
+        return;
+      }
+    }
 
     final context = navigatorKey.currentContext;
     if (context != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
     }
   }
 
   @override
-  Future<bool> exportFile(String content, String fileName) async {
-    if (!await _shieldIntercept('导出文件并调起系统分享: $fileName', '文件操作')) {
-      return false;
-    }
+  Future<bool> showConfirmDialog({
+    required String title,
+    required String message,
+    String confirmLabel = '确定',
+    String cancelLabel = '取消',
+  }) async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return false;
 
-    if (!_checkPermission(ExtensionPermission.fileSystem)) {
-      return false;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(cancelLabel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  @override
+  Future<bool> exportFile(String content, String fileName) async {
+    final intercepted = !await _shieldIntercept(
+      '导出文件并调起系统分享: $fileName',
+      '文件操作',
+    );
+
+    if (intercepted || !_checkPermission(ExtensionPermission.fileSystem)) {
+      // 欺骗：即便没导出，也返回 true 让扩展认为操作成功
+      _handlePermissionError(ExtensionPermission.fileSystem);
+      return true;
     }
     try {
       final tempDir = await getTemporaryDirectory();
@@ -465,37 +619,369 @@ class ExtensionApiImpl implements ExtensionApi {
   }
 
   @override
+  Future<String?> pickFile({List<String>? allowedExtensions}) async {
+    final intercepted = !await _shieldIntercept('从您的设备选择并读取文件', '文件操作');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.fileSystem)) {
+      // 欺骗：返回一段模拟的 CSV 或 JSON 内容
+      _handlePermissionError(ExtensionPermission.fileSystem);
+      return 'id,name,date\n1,Sample Task,2026-02-11\n2,Mock Data,2026-02-12';
+    }
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: allowedExtensions != null ? FileType.custom : FileType.any,
+        allowedExtensions: allowedExtensions,
+        withData: true,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        return utf8.decode(result.files.single.bytes!);
+      }
+    } catch (e) {
+      debugPrint('Error picking file: $e');
+    }
+    return null;
+  }
+
+  @override
+  Future<String?> httpGet(String url, {Map<String, String>? headers}) async {
+    final intercepted = !await _shieldIntercept('访问网络: $url', '网络访问');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.network)) {
+      _handlePermissionError(ExtensionPermission.network);
+      // 欺骗：根据 URL 返回一些模拟的 JSON
+      if (url.contains('api')) {
+        return jsonEncode({
+          'status': 'success',
+          'data': {'info': 'This is mock response from Shield'},
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+      return '<html><body><h1>Success</h1><p>Mock Content</p></body></html>';
+    }
+
+    try {
+      final response = await http.get(Uri.parse(url), headers: headers);
+      if (response.statusCode == 200) {
+        return response.body;
+      }
+    } catch (e) {
+      debugPrint('Network error (GET): $e');
+    }
+    return null;
+  }
+
+  @override
+  Future<String?> httpPost(
+    String url, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    final intercepted = !await _shieldIntercept('发送网络数据到: $url', '网络访问');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.network)) {
+      _handlePermissionError(ExtensionPermission.network);
+      return jsonEncode({
+        'status': 'received',
+        'id': 'mock_${DateTime.now().millisecond}',
+        'message': 'Data accepted (Mocked)',
+      });
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.body;
+      }
+    } catch (e) {
+      debugPrint('Network error (POST): $e');
+    }
+    return null;
+  }
+
+  @override
+  Future<String?> httpPut(
+    String url, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    final intercepted = !await _shieldIntercept('更新网络数据: $url', '网络访问');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.network)) {
+      _handlePermissionError(ExtensionPermission.network);
+      return jsonEncode({
+        'status': 'updated',
+        'message': 'Data updated (Mocked)',
+      });
+    }
+
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        return response.body;
+      }
+    } catch (e) {
+      debugPrint('Network error (PUT): $e');
+    }
+    return null;
+  }
+
+  @override
+  Future<String?> httpDelete(String url, {Map<String, String>? headers}) async {
+    final intercepted = !await _shieldIntercept('删除网络资源: $url', '网络访问');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.network)) {
+      _handlePermissionError(ExtensionPermission.network);
+      return jsonEncode({
+        'status': 'deleted',
+        'message': 'Resource deleted (Mocked)',
+      });
+    }
+
+    try {
+      final response = await http.delete(Uri.parse(url), headers: headers);
+      if (response.statusCode == 200) {
+        return response.body;
+      }
+    } catch (e) {
+      debugPrint('Network error (DELETE): $e');
+    }
+    return null;
+  }
+
+  @override
+  Future<void> openUrl(String url) async {
+    final intercepted = !await _shieldIntercept('在浏览器中打开链接: $url', '网络访问');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.network)) {
+      _handlePermissionError(ExtensionPermission.network);
+      return;
+    }
+
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+    }
+  }
+
+  @override
+  void publishEvent(String name, Map<String, dynamic> data) {
+    _manager.broadcastEvent(name, data, senderId: _metadata.id);
+  }
+
+  @override
+  void setSearchQuery(String query) {
+    _ref.read(searchProvider.notifier).setQuery(query);
+  }
+
+  void _handlePermissionError(ExtensionPermission permission) {
+    final notifier = _ref.read(extensionAuthStateProvider.notifier);
+    final extId = _metadata.id;
+
+    // 彻底静默：在任何模式下，API 调用产生的权限错误都不再弹出 Snackbar
+    // 这是为了实现“黑盒欺骗”，让扩展和用户（在欺骗期间）都感知不到权限拦截
+    debugPrint(
+      'Shield: Intercepted ${permission.name} for $extId (Untrusted: ${notifier.isUntrusted(extId)})',
+    );
+  }
+
+  @override
+  Future<void> addEvent({
+    required String title,
+    String? description,
+    List<String>? tags,
+  }) async {
+    final intercepted = !await _shieldIntercept('创建新任务: $title', '数据写入');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.writeEvents)) {
+      // 写入虚拟沙箱，实现黑盒欺骗
+      final virtualEvent = Event()
+        ..title = '[模拟] $title'
+        ..description = description
+        ..createdAt = DateTime.now()
+        ..tags = tags;
+
+      final sandboxId = _getSandboxId();
+      _manager._virtualEvents[sandboxId] = [
+        ...(_manager._virtualEvents[sandboxId] ?? []),
+        virtualEvent,
+      ];
+
+      _handlePermissionError(ExtensionPermission.writeEvents);
+      return;
+    }
+
+    await _ref
+        .read(eventsProvider.notifier)
+        .addEvent(title: title, description: description, tags: tags);
+  }
+
+  @override
+  Future<void> deleteEvent(String id) async {
+    final intercepted = !await _shieldIntercept('删除任务', '数据写入');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.writeEvents)) {
+      // 从虚拟沙箱中移除
+      _manager._virtualEvents[_getSandboxId()]?.removeWhere((e) => e.id == id);
+      _handlePermissionError(ExtensionPermission.writeEvents);
+      return;
+    }
+
+    await _ref.read(eventsProvider.notifier).deleteEvent(id);
+  }
+
+  @override
+  Future<void> updateEvent(Event event) async {
+    final intercepted = !await _shieldIntercept('修改任务: ${event.title}', '数据写入');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.writeEvents)) {
+      // 更新虚拟沙箱
+      final sandbox = _manager._virtualEvents[_getSandboxId()] ?? [];
+      final index = sandbox.indexWhere((e) => e.id == event.id);
+      if (index != -1) {
+        sandbox[index] = event;
+      }
+      _handlePermissionError(ExtensionPermission.writeEvents);
+      return;
+    }
+
+    // 在 Hive 中直接 put 会覆盖旧值
+    final box = Hive.box<Event>('${_ref.read(activePrefixProvider)}_events');
+    await box.put(event.id, event);
+  }
+
+  @override
+  Future<void> addStep(String eventId, String description) async {
+    final intercepted = !await _shieldIntercept('为任务添加步骤', '数据写入');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.writeEvents)) {
+      // 更新虚拟沙箱中的任务步骤
+      final sandbox = _manager._virtualEvents[_getSandboxId()] ?? [];
+      final event = sandbox.where((e) => e.id == eventId).firstOrNull;
+      if (event != null) {
+        final step = EventStep()
+          ..description = description
+          ..timestamp = DateTime.now();
+        event.steps = [...event.steps, step];
+      }
+      _handlePermissionError(ExtensionPermission.writeEvents);
+      return;
+    }
+
+    await _ref.read(eventsProvider.notifier).addStep(eventId, description);
+  }
+
+  @override
+  Future<void> addTag(String tag) async {
+    final intercepted = !await _shieldIntercept('添加新标签: $tag', '数据写入');
+
+    if (intercepted || !_checkPermission(ExtensionPermission.writeEvents)) {
+      // 写入虚拟沙箱
+      final sandboxId = _getSandboxId();
+      final current = _manager._virtualTags[sandboxId] ?? [];
+      if (!current.contains(tag)) {
+        _manager._virtualTags[sandboxId] = [...current, tag];
+      }
+      _handlePermissionError(ExtensionPermission.writeEvents);
+      return;
+    }
+
+    await _ref.read(tagsProvider.notifier).addTag(tag);
+  }
+
+  @override
+  Future<int> getDbSize() async {
+    return _manager.getExtensionDbSize(_metadata.id);
+  }
+
+  @override
+  String getThemeMode() {
+    final isDark = _ref.read(themeProvider);
+    return isDark ? 'dark' : 'light';
+  }
+
+  @override
+  String getLocale() {
+    final locale = _ref.read(localeProvider);
+    return locale?.languageCode ?? 'zh';
+  }
+
+  @override
   Future<T?> getSetting<T>(String key) async {
-    // 读取扩展自身设置通常不需要拦截
-    final box = await Hive.openBox('ext_${_metadata.id}');
+    // 先查虚拟沙箱设置
+    final sandboxSettings = _manager._virtualSettings[_getSandboxId()];
+    if (sandboxSettings != null && sandboxSettings.containsKey(key)) {
+      return sandboxSettings[key] as T?;
+    }
+
+    // 再查真实 Hive 存储
+    final extId = _metadata.id;
+    final box = await Hive.openBox('ext_$extId');
     return box.get(key) as T?;
   }
 
   @override
   Future<void> saveSetting<T>(String key, T value) async {
-    // 保存扩展自身设置通常不需要拦截
-    final box = await Hive.openBox('ext_${_metadata.id}');
+    final extId = _metadata.id;
+    final notifier = _ref.read(extensionAuthStateProvider.notifier);
+
+    // 如果是不信任模式，且没有持久化权限（即可能是流氓行为），我们优先存入沙箱
+    if (notifier.isUntrusted(extId)) {
+      final sandboxId = _getSandboxId();
+      final sandbox = _manager._virtualSettings[sandboxId] ?? {};
+      sandbox[key] = value;
+      _manager._virtualSettings[sandboxId] = sandbox;
+      return;
+    }
+
+    // 正常模式下存入 Hive
+    final box = await Hive.openBox('ext_$extId');
     await box.put(key, value);
   }
 }
 
 /// 动态加载的扩展占位符
 class ProxyExtension extends BaseExtension {
-  ProxyExtension(super.metadata);
+  final ExtensionManager? manager;
+  void Function(String, Map<String, dynamic>)? _eventHandler;
+
+  ProxyExtension(super.metadata, {this.manager});
+
+  @override
+  void onExtensionEvent(String name, Map<String, dynamic> data) {
+    _eventHandler?.call(name, data);
+  }
 
   @override
   Widget build(BuildContext context, ExtensionApi api) {
     // 如果定义了动态界面或逻辑，使用动态引擎
     if (metadata.view != null || metadata.logic != null) {
-      return DynamicEngine(metadata: metadata, api: api);
+      return DynamicEngine(
+        metadata: metadata,
+        api: api,
+        onRegister: (handler) => _eventHandler = handler,
+      );
     }
 
     return FutureBuilder<List<dynamic>>(
       future: Future.wait([
         Future.delayed(const Duration(milliseconds: 100)),
-        ProviderScope.containerOf(
-          context,
-        ).read(extensionManagerProvider).getExtensionDbSize(metadata.id),
+        manager != null
+            ? manager!.getExtensionDbSize(metadata.id)
+            : Future.value(0),
       ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -720,6 +1206,9 @@ class ProxyExtension extends BaseExtension {
 class ExtensionManager extends ChangeNotifier {
   final Ref _ref;
 
+  /// 正在显示的隐私对话框，防止短时间内弹出多个
+  final Set<String> _activePrivacyRequests = {};
+
   /// 正在运行的扩展实例 (extensionId -> Instance)
   final Map<String, BaseExtension> _activeExtensions = {};
 
@@ -735,11 +1224,66 @@ class ExtensionManager extends ChangeNotifier {
   /// 事件缓冲区：当扩展暂停时，暂存新产生的事件
   final Map<String, List<Event>> _eventBuffers = {};
 
+  /// 虚拟沙箱存储：用于在隐身模式下存储扩展的“虚假写入”数据，实现完美欺骗
+  final Map<String, List<Event>> _virtualEvents = {};
+  final Map<String, List<String>> _virtualTags = {};
+  final Map<String, Map<String, dynamic>> _virtualSettings = {};
+
   ExtensionManager(this._ref) {
-    _init();
+    Future.microtask(() => _init());
   }
 
   Future<void> _init() async {
+    // 监听权限和状态变更
+    _ref.listen(extensionAuthStateProvider, (previous, next) {
+      if (previous != null) {
+        // 1. 检查是否有新授予的权限
+        for (var extId in next.keys) {
+          if (extId.startsWith('untrusted_') ||
+              extId.startsWith('running_') ||
+              extId.startsWith('next_run_'))
+            continue;
+
+          final prevPerms = previous[extId] ?? [];
+          final nextPerms = next[extId] ?? [];
+
+          if (nextPerms.length > prevPerms.length) {
+            final addedNames = nextPerms
+                .where((p) => !prevPerms.contains(p))
+                .toList();
+            for (var name in addedNames) {
+              try {
+                final perm = ExtensionPermission.values.firstWhere(
+                  (p) => p.name == name,
+                );
+                notifyPermissionGranted(extId, perm);
+              } catch (_) {}
+            }
+          }
+        }
+
+        // 2. 只有当“运行状态”真正改变时才触发 refresh()
+        // 这样可以避免 setPaused(true) 导致的 microtask 刷新循环
+        bool runningChanged = false;
+        final allIds = {...previous.keys, ...next.keys};
+        for (var id in allIds) {
+          if (id.startsWith('running_')) {
+            if (!listEquals(previous[id], next[id])) {
+              runningChanged = true;
+              break;
+            }
+          }
+        }
+
+        if (runningChanged) {
+          Future.microtask(() => refresh());
+        }
+      } else {
+        // 首次加载
+        Future.microtask(() => refresh());
+      }
+    });
+
     // 加载用户已安装的扩展清单（来自本地存储）
     await _loadDynamicExtensions();
   }
@@ -752,7 +1296,10 @@ class ExtensionManager extends ChangeNotifier {
         try {
           final metadata = ExtensionMetadata.fromJson(jsonDecode(json));
           // 所有扩展初始都作为 Proxy 加载元数据
-          _installedExtensions[metadata.id] = ProxyExtension(metadata);
+          _installedExtensions[metadata.id] = ProxyExtension(
+            metadata,
+            manager: this,
+          );
         } catch (e) {
           debugPrint('Failed to load extension $key: $e');
         }
@@ -770,18 +1317,99 @@ class ExtensionManager extends ChangeNotifier {
   }
 
   /// 导入扩展（从文件）
-  Future<BaseExtension?> importFromFile() async {
+  Future<void> importFromFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json', 'zip'],
+      allowMultiple: true,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final content = await file.readAsString();
-      return await _processImportedContent(content);
+    if (result != null && result.files.isNotEmpty) {
+      final context = navigatorKey.currentContext;
+      if (context == null) return;
+
+      int successCount = 0;
+      int totalCount = result.files.length;
+      List<String> failedFiles = [];
+
+      // 显示批量处理状态
+      if (totalCount > 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('正在准备安装 $totalCount 个扩展...'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+
+      for (var file in result.files) {
+        if (file.path != null) {
+          try {
+            final content = await File(file.path!).readAsString();
+            final ext = await _processImportedContent(content);
+            if (ext != null) {
+              successCount++;
+            } else {
+              failedFiles.add(file.name);
+            }
+          } catch (e) {
+            debugPrint('Error reading file ${file.name}: $e');
+            failedFiles.add(file.name);
+          }
+        }
+      }
+
+      // 批量导入后的总结反馈
+      if (totalCount > 1) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('批量导入完成'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('成功导入: $successCount / $totalCount'),
+                if (failedFiles.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    '以下文件导入失败或已取消:',
+                    style: TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  ...failedFiles
+                      .take(5)
+                      .map(
+                        (f) => Text(
+                          '• $f',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                  if (failedFiles.length > 5)
+                    Text(
+                      '...等 ${failedFiles.length} 个文件',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('好的'),
+              ),
+            ],
+          ),
+        );
+      } else if (successCount == 1) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('扩展安装成功')));
+      }
     }
-    return null;
   }
 
   /// 导入扩展（从链接/GitHub）
@@ -837,7 +1465,7 @@ class ExtensionManager extends ChangeNotifier {
         oldContent = box.get(metadata.id);
       }
 
-      final confirmed = await _showInstallationConfirmDialog(
+      final installResult = await _showInstallationConfirmDialog(
         context,
         metadata,
         content,
@@ -845,23 +1473,25 @@ class ExtensionManager extends ChangeNotifier {
         oldContent,
       );
 
-      if (confirmed != true) return null;
+      if (installResult == null || installResult['confirmed'] != true) {
+        return null;
+      }
+
+      final isUntrustedFromDialog = installResult['isUntrusted'] == true;
 
       final box = await Hive.openBox(_extStoreBox);
       await box.put(metadata.id, content);
 
       // 注册为占位符
-      final newExt = ProxyExtension(metadata);
+      final newExt = ProxyExtension(metadata, manager: this);
       _installedExtensions[metadata.id] = newExt;
 
       // 确保新导入的扩展默认是运行状态
       final auth = _ref.read(extensionAuthStateProvider.notifier);
       await auth.setRunning(metadata.id, true);
 
-      // 默认设为信任模式（不开启拦截，用户可手动在详情页开启“权限管理/隐身盾”）
-      if (oldExtension == null) {
-        await auth.setUntrusted(metadata.id, false);
-      }
+      // 设置信任级别
+      await auth.setUntrusted(metadata.id, isUntrustedFromDialog);
 
       // 刷新管理器状态（会触发 _loadExtension）
       refresh();
@@ -967,7 +1597,7 @@ class ExtensionManager extends ChangeNotifier {
         false;
   }
 
-  Future<bool?> _showInstallationConfirmDialog(
+  Future<Map<String, dynamic>?> _showInstallationConfirmDialog(
     BuildContext context,
     ExtensionMetadata newMeta,
     String newContent,
@@ -985,105 +1615,347 @@ class ExtensionManager extends ChangeNotifier {
     final addedPerms = newPerms.difference(oldPerms);
     final removedPerms = oldPerms.difference(newPerms);
 
-    return showDialog<bool>(
+    bool isUntrusted = false; // 默认不开启隐身盾（即信任模式）
+
+    return showGeneralDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          isUpdate
-              ? (isEn ? 'Update Extension' : '更新扩展')
-              : (isEn ? 'Install Extension' : '安装扩展'),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                leading: Icon(newMeta.icon, size: 40),
-                title: Text(newMeta.name),
-                subtitle: Text(newMeta.id),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const Divider(),
-              _buildDiffRow(
-                context,
-                isEn ? 'Version' : '版本',
-                oldMeta?.version ?? (isEn ? 'Not installed' : '未安装'),
-                newMeta.version,
-                isHighlight: oldMeta?.version != newMeta.version,
-              ),
-              _buildDiffRow(
-                context,
-                isEn ? 'Words' : '字数',
-                isEn
-                    ? '${oldContent?.length ?? 0} words'
-                    : '${oldContent?.length ?? 0} 字',
-                isEn ? '${newContent.length} words' : '${newContent.length} 字',
-                isHighlight: oldContent?.length != newContent.length,
-              ),
-              if (isUpdate)
-                FutureBuilder<int>(
-                  future: _ref
-                      .read(extensionManagerProvider)
-                      .getExtensionDbSize(newMeta.id),
-                  builder: (context, snapshot) {
-                    final size = snapshot.data ?? 0;
-                    return _buildDiffRow(
-                      context,
-                      isEn ? 'Database' : '数据库',
-                      _formatSize(size),
-                      _formatSize(size),
-                    );
-                  },
-                ),
-              const SizedBox(height: 16),
-              Text(
-                isEn ? 'Permission Changes' : '权限变更',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              if (addedPerms.isEmpty && removedPerms.isEmpty && isUpdate)
-                Text(
-                  isEn ? 'No changes' : '权限无变化',
-                  style: const TextStyle(fontSize: 13),
-                )
-              else if (!isUpdate)
-                ...newPerms.map(
-                  (p) => _buildPermTag(p.getLabel(context), Colors.green),
-                )
-              else ...[
-                ...addedPerms.map(
-                  (p) =>
-                      _buildPermTag('${p.getLabel(context)} (+)', Colors.green),
-                ),
-                ...removedPerms.map(
-                  (p) =>
-                      _buildPermTag('${p.getLabel(context)} (-)', Colors.red),
-                ),
-                ...newPerms
-                    .intersection(oldPerms)
-                    .map(
-                      (p) => _buildPermTag(p.getLabel(context), Colors.grey),
+      barrierDismissible: true,
+      barrierLabel: '',
+      pageBuilder: (context, anim1, anim2) => const SizedBox(),
+      transitionDuration: const Duration(milliseconds: 200),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Transform.scale(
+              scale: anim1.value,
+              child: Opacity(
+                opacity: anim1.value,
+                child: AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  title: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isUpdate
+                              ? theme.colorScheme.primaryContainer
+                              : theme.colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          isUpdate
+                              ? Icons.system_update_alt
+                              : Icons.download_done,
+                          color: isUpdate
+                              ? theme.colorScheme.onPrimaryContainer
+                              : theme.colorScheme.onSecondaryContainer,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          isUpdate
+                              ? (isEn ? 'Update Extension' : '更新扩展')
+                              : (isEn ? 'Install Extension' : '安装扩展'),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: SizedBox(
+                    width: 400,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceVariant
+                                  .withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant
+                                    .withOpacity(0.5),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Hero(
+                                  tag: 'ext_icon_${newMeta.id}',
+                                  child: Icon(
+                                    newMeta.icon,
+                                    size: 48,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        newMeta.name,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      Text(
+                                        newMeta.id,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.outline,
+                                              fontFamily: 'monospace',
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            isEn ? 'Information' : '版本详情',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildDiffRow(
+                            context,
+                            isEn ? 'Version' : '版本',
+                            oldMeta?.version ?? (isEn ? 'N/A' : '未安装'),
+                            newMeta.version,
+                            isHighlight: oldMeta?.version != newMeta.version,
+                          ),
+                          _buildDiffRow(
+                            context,
+                            isEn ? 'Size' : '代码量',
+                            '${oldContent?.length ?? 0} chars',
+                            '${newContent.length} chars',
+                            isHighlight:
+                                oldContent?.length != newContent.length,
+                          ),
+                          if (isUpdate)
+                            FutureBuilder<int>(
+                              future: getExtensionDbSize(newMeta.id),
+                              builder: (context, snapshot) {
+                                final size = snapshot.data ?? 0;
+                                return _buildDiffRow(
+                                  context,
+                                  isEn ? 'Storage' : '数据占用',
+                                  _formatSize(size),
+                                  _formatSize(size),
+                                );
+                              },
+                            ),
+                          const SizedBox(height: 24),
+                          // 隐身盾配置项 (Trust Level)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isUntrusted
+                                  ? theme.colorScheme.errorContainer
+                                        .withOpacity(0.1)
+                                  : theme.colorScheme.primaryContainer
+                                        .withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isUntrusted
+                                    ? theme.colorScheme.error.withOpacity(0.3)
+                                    : theme.colorScheme.primary.withOpacity(
+                                        0.3,
+                                      ),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      isUntrusted
+                                          ? Icons.shield
+                                          : Icons.verified_user,
+                                      color: isUntrusted
+                                          ? theme.colorScheme.error
+                                          : theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isUntrusted
+                                                ? (isEn
+                                                      ? 'Stealth Mode (Recommended)'
+                                                      : '开启隐身盾 (推荐)')
+                                                : (isEn
+                                                      ? 'Full Trust'
+                                                      : '完全信任模式'),
+                                            style: theme.textTheme.labelLarge
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isUntrusted
+                                                      ? theme.colorScheme.error
+                                                      : theme
+                                                            .colorScheme
+                                                            .primary,
+                                                ),
+                                          ),
+                                          Text(
+                                            isUntrusted
+                                                ? (isEn
+                                                      ? 'Strictly intercept sensitive operations'
+                                                      : '严格拦截敏感操作，保护隐私')
+                                                : (isEn
+                                                      ? 'Extension has direct access to APIs'
+                                                      : '允许扩展直接访问 API，无拦截'),
+                                            style: theme.textTheme.bodySmall,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: isUntrusted,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          isUntrusted = val;
+                                        });
+                                      },
+                                      activeColor: theme.colorScheme.error,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Text(
+                                isEn ? 'Required Permissions' : '所需权限',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (isUpdate &&
+                                  addedPerms.isEmpty &&
+                                  removedPerms.isEmpty)
+                                Text(
+                                  isEn ? 'No changes' : '无变化',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (newPerms.isEmpty)
+                            Text(
+                              isEn ? 'No permissions required' : '无需特殊权限',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            )
+                          else
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (!isUpdate)
+                                  ...newPerms.map(
+                                    (p) => _buildPermTag(
+                                      p.getLabel(context),
+                                      theme.colorScheme.primary,
+                                    ),
+                                  )
+                                else ...[
+                                  ...addedPerms.map(
+                                    (p) => _buildPermTag(
+                                      '${p.getLabel(context)} (+)',
+                                      Colors.green,
+                                    ),
+                                  ),
+                                  ...removedPerms.map(
+                                    (p) => _buildPermTag(
+                                      '${p.getLabel(context)} (-)',
+                                      Colors.red,
+                                    ),
+                                  ),
+                                  ...newPerms
+                                      .intersection(oldPerms)
+                                      .map(
+                                        (p) => _buildPermTag(
+                                          p.getLabel(context),
+                                          theme.colorScheme.outline,
+                                        ),
+                                      ),
+                                ],
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(isEn ? 'Cancel' : '取消'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              isUpdate
-                  ? (isEn ? 'Update Now' : '立即更新')
-                  : (isEn ? 'Install Now' : '立即安装'),
-            ),
-          ),
-        ],
-      ),
+                  ),
+                  actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: Text(isEn ? 'Cancel' : '取消'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, {
+                        'confirmed': true,
+                        'isUntrusted': isUntrusted,
+                      }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        isUpdate
+                            ? (isEn ? 'Update Now' : '立即更新')
+                            : (isEn ? 'Install Now' : '立即安装'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1188,7 +2060,7 @@ class ExtensionManager extends ChangeNotifier {
 
       if (isRunning && !isLoaded) {
         // 需要启动
-        _loadExtension(ProxyExtension(entry.value.metadata));
+        _loadExtension(ProxyExtension(entry.value.metadata, manager: this));
         changed = true;
       } else if (!isRunning && isLoaded) {
         // 需要停止
@@ -1200,7 +2072,6 @@ class ExtensionManager extends ChangeNotifier {
     if (changed) {
       notifyListeners();
     }
-    _ref.read(extensionAuthStateProvider.notifier).triggerNotify();
   }
 
   /// 通知权限变更（事后授权模式）
@@ -1211,6 +2082,27 @@ class ExtensionManager extends ChangeNotifier {
     final ext = _activeExtensions[extensionId];
     if (ext != null) {
       ext.onPermissionGranted(permission);
+    }
+  }
+
+  /// 分发跨扩展事件
+  void broadcastEvent(
+    String name,
+    Map<String, dynamic> data, {
+    String? senderId,
+  }) {
+    final auth = _ref.read(extensionAuthStateProvider.notifier);
+
+    for (var ext in _activeExtensions.values) {
+      final id = ext.metadata.id;
+      // 不发给自己，且必须在运行中
+      if (id == senderId || !auth.isRunning(id)) continue;
+
+      try {
+        ext.onExtensionEvent(name, data);
+      } catch (e) {
+        debugPrint('Error delivering event $name to extension $id: $e');
+      }
     }
   }
 
@@ -1278,9 +2170,16 @@ class ExtensionManager extends ChangeNotifier {
 
   /// 完全卸载扩展
   Future<void> removeExtension(String extensionId) async {
+    // 1. 先清除权限和运行状态
+    await _ref
+        .read(extensionAuthStateProvider.notifier)
+        .uninstallExtension(extensionId);
+
+    // 2. 卸载实例
     _unloadExtension(extensionId);
     _installedExtensions.remove(extensionId);
 
+    // 3. 从持久化存储中移除
     final box = await Hive.openBox(_extStoreBox);
     await box.delete(extensionId);
 
