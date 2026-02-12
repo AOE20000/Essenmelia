@@ -9,8 +9,11 @@ class WelcomeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showWelcome = ref.watch(showWelcomeProvider);
-
     if (!showWelcome) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -18,29 +21,36 @@ class WelcomeCard extends ConsumerWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
-              Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.4),
+              colorScheme.primaryContainer.withValues(alpha: 0.7),
+              colorScheme.secondaryContainer.withValues(alpha: 0.4),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: colorScheme.primary.withValues(alpha: 0.1),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
               Positioned(
-                right: -20,
-                bottom: -20,
+                right: -10,
+                bottom: -10,
                 child: Icon(
                   Icons.auto_awesome,
-                  size: 100,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                  size: 120,
+                  color: colorScheme.primary.withValues(alpha: 0.08),
                 ),
               ),
               Padding(
@@ -53,42 +63,50 @@ class WelcomeCard extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: colorScheme.surface.withValues(alpha: 0.8),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.waving_hand_rounded, color: Colors.amber, size: 20),
+                          child: const Icon(
+                            Icons.waving_hand_rounded,
+                            color: Colors.amber,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            AppLocalizations.of(context)!.welcomeTitle,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            l10n.welcomeTitle,
+                            style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: colorScheme.onPrimaryContainer,
                             ),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close_rounded, size: 20),
+                          tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                           onPressed: () {
                             ref.read(showWelcomeProvider.notifier).dismissWelcome();
                           },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      AppLocalizations.of(context)!.welcomeMessage,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
-                        height: 1.5,
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 44),
+                      child: Text(
+                        l10n.welcomeMessage,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                          height: 1.5,
+                        ),
                       ),
                     ),
                   ],
