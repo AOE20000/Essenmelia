@@ -34,7 +34,7 @@ class ManageTagsScreen extends ConsumerWidget {
                 background: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 16),
@@ -78,6 +78,15 @@ class ManageTagsScreen extends ConsumerWidget {
                 },
                 child: Card(
                   margin: const EdgeInsets.only(bottom: 8),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
                   child: ListTile(
                     leading: Icon(
                       Icons.label,

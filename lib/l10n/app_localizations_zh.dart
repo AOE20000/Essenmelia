@@ -405,4 +405,91 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navExtensions => '拓展';
+
+  @override
+  String selectedItemsCount(int count) {
+    return '已选 $count 项';
+  }
+
+  @override
+  String get batchArchive => '批量归档';
+
+  @override
+  String get batchAdd => '批量添加';
+
+  @override
+  String get saveAsSet => '保存为集合';
+
+  @override
+  String movedToArchive(int count) {
+    return '已将 $count 项移动到归档';
+  }
+
+  @override
+  String get noArchiveSteps => '暂无存档步骤';
+
+  @override
+  String get noStepSets => '暂无步骤集';
+
+  @override
+  String get saveCurrentAsSetHint => '你可以将当前步骤保存为集合，方便以后快速复用';
+
+  @override
+  String get setName => '集合名称';
+
+  @override
+  String get setSaved => '集合已保存';
+
+  @override
+  String get addExtension => '添加扩展';
+
+  @override
+  String get importFromLocalFile => '从本地文件导入';
+
+  @override
+  String get selectJsonExtension => '选择 .json 扩展包';
+
+  @override
+  String get enterUrlOrGithubLink => '输入 URL 或 GitHub 链接';
+
+  @override
+  String get downloadAndInstallFromLink => '从链接下载并安装';
+
+  @override
+  String get confirmUninstall => '确认卸载';
+
+  @override
+  String uninstallExtensionWarning(String name) {
+    return '确定要卸载扩展 \"$name\" 吗？所有相关设置将被清除。';
+  }
+
+  @override
+  String get uninstall => '卸载';
+
+  @override
+  String get extensionUninstalled => '扩展已卸载';
+
+  @override
+  String get noExtensionsInstalled => '暂无已安装的扩展';
+
+  @override
+  String get deactivated => '已停用';
+
+  @override
+  String get downloadFailedCheckLink => '下载失败，请检查链接';
+
+  @override
+  String get manageAndPermissions => '管理与权限';
+
+  @override
+  String get exportExtensionPackage => '导出扩展包';
+
+  @override
+  String get expandTags => '展开标签';
+
+  @override
+  String get noEventSelected => '未选择事件';
+
+  @override
+  String get tryAdjustingFilters => '尝试调整过滤器或搜索词';
 }

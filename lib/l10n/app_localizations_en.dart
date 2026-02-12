@@ -408,4 +408,94 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navExtensions => 'Extensions';
+
+  @override
+  String selectedItemsCount(int count) {
+    return '$count items selected';
+  }
+
+  @override
+  String get batchArchive => 'Batch Archive';
+
+  @override
+  String get batchAdd => 'Batch Add';
+
+  @override
+  String get saveAsSet => 'Save as Set';
+
+  @override
+  String movedToArchive(int count) {
+    return 'Moved $count items to archive';
+  }
+
+  @override
+  String get noArchiveSteps => 'No archived steps';
+
+  @override
+  String get noStepSets => 'No step sets';
+
+  @override
+  String get saveCurrentAsSetHint =>
+      'You can save current steps as a set for quick reuse later';
+
+  @override
+  String get setName => 'Set Name';
+
+  @override
+  String get setSaved => 'Set saved';
+
+  @override
+  String get addExtension => 'Add Extension';
+
+  @override
+  String get importFromLocalFile => 'Import from local file';
+
+  @override
+  String get selectJsonExtension => 'Select .json extension package';
+
+  @override
+  String get enterUrlOrGithubLink => 'Enter URL or GitHub link';
+
+  @override
+  String get downloadAndInstallFromLink => 'Download and install from link';
+
+  @override
+  String get confirmUninstall => 'Confirm Uninstall';
+
+  @override
+  String uninstallExtensionWarning(String name) {
+    return 'Are you sure you want to uninstall extension \"$name\"? All related settings will be cleared.';
+  }
+
+  @override
+  String get uninstall => 'Uninstall';
+
+  @override
+  String get extensionUninstalled => 'Extension uninstalled';
+
+  @override
+  String get noExtensionsInstalled => 'No extensions installed';
+
+  @override
+  String get deactivated => 'Deactivated';
+
+  @override
+  String get downloadFailedCheckLink =>
+      'Download failed, please check the link';
+
+  @override
+  String get manageAndPermissions => 'Manage & Permissions';
+
+  @override
+  String get exportExtensionPackage => 'Export Extension Package';
+
+  @override
+  String get expandTags => 'Expand Tags';
+
+  @override
+  String get noEventSelected => 'No event selected';
+
+  @override
+  String get tryAdjustingFilters =>
+      'Try adjusting your filters or search query';
 }

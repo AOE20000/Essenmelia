@@ -63,13 +63,13 @@ class _ExtensionManagementScreenState
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             shape: BoxShape.circle,
           ),
           child: Icon(
             metadata.icon,
             size: 64,
-            color: theme.colorScheme.primary,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 16),
@@ -130,11 +130,13 @@ class _ExtensionManagementScreenState
         const SizedBox(height: 12),
         Card(
           elevation: 0,
-          color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.2,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
           ),
           child: Column(
@@ -288,7 +290,9 @@ class _ExtensionManagementScreenState
         else
           Card(
             elevation: 0,
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.2,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -296,7 +300,7 @@ class _ExtensionManagementScreenState
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: permissions.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
+              separatorBuilder: (_, _) => const Divider(height: 1, indent: 56),
               itemBuilder: (context, index) {
                 final perm = permissions[index];
                 final isGranted =
@@ -482,7 +486,7 @@ class _ExtensionManagementScreenState
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
                   side: BorderSide(
-                    color: theme.colorScheme.error.withOpacity(0.5),
+                    color: theme.colorScheme.error.withValues(alpha: 0.5),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

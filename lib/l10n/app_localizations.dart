@@ -829,6 +829,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Extensions'**
   String get navExtensions;
+
+  /// No description provided for @selectedItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items selected'**
+  String selectedItemsCount(int count);
+
+  /// No description provided for @batchArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Archive'**
+  String get batchArchive;
+
+  /// No description provided for @batchAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Add'**
+  String get batchAdd;
+
+  /// No description provided for @saveAsSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Set'**
+  String get saveAsSet;
+
+  /// No description provided for @movedToArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {count} items to archive'**
+  String movedToArchive(int count);
+
+  /// No description provided for @noArchiveSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived steps'**
+  String get noArchiveSteps;
+
+  /// No description provided for @noStepSets.
+  ///
+  /// In en, this message translates to:
+  /// **'No step sets'**
+  String get noStepSets;
+
+  /// No description provided for @saveCurrentAsSetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can save current steps as a set for quick reuse later'**
+  String get saveCurrentAsSetHint;
+
+  /// No description provided for @setName.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Name'**
+  String get setName;
+
+  /// No description provided for @setSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Set saved'**
+  String get setSaved;
+
+  /// No description provided for @addExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Extension'**
+  String get addExtension;
+
+  /// No description provided for @importFromLocalFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from local file'**
+  String get importFromLocalFile;
+
+  /// No description provided for @selectJsonExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'Select .json extension package'**
+  String get selectJsonExtension;
+
+  /// No description provided for @enterUrlOrGithubLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter URL or GitHub link'**
+  String get enterUrlOrGithubLink;
+
+  /// No description provided for @downloadAndInstallFromLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Download and install from link'**
+  String get downloadAndInstallFromLink;
+
+  /// No description provided for @confirmUninstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Uninstall'**
+  String get confirmUninstall;
+
+  /// No description provided for @uninstallExtensionWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to uninstall extension \"{name}\"? All related settings will be cleared.'**
+  String uninstallExtensionWarning(String name);
+
+  /// No description provided for @uninstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall'**
+  String get uninstall;
+
+  /// No description provided for @extensionUninstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension uninstalled'**
+  String get extensionUninstalled;
+
+  /// No description provided for @noExtensionsInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'No extensions installed'**
+  String get noExtensionsInstalled;
+
+  /// No description provided for @deactivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivated'**
+  String get deactivated;
+
+  /// No description provided for @downloadFailedCheckLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed, please check the link'**
+  String get downloadFailedCheckLink;
+
+  /// No description provided for @manageAndPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage & Permissions'**
+  String get manageAndPermissions;
+
+  /// No description provided for @exportExtensionPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Extension Package'**
+  String get exportExtensionPackage;
+
+  /// No description provided for @expandTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Tags'**
+  String get expandTags;
+
+  /// No description provided for @noEventSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No event selected'**
+  String get noEventSelected;
+
+  /// No description provided for @tryAdjustingFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your filters or search query'**
+  String get tryAdjustingFilters;
 }
 
 class _AppLocalizationsDelegate

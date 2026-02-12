@@ -46,17 +46,19 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _showAddExtensionDialog(BuildContext context) {
     final urlController = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('添加扩展'),
+        title: Text(l10n.addExtension),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.file_open_outlined),
-              title: const Text('从本地文件导入'),
-              subtitle: const Text('选择 .json 扩展包'),
+              title: Text(l10n.importFromLocalFile),
+              subtitle: Text(l10n.selectJsonExtension),
               onTap: () async {
                 final navigator = Navigator.of(context);
                 navigator.pop();
@@ -68,8 +70,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
                 controller: urlController,
-                decoration: const InputDecoration(
-                  labelText: '输入 URL 或 GitHub 链接',
+                decoration: InputDecoration(
+                  labelText: l10n.enterUrlOrGithubLink,
                   hintText: 'https://...',
                   isDense: true,
                 ),
@@ -77,15 +79,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             TextButton.icon(
               icon: const Icon(Icons.download),
-              label: const Text('从链接下载并安装'),
+              label: Text(l10n.downloadAndInstallFromLink),
               onPressed: () async {
                 final url = urlController.text.trim();
                 if (url.isNotEmpty) {
+                  final messenger = ScaffoldMessenger.of(context);
                   final navigator = navigatorKey.currentState;
                   Navigator.pop(context);
                   final ext = await ref
                       .read(extensionManagerProvider)
                       .importFromUrl(url);
+
+                  if (!mounted) return;
+
                   if (ext != null && navigator != null) {
                     navigator.push(
                       MaterialPageRoute(
@@ -93,10 +99,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ExtensionManagementScreen(extension: ext),
                       ),
                     );
-                  } else if (ext == null && mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('下载失败，请检查链接')));
+                  } else if (ext == null) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.downloadFailedCheckLink)),
+                    );
                   }
                 }
               },
@@ -106,7 +112,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
         ],
       ),
@@ -114,6 +120,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showExtensionContextMenu(BuildContext context, dynamic ext) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -122,7 +129,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           children: [
             ListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('管理与权限'),
+              title: Text(l10n.manageAndPermissions),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(
@@ -135,7 +142,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             ListTile(
               leading: const Icon(Icons.ios_share),
-              title: const Text('导出扩展包'),
+              title: Text(l10n.exportExtensionPackage),
               onTap: () {
                 Navigator.pop(context);
                 ref
@@ -146,7 +153,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('卸载扩展', style: TextStyle(color: Colors.red)),
+              title: Text(
+                l10n.uninstall,
+                style: const TextStyle(color: Colors.red),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _confirmUninstall(context, ext);
@@ -159,27 +169,34 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _confirmUninstall(BuildContext context, dynamic ext) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认卸载'),
-        content: Text('确定要卸载扩展 "${ext.metadata.name}" 吗？所有相关设置将被清除。'),
+        title: Text(l10n.confirmUninstall),
+        content: Text(l10n.uninstallExtensionWarning(ext.metadata.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               ref
                   .read(extensionManagerProvider)
                   .removeExtension(ext.metadata.id);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('扩展已卸载')));
+
+              if (!mounted) return;
+              messenger.showSnackBar(
+                SnackBar(content: Text(l10n.extensionUninstalled)),
+              );
             },
-            child: const Text('卸载', style: TextStyle(color: Colors.red)),
+            child: Text(
+              l10n.uninstall,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -310,6 +327,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _getTabWidget(HomeTab tab) {
+    final l10n = AppLocalizations.of(context)!;
     switch (tab) {
       case HomeTab.events:
         return _buildMainContent(context);
@@ -321,12 +339,12 @@ class _HomePageState extends ConsumerState<HomePage> {
         return Scaffold(
           key: const ValueKey('extensions'),
           appBar: AppBar(
-            title: Text(AppLocalizations.of(context)!.navExtensions),
+            title: Text(l10n.navExtensions),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () => _showAddExtensionDialog(context),
-                tooltip: '添加扩展',
+                tooltip: l10n.addExtension,
               ),
             ],
           ),
@@ -342,7 +360,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '暂无已安装的扩展',
+                        l10n.noExtensionsInstalled,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).colorScheme.outline,
                         ),
@@ -373,7 +391,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 .surfaceContainerHighest
                                 .withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
                         side: BorderSide(
                           color: isRunning
                               ? Theme.of(
@@ -489,7 +507,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    '已停用',
+                                    l10n.deactivated,
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelSmall
@@ -902,7 +920,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         ),
       ),
     );
@@ -1051,7 +1069,7 @@ class _CustomFilterChip extends StatelessWidget {
               : theme.colorScheme.surfaceContainerHighest.withValues(
                   alpha: 0.5,
                 ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -1108,7 +1126,7 @@ class _StatusToggleButtons extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -1150,7 +1168,7 @@ class _StatusToggleButtons extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
@@ -1185,7 +1203,7 @@ class _EmptyStateSliver extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              AppLocalizations.of(context)!.noEventsFound,
+              AppLocalizations.of(context)!.noEventSelected,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Theme.of(context).colorScheme.outline,
                 fontWeight: FontWeight.w500,
@@ -1193,7 +1211,7 @@ class _EmptyStateSliver extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Try adjusting your filters or search query",
+              AppLocalizations.of(context)!.tryAdjustingFilters,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
@@ -1331,7 +1349,7 @@ class _EventCard extends ConsumerWidget {
         elevation: isSelected ? 0 : (isFocused ? 8 : 2),
         shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           side: BorderSide(
             color: (isSelected || isFocused)
                 ? theme.colorScheme.primary

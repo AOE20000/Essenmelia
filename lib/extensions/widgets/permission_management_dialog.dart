@@ -136,13 +136,13 @@ class _PermissionManagementDialogState
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: widget.isPostHoc
-                    ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-                    : theme.colorScheme.errorContainer.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
+                    ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    : theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: widget.isPostHoc
-                      ? theme.colorScheme.primary.withOpacity(0.2)
-                      : theme.colorScheme.error.withOpacity(0.2),
+                      ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                      : theme.colorScheme.error.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -209,9 +209,13 @@ class _PermissionManagementDialogState
                   const SizedBox(height: 12),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: currentLevel['color'].withOpacity(0.5),
+                      activeTrackColor: currentLevel['color'].withValues(
+                        alpha: 0.5,
+                      ),
                       thumbColor: currentLevel['color'],
-                      overlayColor: currentLevel['color'].withOpacity(0.2),
+                      overlayColor: currentLevel['color'].withValues(
+                        alpha: 0.2,
+                      ),
                       valueIndicatorColor: currentLevel['color'],
                     ),
                     child: Slider(

@@ -233,5 +233,53 @@
     }
   },
   "navEvents": "Events",
-  "navExtensions": "Extensions"
+  "navExtensions": "Extensions",
+  "selectedItemsCount": "{count} items selected",
+  "@selectedItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "batchArchive": "Batch Archive",
+  "batchAdd": "Batch Add",
+  "saveAsSet": "Save as Set",
+  "movedToArchive": "Moved {count} items to archive",
+  "@movedToArchive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noArchiveSteps": "No archived steps",
+  "noStepSets": "No step sets",
+  "saveCurrentAsSetHint": "You can save current steps as a set for quick reuse later",
+  "setName": "Set Name",
+  "setSaved": "Set saved",
+  "addExtension": "Add Extension",
+  "importFromLocalFile": "Import from local file",
+  "selectJsonExtension": "Select .json extension package",
+  "enterUrlOrGithubLink": "Enter URL or GitHub link",
+  "downloadAndInstallFromLink": "Download and install from link",
+  "confirmUninstall": "Confirm Uninstall",
+  "uninstallExtensionWarning": "Are you sure you want to uninstall extension \"{name}\"? All related settings will be cleared.",
+  "@uninstallExtensionWarning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "uninstall": "Uninstall",
+  "extensionUninstalled": "Extension uninstalled",
+  "noExtensionsInstalled": "No extensions installed",
+  "deactivated": "Deactivated",
+  "downloadFailedCheckLink": "Download failed, please check the link",
+  "manageAndPermissions": "Manage & Permissions",
+  "exportExtensionPackage": "Export Extension Package",
+  "expandTags": "Expand Tags",
+  "noEventSelected": "No event selected",
+  "tryAdjustingFilters": "Try adjusting your filters or search query"
 }

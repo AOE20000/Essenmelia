@@ -266,7 +266,7 @@ final extensionManagerProvider = ChangeNotifierProvider<ExtensionManager>((
 /// 全局导航 Key，用于在没有 Context 的地方弹出对话框
 final navigatorKey = GlobalKey<NavigatorState>();
 
-/// 记录本次会话中已允许的权限 (Map<extensionId, Set<String>>)
+/// 记录本次会话中已允许的权限 (`Map<extensionId, Set<String>>`)
 /// String 可以是 "all" 或具体的 Category 名
 final sessionPermissionsProvider = StateProvider<Map<String, Set<String>>>(
   (ref) => {},
@@ -399,6 +399,8 @@ class ExtensionApiImpl implements ExtensionApi {
           return;
         }
 
+        if (!context.mounted) return;
+
         _isDialogShowing = true;
         final completer = Completer<void>();
         _currentDialogFuture = completer.future;
@@ -477,7 +479,7 @@ class ExtensionApiImpl implements ExtensionApi {
     final realEvents = eventsAsync.when(
       data: (events) => events,
       loading: () => <Event>[],
-      error: (_, __) => <Event>[],
+      error: (_, _) => <Event>[],
     );
     // 获取沙箱数据
     final sandboxEvents = _manager._virtualEvents[_getSandboxId()] ?? [];
@@ -507,7 +509,7 @@ class ExtensionApiImpl implements ExtensionApi {
     final realTags = tagsAsync.when(
       data: (tags) => tags,
       loading: () => <String>[],
-      error: (_, __) => <String>[],
+      error: (_, _) => <String>[],
     );
 
     final sandboxTags = _manager._virtualTags[_getSandboxId()] ?? [];
@@ -1012,7 +1014,7 @@ class ProxyExtension extends BaseExtension {
                 Icon(
                   metadata.icon,
                   size: 80,
-                  color: theme.colorScheme.primary.withOpacity(0.5),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -1067,10 +1069,10 @@ class ProxyExtension extends BaseExtension {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -1127,12 +1129,12 @@ class ProxyExtension extends BaseExtension {
   ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Row(
@@ -1250,8 +1252,9 @@ class ExtensionManager extends ChangeNotifier {
         for (var extId in next.keys) {
           if (extId.startsWith('untrusted_') ||
               extId.startsWith('running_') ||
-              extId.startsWith('next_run_'))
+              extId.startsWith('next_run_')) {
             continue;
+          }
 
           final prevPerms = previous[extId] ?? [];
           final nextPerms = next[extId] ?? [];
@@ -1335,7 +1338,7 @@ class ExtensionManager extends ChangeNotifier {
 
     if (result != null && result.files.isNotEmpty) {
       final context = navigatorKey.currentContext;
-      if (context == null) return;
+      if (context == null || !context.mounted) return;
 
       int successCount = 0;
       int totalCount = result.files.length;
@@ -1367,6 +1370,8 @@ class ExtensionManager extends ChangeNotifier {
           }
         }
       }
+
+      if (!context.mounted) return;
 
       // 批量导入后的总结反馈
       if (totalCount > 1) {
@@ -1474,6 +1479,8 @@ class ExtensionManager extends ChangeNotifier {
         oldContent = box.get(metadata.id);
       }
 
+      if (!context.mounted) return null;
+
       final installResult = await _showInstallationConfirmDialog(
         context,
         metadata,
@@ -1490,6 +1497,8 @@ class ExtensionManager extends ChangeNotifier {
 
       final box = await Hive.openBox(_extStoreBox);
       await box.put(metadata.id, content);
+
+      if (!context.mounted) return null;
 
       // 注册为占位符
       final newExt = ProxyExtension(metadata, manager: this);
@@ -1509,6 +1518,7 @@ class ExtensionManager extends ChangeNotifier {
       return _activeExtensions[metadata.id] ?? newExt;
     } catch (e) {
       debugPrint('Invalid extension format: $e');
+      if (!context.mounted) return null;
       final retry = await _showErrorHandlingDialog(context, e.toString());
       if (retry) {
         // 如果用户选择忽略错误强制安装
@@ -1564,7 +1574,7 @@ class ExtensionManager extends ChangeNotifier {
             title: const Row(
               children: [
                 Icon(Icons.error_outline, color: Colors.red),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text('扩展解析错误'),
               ],
             ),
@@ -1580,7 +1590,7 @@ class ExtensionManager extends ChangeNotifier {
                     color: Theme.of(
                       context,
                     ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: SingleChildScrollView(
                     child: Text(
@@ -1641,7 +1651,7 @@ class ExtensionManager extends ChangeNotifier {
                 opacity: anim1.value,
                 child: AlertDialog(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                   contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -1653,7 +1663,7 @@ class ExtensionManager extends ChangeNotifier {
                           color: isUpdate
                               ? theme.colorScheme.primaryContainer
                               : theme.colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
                           isUpdate
@@ -1688,12 +1698,12 @@ class ExtensionManager extends ChangeNotifier {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant
-                                  .withOpacity(0.3),
+                              color: theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: theme.colorScheme.outlineVariant
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                               ),
                             ),
                             child: Row(
@@ -1776,16 +1786,19 @@ class ExtensionManager extends ChangeNotifier {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: isUntrusted
-                                  ? theme.colorScheme.errorContainer
-                                        .withOpacity(0.1)
+                                  ? theme.colorScheme.errorContainer.withValues(
+                                      alpha: 0.1,
+                                    )
                                   : theme.colorScheme.primaryContainer
-                                        .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
+                                        .withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isUntrusted
-                                    ? theme.colorScheme.error.withOpacity(0.3)
-                                    : theme.colorScheme.primary.withOpacity(
-                                        0.3,
+                                    ? theme.colorScheme.error.withValues(
+                                        alpha: 0.3,
+                                      )
+                                    : theme.colorScheme.primary.withValues(
+                                        alpha: 0.3,
                                       ),
                               ),
                             ),
@@ -1846,7 +1859,7 @@ class ExtensionManager extends ChangeNotifier {
                                           isUntrusted = val;
                                         });
                                       },
-                                      activeColor: theme.colorScheme.error,
+                                      activeThumbColor: theme.colorScheme.error,
                                     ),
                                   ],
                                 ),
@@ -1949,7 +1962,7 @@ class ExtensionManager extends ChangeNotifier {
                         ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                       child: Text(
@@ -2009,9 +2022,9 @@ class ExtensionManager extends ChangeNotifier {
       margin: const EdgeInsets.only(bottom: 4, right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,

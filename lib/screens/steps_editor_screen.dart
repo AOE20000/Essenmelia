@@ -68,6 +68,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
     final isSelectionMode =
         _selectedStepIndices.isNotEmpty || _selectedArchiveIds.isNotEmpty;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -82,27 +83,29 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
             : null,
         title: isSelectionMode
             ? Text(
-                _tabController.index == 0
-                    ? "已选 ${_selectedStepIndices.length} 项"
-                    : "已选 ${_selectedArchiveIds.length} 项",
+                l10n.selectedItemsCount(
+                  _tabController.index == 0
+                      ? _selectedStepIndices.length
+                      : _selectedArchiveIds.length,
+                ),
               )
-            : Text(AppLocalizations.of(context)!.editSteps),
+            : Text(l10n.editSteps),
         actions: [
           if (isSelectionMode) ...[
             if (_tabController.index == 0)
               IconButton(
-                tooltip: "批量归档",
+                tooltip: l10n.batchArchive,
                 icon: const Icon(Icons.archive_outlined),
                 onPressed: () => _handleBatchArchive(event),
               ),
             if (_tabController.index == 1) ...[
               IconButton(
-                tooltip: "批量添加",
+                tooltip: l10n.batchAdd,
                 icon: const Icon(Icons.add_task),
                 onPressed: () => _handleBatchAddToSteps(),
               ),
               IconButton(
-                tooltip: "保存为集合",
+                tooltip: l10n.saveAsSet,
                 icon: const Icon(Icons.layers_outlined),
                 onPressed: () => _handleBatchSaveAsSet(),
               ),
@@ -121,9 +124,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: AppLocalizations.of(context)!.steps),
-            Tab(text: AppLocalizations.of(context)!.archive),
-            Tab(text: AppLocalizations.of(context)!.sets),
+            Tab(text: l10n.steps),
+            Tab(text: l10n.archive),
+            Tab(text: l10n.sets),
           ],
         ),
       ),
@@ -174,9 +177,18 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     ref.read(eventsProvider.notifier).updateSteps(event.id, newSteps);
     setState(() => _selectedStepIndices.clear());
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("已将 ${selectedDescriptions.length} 项移动到归档")),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.movedToArchive(selectedDescriptions.length),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _handleBatchAddToSteps() {
@@ -190,9 +202,18 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     }
 
     setState(() => _selectedArchiveIds.clear());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("已添加 ${selectedTemplates.length} 个步骤")),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.addedStepsCount(selectedTemplates.length),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _handleBatchSaveAsSet() {
@@ -204,22 +225,24 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     if (selectedTemplates.isEmpty) return;
 
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("保存为集合"),
+        title: Text(l10n.saveAsSet),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: "集合名称",
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: l10n.setName,
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -232,12 +255,15 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     );
                 setState(() => _selectedArchiveIds.clear());
                 Navigator.pop(context);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("集合已保存")));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.setSaved),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               }
             },
-            child: Text(AppLocalizations.of(context)!.save),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -285,6 +311,10 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
   }
 
   Widget _buildCurrentStepsTab(Event event) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
     if (event.steps.isEmpty) {
       return SingleChildScrollView(
         child: Center(
@@ -295,20 +325,20 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
               Icon(
                 Icons.checklist_rtl_outlined,
                 size: 64,
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                color: colorScheme.outline.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
-                AppLocalizations.of(context)!.noStepsYet,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
+                l10n.noStepsYet,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.outline,
                 ),
               ),
               const SizedBox(height: 32),
               _buildInputArea(
                 controller: _stepController,
                 focusNode: _stepFocusNode,
-                hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
+                hint: l10n.addNewStepPlaceholder,
                 onSubmitted: (val) {
                   ref.read(eventsProvider.notifier).addStep(event.id, val);
                 },
@@ -339,7 +369,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
             proxyDecorator: (child, index, animation) {
               return Material(
                 elevation: 4,
-                color: Colors.transparent,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 child: child,
               );
@@ -356,16 +386,14 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                 child: Card(
                   elevation: 0,
                   color: isSelected
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withOpacity(0.3)
+                      ? colorScheme.primaryContainer.withValues(alpha: 0.3)
                       : null,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outlineVariant,
+                          ? colorScheme.primary
+                          : colorScheme.outlineVariant,
                       width: isSelected ? 2 : 1,
                     ),
                   ),
@@ -385,7 +413,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     ),
                     title: Text(
                       step.description,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium,
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -394,9 +422,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                           icon: Icon(
                             Icons.edit_outlined,
                             size: 20,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.7),
+                            color: colorScheme.primary.withValues(alpha: 0.7),
                           ),
                           onPressed: () =>
                               _showEditStepDialog(event, index, step),
@@ -404,9 +430,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                         IconButton(
                           icon: Icon(
                             Icons.delete_outline,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.error.withOpacity(0.7),
+                            color: colorScheme.error.withValues(alpha: 0.7),
                           ),
                           onPressed: () {
                             final newSteps = List<EventStep>.from(event.steps);
@@ -416,7 +440,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                 .updateSteps(event.id, newSteps);
                           },
                         ),
-                        const SizedBox(width: 29), // 为默认拖动按钮预留空间
+                        const SizedBox(width: 32), // 为默认拖动按钮预留空间
                       ],
                     ),
                   ),
@@ -428,7 +452,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         _buildInputArea(
           controller: _stepController,
           focusNode: _stepFocusNode,
-          hint: AppLocalizations.of(context)!.addNewStepPlaceholder,
+          hint: l10n.addNewStepPlaceholder,
           onSubmitted: (val) {
             ref.read(eventsProvider.notifier).addStep(event.id, val);
           },
@@ -439,6 +463,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
   Widget _buildArchiveTab() {
     final templatesAsync = ref.watch(templatesProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return templatesAsync.when(
       data: (templates) {
@@ -452,22 +479,20 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                   Icon(
                     Icons.archive_outlined,
                     size: 64,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withOpacity(0.5),
+                    color: colorScheme.outline.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "暂无存档步骤",
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
+                    l10n.noArchiveSteps,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.outline,
                     ),
                   ),
                   const SizedBox(height: 32),
                   _buildInputArea(
                     controller: _templateController,
                     focusNode: _templateFocusNode,
-                    hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
+                    hint: l10n.addToArchivePlaceholder,
                     onSubmitted: (val) {
                       ref.read(templatesControllerProvider).addTemplate(val);
                     },
@@ -496,16 +521,14 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     child: Card(
                       elevation: 0,
                       color: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer.withOpacity(0.3)
+                          ? colorScheme.primaryContainer.withValues(alpha: 0.3)
                           : null,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
                           color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outlineVariant,
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant,
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -528,7 +551,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                         ),
                         title: Text(
                           template.description,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style: theme.textTheme.bodyMedium,
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -537,17 +560,13 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                               icon: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
+                                  color: colorScheme.primaryContainer,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.add,
                                   size: 18,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
+                                  color: colorScheme.onPrimaryContainer,
                                 ),
                               ),
                               onPressed: () {
@@ -559,11 +578,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                     );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.addedToSteps,
-                                    ),
+                                    content: Text(l10n.addedToSteps),
                                     behavior: SnackBarBehavior.floating,
                                     duration: const Duration(milliseconds: 500),
                                   ),
@@ -573,9 +588,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                             IconButton(
                               icon: Icon(
                                 Icons.delete_outline,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.error.withOpacity(0.7),
+                                color: colorScheme.error.withValues(alpha: 0.7),
                                 size: 20,
                               ),
                               onPressed: () {
@@ -595,7 +608,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
             _buildInputArea(
               controller: _templateController,
               focusNode: _templateFocusNode,
-              hint: AppLocalizations.of(context)!.addToArchivePlaceholder,
+              hint: l10n.addToArchivePlaceholder,
               onSubmitted: (val) {
                 ref.read(templatesControllerProvider).addTemplate(val);
               },
@@ -612,6 +625,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
   Widget _buildSetsTab(Event event) {
     final setsAsync = ref.watch(stepSetTemplatesProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return setsAsync.when(
       data: (sets) {
@@ -625,15 +641,13 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                   Icon(
                     Icons.layers_outlined,
                     size: 64,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withOpacity(0.5),
+                    color: colorScheme.outline.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "暂无步骤集",
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
+                    l10n.noStepSets,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.outline,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -641,10 +655,10 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Text(
-                        "你可以将当前步骤保存为集合，方便以后快速复用",
+                        l10n.saveCurrentAsSetHint,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
                         ),
                       ),
                     ),
@@ -652,9 +666,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                   if (event.steps.isNotEmpty)
                     FilledButton.icon(
                       icon: const Icon(Icons.save_outlined),
-                      label: Text(
-                        AppLocalizations.of(context)!.saveCurrentStepsAsSet,
-                      ),
+                      label: Text(l10n.saveCurrentStepsAsSet),
                       onPressed: () => _showSaveSetDialog(event),
                     ),
                   const SizedBox(height: 64),
@@ -677,9 +689,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     ),
                   ),
                   icon: const Icon(Icons.save_outlined),
-                  label: Text(
-                    AppLocalizations.of(context)!.saveCurrentStepsAsSet,
-                  ),
+                  label: Text(l10n.saveCurrentStepsAsSet),
                   onPressed: () {
                     _showSaveSetDialog(event);
                   },
@@ -698,15 +708,11 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
+                      border: Border.all(color: colorScheme.outlineVariant),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: ExpansionTile(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerLow,
+                      backgroundColor: colorScheme.surfaceContainerLow,
                       collapsedBackgroundColor: Colors.transparent,
                       shape: const RoundedRectangleBorder(
                         side: BorderSide.none,
@@ -719,21 +725,15 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        AppLocalizations.of(
-                          context,
-                        )!.stepsCount(set.steps.length),
-                        style: Theme.of(context).textTheme.bodySmall,
+                        l10n.stepsCount(set.steps.length),
+                        style: theme.textTheme.bodySmall,
                       ),
                       leading: CircleAvatar(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.secondaryContainer,
+                        backgroundColor: colorScheme.secondaryContainer,
                         child: Text(
                           set.name.isNotEmpty ? set.name.characters.first : "?",
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSecondaryContainer,
+                            color: colorScheme.onSecondaryContainer,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -757,22 +757,17 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                       Text(
                                         "• ",
                                         style: TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                          color: colorScheme.primary,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       Expanded(
                                         child: Text(
                                           s.description,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
+                                          style: theme.textTheme.bodyMedium
                                               ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
                                               ),
                                         ),
                                       ),
@@ -786,9 +781,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                   IconButton.filledTonal(
                                     icon: Icon(
                                       Icons.delete_outline,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.error,
+                                      color: colorScheme.error,
                                     ),
                                     onPressed: () {
                                       ref
@@ -800,11 +793,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                   Expanded(
                                     child: FilledButton.icon(
                                       icon: const Icon(Icons.add),
-                                      label: Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.addAllToSteps,
-                                      ),
+                                      label: Text(l10n.addAllToSteps),
                                       onPressed: () {
                                         for (var s in set.steps) {
                                           ref
@@ -819,9 +808,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                         ).showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              AppLocalizations.of(
-                                                context,
-                                              )!.addedStepsCount(
+                                              l10n.addedStepsCount(
                                                 set.steps.length,
                                               ),
                                             ),
@@ -849,9 +836,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(
-        child: Text(AppLocalizations.of(context)!.error(err.toString())),
-      ),
+      error: (err, stack) => Center(child: Text(l10n.error(err.toString()))),
     );
   }
 
@@ -861,14 +846,17 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     required String hint,
     required Function(String) onSubmitted,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -877,9 +865,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          color: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
             children: [
@@ -888,13 +874,11 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                 child: TextField(
                   controller: controller,
                   focusNode: focusNode,
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: theme.textTheme.bodyLarge,
                   decoration: InputDecoration(
                     hintText: hint,
                     hintStyle: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outline.withOpacity(0.7),
+                      color: colorScheme.outline.withValues(alpha: 0.7),
                       fontSize: 15,
                     ),
                     border: InputBorder.none,
@@ -907,6 +891,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     if (val.trim().isNotEmpty) {
                       onSubmitted(val.trim());
                       controller.clear();
+                      focusNode.requestFocus();
                     }
                   },
                 ),
@@ -921,17 +906,15 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                         : () {
                             onSubmitted(controller.text.trim());
                             controller.clear();
+                            focusNode.requestFocus();
                           },
                     icon: const Icon(Icons.add, size: 24),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      disabledBackgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withOpacity(0.3),
-                      disabledForegroundColor: Theme.of(
-                        context,
-                      ).colorScheme.outline,
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      disabledBackgroundColor: colorScheme.outlineVariant
+                          .withValues(alpha: 0.3),
+                      disabledForegroundColor: colorScheme.outline,
                     ),
                   );
                 },

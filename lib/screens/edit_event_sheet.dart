@@ -234,7 +234,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -311,7 +311,8 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                               originalFile.path,
                               '完整原图',
                               tempImageUrl,
-                              (path) => setModalState(() => tempImageUrl = path),
+                              (path) =>
+                                  setModalState(() => tempImageUrl = path),
                             ),
                             const SizedBox(width: 12),
                             // 识别出的物体
@@ -353,11 +354,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                         spacing: 8,
                         runSpacing: 8,
                         children: List.generate(blocks.length, (index) {
-                          final isSelected =
-                              selectedBlockIndices.contains(index);
+                          final isSelected = selectedBlockIndices.contains(
+                            index,
+                          );
                           return FilterChip(
                             label: Text(
-                              (blocks[index]['text'] as String).replaceAll('\n', ' ').trim(),
+                              (blocks[index]['text'] as String)
+                                  .replaceAll('\n', ' ')
+                                  .trim(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -382,17 +386,19 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                                   tempDescription = '';
                                 } else {
                                   final firstIndex = selectedBlockIndices.first;
-                                  tempTitle = (blocks[firstIndex]['text'] as String)
-                                      .replaceAll('\n', ' ')
-                                      .trim();
+                                  tempTitle =
+                                      (blocks[firstIndex]['text'] as String)
+                                          .replaceAll('\n', ' ')
+                                          .trim();
 
                                   if (selectedBlockIndices.length > 1) {
                                     tempDescription = selectedBlockIndices
                                         .skip(1)
                                         .map(
-                                          (idx) => (blocks[idx]['text'] as String)
-                                              .replaceAll('\n', ' ')
-                                              .trim(),
+                                          (idx) =>
+                                              (blocks[idx]['text'] as String)
+                                                  .replaceAll('\n', ' ')
+                                                  .trim(),
                                         )
                                         .join('\n');
                                   } else {
@@ -406,7 +412,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                             selectedColor: theme.colorScheme.primaryContainer,
                             checkmarkColor: theme.colorScheme.primary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           );
                         }),
@@ -427,7 +433,8 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                       const SizedBox(height: 24),
 
                       // 预览区域
-                      if (tempTitle.isNotEmpty || tempDescription.isNotEmpty) ...[
+                      if (tempTitle.isNotEmpty ||
+                          tempDescription.isNotEmpty) ...[
                         Text(
                           '应用预览',
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -441,7 +448,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: theme.colorScheme.outlineVariant,
                             ),
@@ -523,7 +530,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       child: Container(
         width: 110,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -535,7 +542,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           children: [
             Positioned.fill(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
                 child: Image.file(
                   File(path),
                   fit: BoxFit.cover,
@@ -865,7 +872,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               duration: const Duration(milliseconds: 300),
               height: 280,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: _currentImageUrl != null
                     ? [
                         BoxShadow(
@@ -881,7 +888,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 children: [
                   if (_currentImageUrl != null)
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: BorderRadius.circular(20),
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -918,7 +925,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest
                             .withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: theme.colorScheme.outlineVariant.withValues(
                             alpha: 0.5,
@@ -964,7 +971,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                   if (_isProcessingML)
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(20),
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                           child: Container(
@@ -1061,7 +1068,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 'image/png',
                 'image/jpeg',
                 'image/gif',
-                'image/webp'
+                'image/webp',
               ],
             ),
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -1106,7 +1113,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 'image/png',
                 'image/jpeg',
                 'image/gif',
-                'image/webp'
+                'image/webp',
               ],
             ),
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -1176,7 +1183,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     elevation: 8,
                     shadowColor: theme.colorScheme.shadow.withValues(
@@ -1243,7 +1250,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         body: Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),
@@ -1347,11 +1354,11 @@ class _ImageActionButton extends StatelessWidget {
       message: tooltip,
       child: Material(
         color: theme.colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         elevation: 2,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Icon(icon, size: 20, color: theme.colorScheme.primary),

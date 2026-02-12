@@ -93,15 +93,17 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                       color: isActive
                           ? Theme.of(
                               context,
-                            ).colorScheme.primary.withOpacity(0.5)
-                          : Theme.of(context).dividerColor.withOpacity(0.1),
+                            ).colorScheme.primary.withValues(alpha: 0.5)
+                          : Theme.of(
+                              context,
+                            ).dividerColor.withValues(alpha: 0.1),
                       width: 1.5,
                     ),
                   ),
                   color: isActive
                       ? Theme.of(
                           context,
-                        ).colorScheme.primaryContainer.withOpacity(0.3)
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.3)
                       : Theme.of(context).colorScheme.surface,
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
@@ -132,7 +134,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                           color: isActive
                               ? Theme.of(
                                   context,
-                                ).colorScheme.primary.withOpacity(0.8)
+                                ).colorScheme.primary.withValues(alpha: 0.8)
                               : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -224,7 +226,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                         color: isActive
                             ? Theme.of(
                                 context,
-                              ).colorScheme.primary.withOpacity(0.1)
+                              ).colorScheme.primary.withValues(alpha: 0.1)
                             : Theme.of(
                                 context,
                               ).colorScheme.surfaceContainerHighest,

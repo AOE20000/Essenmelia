@@ -142,5 +142,53 @@
   "importFailedDetailed": "导入失败：{error}",
   "exportFailedDetailed": "导出失败：{error}",
   "navEvents": "事件",
-  "navExtensions": "拓展"
+  "navExtensions": "拓展",
+  "selectedItemsCount": "已选 {count} 项",
+  "@selectedItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "batchArchive": "批量归档",
+  "batchAdd": "批量添加",
+  "saveAsSet": "保存为集合",
+  "movedToArchive": "已将 {count} 项移动到归档",
+  "@movedToArchive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noArchiveSteps": "暂无存档步骤",
+  "noStepSets": "暂无步骤集",
+  "saveCurrentAsSetHint": "你可以将当前步骤保存为集合，方便以后快速复用",
+  "setName": "集合名称",
+  "setSaved": "集合已保存",
+  "addExtension": "添加扩展",
+  "importFromLocalFile": "从本地文件导入",
+  "selectJsonExtension": "选择 .json 扩展包",
+  "enterUrlOrGithubLink": "输入 URL 或 GitHub 链接",
+  "downloadAndInstallFromLink": "从链接下载并安装",
+  "confirmUninstall": "确认卸载",
+  "uninstallExtensionWarning": "确定要卸载扩展 \"{name}\" 吗？所有相关设置将被清除。",
+  "@uninstallExtensionWarning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "uninstall": "卸载",
+  "extensionUninstalled": "扩展已卸载",
+  "noExtensionsInstalled": "暂无已安装的扩展",
+  "deactivated": "已停用",
+  "downloadFailedCheckLink": "下载失败，请检查链接",
+  "manageAndPermissions": "管理与权限",
+  "exportExtensionPackage": "导出扩展包",
+  "expandTags": "展开标签",
+  "noEventSelected": "未选择事件",
+  "tryAdjustingFilters": "尝试调整过滤器或搜索词"
 }

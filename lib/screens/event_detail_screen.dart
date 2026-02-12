@@ -85,7 +85,7 @@ class EventDetailScreen extends ConsumerWidget {
                   imageUrl: event.imageUrl!,
                   height: 200,
                   fit: BoxFit.cover,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
             ),
@@ -204,7 +204,7 @@ class EventDetailScreen extends ConsumerWidget {
                         color: Theme.of(
                           context,
                         ).colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         "${event.steps.where((s) => s.completed).length}/${event.steps.length}",
@@ -357,7 +357,7 @@ class _HeaderActionButton extends StatelessWidget {
       icon: Icon(icon, color: color),
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.all(8),
       ),
     );
@@ -373,6 +373,7 @@ class _StepsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (event.steps.isEmpty) {
       return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(AppLocalizations.of(context)!.noStepsYet),
@@ -391,11 +392,11 @@ class _StepsList extends ConsumerWidget {
                     context,
                   ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
                 : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
             child: InkWell(
               onTap: () =>
                   ref.read(eventsProvider.notifier).toggleStep(event.id, index),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -407,7 +408,7 @@ class _StepsList extends ConsumerWidget {
                         ? Colors.transparent
                         : Theme.of(context).colorScheme.outlineVariant,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
@@ -489,7 +490,7 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
             width: 2,
@@ -530,7 +531,7 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
       label: Text(AppLocalizations.of(context)!.addStep),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
     );

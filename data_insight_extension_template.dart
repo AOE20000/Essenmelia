@@ -129,7 +129,7 @@ class _DataInsightPageState extends State<_DataInsightPage> {
             Icon(
               Icons.auto_graph,
               size: 64,
-              color: theme.colorScheme.outline.withOpacity(0.5),
+              color: theme.colorScheme.outline.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             const Text('暂无数据或访问受限'),
