@@ -1,8 +1,12 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/event.dart';
 import 'db_provider.dart';
 import '../extensions/extension_manager.dart';
+
+import '../services/storage_service.dart';
 
 class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   final Ref ref;
@@ -24,6 +28,11 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
       // Initial load
       state = AsyncValue.data(_box!.values.toList());
+
+      // 后台执行存储清理
+      StorageService.cleanupOrphanImages(activePrefix).then((count) {
+        if (count > 0) debugPrint('后台清理了 $count 个孤儿图片文件');
+      });
 
       // Watch for changes
       _box!.listenable().addListener(() {
@@ -58,7 +67,26 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
   Future<void> deleteEvent(String id) async {
     if (_box == null) await _init();
-    await _box!.delete(id);
+    final event = _box!.get(id);
+    if (event != null) {
+      // 1. 如果有本地图片，尝试删除文件以节省空间
+      if (event.imageUrl != null &&
+          event.imageUrl!.isNotEmpty &&
+          !event.imageUrl!.startsWith('http') &&
+          !event.imageUrl!.startsWith('data:')) {
+        try {
+          final file = File(event.imageUrl!);
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint('已删除关联图片文件: ${event.imageUrl}');
+          }
+        } catch (e) {
+          debugPrint('删除图片文件失败: $e');
+        }
+      }
+      // 2. 删除数据库记录
+      await _box!.delete(id);
+    }
   }
 
   Future<void> addStep(String eventId, String description) async {

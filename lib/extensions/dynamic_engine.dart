@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/tags_provider.dart';
 import 'base_extension.dart';
 
 /// 动态 UI 渲染器与逻辑执行引擎 (Path B & C)
-class DynamicEngine extends StatefulWidget {
+class DynamicEngine extends ConsumerStatefulWidget {
   final ExtensionMetadata metadata;
   final ExtensionApi api;
   final Function(void Function(String, Map<String, dynamic>))? onRegister;
@@ -16,10 +18,10 @@ class DynamicEngine extends StatefulWidget {
   });
 
   @override
-  State<DynamicEngine> createState() => _DynamicEngineState();
+  ConsumerState<DynamicEngine> createState() => _DynamicEngineState();
 }
 
-class _DynamicEngineState extends State<DynamicEngine> {
+class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   final Map<String, dynamic> _state = {};
   bool _isLoading = true;
 
@@ -576,6 +578,64 @@ class _DynamicEngineState extends State<DynamicEngine> {
             localEventData['index'] = index;
             return _buildWidget(context, itemDef, eventData: localEventData);
           },
+        );
+      case 'tag_panel':
+        final allTags = ref.watch(tagsProvider).value ?? [];
+        final selectedTags =
+            (_resolveValue(props['selected'], eventData: eventData) as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
+        final recommendSource = _resolveValue(
+          props['recommendSource'],
+          eventData: eventData,
+        )?.toString();
+
+        final recommendations = recommendSource != null
+            ? allTags.where((tag) {
+                return recommendSource.toLowerCase().contains(
+                  tag.toLowerCase(),
+                );
+              }).toList()
+            : <String>[];
+
+        final sortedTags = List<String>.from(allTags);
+        sortedTags.sort((a, b) {
+          final aRec = recommendations.contains(a);
+          final bRec = recommendations.contains(b);
+          if (aRec && !bRec) return -1;
+          if (!aRec && bRec) return 1;
+          return a.compareTo(b);
+        });
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: sortedTags.map((tag) {
+            final isSelected = selectedTags.contains(tag);
+            final isRecommended = recommendations.contains(tag);
+            return FilterChip(
+              label: Text(tag, style: const TextStyle(fontSize: 12)),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (props['onChanged'] != null) {
+                  final newList = List<String>.from(selectedTags);
+                  if (selected) {
+                    newList.add(tag);
+                  } else {
+                    newList.remove(tag);
+                  }
+                  _executeAction(
+                    props['onChanged'],
+                    eventData: {'value': newList},
+                  );
+                }
+              },
+              avatar: isRecommended && !isSelected
+                  ? const Icon(Icons.auto_awesome, size: 14)
+                  : null,
+            );
+          }).toList(),
         );
       default:
         return Text('Unknown widget: $type');

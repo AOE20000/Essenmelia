@@ -219,7 +219,7 @@ class SettingsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(themeProvider);
+    final themeMode = ref.watch(themeProvider);
     final displaySettings = ref.watch(displaySettingsProvider);
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -260,15 +260,36 @@ class SettingsSheet extends ConsumerWidget {
                   },
                 ),
               ),
-              SwitchListTile(
+              ListTile(
+                leading: Icon(switch (themeMode) {
+                  ThemeModeOption.system => Icons.brightness_auto,
+                  ThemeModeOption.light => Icons.light_mode,
+                  ThemeModeOption.dark => Icons.dark_mode,
+                }),
                 title: Text(AppLocalizations.of(context)!.darkMode),
-                secondary: Icon(
-                  isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                trailing: DropdownButton<ThemeModeOption>(
+                  value: themeMode,
+                  underline: const SizedBox(),
+                  items: [
+                    DropdownMenuItem(
+                      value: ThemeModeOption.system,
+                      child: Text(AppLocalizations.of(context)!.useSystemTheme),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeModeOption.light,
+                      child: Text(AppLocalizations.of(context)!.light),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeModeOption.dark,
+                      child: Text(AppLocalizations.of(context)!.dark),
+                    ),
+                  ],
+                  onChanged: (mode) {
+                    if (mode != null) {
+                      ref.read(themeProvider.notifier).setThemeMode(mode);
+                    }
+                  },
                 ),
-                value: isDarkMode,
-                onChanged: (value) {
-                  ref.read(themeProvider.notifier).toggleTheme();
-                },
               ),
               SwitchListTile(
                 title: Text(AppLocalizations.of(context)!.collapseImages),

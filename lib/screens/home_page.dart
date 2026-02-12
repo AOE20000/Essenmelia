@@ -58,7 +58,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               title: const Text('从本地文件导入'),
               subtitle: const Text('选择 .json 扩展包'),
               onTap: () async {
-                Navigator.pop(context);
+                final navigator = Navigator.of(context);
+                navigator.pop();
                 await ref.read(extensionManagerProvider).importFromFile();
               },
             ),
@@ -367,16 +368,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                       elevation: isRunning ? 2 : 0,
                       color: isRunning
                           ? null
-                          : Theme.of(
-                              context,
-                            ).colorScheme.surfaceVariant.withOpacity(0.5),
+                          : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
                           color: isRunning
                               ? Theme.of(
                                   context,
-                                ).colorScheme.primary.withOpacity(0.1)
+                                ).colorScheme.primary.withValues(alpha: 0.1)
                               : Colors.transparent,
                           width: 1,
                         ),
@@ -460,8 +462,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           color: Theme.of(context)
                                               .colorScheme
                                               .outline
-                                              .withOpacity(
-                                                isRunning ? 1.0 : 0.6,
+                                              .withValues(
+                                                alpha: isRunning ? 1.0 : 0.6,
                                               ),
                                         ),
                                     textAlign: TextAlign.center,
@@ -483,7 +485,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.surfaceVariant,
+                                    ).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -623,7 +625,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               onTap: () => ref.read(leftPanelContentProvider.notifier).state =
                   LeftPanelContent.none,
               child: Container(
-                color: Colors.black.withOpacity(0.3), // Slightly darker
+                color: Colors.black.withValues(alpha: 0.3), // Slightly darker
               ),
             ),
           ).animate().fadeIn(duration: 200.ms),
@@ -675,7 +677,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.08),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
             width: 0.5,
           ),
         ),
@@ -698,7 +700,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .surfaceContainerHighest
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(22),
                           ),
                           child: TextField(
@@ -1046,18 +1048,20 @@ class _CustomFilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary
-              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              : theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.5,
+                ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant.withOpacity(0.3),
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
             width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1103,7 +1107,7 @@ class _StatusToggleButtons extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(4),
@@ -1175,7 +1179,9 @@ class _EmptyStateSliver extends StatelessWidget {
             Icon(
               Icons.event_busy_rounded,
               size: 80,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 16),
             Text(
@@ -1189,7 +1195,9 @@ class _EmptyStateSliver extends StatelessWidget {
             Text(
               "Try adjusting your filters or search query",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -1200,25 +1208,27 @@ class _EmptyStateSliver extends StatelessWidget {
 }
 
 class _SideLeftPanel extends ConsumerWidget {
-  final double screenWidth;
-  final LeftPanelContent content;
-  final String? eventId;
+  final double _screenWidth;
+  final LeftPanelContent _content;
+  final String? _eventId;
 
   const _SideLeftPanel({
-    required this.screenWidth,
-    required this.content,
-    this.eventId,
-  });
+    required double screenWidth,
+    required LeftPanelContent content,
+    String? eventId,
+  }) : _screenWidth = screenWidth,
+       _content = content,
+       _eventId = eventId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     Widget child;
-    switch (content) {
+    switch (_content) {
       case LeftPanelContent.settings:
         child = const SettingsSheet(isSidePanel: true);
         break;
       case LeftPanelContent.stepsEditor:
-        final id = eventId;
+        final id = _eventId;
         if (id == null) {
           child = const Center(child: Text("No event selected"));
         } else {
@@ -1229,7 +1239,7 @@ class _SideLeftPanel extends ConsumerWidget {
         child = const EditEventSheet(isSidePanel: true);
         break;
       case LeftPanelContent.editEvent:
-        final id = eventId;
+        final id = _eventId;
         final event = ref
             .watch(eventsProvider)
             .asData
@@ -1250,12 +1260,12 @@ class _SideLeftPanel extends ConsumerWidget {
     }
 
     return Container(
-      width: screenWidth * 0.35, // Increased slightly for better readability
+      width: _screenWidth * 0.35, // Increased slightly for better readability
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(5, 0),
           ),
@@ -1282,7 +1292,7 @@ class _SideDetailPanel extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -1319,13 +1329,13 @@ class _EventCard extends ConsumerWidget {
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         elevation: isSelected ? 0 : (isFocused ? 8 : 2),
-        shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
+        shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             color: (isSelected || isFocused)
                 ? theme.colorScheme.primary
-                : theme.dividerColor.withOpacity(0.05),
+                : theme.dividerColor.withValues(alpha: 0.05),
             width: (isSelected || isFocused) ? 2 : 1,
           ),
         ),
@@ -1345,7 +1355,7 @@ class _EventCard extends ConsumerWidget {
               if (isSelected)
                 Positioned.fill(
                   child: Container(
-                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.all(8),
@@ -1354,7 +1364,7 @@ class _EventCard extends ConsumerWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -1465,12 +1475,12 @@ class _TagsWrap extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
-                ).colorScheme.secondaryContainer.withOpacity(0.5),
+                ).colorScheme.secondaryContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: Theme.of(
                     context,
-                  ).colorScheme.secondary.withOpacity(0.1),
+                  ).colorScheme.secondary.withValues(alpha: 0.1),
                   width: 0.5,
                 ),
               ),

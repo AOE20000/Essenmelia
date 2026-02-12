@@ -293,11 +293,11 @@ class ExtensionApiImpl implements ExtensionApi {
         .hasPermission(extId, permission);
     if (hasPersistent) return true;
 
-    // 2. 检查本次会话的临时授权 (通过隐身盾弹窗获得的授权)
+    // 2. 检查本次会话的临时授权 (通过“受限访问”弹窗获得的授权)
     final sessionPerms = _ref.read(sessionPermissionsProvider)[extId] ?? {};
     if (sessionPerms.contains('all')) return true;
 
-    // 映射权限到隐身盾类别
+    // 映射权限到“受限访问”类别
     final categoryMap = {
       ExtensionPermission.readEvents: '数据读取',
       ExtensionPermission.writeEvents: '数据写入',
@@ -333,7 +333,7 @@ class ExtensionApiImpl implements ExtensionApi {
       return false;
     }
 
-    // 如果未开启不信任模式，直接通过
+    // 如果未开启“受限访问”模式，直接通过
     if (!notifier.isUntrusted(extId)) return true;
 
     // 检查是否有“仅下次允许”的权限，如果有则直接消费并放行
@@ -470,7 +470,7 @@ class ExtensionApiImpl implements ExtensionApi {
       return MockDataGenerator.generateEvents(count: 3);
     }
 
-    // 隐身盾拦截 (异步非阻塞，如果拦截则立即返回 false)
+    // “受限访问”拦截 (异步非阻塞，如果拦截则立即返回 false)
     final intercepted = !await _shieldIntercept('读取您的所有任务列表和步骤', '数据读取');
 
     final eventsAsync = _ref.read(eventsProvider);
@@ -909,7 +909,16 @@ class ExtensionApiImpl implements ExtensionApi {
 
   @override
   String getThemeMode() {
-    final isDark = _ref.read(themeProvider);
+    final themeOption = _ref.read(themeProvider);
+    final context = navigatorKey.currentContext;
+
+    bool isDark = false;
+    if (themeOption == ThemeModeOption.system && context != null) {
+      isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    } else {
+      isDark = themeOption == ThemeModeOption.dark;
+    }
+
     return isDark ? 'dark' : 'light';
   }
 
@@ -1762,7 +1771,7 @@ class ExtensionManager extends ChangeNotifier {
                               },
                             ),
                           const SizedBox(height: 24),
-                          // 隐身盾配置项 (Trust Level)
+                          // 受限访问配置项 (Trust Level)
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -1802,8 +1811,8 @@ class ExtensionManager extends ChangeNotifier {
                                           Text(
                                             isUntrusted
                                                 ? (isEn
-                                                      ? 'Stealth Mode (Recommended)'
-                                                      : '开启隐身盾 (推荐)')
+                                                      ? 'Restricted Access'
+                                                      : '开启受限访问')
                                                 : (isEn
                                                       ? 'Full Trust'
                                                       : '完全信任模式'),

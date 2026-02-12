@@ -18,6 +18,8 @@
   "importExport": "导入 / 导出",
   "appearance": "外观",
   "darkMode": "深色模式",
+  "light": "浅色",
+  "dark": "深色",
   "useSystemTheme": "跟随系统",
   "language": "语言",
   "systemLanguage": "系统默认",

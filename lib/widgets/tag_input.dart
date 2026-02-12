@@ -5,11 +5,13 @@ import '../providers/tags_provider.dart';
 
 class TagInput extends ConsumerStatefulWidget {
   final List<String> initialTags;
+  final List<String> recommendedTags;
   final Function(List<String>) onChanged;
 
   const TagInput({
     super.key,
     required this.initialTags,
+    this.recommendedTags = const [],
     required this.onChanged,
   });
 
@@ -38,7 +40,46 @@ class _TagInputState extends ConsumerState<TagInput> {
   }
 
   void _onSearchChanged() {
-    final query = _controller.text.toLowerCase();
+    final text = _controller.text;
+    final value = _controller.value;
+
+    // 如果处于输入法组合输入状态（如拼音输入中），不进行自动分词
+    if (value.composing.isValid) {
+      setState(() {
+        _suggestions = [];
+        _showSuggestions = false;
+      });
+      return;
+    }
+
+    // 如果输入包含空格，则进行批量添加
+    if (text.contains(' ')) {
+      final parts = text.split(' ');
+      // 最后一个可能还没输完，保留它
+      final tagsToAdd = parts.sublist(0, parts.length - 1);
+      final remaining = parts.last;
+
+      bool changed = false;
+      for (final tag in tagsToAdd) {
+        final cleanTag = tag.trim();
+        if (cleanTag.isNotEmpty && !_selectedTags.contains(cleanTag)) {
+          _selectedTags.add(cleanTag);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        setState(() {
+          _controller.text = remaining;
+          _controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: remaining.length),
+          );
+        });
+        widget.onChanged(_selectedTags);
+      }
+    }
+
+    final query = _controller.text.toLowerCase().trim();
     if (query.isEmpty) {
       setState(() {
         _suggestions = [];
@@ -53,8 +94,7 @@ class _TagInputState extends ConsumerState<TagInput> {
         return tag.toLowerCase().contains(query) &&
             !_selectedTags.contains(tag);
       }).toList();
-      _showSuggestions =
-          true; // Always show if there is text, even if 0 suggestions (to allow creating)
+      _showSuggestions = true;
     });
   }
 
@@ -71,8 +111,8 @@ class _TagInputState extends ConsumerState<TagInput> {
       });
       widget.onChanged(_selectedTags);
 
-      // Auto-add to global list
-      ref.read(tagsProvider.notifier).addTag(cleanTag);
+      // 注意：这里不再立即调用 ref.read(tagsProvider.notifier).addTag(cleanTag)
+      // 而是交给保存流程统一处理
     } else {
       _controller.clear();
     }
@@ -87,31 +127,74 @@ class _TagInputState extends ConsumerState<TagInput> {
 
   @override
   Widget build(BuildContext context) {
+    final availableRecommendations = widget.recommendedTags
+        .where((tag) => !_selectedTags.contains(tag))
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_selectedTags.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _selectedTags.map((tag) {
+              return Chip(
+                key: ValueKey('tag_$tag'),
+                label: Text(tag, style: const TextStyle(fontSize: 12)),
+                onDeleted: () => _removeTag(tag),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+              );
+            }).toList(),
+          ),
+        ),
+        if (availableRecommendations.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _selectedTags.map((tag) {
-                return Chip(
-                  label: Text(tag),
-                  onDeleted: () => _removeTag(tag),
-                  deleteIcon: const Icon(Icons.close, size: 18),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  labelStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                );
-              }).toList(),
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '推荐标签',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: availableRecommendations.map((tag) {
+                    return ActionChip(
+                      label: Text(tag, style: const TextStyle(fontSize: 11)),
+                      onPressed: () => _addTag(tag),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.zero,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ),
-
         TextField(
           controller: _controller,
           decoration: InputDecoration(

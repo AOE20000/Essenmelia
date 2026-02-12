@@ -203,7 +203,7 @@ class EventDetailScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.1),
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -389,7 +389,7 @@ class _StepsList extends ConsumerWidget {
             color: step.completed
                 ? Theme.of(
                     context,
-                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3)
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
                 : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
@@ -491,7 +491,7 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
             width: 2,
           ),
         ),
@@ -656,10 +656,12 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
       decoration: BoxDecoration(
         color: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withOpacity(0.2),
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -736,16 +738,15 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                           boxShadow: isBeingDragged
                               ? [
                                   BoxShadow(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withOpacity(0.4),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.4),
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),
                                 ]
                               : [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     blurRadius: 2,
                                     offset: const Offset(0, 1),
                                   ),

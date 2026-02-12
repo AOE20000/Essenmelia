@@ -104,7 +104,7 @@ class _PermissionManagementDialogState
           Text(
             widget.isPostHoc
                 ? (isEn ? 'Access Intercepted' : '拦截了一次访问')
-                : (isEn ? 'Untrusted Extension' : '此拓展不受信任'),
+                : (isEn ? 'Restricted Access' : '已开启受限访问'),
           ),
         ],
       ),

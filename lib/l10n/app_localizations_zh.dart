@@ -66,6 +66,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get darkMode => '深色模式';
 
   @override
+  String get light => '浅色';
+
+  @override
+  String get dark => '深色';
+
+  @override
   String get useSystemTheme => '跟随系统';
 
   @override

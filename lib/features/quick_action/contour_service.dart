@@ -13,13 +13,13 @@ class ContourService {
     _objectDetector = ObjectDetector(options: options);
   }
 
-  Future<List<Map<String, dynamic>>> detectContours(String imagePath) async {
+  Future<Map<String, dynamic>> detectObjects(String imagePath) async {
     final inputImage = InputImage.fromFilePath(imagePath);
     final List<DetectedObject> objects = await _objectDetector.processImage(
       inputImage,
     );
 
-    return objects
+    final List<Map<String, dynamic>> result = objects
         .map(
           (obj) => {
             'rect': {
@@ -32,6 +32,8 @@ class ContourService {
           },
         )
         .toList();
+
+    return {'objects': result};
   }
 
   void dispose() {

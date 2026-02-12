@@ -9,23 +9,59 @@ import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/home_page.dart';
 import 'screens/event_detail_screen.dart';
+import 'screens/edit_event_sheet.dart';
 import 'extensions/extension_manager.dart' show navigatorKey;
-import 'features/quick_action/quick_action_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Hive.initFlutter();
+  // 启用 Edge-to-Edge 沉浸式体验
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  // Register Adapters
-  Hive.registerAdapter(EventAdapter());
-  Hive.registerAdapter(EventStepAdapter());
-  Hive.registerAdapter(StepTemplateAdapter());
-  Hive.registerAdapter(StepSetTemplateAdapter());
-  Hive.registerAdapter(StepSetTemplateStepAdapter());
+  try {
+    await Hive.initFlutter();
 
-  runApp(const ProviderScope(child: MyApp()));
+    // Register Adapters
+    Hive.registerAdapter(EventAdapter());
+    Hive.registerAdapter(EventStepAdapter());
+    Hive.registerAdapter(StepTemplateAdapter());
+    Hive.registerAdapter(StepSetTemplateAdapter());
+    Hive.registerAdapter(StepSetTemplateStepAdapter());
+
+    runApp(const ProviderScope(child: MyApp()));
+  } catch (e, stackTrace) {
+    debugPrint('Critical Initialization Error: $e\n$stackTrace');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '应用初始化失败',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '错误信息: $e\n\n请尝试重启应用或联系开发者。',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 final _router = GoRouter(
@@ -42,11 +78,18 @@ final _router = GoRouter(
     GoRoute(
       path: '/quick-action',
       pageBuilder: (context, state) => CustomTransitionPage(
-        child: const QuickActionScreen(),
+        child: const EditEventSheet(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
+          return SlideTransition(
+            position: animation.drive(
+              Tween(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).chain(CurveTween(curve: Curves.easeOutCubic)),
+            ),
+            child: child,
+          );
         },
-        opaque: false,
       ),
     ),
   ],
@@ -68,53 +111,100 @@ class _MyAppState extends ConsumerState<MyApp> {
     _initIntentHandler();
   }
 
-  void _initIntentHandler() async {
-    // 处理初始 Intent
-    try {
-      final String? action = await _channel.invokeMethod('getInitialIntent');
-      _handleAction(action);
-    } catch (e) {
-      debugPrint('Error getting initial intent: $e');
-    }
-
-    // 监听后续 Intent
+  void _initIntentHandler() {
+    // 监听 Intent (Native -> Flutter)
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onNewIntent') {
-        final String? action = call.arguments as String?;
-        _handleAction(action);
+      try {
+        if (call.method == 'onQuickAction') {
+          final String? action = call.arguments as String?;
+          _handleAction(action);
+        }
+      } catch (e) {
+        debugPrint('MethodChannel Error: $e');
       }
     });
   }
 
   void _handleAction(String? action) {
     if (action == 'ACTION_QUICK_EVENT') {
-      _router.push('/quick-action');
+      // 检查当前路由，避免重复打开快速操作界面
+      final currentRoute =
+          _router.routerDelegate.currentConfiguration.last.matchedLocation;
+      if (currentRoute != '/quick-action') {
+        _router.push('/quick-action');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = ref.watch(themeProvider);
+    final themeModeOption = ref.watch(themeProvider);
     final locale = ref.watch(localeProvider);
 
-    return MaterialApp.router(
-      title: 'Essenmelia',
-      locale: locale,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: isDarkMode ? Brightness.dark : Brightness.light,
-        ),
-      ),
-      routerConfig: _router,
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        final ColorScheme lightColorScheme =
+            lightDynamic?.harmonized() ??
+            ColorScheme.fromSeed(
+              seedColor: Colors.indigo,
+              brightness: Brightness.light,
+            );
+        final ColorScheme darkColorScheme =
+            darkDynamic?.harmonized() ??
+            ColorScheme.fromSeed(
+              seedColor: Colors.indigo,
+              brightness: Brightness.dark,
+            );
+
+        final themeMode = switch (themeModeOption) {
+          ThemeModeOption.system => ThemeMode.system,
+          ThemeModeOption.light => ThemeMode.light,
+          ThemeModeOption.dark => ThemeMode.dark,
+        };
+
+        // 获取当前实际是否为深色模式
+        final isDark = switch (themeMode) {
+          ThemeMode.system =>
+            View.of(context).platformDispatcher.platformBrightness ==
+                Brightness.dark,
+          ThemeMode.light => false,
+          ThemeMode.dark => true,
+        };
+
+        // 根据主题动态更新状态栏和导航栏图标颜色
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+          ),
+        );
+
+        return MaterialApp.router(
+          title: 'Essenmelia',
+          locale: locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          themeMode: themeMode,
+          theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: darkColorScheme,
+          ),
+          routerConfig: _router,
+        );
+      },
     );
   }
 }

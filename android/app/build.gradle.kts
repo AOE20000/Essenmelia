@@ -49,14 +49,6 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-
-    // 强制 Flutter 产物输出到标准目录
-    applicationVariants.all {
-        outputs.all {
-            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output.outputFileName = "app-${buildType.name}.apk"
-        }
-    }
 }
 
 flutter {
@@ -65,4 +57,5 @@ flutter {
 
 dependencies {
     implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
 }

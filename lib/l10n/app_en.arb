@@ -18,6 +18,8 @@
   "importExport": "Import / Export",
   "appearance": "Appearance",
   "darkMode": "Dark Mode",
+  "light": "Light",
+  "dark": "Dark",
   "useSystemTheme": "Use System Theme",
   "language": "Language",
   "systemLanguage": "System",

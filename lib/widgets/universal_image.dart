@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class UniversalImage extends StatelessWidget {
@@ -41,8 +42,41 @@ class UniversalImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: width,
+            height: height,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
         errorBuilder: (context, error, stackTrace) => _errorWidget(context),
       );
+    } else if (imageUrl.isNotEmpty &&
+        (imageUrl.startsWith('/') || imageUrl.contains(':'))) {
+      // 尝试作为本地文件加载 (Android/iOS 路径通常以 / 开头，Windows 包含 :)
+      final file = File(imageUrl);
+      if (file.existsSync()) {
+        imageWidget = Image.file(
+          file,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => _errorWidget(context),
+        );
+      } else {
+        debugPrint('UniversalImage: 本地文件不存在: $imageUrl');
+        imageWidget = _errorWidget(context);
+      }
     } else {
       imageWidget = _errorWidget(context);
     }
