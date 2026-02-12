@@ -39,6 +39,11 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+          cache: 'gradle'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install NDK
+        run: sdkmanager "ndk;28.2.13676358"
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -50,7 +55,7 @@ jobs:
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --verbose
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -74,11 +79,15 @@ jobs:
         run: flutter pub run build_runner build --delete-conflicting-outputs
       - name: Build Windows
         run: flutter build windows --release
+      - name: Zip Windows Build
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath windows-release.zip
       - name: Upload Windows Build
         uses: actions/upload-artifact@v4
         with:
-          name: windows-release-build
-          path: build/windows/runner/Release
+          name: windows-release-zip
+          path: windows-release.zip
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -89,13 +98,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: android-release-apk
-      - name: Download Windows Build
+      - name: Download Windows Zip
         uses: actions/download-artifact@v4
         with:
-          name: windows-release-build
-          path: windows-build
-      - name: Zip Windows Build
-        run: zip -r windows-release.zip windows-build
+          name: windows-release-zip
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
