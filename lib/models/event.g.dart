@@ -108,17 +108,20 @@ class StepTemplateAdapter extends TypeAdapter<StepTemplate> {
     };
     return StepTemplate()
       ..id = fields[0] as String
-      ..description = fields[1] as String;
+      ..description = fields[1] as String
+      .._order = fields[2] as int?;
   }
 
   @override
   void write(BinaryWriter writer, StepTemplate obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.description);
+      ..write(obj.description)
+      ..writeByte(2)
+      ..write(obj._order);
   }
 
   @override

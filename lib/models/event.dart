@@ -91,6 +91,12 @@ class StepTemplate extends HiveObject {
   @HiveField(1)
   late String description;
 
+  @HiveField(2)
+  int? _order;
+
+  int get order => _order ?? 0;
+  set order(int value) => _order = value;
+
   StepTemplate() {
     id = const Uuid().v4();
   }

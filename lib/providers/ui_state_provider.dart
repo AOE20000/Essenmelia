@@ -33,13 +33,40 @@ final showWelcomeProvider = StateNotifierProvider<UiStateNotifier, bool>((ref) {
   return UiStateNotifier(ref);
 });
 
+class ExtensionGuideNotifier extends StateNotifier<bool> {
+  final Ref ref;
+  Box? _box;
+
+  ExtensionGuideNotifier(this.ref) : super(false) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    await ref.read(dbProvider.future);
+    _box = Hive.box('settings');
+
+    if (_box!.containsKey('hasSeenExtensionGuide')) {
+      state = !(_box!.get('hasSeenExtensionGuide') as bool);
+    } else {
+      state = true; // Show guide if key doesn't exist
+    }
+  }
+
+  Future<void> dismissGuide() async {
+    if (_box == null) await _init();
+    await _box!.put('hasSeenExtensionGuide', true);
+    state = false;
+  }
+}
+
+final showExtensionGuideProvider =
+    StateNotifierProvider<ExtensionGuideNotifier, bool>((ref) {
+      return ExtensionGuideNotifier(ref);
+    });
+
 final selectedEventIdProvider = StateProvider<String?>((ref) => null);
 
-enum HomeTab {
-  events,
-  extensions,
-  settings,
-}
+enum HomeTab { events, extensions, settings }
 
 final homeTabProvider = StateProvider<HomeTab>((ref) => HomeTab.events);
 

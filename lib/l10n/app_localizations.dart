@@ -560,6 +560,12 @@ abstract class AppLocalizations {
   /// **'Event not found'**
   String get eventNotFound;
 
+  /// No description provided for @eventDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Details'**
+  String get eventDetails;
+
   /// No description provided for @createdOn.
   ///
   /// In en, this message translates to:
@@ -752,6 +758,66 @@ abstract class AppLocalizations {
   /// **'Manage your events, track steps, and organize your life with tags. Tap the + button to get started.'**
   String get welcomeMessage;
 
+  /// No description provided for @selectedItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items selected'**
+  String selectedItemsCount(int count);
+
+  /// No description provided for @batchArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Archive'**
+  String get batchArchive;
+
+  /// No description provided for @batchAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Add'**
+  String get batchAdd;
+
+  /// No description provided for @saveAsSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Set'**
+  String get saveAsSet;
+
+  /// No description provided for @movedToArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {count} items to archive'**
+  String movedToArchive(int count);
+
+  /// No description provided for @noArchiveSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived steps'**
+  String get noArchiveSteps;
+
+  /// No description provided for @noStepSets.
+  ///
+  /// In en, this message translates to:
+  /// **'No step sets'**
+  String get noStepSets;
+
+  /// No description provided for @saveCurrentAsSetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can save current steps as a set for quick reuse later'**
+  String get saveCurrentAsSetHint;
+
+  /// No description provided for @setName.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Name'**
+  String get setName;
+
+  /// No description provided for @setSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Set saved'**
+  String get setSaved;
+
   /// No description provided for @tags.
   ///
   /// In en, this message translates to:
@@ -830,66 +896,6 @@ abstract class AppLocalizations {
   /// **'Extensions'**
   String get navExtensions;
 
-  /// No description provided for @selectedItemsCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} items selected'**
-  String selectedItemsCount(int count);
-
-  /// No description provided for @batchArchive.
-  ///
-  /// In en, this message translates to:
-  /// **'Batch Archive'**
-  String get batchArchive;
-
-  /// No description provided for @batchAdd.
-  ///
-  /// In en, this message translates to:
-  /// **'Batch Add'**
-  String get batchAdd;
-
-  /// No description provided for @saveAsSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Save as Set'**
-  String get saveAsSet;
-
-  /// No description provided for @movedToArchive.
-  ///
-  /// In en, this message translates to:
-  /// **'Moved {count} items to archive'**
-  String movedToArchive(int count);
-
-  /// No description provided for @noArchiveSteps.
-  ///
-  /// In en, this message translates to:
-  /// **'No archived steps'**
-  String get noArchiveSteps;
-
-  /// No description provided for @noStepSets.
-  ///
-  /// In en, this message translates to:
-  /// **'No step sets'**
-  String get noStepSets;
-
-  /// No description provided for @saveCurrentAsSetHint.
-  ///
-  /// In en, this message translates to:
-  /// **'You can save current steps as a set for quick reuse later'**
-  String get saveCurrentAsSetHint;
-
-  /// No description provided for @setName.
-  ///
-  /// In en, this message translates to:
-  /// **'Set Name'**
-  String get setName;
-
-  /// No description provided for @setSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Set saved'**
-  String get setSaved;
-
   /// No description provided for @addExtension.
   ///
   /// In en, this message translates to:
@@ -905,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectJsonExtension.
   ///
   /// In en, this message translates to:
-  /// **'Select .json extension package'**
+  /// **'Select .json or .dart extension package'**
   String get selectJsonExtension;
 
   /// No description provided for @enterUrlOrGithubLink.
@@ -943,6 +949,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Extension uninstalled'**
   String get extensionUninstalled;
+
+  /// No description provided for @extensionRepository.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Repository'**
+  String get extensionRepository;
+
+  /// No description provided for @browseAndInstallFromGithub.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse and install from GitHub'**
+  String get browseAndInstallFromGithub;
 
   /// No description provided for @noExtensionsInstalled.
   ///
@@ -986,6 +1004,24 @@ abstract class AppLocalizations {
   /// **'No event selected'**
   String get noEventSelected;
 
+  /// No description provided for @noMatchingEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching events found'**
+  String get noMatchingEvents;
+
+  /// No description provided for @noEventsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No events yet'**
+  String get noEventsYet;
+
+  /// No description provided for @createFirstEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Click the + button to create your first event'**
+  String get createFirstEvent;
+
   /// No description provided for @tryAdjustingFilters.
   ///
   /// In en, this message translates to:
@@ -1027,6 +1063,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data Maintenance'**
   String get dataMaintenance;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
 }
 
 class _AppLocalizationsDelegate

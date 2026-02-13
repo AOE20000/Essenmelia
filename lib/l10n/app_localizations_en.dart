@@ -253,6 +253,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventNotFound => 'Event not found';
 
   @override
+  String get eventDetails => 'Event Details';
+
+  @override
   String createdOn(String date) {
     return 'Created on $date';
   }
@@ -361,6 +364,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage your events, track steps, and organize your life with tags. Tap the + button to get started.';
 
   @override
+  String selectedItemsCount(int count) {
+    return '$count items selected';
+  }
+
+  @override
+  String get batchArchive => 'Batch Archive';
+
+  @override
+  String get batchAdd => 'Batch Add';
+
+  @override
+  String get saveAsSet => 'Save as Set';
+
+  @override
+  String movedToArchive(int count) {
+    return 'Moved $count items to archive';
+  }
+
+  @override
+  String get noArchiveSteps => 'No archived steps';
+
+  @override
+  String get noStepSets => 'No step sets';
+
+  @override
+  String get saveCurrentAsSetHint =>
+      'You can save current steps as a set for quick reuse later';
+
+  @override
+  String get setName => 'Set Name';
+
+  @override
+  String get setSaved => 'Set saved';
+
+  @override
   String get tags => 'Tags';
 
   @override
@@ -410,48 +448,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navExtensions => 'Extensions';
 
   @override
-  String selectedItemsCount(int count) {
-    return '$count items selected';
-  }
-
-  @override
-  String get batchArchive => 'Batch Archive';
-
-  @override
-  String get batchAdd => 'Batch Add';
-
-  @override
-  String get saveAsSet => 'Save as Set';
-
-  @override
-  String movedToArchive(int count) {
-    return 'Moved $count items to archive';
-  }
-
-  @override
-  String get noArchiveSteps => 'No archived steps';
-
-  @override
-  String get noStepSets => 'No step sets';
-
-  @override
-  String get saveCurrentAsSetHint =>
-      'You can save current steps as a set for quick reuse later';
-
-  @override
-  String get setName => 'Set Name';
-
-  @override
-  String get setSaved => 'Set saved';
-
-  @override
   String get addExtension => 'Add Extension';
 
   @override
   String get importFromLocalFile => 'Import from local file';
 
   @override
-  String get selectJsonExtension => 'Select .json extension package';
+  String get selectJsonExtension => 'Select .json or .dart extension package';
 
   @override
   String get enterUrlOrGithubLink => 'Enter URL or GitHub link';
@@ -472,6 +475,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extensionUninstalled => 'Extension uninstalled';
+
+  @override
+  String get extensionRepository => 'Extension Repository';
+
+  @override
+  String get browseAndInstallFromGithub => 'Browse and install from GitHub';
 
   @override
   String get noExtensionsInstalled => 'No extensions installed';
@@ -496,6 +505,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noEventSelected => 'No event selected';
 
   @override
+  String get noMatchingEvents => 'No matching events found';
+
+  @override
+  String get noEventsYet => 'No events yet';
+
+  @override
+  String get createFirstEvent =>
+      'Click the + button to create your first event';
+
+  @override
   String get tryAdjustingFilters =>
       'Try adjusting your filters or search query';
 
@@ -518,4 +537,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataMaintenance => 'Data Maintenance';
+
+  @override
+  String get filter => 'Filter';
+
+  @override
+  String get status => 'Status';
 }

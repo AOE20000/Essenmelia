@@ -118,7 +118,7 @@ class _PermissionManagementDialogState
               text: TextSpan(
                 style: theme.textTheme.bodyLarge,
                 children: [
-                  TextSpan(text: isEn ? 'Extension ' : '拓展 '),
+                  TextSpan(text: isEn ? 'Extension ' : '扩展 '),
                   TextSpan(
                     text: widget.extensionName,
                     style: const TextStyle(fontWeight: FontWeight.bold),

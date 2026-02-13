@@ -153,8 +153,15 @@ final templatesProvider = StreamProvider<List<StepTemplate>>((ref) async* {
   await ref.watch(dbProvider.future);
   final activePrefix = ref.read(activePrefixProvider);
   final box = Hive.box<StepTemplate>('${activePrefix}_templates');
-  yield box.values.toList();
-  yield* box.watch().map((event) => box.values.toList());
+
+  List<StepTemplate> getSortedTemplates() {
+    final list = box.values.toList();
+    list.sort((a, b) => a.order.compareTo(b.order));
+    return list;
+  }
+
+  yield getSortedTemplates();
+  yield* box.watch().map((event) => getSortedTemplates());
 });
 
 final stepSetTemplatesProvider = StreamProvider<List<StepSetTemplate>>((
@@ -175,8 +182,27 @@ class TemplatesController {
     await ref.read(dbProvider.future);
     final activePrefix = ref.read(activePrefixProvider);
     final box = Hive.box<StepTemplate>('${activePrefix}_templates');
-    final template = StepTemplate()..description = description;
+
+    // 获取当前最大的 order
+    int maxOrder = -1;
+    for (var t in box.values) {
+      if (t.order > maxOrder) maxOrder = t.order;
+    }
+
+    final template = StepTemplate()
+      ..description = description
+      ..order = maxOrder + 1;
     await box.put(template.id, template);
+  }
+
+  Future<void> updateTemplatesOrder(List<StepTemplate> templates) async {
+    await ref.read(dbProvider.future);
+
+    for (int i = 0; i < templates.length; i++) {
+      final t = templates[i];
+      t.order = i;
+      await t.save();
+    }
   }
 
   Future<void> deleteTemplate(String id) async {

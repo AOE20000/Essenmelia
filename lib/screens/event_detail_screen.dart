@@ -51,6 +51,9 @@ class EventDetailScreen extends ConsumerWidget {
       );
     }
 
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
     final body = SafeArea(
       top: false,
       child: CustomScrollView(
@@ -58,21 +61,30 @@ class EventDetailScreen extends ConsumerWidget {
           if (!isSidePanel)
             SliverAppBar(
               pinned: true,
-              title: Text(event.title),
-              actions: [
-                _HeaderActionButton(
-                  icon: Icons.edit_outlined,
-                  onPressed: () => _showEditSheet(context, event, ref),
+              title: Text(
+                event.title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                _HeaderActionButton(
-                  icon: Icons.checklist_rtl_outlined,
+              ),
+              centerTitle: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _showEditSheet(context, event, ref),
+                  tooltip: l10n.edit,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.checklist_rtl_outlined),
                   onPressed: () =>
                       _navigateToStepsEditor(context, event.id, ref),
+                  tooltip: l10n.steps,
                 ),
-                _HeaderActionButton(
-                  icon: Icons.delete_outline,
-                  color: Colors.redAccent,
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded),
                   onPressed: () => _confirmDelete(context, ref, event),
+                  color: theme.colorScheme.error,
+                  tooltip: l10n.delete,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -83,9 +95,9 @@ class EventDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: UniversalImage(
                   imageUrl: event.imageUrl!,
-                  height: 200,
+                  height: 240,
                   fit: BoxFit.cover,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(28),
                 ),
               ),
             ),
@@ -93,44 +105,75 @@ class EventDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Info Card
+                // Info Section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isSidePanel) ...[
+                      Text(
+                        event.title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                event.title,
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                AppLocalizations.of(context)!.createdOn(
-                                  DateFormat.yMMMd(
-                                    Localizations.localeOf(context).toString(),
-                                  ).format(event.createdAt),
-                                ),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline,
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 16,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    DateFormat('yyyy-MM-dd HH:mm').format(
+                                      event.createdAt,
                                     ),
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme.colorScheme.outline,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ],
+                          ),
+                        ),
+                        // Completion Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: event.isCompleted
+                                ? theme.colorScheme.primaryContainer
+                                : theme.colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            event.isCompleted ? l10n.statusCompleted : l10n.statusInProgress,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: event.isCompleted
+                                  ? theme.colorScheme.onPrimaryContainer
+                                  : theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     if (event.tags != null && event.tags!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -138,24 +181,20 @@ class EventDetailScreen extends ConsumerWidget {
                             .map(
                               (tag) => Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
+                                  horizontal: 12,
+                                  vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondaryContainer,
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: theme.colorScheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   tag,
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSecondaryContainer,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSecondaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             )
@@ -165,11 +204,19 @@ class EventDetailScreen extends ConsumerWidget {
                     if (event.description != null &&
                         event.description!.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      Text(
-                        event.description!,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.5,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          event.description!,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.6,
+                          ),
                         ),
                       ),
                     ],
@@ -178,7 +225,7 @@ class EventDetailScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
                 const Divider(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 if (event.steps.isNotEmpty) ...[
                   _QuickOverview(event: event),
@@ -188,39 +235,37 @@ class EventDetailScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.steps,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      l10n.steps,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 10,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         "${event.steps.where((s) => s.completed).length}/${event.steps.length}",
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 _StepsList(event: event),
                 const SizedBox(height: 16),
                 _AddStepButton(eventId: event.id),
-                const SizedBox(height: 32),
+                const SizedBox(height: 48),
               ]),
             ),
           ),
@@ -231,30 +276,41 @@ class EventDetailScreen extends ConsumerWidget {
     if (isSidePanel) {
       return Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            color: theme.colorScheme.surface,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _HeaderActionButton(
-                  icon: Icons.edit_outlined,
-                  onPressed: () => _showEditSheet(context, event, ref),
+                Expanded(
+                  child: Text(
+                    l10n.eventDetails,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                _HeaderActionButton(
-                  icon: Icons.checklist_rtl_outlined,
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _showEditSheet(context, event, ref),
+                  tooltip: l10n.edit,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.checklist_rtl_outlined),
                   onPressed: () =>
                       _navigateToStepsEditor(context, event.id, ref),
+                  tooltip: l10n.steps,
                 ),
-                _HeaderActionButton(
-                  icon: Icons.delete_outline,
-                  color: Colors.redAccent,
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded),
                   onPressed: () => _confirmDelete(context, ref, event),
+                  color: theme.colorScheme.error,
+                  tooltip: l10n.delete,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 const VerticalDivider(width: 1, indent: 8, endIndent: 8),
-                const SizedBox(width: 8),
-                _HeaderActionButton(
-                  icon: Icons.close,
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
                   onPressed: () =>
                       ref.read(selectedEventIdProvider.notifier).state = null,
                 ),
@@ -309,22 +365,28 @@ class EventDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     Event event,
   ) async {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
     final confirm = await showDialog<bool>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.delete),
-        content: Text(AppLocalizations.of(context)!.deleteSelectedMessage(1)),
+        title: Text(l10n.delete),
+        content: Text(l10n.deleteSelectedMessage(1)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              AppLocalizations.of(context)!.delete,
-              style: const TextStyle(color: Colors.redAccent),
+              l10n.delete,
+              style: TextStyle(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -340,30 +402,6 @@ class EventDetailScreen extends ConsumerWidget {
   }
 }
 
-class _HeaderActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-  final Color? color;
-
-  const _HeaderActionButton({
-    required this.icon,
-    required this.onPressed,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, color: color),
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        padding: const EdgeInsets.all(8),
-      ),
-    );
-  }
-}
-
 class _StepsList extends ConsumerWidget {
   final Event event;
 
@@ -371,12 +409,33 @@ class _StepsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
     if (event.steps.isEmpty) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(AppLocalizations.of(context)!.noStepsYet),
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.checklist_rounded,
+              size: 48,
+              color: theme.colorScheme.outline,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.noStepsYet,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -384,32 +443,28 @@ class _StepsList extends ConsumerWidget {
     return Column(
       children: List.generate(event.steps.length, (index) {
         final step = event.steps[index];
+        final isCompleted = step.completed;
+
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.only(bottom: 12),
           child: Material(
-            color: step.completed
-                ? Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
+            color: isCompleted
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                : theme.colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: isCompleted
+                    ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                    : theme.colorScheme.outlineVariant,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () =>
                   ref.read(eventsProvider.notifier).toggleStep(event.id, index),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: step.completed
-                        ? Colors.transparent
-                        : Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     AnimatedContainer(
@@ -417,36 +472,37 @@ class _StepsList extends ConsumerWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: step.completed
-                            ? Theme.of(context).colorScheme.primary
+                        color: isCompleted
+                            ? theme.colorScheme.primary
                             : Colors.transparent,
                         border: Border.all(
-                          color: step.completed
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
+                          color: isCompleted
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline,
                           width: 2,
                         ),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: step.completed
-                          ? const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
+                      child: isCompleted
+                          ? Icon(
+                              Icons.check_rounded,
+                              size: 18,
+                              color: theme.colorScheme.onPrimary,
                             )
                           : null,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         step.description,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          decoration: step.completed
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          decoration: isCompleted
                               ? TextDecoration.lineThrough
                               : null,
-                          color: step.completed
-                              ? Theme.of(context).colorScheme.outline
-                              : Theme.of(context).colorScheme.onSurface,
+                          color: isCompleted
+                              ? theme.colorScheme.outline
+                              : theme.colorScheme.onSurface,
+                          height: 1.4,
                         ),
                       ),
                     ),
@@ -485,14 +541,17 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isAdding) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
             width: 2,
           ),
         ),
@@ -502,22 +561,24 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
               child: TextField(
                 controller: _controller,
                 autofocus: true,
+                style: theme.textTheme.bodyLarge,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.newStepPlaceholder,
+                  hintText: l10n.newStepPlaceholder,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  hintStyle: TextStyle(color: theme.colorScheme.outline),
                 ),
                 onSubmitted: (_) => _submit(),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.check),
-              color: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.check_rounded),
+              color: theme.colorScheme.primary,
               onPressed: _submit,
             ),
             IconButton(
-              icon: const Icon(Icons.close),
-              color: Theme.of(context).colorScheme.outline,
+              icon: const Icon(Icons.close_rounded),
+              color: theme.colorScheme.outline,
               onPressed: () => setState(() => _isAdding = false),
             ),
           ],
@@ -527,12 +588,16 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
 
     return OutlinedButton.icon(
       onPressed: () => setState(() => _isAdding = true),
-      icon: const Icon(Icons.add),
-      label: Text(AppLocalizations.of(context)!.addStep),
+      icon: const Icon(Icons.add_rounded),
+      label: Text(l10n.addStep),
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 52),
+        minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1.5),
+        foregroundColor: theme.colorScheme.primary,
+        textStyle: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -651,18 +716,15 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   @override
   Widget build(BuildContext context) {
     _updateItemKeys(widget.event.steps.length);
+    final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Theme.of(
-            context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -672,103 +734,88 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
             children: [
               Icon(
                 Icons.bolt_rounded,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+                color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
               Text(
                 "快速编辑 (长按滑动)",
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           GestureDetector(
             onPanStart: _handleDragStart,
             onPanUpdate: _handleDragUpdate,
             onPanEnd: _handleDragEnd,
             child: Container(
               width: double.infinity,
-              color: Colors.transparent, // Important for hit testing
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 12,
+                runSpacing: 12,
                 children: List.generate(widget.event.steps.length, (index) {
-                  final step = widget.event.steps[index];
-
-                  // Calculate range
-                  bool isBeingDragged = false;
-                  if (_startDragIndex != null && _currentDragIndex != null) {
-                    final start = _startDragIndex! < _currentDragIndex!
-                        ? _startDragIndex!
-                        : _currentDragIndex!;
-                    final end = _startDragIndex! > _currentDragIndex!
-                        ? _startDragIndex!
-                        : _currentDragIndex!;
-                    isBeingDragged = index >= start && index <= end;
-                  }
+                  final isBeingDragged = _startDragIndex != null &&
+                      ((index >= _startDragIndex! &&
+                              index <=
+                                  (_currentDragIndex ?? _startDragIndex!)) ||
+                          (index <= _startDragIndex! &&
+                              index >=
+                                  (_currentDragIndex ?? _startDragIndex!)));
 
                   final effectiveCompleted = isBeingDragged
                       ? _dragTargetState
-                      : step.completed;
+                      : widget.event.steps[index].completed;
 
-                  return GestureDetector(
-                    key: _itemKeys[index],
-                    onTap: () => _handleTap(index),
-                    child: AnimatedScale(
-                      scale: isBeingDragged ? 1.15 : 1.0,
-                      duration: const Duration(milliseconds: 150),
+                  return MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      key: _itemKeys[index],
+                      onTap: () => _handleTap(index),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        width: 32,
-                        height: 32,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: effectiveCompleted
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(8),
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: effectiveCompleted
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outlineVariant,
-                            width: isBeingDragged ? 2 : 1,
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
+                            width: isBeingDragged ? 2.5 : 1,
                           ),
                           boxShadow: isBeingDragged
                               ? [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.4),
-                                    blurRadius: 8,
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 12,
                                     spreadRadius: 2,
                                   ),
                                 ]
-                              : [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 2,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
+                              : [],
                         ),
                         child: Center(
                           child: effectiveCompleted
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
+                              ? Icon(
+                                  Icons.check_rounded,
+                                  size: 20,
+                                  color: theme.colorScheme.onPrimary,
                                 )
                               : Text(
                                   "${index + 1}",
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.outline,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                         ),
                       ),

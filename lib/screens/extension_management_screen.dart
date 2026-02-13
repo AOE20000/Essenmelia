@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../extensions/base_extension.dart';
 import '../extensions/extension_manager.dart';
 
@@ -19,15 +20,22 @@ class _ExtensionManagementScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final metadata = widget.extension.metadata;
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(extensionAuthStateProvider);
     final authNotifier = ref.read(extensionAuthStateProvider.notifier);
     final isUntrusted = authNotifier.isUntrusted(metadata.id);
     final isRunning = authNotifier.isRunning(metadata.id);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('扩展管理'), centerTitle: true),
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        title: Text(l10n.manageAndPermissions),
+        centerTitle: true,
+        scrolledUnderElevation: 0,
+        backgroundColor: theme.colorScheme.surface,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
             // Header Info Card
@@ -42,11 +50,11 @@ class _ExtensionManagementScreenState
               isUntrusted,
               authNotifier,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // Permissions Section
             _buildPermissionsSection(theme, metadata, authState, authNotifier),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
 
             // Action Buttons
             _buildActionButtons(theme, metadata, authNotifier),
@@ -61,47 +69,65 @@ class _ExtensionManagementScreenState
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(32),
           ),
-          child: Icon(
-            metadata.icon,
-            size: 64,
-            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          child: Hero(
+            tag: 'ext_icon_${metadata.id}',
+            child: Icon(
+              metadata.icon,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Text(
           metadata.name,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          'ID: ${metadata.id} • v${metadata.version}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
+          'v${metadata.version} • ${metadata.author}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            metadata.description,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '作者: ${metadata.author}',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.primary,
+          child: Column(
+            children: [
+              Text(
+                metadata.description,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'ID: ${metadata.id}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -117,24 +143,26 @@ class _ExtensionManagementScreenState
   ) {
     final sandboxId = authNotifier.getSandboxId(metadata.id);
     final isShared = sandboxId != metadata.id;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '运行状态与安全',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            l10n.localeName == 'zh' ? '运行与安全' : 'Runtime & Security',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          elevation: 0,
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.2,
-          ),
+        Material(
+          color: theme.colorScheme.surfaceContainerLow,
+          clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
             side: BorderSide(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
@@ -144,33 +172,65 @@ class _ExtensionManagementScreenState
               SwitchListTile(
                 value: isRunning,
                 onChanged: (val) => authNotifier.setRunning(metadata.id, val),
-                title: const Text('启用此扩展'),
-                subtitle: Text(isRunning ? '扩展正在后台运行' : '扩展已完全停止工作'),
-                secondary: Icon(
-                  isRunning ? Icons.play_circle : Icons.pause_circle_outline,
-                  color: isRunning
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline,
+                title: Text(
+                  l10n.localeName == 'zh' ? '启用扩展' : 'Enable Extension',
+                ),
+                subtitle: Text(
+                  isRunning
+                      ? (l10n.localeName == 'zh' ? '正在运行' : 'Running')
+                      : (l10n.localeName == 'zh' ? '已停止' : 'Stopped'),
+                ),
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isRunning
+                        ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isRunning ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    color: isRunning
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline,
+                  ),
                 ),
               ),
-              const Divider(height: 1, indent: 56),
+              const Divider(height: 1, indent: 64),
               SwitchListTile(
                 value: isUntrusted,
                 onChanged: isRunning
                     ? (val) => authNotifier.setUntrusted(metadata.id, val)
                     : null,
-                title: const Text('不信任模式 (隐身模式)'),
-                subtitle: const Text('开启后，扩展每次访问敏感数据均需手动授权'),
-                secondary: Icon(
-                  isUntrusted ? Icons.security : Icons.verified_user_outlined,
-                  color: isUntrusted && isRunning
-                      ? theme.colorScheme.error
-                      : (isRunning
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.outline),
+                title: Text(
+                  l10n.localeName == 'zh' ? '受限访问' : 'Restricted Access',
+                ),
+                subtitle: Text(
+                  l10n.localeName == 'zh'
+                      ? '开启后每次访问敏感数据需授权'
+                      : 'Grant access for sensitive data each time',
+                ),
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isUntrusted && isRunning
+                        ? theme.colorScheme.error.withValues(alpha: 0.1)
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isUntrusted
+                        ? Icons.security_rounded
+                        : Icons.verified_user_rounded,
+                    color: isUntrusted && isRunning
+                        ? theme.colorScheme.error
+                        : (isRunning
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline),
+                  ),
                 ),
               ),
-              const Divider(height: 1, indent: 56),
+              const Divider(height: 1, indent: 64),
               ListTile(
                 onTap: () => _showSandboxConfigDialog(
                   theme,
@@ -178,17 +238,35 @@ class _ExtensionManagementScreenState
                   sandboxId,
                   authNotifier,
                 ),
-                title: const Text('沙箱隔离组'),
+                title: Text(
+                  l10n.localeName == 'zh' ? '沙箱隔离' : 'Sandbox Isolation',
+                ),
                 subtitle: Text(
-                  isShared ? '正在使用共用沙箱: $sandboxId' : '默认隔离 (个体沙箱)',
+                  isShared
+                      ? (l10n.localeName == 'zh'
+                            ? '共用沙箱: $sandboxId'
+                            : 'Shared Sandbox: $sandboxId')
+                      : (l10n.localeName == 'zh' ? '独立沙箱' : 'Isolated Sandbox'),
                 ),
-                leading: Icon(
-                  isShared ? Icons.group_work : Icons.phonelink_lock,
-                  color: isShared
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isShared
+                        ? theme.colorScheme.secondary.withValues(alpha: 0.1)
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isShared ? Icons.hub_rounded : Icons.lock_person_rounded,
+                    color: isShared
+                        ? theme.colorScheme.secondary
+                        : theme.colorScheme.outline,
+                  ),
                 ),
-                trailing: const Icon(Icons.edit_outlined, size: 20),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.outline,
+                ),
               ),
             ],
           ),
@@ -210,24 +288,27 @@ class _ExtensionManagementScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.hub_rounded),
         title: const Text('配置沙箱组'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '通过设置相同的沙箱 ID，可以让多个扩展共享同一个“虚拟环境”。',
+              '沙箱组决定了扩展之间的数据隔离。输入相同的组 ID 以共享存储空间。',
               style: TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: '沙箱 ID (留空则恢复默认隔离)',
-                hintText: '例如: activation_group',
+                labelText: '沙箱组 ID',
+                hintText: '默认为扩展 ID',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                filled: true,
+                prefixIcon: const Icon(Icons.tag_rounded),
                 helperText: '提示：激活类程序通常需要与主扩展处于同一沙箱组',
               ),
             ),
@@ -243,7 +324,7 @@ class _ExtensionManagementScreenState
               authNotifier.setSandboxId(metadata.id, controller.text.trim());
               Navigator.pop(context);
             },
-            child: const Text('保存'),
+            child: const Text('保存配置'),
           ),
         ],
       ),
@@ -257,6 +338,7 @@ class _ExtensionManagementScreenState
     ExtensionAuthNotifier authNotifier,
   ) {
     final permissions = metadata.requiredPermissions;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +347,7 @@ class _ExtensionManagementScreenState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '权限申请 (${permissions.length})',
+              '${l10n.localeName == 'zh' ? '权限申请' : 'Requested Permissions'} (${permissions.length})',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -277,15 +359,21 @@ class _ExtensionManagementScreenState
                 authState,
                 authNotifier,
               ),
-              child: const Text('查看全部'),
+              child: Text(l10n.localeName == 'zh' ? '查看全部' : 'View All'),
             ),
           ],
         ),
         const SizedBox(height: 8),
         if (permissions.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: Text('此扩展未申请任何权限')),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                l10n.localeName == 'zh'
+                    ? '此扩展未申请任何权限'
+                    : 'No permissions requested',
+              ),
+            ),
           )
         else
           Card(
@@ -430,6 +518,7 @@ class _ExtensionManagementScreenState
     ExtensionMetadata metadata,
     ExtensionAuthNotifier authNotifier,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         SizedBox(
@@ -447,9 +536,9 @@ class _ExtensionManagementScreenState
               );
             },
             icon: const Icon(Icons.launch_rounded),
-            label: const Text(
-              '打开扩展界面',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            label: Text(
+              l10n.localeName == 'zh' ? '打开扩展界面' : 'Open Extension',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             style: FilledButton.styleFrom(
               shape: RoundedRectangleBorder(
@@ -467,7 +556,7 @@ class _ExtensionManagementScreenState
                     .read(extensionManagerProvider)
                     .exportExtension(metadata.id),
                 icon: const Icon(Icons.ios_share_rounded),
-                label: const Text('导出 JSON'),
+                label: Text(l10n.exportExtensionPackage),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -481,7 +570,7 @@ class _ExtensionManagementScreenState
               child: OutlinedButton.icon(
                 onPressed: () =>
                     _confirmUninstall(theme, metadata, authNotifier),
-                icon: const Icon(Icons.delete_sweep_outlined),
+                icon: const Icon(Icons.delete_sweep_rounded),
                 label: const Text('卸载'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
@@ -509,17 +598,19 @@ class _ExtensionManagementScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认卸载'),
-        content: Text('确定要卸载“${metadata.name}”吗？这将清除该扩展的所有配置和数据。'),
+        icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+        title: const Text('卸载确认'),
+        content: Text('确定要卸载扩展 "${metadata.name}" 吗？此操作将删除其所有关联数据且不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('取消'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.error,
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
             ),
             child: const Text('确认卸载'),
           ),

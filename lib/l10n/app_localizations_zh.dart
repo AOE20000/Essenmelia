@@ -252,6 +252,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get eventNotFound => '未找到事件';
 
   @override
+  String get eventDetails => '事件详情';
+
+  @override
   String createdOn(String date) {
     return '创建于 $date';
   }
@@ -358,6 +361,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get welcomeMessage => '管理事件、追踪步骤、使用标签整理生活。点击 + 按钮开始。';
 
   @override
+  String selectedItemsCount(int count) {
+    return '已选 $count 项';
+  }
+
+  @override
+  String get batchArchive => '批量归档';
+
+  @override
+  String get batchAdd => '批量添加';
+
+  @override
+  String get saveAsSet => '保存为集合';
+
+  @override
+  String movedToArchive(int count) {
+    return '已将 $count 项移动到归档';
+  }
+
+  @override
+  String get noArchiveSteps => '暂无存档步骤';
+
+  @override
+  String get noStepSets => '暂无步骤集';
+
+  @override
+  String get saveCurrentAsSetHint => '你可以将当前步骤保存为集合，方便以后快速复用';
+
+  @override
+  String get setName => '集合名称';
+
+  @override
+  String get setSaved => '集合已保存';
+
+  @override
   String get tags => '标签';
 
   @override
@@ -404,41 +441,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navEvents => '事件';
 
   @override
-  String get navExtensions => '拓展';
-
-  @override
-  String selectedItemsCount(int count) {
-    return '已选 $count 项';
-  }
-
-  @override
-  String get batchArchive => '批量归档';
-
-  @override
-  String get batchAdd => '批量添加';
-
-  @override
-  String get saveAsSet => '保存为集合';
-
-  @override
-  String movedToArchive(int count) {
-    return '已将 $count 项移动到归档';
-  }
-
-  @override
-  String get noArchiveSteps => '暂无存档步骤';
-
-  @override
-  String get noStepSets => '暂无步骤集';
-
-  @override
-  String get saveCurrentAsSetHint => '你可以将当前步骤保存为集合，方便以后快速复用';
-
-  @override
-  String get setName => '集合名称';
-
-  @override
-  String get setSaved => '集合已保存';
+  String get navExtensions => '扩展';
 
   @override
   String get addExtension => '添加扩展';
@@ -447,7 +450,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFromLocalFile => '从本地文件导入';
 
   @override
-  String get selectJsonExtension => '选择 .json 扩展包';
+  String get selectJsonExtension => '选择 .json 或 .dart 扩展包';
 
   @override
   String get enterUrlOrGithubLink => '输入 URL 或 GitHub 链接';
@@ -468,6 +471,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extensionUninstalled => '扩展已卸载';
+
+  @override
+  String get extensionRepository => '扩展仓库';
+
+  @override
+  String get browseAndInstallFromGithub => '浏览并从 GitHub 安装';
 
   @override
   String get noExtensionsInstalled => '暂无已安装的扩展';
@@ -491,6 +500,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noEventSelected => '未选择事件';
 
   @override
+  String get noMatchingEvents => '未找到匹配的事件';
+
+  @override
+  String get noEventsYet => '暂无事件';
+
+  @override
+  String get createFirstEvent => '点击 + 按钮创建你的第一个事件';
+
+  @override
   String get tryAdjustingFilters => '尝试调整过滤器或搜索词';
 
   @override
@@ -512,4 +530,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dataMaintenance => '数据维护';
+
+  @override
+  String get filter => '筛选';
+
+  @override
+  String get status => '状态';
 }

@@ -15,14 +15,17 @@ import '../providers/tags_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../extensions/extension_manager.dart';
 import '../screens/extension_management_screen.dart';
+import '../screens/extension_logs_page.dart';
 import '../widgets/universal_image.dart';
 import '../widgets/welcome_overlay.dart';
+import '../widgets/filter_bottom_sheet.dart';
 import 'edit_event_sheet.dart';
 import 'event_detail_screen.dart';
 import 'settings_sheet.dart';
 import 'steps_editor_screen.dart';
 import 'db_manager_screen.dart';
 import 'manage_tags_screen.dart';
+import 'extension_repository_screen.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -32,8 +35,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  final TextEditingController _searchController = TextEditingController();
-  bool _isTagsExpanded = false;
+  final SearchController _searchController = SearchController();
 
   @override
   void dispose() {
@@ -41,72 +43,138 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
-  void _toggleTagsExpanded() {
-    setState(() => _isTagsExpanded = !_isTagsExpanded);
-  }
-
   void _showAddExtensionDialog(BuildContext context) {
     final urlController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.extension_rounded),
         title: Text(l10n.addExtension),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              leading: const Icon(Icons.file_open_outlined),
-              title: Text(l10n.importFromLocalFile),
-              subtitle: Text(l10n.selectJsonExtension),
-              onTap: () async {
-                final navigator = Navigator.of(context);
-                navigator.pop();
-                await ref.read(extensionManagerProvider).importFromFile();
-              },
+            Text(
+              l10n.localeName == 'zh'
+                  ? '请选择扩展包或进入仓库安装'
+                  : 'Select package or visit repository',
             ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                controller: urlController,
-                decoration: InputDecoration(
-                  labelText: l10n.enterUrlOrGithubLink,
-                  hintText: 'https://...',
-                  isDense: true,
+            const SizedBox(height: 20),
+            Material(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
                 ),
               ),
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.download),
-              label: Text(l10n.downloadAndInstallFromLink),
-              onPressed: () async {
-                final url = urlController.text.trim();
-                if (url.isNotEmpty) {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final navigator = navigatorKey.currentState;
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: Icon(
+                  Icons.store_mall_directory_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                title: Text(l10n.extensionRepository),
+                subtitle: Text(l10n.browseAndInstallFromGithub),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
                   Navigator.pop(context);
-                  final ext = await ref
-                      .read(extensionManagerProvider)
-                      .importFromUrl(url);
-
-                  if (!mounted) return;
-
-                  if (ext != null && navigator != null) {
-                    navigator.push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ExtensionManagementScreen(extension: ext),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ExtensionRepositoryScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Material(
+              color: theme.colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: Icon(
+                  Icons.file_open_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                title: Text(l10n.importFromLocalFile),
+                subtitle: Text(l10n.selectJsonExtension),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () async {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  await ref.read(extensionManagerProvider).importFromFile();
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Material(
+              color: theme.colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ExpansionTile(
+                leading: Icon(
+                  Icons.cloud_download_rounded,
+                  color: theme.colorScheme.secondary,
+                ),
+                title: Text(l10n.downloadAndInstallFromLink),
+                subtitle: const Text('支持 URL 或 GitHub 链接'),
+                shape: const RoundedRectangleBorder(side: BorderSide.none),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: [
+                  TextField(
+                    controller: urlController,
+                    decoration: InputDecoration(
+                      labelText: l10n.enterUrlOrGithubLink,
+                      hintText: 'https://...',
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  } else if (ext == null) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text(l10n.downloadFailedCheckLink)),
-                    );
-                  }
-                }
-              },
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        onPressed: () async {
+                          final url = urlController.text.trim();
+                          if (url.isNotEmpty) {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final navigator = navigatorKey.currentState;
+                            Navigator.pop(context);
+                            final ext = await ref
+                                .read(extensionManagerProvider)
+                                .importFromUrl(url);
+
+                            if (!mounted) return;
+
+                            if (ext != null && navigator != null) {
+                              // 移除自动跳转详情逻辑，改为授权引导（在 ExtensionManager 中统一处理或由此处触发）
+                              // navigator.push(
+                              //   MaterialPageRoute(
+                              //     builder: (context) =>
+                              //         ExtensionManagementScreen(extension: ext),
+                              //   ),
+                              // );
+                            } else if (ext == null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.downloadFailedCheckLink),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -403,17 +471,40 @@ class _HomePageState extends ConsumerState<HomePage> {
         final extensionManager = ref.watch(extensionManagerProvider);
         final extensions = extensionManager.extensions;
         final authNotifier = ref.watch(extensionAuthStateProvider.notifier);
+        final showExtensionGuide = ref.watch(showExtensionGuideProvider);
+        final theme = Theme.of(context);
 
         return Scaffold(
           key: const ValueKey('extensions'),
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text(l10n.navExtensions),
+            backgroundColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            title: Text(
+              l10n.navExtensions,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             actions: [
-              IconButton(
+              IconButton.filledTonal(
+                icon: const Icon(Icons.assignment_outlined),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ExtensionLogsPage(),
+                    ),
+                  );
+                },
+                tooltip: '扩展日志',
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
                 icon: const Icon(Icons.add),
                 onPressed: () => _showAddExtensionDialog(context),
                 tooltip: l10n.addExtension,
               ),
+              const SizedBox(width: 8),
             ],
           ),
           body: extensions.isEmpty
@@ -421,178 +512,291 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.extension_off_outlined,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.outline,
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.extension_off_outlined,
+                          size: 48,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       Text(
                         l10n.noExtensionsInstalled,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontWeight: FontWeight.w500,
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton.tonalIcon(
+                        onPressed: () => _showAddExtensionDialog(context),
+                        icon: const Icon(Icons.add),
+                        label: Text(l10n.addExtension),
                       ),
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 200,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.9,
-                  ),
-                  itemCount: extensions.length,
-                  itemBuilder: (context, index) {
-                    final ext = extensions[index];
-                    final isRunning = authNotifier.isRunning(ext.metadata.id);
-
-                    return Card(
-                      clipBehavior: Clip.antiAlias,
-                      elevation: isRunning ? 2 : 0,
-                      color: isRunning
-                          ? null
-                          : Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isRunning
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.1)
-                              : Colors.transparent,
-                          width: 1,
-                        ),
-                      ),
-                      child: InkWell(
-                        onLongPress: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ExtensionManagementScreen(extension: ext),
-                            ),
-                          );
-                        },
-                        onSecondaryTap: () =>
-                            _showExtensionContextMenu(context, ext),
-                        onTap: () {
-                          if (!isRunning) {
-                            // 没运行时，点击跳转到详情页以启用
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ExtensionManagementScreen(extension: ext),
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => ext.build(
-                                context,
-                                extensionManager.getApiFor(ext),
+              : CustomScrollView(
+                  slivers: [
+                    if (showExtensionGuide)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Material(
+                            color: theme.colorScheme.primaryContainer
+                                .withValues(alpha: 0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              side: BorderSide(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
                             ),
-                          );
-                        },
-                        child: Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Opacity(
-                                    opacity: isRunning ? 1.0 : 0.4,
-                                    child: Icon(
-                                      ext.metadata.icon,
-                                      size: 48,
-                                      color: isRunning
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : Theme.of(
-                                              context,
-                                            ).colorScheme.outline,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    ext.metadata.name,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          color: isRunning
-                                              ? null
-                                              : Theme.of(
-                                                  context,
-                                                ).colorScheme.outline,
-                                        ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    ext.metadata.description,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline
-                                              .withValues(
-                                                alpha: isRunning ? 1.0 : 0.6,
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.auto_awesome,
+                                        size: 20,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '欢迎使用扩展系统',
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    theme.colorScheme.primary,
                                               ),
                                         ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                showExtensionGuideProvider
+                                                    .notifier,
+                                              )
+                                              .dismissGuide();
+                                        },
+                                        icon: const Icon(Icons.close, size: 18),
+                                        tooltip: '不再显示',
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '长按扩展进入管理页面',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      height: 1.5,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            if (!isRunning)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    l10n.deactivated,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          fontSize: 10,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.outline,
-                                        ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                          ),
                         ),
                       ),
-                    );
-                  },
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 200,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.85,
+                            ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final ext = extensions[index];
+                          final isRunning = authNotifier.isRunning(
+                            ext.metadata.id,
+                          );
+
+                          return Material(
+                            color: isRunning
+                                ? theme.colorScheme.surfaceContainerLow
+                                : theme.colorScheme.surfaceContainerLowest,
+                            clipBehavior: Clip.antiAlias,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                              side: BorderSide(
+                                color: isRunning
+                                    ? theme.colorScheme.primary.withValues(
+                                        alpha: 0.15,
+                                      )
+                                    : theme.colorScheme.outlineVariant
+                                          .withValues(alpha: 0.3),
+                                width: isRunning ? 1.5 : 1,
+                              ),
+                            ),
+                            child: InkWell(
+                              onLongPress: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ExtensionManagementScreen(
+                                          extension: ext,
+                                        ),
+                                  ),
+                                );
+                              },
+                              onSecondaryTap: () =>
+                                  _showExtensionContextMenu(context, ext),
+                              onTap: () {
+                                if (!isRunning) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ExtensionManagementScreen(
+                                            extension: ext,
+                                          ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => ext.build(
+                                      context,
+                                      extensionManager.getApiFor(ext),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: isRunning
+                                                ? theme
+                                                      .colorScheme
+                                                      .primaryContainer
+                                                      .withValues(alpha: 0.4)
+                                                : theme
+                                                      .colorScheme
+                                                      .surfaceContainerHighest
+                                                      .withValues(alpha: 0.3),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Hero(
+                                            tag: 'ext_icon_${ext.metadata.id}',
+                                            child: Icon(
+                                              ext.metadata.icon,
+                                              size: 40,
+                                              color: isRunning
+                                                  ? theme.colorScheme.primary
+                                                  : theme.colorScheme.outline,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          ext.metadata.name,
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                                fontWeight: isRunning
+                                                    ? FontWeight.bold
+                                                    : FontWeight.w500,
+                                                color: isRunning
+                                                    ? theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant
+                                                          .withValues(
+                                                            alpha: 0.8,
+                                                          ),
+                                              ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          ext.metadata.description,
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: theme.colorScheme.outline
+                                                    .withValues(
+                                                      alpha: isRunning
+                                                          ? 0.9
+                                                          : 0.6,
+                                                    ),
+                                              ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (!isRunning)
+                                    Positioned(
+                                      top: 12,
+                                      right: 12,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          l10n.deactivated,
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    theme.colorScheme.outline,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }, childCount: extensions.length),
+                      ),
+                    ),
+                  ],
                 ),
         );
       case HomeTab.settings:
@@ -717,332 +921,147 @@ class _HomePageState extends ConsumerState<HomePage> {
     Set<String> selectedIds,
     bool isLargeScreen,
   ) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final searchQuery = ref.watch(searchProvider).query;
+
+    // Sync search controller if query changes externally (e.g., cleared from another place)
+    if (_searchController.text != searchQuery) {
+      _searchController.text = searchQuery;
+    }
+
     return Container(
-      padding: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
-            width: 0.5,
-          ),
-        ),
-      ),
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Upper Part: Search/Settings OR Selection Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: isSelectionMode
-                ? _buildSelectionBar(context, selectedIds)
-                : Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: TextField(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, -0.2),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: isSelectionMode
+                  ? _buildSelectionBar(context, selectedIds)
+                  : Row(
+                      key: const ValueKey('search_bar_row'),
+                      children: [
+                        Expanded(
+                          child: SearchBar(
                             controller: _searchController,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(
-                                context,
-                              )!.searchPlaceholder,
-                              hintStyle: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outline,
-                                  ),
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                              ),
-                              suffixIcon: _searchController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(
-                                        Icons.clear_rounded,
-                                        size: 18,
-                                      ),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        ref
-                                            .read(searchProvider.notifier)
-                                            .setQuery('');
-                                      },
-                                    )
-                                  : null,
+                            padding: const WidgetStatePropertyAll<EdgeInsets>(
+                              EdgeInsets.symmetric(horizontal: 16.0),
                             ),
-                            onChanged: (val) =>
-                                ref.read(searchProvider.notifier).setQuery(val),
+                            onChanged: (value) {
+                              ref.read(searchProvider.notifier).setQuery(value);
+                            },
+                            leading: Icon(
+                              Icons.search_rounded,
+                              color: theme.colorScheme.primary,
+                            ),
+                            hintText: l10n.searchPlaceholder,
+                            elevation: const WidgetStatePropertyAll<double>(0),
+                            backgroundColor: WidgetStatePropertyAll<Color>(
+                              theme.colorScheme.surfaceContainerHigh,
+                            ),
+                            shape: WidgetStatePropertyAll<OutlinedBorder>(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                            trailing: [
+                              if (searchQuery.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear_rounded),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    ref
+                                        .read(searchProvider.notifier)
+                                        .setQuery('');
+                                  },
+                                ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Lower Part: Tag Bar with Status, Tags, Sort, and Expand
-          _buildTagBar(context),
-
-          // Expanded Tags Panel
-          ClipRect(
-            child: AnimatedAlign(
-              duration: 300.ms,
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              heightFactor: _isTagsExpanded ? 1.0 : 0.0,
-              child: AnimatedSize(
-                duration: 300.ms,
-                curve: Curves.easeOutCubic,
-                child: _buildExpandedTagsPanel(context),
-              ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.tune_rounded),
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              useSafeArea: true,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const FilterBottomSheet(),
+                            );
+                          },
+                          tooltip: l10n.filter,
+                        ),
+                      ],
+                    ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTagBar(BuildContext context) {
-    final searchState = ref.watch(searchProvider);
-
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // Status Filters (Radio-style)
-          _StatusToggleButtons(
-            currentFilter: searchState.statusFilter,
-            onChanged: (filter) =>
-                ref.read(searchProvider.notifier).setStatusFilter(filter),
-          ),
-
-          const Spacer(),
-
-          // Sort Button
-          _SortMenu(compact: true),
-
-          // Expand Button
-          Stack(
-            alignment: Alignment.topRight,
-            children: [
-              IconButton(
-                icon: Icon(
-                  _isTagsExpanded
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
-                  color: searchState.selectedTags.isNotEmpty
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                onPressed: _toggleTagsExpanded,
-                tooltip: "Expand Tags",
-              ),
-              if (searchState.selectedTags.isNotEmpty)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.surface,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpandedTagsPanel(BuildContext context) {
-    final tagsAsync = ref.watch(tagsProvider);
-    final searchState = ref.watch(searchProvider);
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: tagsAsync.when(
-        data: (tags) {
-          if (tags.isEmpty) {
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.noTagsYet,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (searchState.selectedTags.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(
-                          context,
-                        )!.tagsSelected(searchState.selectedTags.length),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          final screenWidth = MediaQuery.of(context).size.width;
-                          if (screenWidth >= 1024) {
-                            ref.read(leftPanelContentProvider.notifier).state =
-                                LeftPanelContent.manageTags;
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ManageTagsScreen(),
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.settings_outlined, size: 16),
-                        label: Text(AppLocalizations.of(context)!.manageTags),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          foregroundColor: theme.colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.read(searchProvider.notifier).clearTags(),
-                        icon: const Icon(Icons.clear_all_rounded, size: 16),
-                        label: Text(AppLocalizations.of(context)!.clearAllTags),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          foregroundColor: theme.colorScheme.error,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          final screenWidth = MediaQuery.of(context).size.width;
-                          if (screenWidth >= 1024) {
-                            ref.read(leftPanelContentProvider.notifier).state =
-                                LeftPanelContent.manageTags;
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ManageTagsScreen(),
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.settings_outlined, size: 16),
-                        label: Text(AppLocalizations.of(context)!.manageTags),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          foregroundColor: theme.colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: tags.map((tag) {
-                  final isSelected = searchState.selectedTags.contains(tag);
-                  return _CustomFilterChip(
-                    label: tag,
-                    isSelected: isSelected,
-                    onSelected: (val) =>
-                        ref.read(searchProvider.notifier).toggleTag(tag),
-                  );
-                }).toList(),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-        error: (_, _) => const SizedBox.shrink(),
       ),
     );
   }
 
   Widget _buildSelectionBar(BuildContext context, Set<String> selectedIds) {
     final count = selectedIds.length;
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Material(
+      color: theme.colorScheme.primaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close_rounded),
               onPressed: () => ref.read(selectionProvider.notifier).clear(),
+              color: theme.colorScheme.onPrimaryContainer,
             ),
             const SizedBox(width: 8),
-            Text(
-              '$count ${AppLocalizations.of(context)!.selected}',
-              style: Theme.of(context).textTheme.titleMedium,
+            Expanded(
+              child: Text(
+                l10n.selectedItemsCount(count),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
             IconButton(
-              icon: const Icon(Icons.label_outline),
-              tooltip: AppLocalizations.of(context)!.batchEditTags,
+              icon: const Icon(Icons.label_outline_rounded),
+              tooltip: l10n.batchEditTags,
               onPressed: () => _showBatchEditTagsSheet(context, selectedIds),
+              color: theme.colorScheme.onPrimaryContainer,
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: theme.colorScheme.error,
+              ),
+              tooltip: l10n.delete,
               onPressed: () => _confirmBatchDelete(context, count),
             ),
+            const SizedBox(width: 4),
           ],
         ),
       ),
@@ -1053,25 +1072,27 @@ class _HomePageState extends ConsumerState<HomePage> {
     final confirm = await showDialog<bool>(
       context: context,
       useRootNavigator: true,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deleteSelectedConfirmation),
-        content: Text(
-          AppLocalizations.of(context)!.deleteSelectedMessage(count),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              AppLocalizations.of(context)!.delete,
-              style: const TextStyle(color: Colors.redAccent),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final l10n = AppLocalizations.of(context)!;
+        return AlertDialog(
+          title: Text(l10n.deleteSelectedConfirmation),
+          content: Text(l10n.deleteSelectedMessage(count)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
             ),
-          ),
-        ],
-      ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                l10n.delete,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirm == true) {
@@ -1103,47 +1124,68 @@ class _BatchEditTagsSheet extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
         top: 16,
-        left: 20,
-        right: 20,
+        left: 24,
+        right: 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
-              Text(
-                l10n.batchEditTagsTitle(selectedIds.length),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  l10n.batchEditTagsTitle(selectedIds.length),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Spacer(),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           tagsAsync.when(
             data: (allTags) {
               if (allTags.isEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
-                  child: Center(
-                    child: Text(
-                      l10n.noTags,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.outline,
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.label_off_outlined,
+                        size: 48,
+                        color: theme.colorScheme.outline.withValues(alpha: 0.5),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.noTags,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }
@@ -1155,15 +1197,13 @@ class _BatchEditTagsSheet extends ConsumerWidget {
                       .toList();
 
                   return Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 12,
+                    runSpacing: 12,
                     children: allTags.map((tag) {
-                      // 统计该标签在选中事件中的出现次数
                       final count = selectedEvents
                           .where((e) => e.tags?.contains(tag) ?? false)
                           .length;
 
-                      // 状态判断
                       final bool isAllSelected = count == selectedEvents.length;
                       final bool isNoneSelected = count == 0;
                       final bool isPartialSelected =
@@ -1231,7 +1271,8 @@ class _TagBatchChip extends StatelessWidget {
 
     Color backgroundColor;
     Color textColor;
-    IconData? icon;
+    IconData icon;
+    double iconSize = 18;
 
     if (isAllSelected) {
       backgroundColor = theme.colorScheme.primary;
@@ -1240,242 +1281,63 @@ class _TagBatchChip extends StatelessWidget {
     } else if (isPartialSelected) {
       backgroundColor = theme.colorScheme.primaryContainer;
       textColor = theme.colorScheme.onPrimaryContainer;
-      icon = Icons.remove_circle_outline_rounded;
+      icon = Icons.remove_circle_rounded;
     } else {
-      backgroundColor = theme.colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.5,
-      );
+      backgroundColor = theme.colorScheme.surfaceContainerHigh;
       textColor = theme.colorScheme.onSurfaceVariant;
-      icon = null;
+      icon = Icons.circle_outlined;
     }
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(20),
-          border: isPartialSelected
-              ? Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: textColor),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: textColor,
-                fontWeight: isAllSelected || isPartialSelected
-                    ? FontWeight.bold
-                    : null,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: !isAllSelected && !isPartialSelected
+                ? Border.all(color: theme.colorScheme.outlineVariant, width: 1)
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: iconSize, color: textColor),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: textColor,
+                  fontWeight: isAllSelected || isPartialSelected
+                      ? FontWeight.bold
+                      : FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SortMenu extends ConsumerWidget {
-  final bool compact;
-  const _SortMenu({this.compact = false});
-
+class _EmptyStateSliver extends ConsumerWidget {
+  const _EmptyStateSliver();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return PopupMenuButton<SortOrder>(
-      icon: Icon(
-        Icons.sort_rounded,
-        color: Theme.of(context).colorScheme.primary,
-        size: compact ? 20 : 24,
-      ),
-      tooltip: AppLocalizations.of(context)!.sort,
-      onSelected: (order) =>
-          ref.read(searchProvider.notifier).setSortOrder(order),
-      itemBuilder: (context) => [
-        _sortItem(
-          context,
-          SortOrder.createdAtDesc,
-          AppLocalizations.of(context)!.sortNewest,
-        ),
-        _sortItem(
-          context,
-          SortOrder.createdAtAsc,
-          AppLocalizations.of(context)!.sortOldest,
-        ),
-        _sortItem(
-          context,
-          SortOrder.titleAsc,
-          AppLocalizations.of(context)!.sortTitleAZ,
-        ),
-        _sortItem(
-          context,
-          SortOrder.titleDesc,
-          AppLocalizations.of(context)!.sortTitleZA,
-        ),
-        _sortItem(
-          context,
-          SortOrder.progressDesc,
-          AppLocalizations.of(context)!.sortProgressHigh,
-        ),
-        _sortItem(
-          context,
-          SortOrder.progressAsc,
-          AppLocalizations.of(context)!.sortProgressLow,
-        ),
-      ],
-    );
-  }
+    final searchState = ref.watch(searchProvider);
+    final hasActiveFilter =
+        searchState.query.isNotEmpty ||
+        searchState.selectedTags.isNotEmpty ||
+        searchState.statusFilter != EventStatusFilter.all;
 
-  PopupMenuItem<SortOrder> _sortItem(
-    BuildContext context,
-    SortOrder value,
-    String label,
-  ) {
-    return PopupMenuItem(value: value, child: Text(label));
-  }
-}
-
-class _CustomFilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final Function(bool) onSelected;
-
-  const _CustomFilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: () => onSelected(!isSelected),
-      child: AnimatedContainer(
-        duration: 200.ms,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
-                ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected) ...[
-              const Icon(Icons.check_rounded, size: 14, color: Colors.white),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: isSelected
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusToggleButtons extends StatelessWidget {
-  final EventStatusFilter currentFilter;
-  final Function(EventStatusFilter) onChanged;
-
-  const _StatusToggleButtons({
-    required this.currentFilter,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    return SegmentedButton<EventStatusFilter>(
-      segments: [
-        ButtonSegment<EventStatusFilter>(
-          value: EventStatusFilter.all,
-          label: Text(l10n.statusAll, style: const TextStyle(fontSize: 12)),
-        ),
-        ButtonSegment<EventStatusFilter>(
-          value: EventStatusFilter.notStarted,
-          label: Text(
-            l10n.statusNotStarted,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-        ButtonSegment<EventStatusFilter>(
-          value: EventStatusFilter.inProgress,
-          label: Text(
-            l10n.statusInProgress,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-        ButtonSegment<EventStatusFilter>(
-          value: EventStatusFilter.completed,
-          label: Text(
-            l10n.statusCompleted,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-      ],
-      selected: {currentFilter},
-      onSelectionChanged: (Set<EventStatusFilter> newSelection) {
-        onChanged(newSelection.first);
-      },
-      showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        padding: EdgeInsets.zero,
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-        selectedBackgroundColor: theme.colorScheme.primary,
-        selectedForegroundColor: theme.colorScheme.onPrimary,
-      ),
-    );
-  }
-}
-
-class _EmptyStateSliver extends StatelessWidget {
-  const _EmptyStateSliver();
-  @override
-  Widget build(BuildContext context) {
     return SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
@@ -1483,27 +1345,27 @@ class _EmptyStateSliver extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.event_busy_rounded,
+              hasActiveFilter
+                  ? Icons.search_off_rounded
+                  : Icons.event_busy_rounded,
               size: 80,
-              color: Theme.of(
-                context,
-              ).colorScheme.outline.withValues(alpha: 0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 16),
             Text(
-              AppLocalizations.of(context)!.noEventSelected,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
+              hasActiveFilter ? l10n.noMatchingEvents : l10n.noEventsYet,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.outline,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              AppLocalizations.of(context)!.tryAdjustingFilters,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.7),
+              hasActiveFilter
+                  ? l10n.tryAdjustingFilters
+                  : l10n.createFirstEvent,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -1639,18 +1501,24 @@ class _EventCard extends ConsumerWidget {
       scale: isFocused ? 1.02 : 1.0,
       duration: 200.ms,
       curve: Curves.easeOutCubic,
-      child: Card(
-        margin: EdgeInsets.zero,
+      child: Material(
+        color: isSelected
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : (isFocused
+                  ? theme.colorScheme.surfaceContainerHigh
+                  : theme.colorScheme.surfaceContainerLow),
         clipBehavior: Clip.antiAlias,
-        elevation: isSelected ? 0 : (isFocused ? 4 : 1),
-        shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(28),
           side: BorderSide(
-            color: (isSelected || isFocused)
+            color: isSelected
                 ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: (isSelected || isFocused) ? 2 : 1,
+                : (isFocused
+                      ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                      : theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.3,
+                        )),
+            width: isSelected ? 2 : (isFocused ? 1.5 : 1),
           ),
         ),
         child: InkWell(
@@ -1661,35 +1529,25 @@ class _EventCard extends ConsumerWidget {
             children: [
               // Content
               Opacity(
-                opacity: isSelected ? 0.4 : 1.0,
+                opacity: isSelected ? 0.6 : 1.0,
                 child: _buildContent(context),
               ),
 
               // Selection Overlay
               if (isSelected)
-                Positioned.fill(
+                Positioned(
+                  top: 12,
+                  right: 12,
                   child: Container(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      color: theme.colorScheme.onPrimary,
+                      size: 16,
                     ),
                   ),
                 ),

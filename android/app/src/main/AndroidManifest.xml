@@ -31,6 +31,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- 暴露给其他应用的 API 接口 -->
+            <intent-filter>
+                <action android:name="com.example.essenmelia.INVOKE_API" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <!-- Don't delete the meta-data below.

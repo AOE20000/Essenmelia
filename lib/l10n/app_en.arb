@@ -119,6 +119,7 @@
     }
   },
   "eventNotFound": "Event not found",
+  "eventDetails": "Event Details",
   "createdOn": "Created on {date}",
   "@createdOn": {
     "placeholders": {
@@ -186,6 +187,30 @@
   "sort": "Sort",
   "welcomeTitle": "Welcome to Essenmelia",
   "welcomeMessage": "Manage your events, track steps, and organize your life with tags. Tap the + button to get started.",
+  "selectedItemsCount": "{count} items selected",
+  "@selectedItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "batchArchive": "Batch Archive",
+  "batchAdd": "Batch Add",
+  "saveAsSet": "Save as Set",
+  "movedToArchive": "Moved {count} items to archive",
+  "@movedToArchive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noArchiveSteps": "No archived steps",
+  "noStepSets": "No step sets",
+  "saveCurrentAsSetHint": "You can save current steps as a set for quick reuse later",
+  "setName": "Set Name",
+  "setSaved": "Set saved",
   "tags": "Tags",
   "tagsPlaceholder": "Type to search or create...",
   "createTag": "Create \"{tag}\"",
@@ -234,33 +259,9 @@
   },
   "navEvents": "Events",
   "navExtensions": "Extensions",
-  "selectedItemsCount": "{count} items selected",
-  "@selectedItemsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "batchArchive": "Batch Archive",
-  "batchAdd": "Batch Add",
-  "saveAsSet": "Save as Set",
-  "movedToArchive": "Moved {count} items to archive",
-  "@movedToArchive": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "noArchiveSteps": "No archived steps",
-  "noStepSets": "No step sets",
-  "saveCurrentAsSetHint": "You can save current steps as a set for quick reuse later",
-  "setName": "Set Name",
-  "setSaved": "Set saved",
   "addExtension": "Add Extension",
   "importFromLocalFile": "Import from local file",
-  "selectJsonExtension": "Select .json extension package",
+  "selectJsonExtension": "Select .json or .dart extension package",
   "enterUrlOrGithubLink": "Enter URL or GitHub link",
   "downloadAndInstallFromLink": "Download and install from link",
   "confirmUninstall": "Confirm Uninstall",
@@ -274,6 +275,8 @@
   },
   "uninstall": "Uninstall",
   "extensionUninstalled": "Extension uninstalled",
+  "extensionRepository": "Extension Repository",
+  "browseAndInstallFromGithub": "Browse and install from GitHub",
   "noExtensionsInstalled": "No extensions installed",
   "deactivated": "Deactivated",
   "downloadFailedCheckLink": "Download failed, please check the link",
@@ -281,6 +284,9 @@
   "exportExtensionPackage": "Export Extension Package",
   "expandTags": "Expand Tags",
   "noEventSelected": "No event selected",
+  "noMatchingEvents": "No matching events found",
+  "noEventsYet": "No events yet",
+  "createFirstEvent": "Click the + button to create your first event",
   "tryAdjustingFilters": "Try adjusting your filters or search query",
   "batchEditTags": "Batch Edit Tags",
   "batchEditTagsTitle": "Edit Tags for {count} items",
@@ -294,5 +300,7 @@
   "font": "Font",
   "systemFont": "System",
   "builtInFont": "Built-in",
-  "dataMaintenance": "Data Maintenance"
+  "dataMaintenance": "Data Maintenance",
+  "filter": "Filter",
+  "status": "Status"
 }
