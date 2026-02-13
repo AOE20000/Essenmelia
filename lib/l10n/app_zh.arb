@@ -1,4 +1,5 @@
 {
+  "@@locale": "zh",
   "appTitle": "Essenmelia",
   "searchPlaceholder": "搜索事件...",
   "select": "选择",
@@ -40,7 +41,6 @@
   "dbSwitched": "已切换到数据库: {name}",
   "allTags": "所有标签",
   "noTags": "暂无标签",
-  "createTag": "创建标签",
   "tagName": "标签名称",
   "tagColor": "标签颜色",
   "deleteTagMessage": "删除此标签？它将从所有事件中移除。",
@@ -190,5 +190,18 @@
   "exportExtensionPackage": "导出扩展包",
   "expandTags": "展开标签",
   "noEventSelected": "未选择事件",
-  "tryAdjustingFilters": "尝试调整过滤器或搜索词"
+  "tryAdjustingFilters": "尝试调整过滤器或搜索词",
+  "batchEditTags": "批量编辑标签",
+  "batchEditTagsTitle": "编辑 {count} 项的标签",
+  "@batchEditTagsTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "font": "字体",
+  "systemFont": "系统字体",
+  "builtInFont": "内置字体",
+  "dataMaintenance": "数据维护"
 }

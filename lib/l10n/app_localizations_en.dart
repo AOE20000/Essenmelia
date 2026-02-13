@@ -138,11 +138,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noTags => 'No tags available';
 
   @override
-  String createTag(String tag) {
-    return 'Create \"$tag\"';
-  }
-
-  @override
   String get tagName => 'Tag Name';
 
   @override
@@ -372,6 +367,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tagsPlaceholder => 'Type to search or create...';
 
   @override
+  String createTag(String tag) {
+    return 'Create \"$tag\"';
+  }
+
+  @override
   String failedToPickImage(String error) {
     return 'Failed to pick image: $error';
   }
@@ -498,4 +498,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tryAdjustingFilters =>
       'Try adjusting your filters or search query';
+
+  @override
+  String get batchEditTags => 'Batch Edit Tags';
+
+  @override
+  String batchEditTagsTitle(int count) {
+    return 'Edit Tags for $count items';
+  }
+
+  @override
+  String get font => 'Font';
+
+  @override
+  String get systemFont => 'System';
+
+  @override
+  String get builtInFont => 'Built-in';
+
+  @override
+  String get dataMaintenance => 'Data Maintenance';
 }

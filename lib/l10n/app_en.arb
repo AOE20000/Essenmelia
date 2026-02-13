@@ -1,4 +1,5 @@
 {
+  "@@locale": "en",
   "appTitle": "Essenmelia",
   "searchPlaceholder": "Search events...",
   "select": "Select",
@@ -61,7 +62,6 @@
   },
   "allTags": "All Tags",
   "noTags": "No tags available",
-  "createTag": "Create Tag",
   "tagName": "Tag Name",
   "tagColor": "Tag Color",
   "deleteTagMessage": "Delete this tag? It will be removed from all events.",
@@ -281,5 +281,18 @@
   "exportExtensionPackage": "Export Extension Package",
   "expandTags": "Expand Tags",
   "noEventSelected": "No event selected",
-  "tryAdjustingFilters": "Try adjusting your filters or search query"
+  "tryAdjustingFilters": "Try adjusting your filters or search query",
+  "batchEditTags": "Batch Edit Tags",
+  "batchEditTagsTitle": "Edit Tags for {count} items",
+  "@batchEditTagsTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "font": "Font",
+  "systemFont": "System",
+  "builtInFont": "Built-in",
+  "dataMaintenance": "Data Maintenance"
 }

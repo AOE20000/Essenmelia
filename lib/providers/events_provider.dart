@@ -89,6 +89,15 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
   }
 
+  Future<void> updateEventTags(String eventId, List<String> tags) async {
+    if (_box == null) await _init();
+    final event = _box!.get(eventId);
+    if (event != null) {
+      event.tags = tags;
+      await event.save();
+    }
+  }
+
   Future<void> addStep(String eventId, String description) async {
     if (_box == null) await _init();
     final event = _box!.get(eventId);

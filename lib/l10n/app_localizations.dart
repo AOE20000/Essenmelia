@@ -344,12 +344,6 @@ abstract class AppLocalizations {
   /// **'No tags available'**
   String get noTags;
 
-  /// No description provided for @createTag.
-  ///
-  /// In en, this message translates to:
-  /// **'Create \"{tag}\"'**
-  String createTag(String tag);
-
   /// No description provided for @tagName.
   ///
   /// In en, this message translates to:
@@ -770,6 +764,12 @@ abstract class AppLocalizations {
   /// **'Type to search or create...'**
   String get tagsPlaceholder;
 
+  /// No description provided for @createTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Create \"{tag}\"'**
+  String createTag(String tag);
+
   /// No description provided for @failedToPickImage.
   ///
   /// In en, this message translates to:
@@ -991,6 +991,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try adjusting your filters or search query'**
   String get tryAdjustingFilters;
+
+  /// No description provided for @batchEditTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Edit Tags'**
+  String get batchEditTags;
+
+  /// No description provided for @batchEditTagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Tags for {count} items'**
+  String batchEditTagsTitle(int count);
+
+  /// No description provided for @font.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get font;
+
+  /// No description provided for @systemFont.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get systemFont;
+
+  /// No description provided for @builtInFont.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in'**
+  String get builtInFont;
+
+  /// No description provided for @dataMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Maintenance'**
+  String get dataMaintenance;
 }
 
 class _AppLocalizationsDelegate

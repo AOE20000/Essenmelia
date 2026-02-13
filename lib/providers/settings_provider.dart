@@ -5,19 +5,23 @@ import 'db_provider.dart';
 class DisplaySettings {
   final int itemsPerRow;
   final bool collapseImages;
+  final bool useSystemFont;
 
   const DisplaySettings({
     this.itemsPerRow = 2,
     this.collapseImages = false,
+    this.useSystemFont = true,
   });
 
   DisplaySettings copyWith({
     int? itemsPerRow,
     bool? collapseImages,
+    bool? useSystemFont,
   }) {
     return DisplaySettings(
       itemsPerRow: itemsPerRow ?? this.itemsPerRow,
       collapseImages: collapseImages ?? this.collapseImages,
+      useSystemFont: useSystemFont ?? this.useSystemFont,
     );
   }
 }
@@ -36,10 +40,12 @@ class DisplaySettingsNotifier extends StateNotifier<DisplaySettings> {
     
     final itemsPerRow = _box!.get('itemsPerRow', defaultValue: 2);
     final collapseImages = _box!.get('collapseImages', defaultValue: false);
+    final useSystemFont = _box!.get('useSystemFont', defaultValue: true);
     
     state = DisplaySettings(
       itemsPerRow: itemsPerRow,
       collapseImages: collapseImages,
+      useSystemFont: useSystemFont,
     );
   }
 
@@ -54,6 +60,12 @@ class DisplaySettingsNotifier extends StateNotifier<DisplaySettings> {
     final newValue = !state.collapseImages;
     await _box!.put('collapseImages', newValue);
     state = state.copyWith(collapseImages: newValue);
+  }
+
+  Future<void> setUseSystemFont(bool value) async {
+    if (_box == null) await _init();
+    await _box!.put('useSystemFont', value);
+    state = state.copyWith(useSystemFont: value);
   }
 }
 

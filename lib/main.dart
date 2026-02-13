@@ -13,6 +13,8 @@ import 'screens/edit_event_sheet.dart';
 import 'extensions/extension_manager.dart' show navigatorKey;
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -140,6 +142,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     final themeModeOption = ref.watch(themeProvider);
     final locale = ref.watch(localeProvider);
+    final displaySettings = ref.watch(displaySettingsProvider);
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -186,6 +189,23 @@ class _MyAppState extends ConsumerState<MyApp> {
           ),
         );
 
+        // 构建主题
+        ThemeData buildTheme(ColorScheme colorScheme) {
+          final baseTheme = ThemeData(
+            useMaterial3: true,
+            colorScheme: colorScheme,
+          );
+
+          if (displaySettings.useSystemFont) {
+            return baseTheme;
+          } else {
+            // 使用内置 MD3 字体 (Roboto)
+            return baseTheme.copyWith(
+              textTheme: GoogleFonts.robotoTextTheme(baseTheme.textTheme),
+            );
+          }
+        }
+
         return MaterialApp.router(
           title: 'Essenmelia',
           locale: locale,
@@ -197,12 +217,10 @@ class _MyAppState extends ConsumerState<MyApp> {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           themeMode: themeMode,
-          theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: darkColorScheme,
-          ),
+          theme: buildTheme(lightColorScheme),
+          darkTheme: buildTheme(darkColorScheme),
           routerConfig: _router,
+          debugShowCheckedModeBanner: false,
         );
       },
     );

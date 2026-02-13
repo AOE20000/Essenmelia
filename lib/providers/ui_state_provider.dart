@@ -50,6 +50,7 @@ enum LeftPanelContent {
   addEvent,
   editEvent,
   dbManager,
+  manageTags,
 }
 
 final leftPanelContentProvider = StateProvider<LeftPanelContent>(

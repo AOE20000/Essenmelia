@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: android/app/build/outputs/flutter-apk/app-release.apk
 
   build-windows:
     needs: analyze-and-test

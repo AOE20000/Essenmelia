@@ -22,6 +22,7 @@ import 'event_detail_screen.dart';
 import 'settings_sheet.dart';
 import 'steps_editor_screen.dart';
 import 'db_manager_screen.dart';
+import 'manage_tags_screen.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -222,6 +223,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final currentTab = ref.watch(homeTabProvider);
     final isSelectionMode = ref.watch(selectionProvider).isNotEmpty;
     final leftPanelContent = ref.watch(leftPanelContentProvider);
+    final leftPanelEventId = ref.watch(leftPanelEventIdProvider);
+    final selectedEventId = ref.watch(selectedEventIdProvider);
 
     return Scaffold(
       floatingActionButton:
@@ -293,7 +296,72 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ],
               ),
             Expanded(
-              child: _buildTabContent(context, currentTab, isLargeScreen),
+              child: Stack(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTabContent(
+                          context,
+                          currentTab,
+                          isLargeScreen,
+                        ),
+                      ),
+                      if (isLargeScreen && selectedEventId != null)
+                        _SideDetailPanel(
+                              screenWidth: screenWidth,
+                              selectedEventId: selectedEventId,
+                            )
+                            .animate()
+                            .fadeIn(duration: 200.ms)
+                            .slideX(
+                              begin: 0.1,
+                              end: 0,
+                              duration: 400.ms,
+                              curve: Curves.easeOutCubic,
+                            ),
+                    ],
+                  ),
+                  // Scrim for Left Panel
+                  if (isLargeScreen &&
+                      leftPanelContent != LeftPanelContent.none)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () =>
+                            ref.read(leftPanelContentProvider.notifier).state =
+                                LeftPanelContent.none,
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ).animate().fadeIn(duration: 200.ms),
+
+                  // Top Layer: Left Floating Side Panel (Large Screen)
+                  if (isLargeScreen &&
+                      leftPanelContent != LeftPanelContent.none)
+                    Positioned(
+                          left: 0,
+                          top: 16,
+                          bottom: 16,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: _SideLeftPanel(
+                              screenWidth: screenWidth,
+                              content: leftPanelContent,
+                              eventId: leftPanelEventId,
+                            ),
+                          ),
+                        )
+                        .animate()
+                        .fadeIn(duration: 200.ms)
+                        .slideX(
+                          begin: -0.2,
+                          end: 0,
+                          duration: 400.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
+                ],
+              ),
             ),
           ],
         ),
@@ -538,8 +606,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final isSelectionMode = selectedIds.isNotEmpty;
     final displaySettings = ref.watch(displaySettingsProvider);
     final selectedEventId = ref.watch(selectedEventIdProvider);
-    final leftPanelContent = ref.watch(leftPanelContentProvider);
-    final leftPanelEventId = ref.watch(leftPanelEventIdProvider);
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= 1024;
@@ -563,107 +629,69 @@ class _HomePageState extends ConsumerState<HomePage> {
       isSmallScreen ? 2 : 5,
     );
 
-    return Stack(
+    return Row(
       children: [
-        // Bottom Layer: Main Content and Right Detail Panel
-        Row(
-          children: [
-            // Main Content Area
-            Expanded(
-              child: Column(
-                children: [
-                  // Fixed Top Bar
-                  _buildFixedTopBar(
-                    context,
-                    isSelectionMode,
-                    selectedIds.length,
-                    isLargeScreen,
-                  ),
-
-                  // Scrolling Content
-                  Expanded(
-                    child: CustomScrollView(
-                      slivers: [
-                        // Welcome (only in normal mode)
-                        if (!isSelectionMode)
-                          const SliverToBoxAdapter(child: WelcomeCard()),
-
-                        // The Grid
-                        if (filteredEvents.isEmpty)
-                          const _EmptyStateSliver()
-                        else
-                          SliverPadding(
-                            padding: const EdgeInsets.all(16),
-                            sliver: SliverMasonryGrid.count(
-                              crossAxisCount: itemsPerRow,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childCount: filteredEvents.length,
-                              itemBuilder: (context, index) {
-                                final event = filteredEvents[index];
-                                return _EventCard(
-                                      key: ValueKey(event.id),
-                                      event: event,
-                                      collapseImage:
-                                          displaySettings.collapseImages,
-                                      isFocused:
-                                          isLargeScreen &&
-                                          selectedEventId == event.id,
-                                      isSelected: selectedIds.contains(
-                                        event.id,
-                                      ),
-                                      isSelectionMode: isSelectionMode,
-                                    )
-                                    .animate()
-                                    .fadeIn(delay: (30 * index).ms)
-                                    .slideY(begin: 0.1, end: 0);
-                              },
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+        // Main Content Area
+        Expanded(
+          child: Column(
+            children: [
+              // Fixed Top Bar
+              _buildFixedTopBar(
+                context,
+                isSelectionMode,
+                selectedIds,
+                isLargeScreen,
               ),
-            ),
 
-            // Right Side Panel (Large Screen Details) - Stays in Row
-            if (isLargeScreen && selectedEventId != null)
-              _SideDetailPanel(
-                screenWidth: screenWidth,
-                selectedEventId: selectedEventId,
+              // Scrolling Content
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    // Welcome (only in normal mode)
+                    if (!isSelectionMode)
+                      const SliverToBoxAdapter(child: WelcomeCard()),
+
+                    // The Grid
+                    if (filteredEvents.isEmpty)
+                      const _EmptyStateSliver()
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.all(16),
+                        sliver: SliverMasonryGrid.count(
+                          crossAxisCount: itemsPerRow,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childCount: filteredEvents.length,
+                          itemBuilder: (context, index) {
+                            final event = filteredEvents[index];
+                            return _EventCard(
+                                  key: ValueKey(event.id),
+                                  event: event,
+                                  collapseImage: displaySettings.collapseImages,
+                                  isFocused:
+                                      isLargeScreen &&
+                                      selectedEventId == event.id,
+                                  isSelected: selectedIds.contains(event.id),
+                                  isSelectionMode: isSelectionMode,
+                                )
+                                .animate()
+                                .fadeIn(delay: (30 * index).ms)
+                                .slideY(begin: 0.1, end: 0);
+                          },
+                        ),
+                      ),
+                  ],
+                ),
               ),
-          ],
+            ],
+          ),
         ),
 
-        // Scrim for Left Panel
-        if (isLargeScreen && leftPanelContent != LeftPanelContent.none)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => ref.read(leftPanelContentProvider.notifier).state =
-                  LeftPanelContent.none,
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.3), // Slightly darker
-              ),
-            ),
-          ).animate().fadeIn(duration: 200.ms),
-
-        // Top Layer: Left Floating Side Panel (Large Screen)
-        if (isLargeScreen && leftPanelContent != LeftPanelContent.none)
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: _SideLeftPanel(
-              screenWidth: screenWidth,
-              content: leftPanelContent,
-              eventId: leftPanelEventId,
-            ),
-          ).animate().slideX(
-            begin: -1,
-            end: 0,
-            duration: 300.ms,
-            curve: Curves.easeOutCubic,
+        // Right Side Panel (Large Screen Details) - Stays in Row
+        if (isLargeScreen && selectedEventId != null)
+          _SideDetailPanel(
+            screenWidth: screenWidth,
+            selectedEventId: selectedEventId,
           ),
       ],
     );
@@ -686,7 +714,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildFixedTopBar(
     BuildContext context,
     bool isSelectionMode,
-    int selectedCount,
+    Set<String> selectedIds,
     bool isLargeScreen,
   ) {
     return Container(
@@ -708,7 +736,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: isSelectionMode
-                ? _buildSelectionBar(context, selectedCount)
+                ? _buildSelectionBar(context, selectedIds)
                 : Row(
                     children: [
                       Expanded(
@@ -773,7 +801,19 @@ class _HomePageState extends ConsumerState<HomePage> {
           _buildTagBar(context),
 
           // Expanded Tags Panel
-          if (_isTagsExpanded) _buildExpandedTagsPanel(context),
+          ClipRect(
+            child: AnimatedAlign(
+              duration: 300.ms,
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              heightFactor: _isTagsExpanded ? 1.0 : 0.0,
+              child: AnimatedSize(
+                duration: 300.ms,
+                curve: Curves.easeOutCubic,
+                child: _buildExpandedTagsPanel(context),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -844,89 +884,140 @@ class _HomePageState extends ConsumerState<HomePage> {
     final searchState = ref.watch(searchProvider);
     final theme = Theme.of(context);
 
-    return AnimatedSize(
-      duration: 300.ms,
-      curve: Curves.easeOutCubic,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: tagsAsync.when(
-          data: (tags) {
-            if (tags.isEmpty) {
-              return Center(
-                child: Text(
-                  AppLocalizations.of(context)!.noTagsYet,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: tagsAsync.when(
+        data: (tags) {
+          if (tags.isEmpty) {
+            return Center(
+              child: Text(
+                AppLocalizations.of(context)!.noTagsYet,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
                 ),
-              );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (searchState.selectedTags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        Text(
-                          AppLocalizations.of(
-                            context,
-                          )!.tagsSelected(searchState.selectedTags.length),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        TextButton.icon(
-                          onPressed: () =>
-                              ref.read(searchProvider.notifier).clearTags(),
-                          icon: const Icon(Icons.clear_all_rounded, size: 16),
-                          label: Text(
-                            AppLocalizations.of(context)!.clearAllTags,
-                          ),
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            foregroundColor: theme.colorScheme.error,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: tags.map((tag) {
-                    final isSelected = searchState.selectedTags.contains(tag);
-                    return _CustomFilterChip(
-                      label: tag,
-                      isSelected: isSelected,
-                      onSelected: (val) =>
-                          ref.read(searchProvider.notifier).toggleTag(tag),
-                    );
-                  }).toList(),
-                ),
-              ],
+              ),
             );
-          },
-          loading: () => const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (searchState.selectedTags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.tagsSelected(searchState.selectedTags.length),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          if (screenWidth >= 1024) {
+                            ref.read(leftPanelContentProvider.notifier).state =
+                                LeftPanelContent.manageTags;
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManageTagsScreen(),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.settings_outlined, size: 16),
+                        label: Text(AppLocalizations.of(context)!.manageTags),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: () =>
+                            ref.read(searchProvider.notifier).clearTags(),
+                        icon: const Icon(Icons.clear_all_rounded, size: 16),
+                        label: Text(AppLocalizations.of(context)!.clearAllTags),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.colorScheme.error,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          if (screenWidth >= 1024) {
+                            ref.read(leftPanelContentProvider.notifier).state =
+                                LeftPanelContent.manageTags;
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManageTagsScreen(),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.settings_outlined, size: 16),
+                        label: Text(AppLocalizations.of(context)!.manageTags),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: tags.map((tag) {
+                  final isSelected = searchState.selectedTags.contains(tag);
+                  return _CustomFilterChip(
+                    label: tag,
+                    isSelected: isSelected,
+                    onSelected: (val) =>
+                        ref.read(searchProvider.notifier).toggleTag(tag),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          error: (_, _) => const SizedBox.shrink(),
         ),
+        error: (_, _) => const SizedBox.shrink(),
       ),
     );
   }
 
-  Widget _buildSelectionBar(BuildContext context, int count) {
+  Widget _buildSelectionBar(BuildContext context, Set<String> selectedIds) {
+    final count = selectedIds.length;
     return Card(
       color: Theme.of(context).colorScheme.primaryContainer,
       margin: EdgeInsets.zero,
@@ -943,7 +1034,11 @@ class _HomePageState extends ConsumerState<HomePage> {
               '$count ${AppLocalizations.of(context)!.selected}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.label_outline),
+              tooltip: AppLocalizations.of(context)!.batchEditTags,
+              onPressed: () => _showBatchEditTagsSheet(context, selectedIds),
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
               onPressed: () => _confirmBatchDelete(context, count),
@@ -982,6 +1077,213 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (confirm == true) {
       await ref.read(batchActionsProvider).deleteSelected();
     }
+  }
+
+  void _showBatchEditTagsSheet(BuildContext context, Set<String> selectedIds) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _BatchEditTagsSheet(selectedIds: selectedIds),
+    );
+  }
+}
+
+class _BatchEditTagsSheet extends ConsumerWidget {
+  final Set<String> selectedIds;
+
+  const _BatchEditTagsSheet({required this.selectedIds});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tagsAsync = ref.watch(tagsProvider);
+    final eventsAsync = ref.watch(eventsProvider);
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        top: 16,
+        left: 20,
+        right: 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(
+                l10n.batchEditTagsTitle(selectedIds.length),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          tagsAsync.when(
+            data: (allTags) {
+              if (allTags.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text(
+                      l10n.noTags,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return eventsAsync.when(
+                data: (allEvents) {
+                  final selectedEvents = allEvents
+                      .where((e) => selectedIds.contains(e.id))
+                      .toList();
+
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: allTags.map((tag) {
+                      // 统计该标签在选中事件中的出现次数
+                      final count = selectedEvents
+                          .where((e) => e.tags?.contains(tag) ?? false)
+                          .length;
+
+                      // 状态判断
+                      final bool isAllSelected = count == selectedEvents.length;
+                      final bool isNoneSelected = count == 0;
+                      final bool isPartialSelected =
+                          !isAllSelected && !isNoneSelected;
+
+                      return _TagBatchChip(
+                        label: tag,
+                        isAllSelected: isAllSelected,
+                        isPartialSelected: isPartialSelected,
+                        onTap: () async {
+                          // 点击逻辑：
+                          // 1. 如果是部分选中或未选中 -> 变为全部选中（为所有事件添加该标签）
+                          // 2. 如果是全部选中 -> 变为未选中（从所有事件中移除该标签）
+                          final bool shouldAdd = !isAllSelected;
+
+                          for (final event in selectedEvents) {
+                            final currentTags = List<String>.from(
+                              event.tags ?? [],
+                            );
+                            if (shouldAdd) {
+                              if (!currentTags.contains(tag)) {
+                                currentTags.add(tag);
+                              }
+                            } else {
+                              currentTags.remove(tag);
+                            }
+                            await ref
+                                .read(eventsProvider.notifier)
+                                .updateEventTags(event.id, currentTags);
+                          }
+                        },
+                      );
+                    }).toList(),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, _) => const SizedBox.shrink(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, _) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TagBatchChip extends StatelessWidget {
+  final String label;
+  final bool isAllSelected;
+  final bool isPartialSelected;
+  final VoidCallback onTap;
+
+  const _TagBatchChip({
+    required this.label,
+    required this.isAllSelected,
+    required this.isPartialSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Color backgroundColor;
+    Color textColor;
+    IconData? icon;
+
+    if (isAllSelected) {
+      backgroundColor = theme.colorScheme.primary;
+      textColor = theme.colorScheme.onPrimary;
+      icon = Icons.check_circle_rounded;
+    } else if (isPartialSelected) {
+      backgroundColor = theme.colorScheme.primaryContainer;
+      textColor = theme.colorScheme.onPrimaryContainer;
+      icon = Icons.remove_circle_outline_rounded;
+    } else {
+      backgroundColor = theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.5,
+      );
+      textColor = theme.colorScheme.onSurfaceVariant;
+      icon = null;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          border: isPartialSelected
+              ? Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                )
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: textColor),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: textColor,
+                fontWeight: isAllSelected || isPartialSelected
+                    ? FontWeight.bold
+                    : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1123,62 +1425,48 @@ class _StatusToggleButtons extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildButton(context, EventStatusFilter.all, l10n.statusAll),
-          _buildButton(
-            context,
-            EventStatusFilter.notStarted,
+    return SegmentedButton<EventStatusFilter>(
+      segments: [
+        ButtonSegment<EventStatusFilter>(
+          value: EventStatusFilter.all,
+          label: Text(l10n.statusAll, style: const TextStyle(fontSize: 12)),
+        ),
+        ButtonSegment<EventStatusFilter>(
+          value: EventStatusFilter.notStarted,
+          label: Text(
             l10n.statusNotStarted,
+            style: const TextStyle(fontSize: 12),
           ),
-          _buildButton(
-            context,
-            EventStatusFilter.inProgress,
+        ),
+        ButtonSegment<EventStatusFilter>(
+          value: EventStatusFilter.inProgress,
+          label: Text(
             l10n.statusInProgress,
+            style: const TextStyle(fontSize: 12),
           ),
-          _buildButton(
-            context,
-            EventStatusFilter.completed,
+        ),
+        ButtonSegment<EventStatusFilter>(
+          value: EventStatusFilter.completed,
+          label: Text(
             l10n.statusCompleted,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButton(
-    BuildContext context,
-    EventStatusFilter filter,
-    String label,
-  ) {
-    final isSelected = currentFilter == filter;
-    final theme = Theme.of(context);
-
-    return GestureDetector(
-      onTap: () => onChanged(filter),
-      child: AnimatedContainer(
-        duration: 200.ms,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: isSelected
-                ? theme.colorScheme.onPrimary
-                : theme.colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            style: const TextStyle(fontSize: 12),
           ),
         ),
+      ],
+      selected: {currentFilter},
+      onSelectionChanged: (Set<EventStatusFilter> newSelection) {
+        onChanged(newSelection.first);
+      },
+      showSelectedIcon: false,
+      style: SegmentedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: EdgeInsets.zero,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+        selectedBackgroundColor: theme.colorScheme.primary,
+        selectedForegroundColor: theme.colorScheme.onPrimary,
       ),
     );
   }
@@ -1273,19 +1561,24 @@ class _SideLeftPanel extends ConsumerWidget {
       case LeftPanelContent.dbManager:
         child = const DatabaseManagerScreen(isSidePanel: true);
         break;
+      case LeftPanelContent.manageTags:
+        child = const ManageTagsScreen(isSidePanel: true);
+        break;
       case LeftPanelContent.none:
         return const SizedBox.shrink();
     }
 
     return Container(
       width: _screenWidth * 0.35, // Increased slightly for better readability
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(5, 0),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1306,11 +1599,14 @@ class _SideDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: screenWidth * 0.3,
+      width: screenWidth * 0.35, // Match Left Panel width
+      margin: const EdgeInsets.only(left: 8), // Small gap from main content
       decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           left: BorderSide(
             color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            width: 1,
           ),
         ),
       ),
@@ -1346,14 +1642,14 @@ class _EventCard extends ConsumerWidget {
       child: Card(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
-        elevation: isSelected ? 0 : (isFocused ? 8 : 2),
+        elevation: isSelected ? 0 : (isFocused ? 4 : 1),
         shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
             color: (isSelected || isFocused)
                 ? theme.colorScheme.primary
-                : theme.dividerColor.withValues(alpha: 0.05),
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
             width: (isSelected || isFocused) ? 2 : 1,
           ),
         ),

@@ -138,11 +138,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noTags => '暂无标签';
 
   @override
-  String createTag(String tag) {
-    return '创建 \"$tag\"';
-  }
-
-  @override
   String get tagName => '标签名称';
 
   @override
@@ -369,6 +364,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tagsPlaceholder => '输入以搜索或创建...';
 
   @override
+  String createTag(String tag) {
+    return '创建 \"$tag\"';
+  }
+
+  @override
   String failedToPickImage(String error) {
     return '选择图片失败: $error';
   }
@@ -492,4 +492,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tryAdjustingFilters => '尝试调整过滤器或搜索词';
+
+  @override
+  String get batchEditTags => '批量编辑标签';
+
+  @override
+  String batchEditTagsTitle(int count) {
+    return '编辑 $count 项的标签';
+  }
+
+  @override
+  String get font => '字体';
+
+  @override
+  String get systemFont => '系统字体';
+
+  @override
+  String get builtInFont => '内置字体';
+
+  @override
+  String get dataMaintenance => '数据维护';
 }
