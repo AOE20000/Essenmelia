@@ -9,8 +9,8 @@ alwaysApply: true
 
 ## 1. 核心构建环境
 - **Flutter SDK**: `3.38.9` (Preview/Master channel)
-- **Gradle**: `8.10.2`
-- **Android Gradle Plugin (AGP)**: `8.7.3`
+- **Gradle**: `8.12`
+- **Android Gradle Plugin (AGP)**: `8.9.1`
 - **Kotlin**: `2.1.0`
 - **NDK Version**: `28.2.13676358` (必须显式指定)
 
@@ -18,13 +18,15 @@ alwaysApply: true
 
 ## 2. 关键修复与注意事项
 
-### A. Android SDK 36 兼容性陷阱
-**问题**：目前部分现代插件（如 `androidx.activity:1.12.2+`）强制要求 Android SDK 36 (Preview)。但本地 SDK 36 目录若缺失 `android.jar`，会导致 Gradle 抛出 `Cannot query the value of this provider` 错误。
+### A. Android SDK 36 兼容性
+**状态**：项目已迁移至 Android SDK 36 (VanillaIceCream)。
 
 **对策**：
-- 项目已通过 `android/build.gradle.kts` 中的 `resolutionStrategy` 强制将 `androidx` 系列核心库降级到 SDK 35 兼容版本。
-- **严禁**：在未修复 SDK 36 环境前，不要随意运行 `flutter pub upgrade --major-versions`。
-- **新增插件**：如果引入新插件导致构建报错，请在根目录 `build.gradle.kts` 的 `subprojects` 块中添加相应的 `force` 降级规则。
+- **本地环境要求**：开发环境必须安装 Android SDK 36 且包含完整的 `android.jar` 文件。
+- **配置**：`compileSdk` 和 `targetSdk` 均已设为 `36`。
+- **依赖管理**：已移除先前针对 SDK 35 的强制降级策略，允许使用最新版本的 AndroidX 库。
+
+---
 
 ### B. Windows 中文路径兼容性
 **问题**：如果项目位于含有中文的路径下（例如用户名为 `阿哈`），Kotlin 增量编译会因路径编码问题崩溃。
@@ -36,7 +38,7 @@ alwaysApply: true
 
 ### C. 依赖版本锁定
 - **Riverpod**: 锁定在 `^2.5.1`。项目目前大量使用 `StateNotifier`，不支持 Riverpod 3.0 的破坏性更新。
-- **compileSdk / targetSdk**: 统一锁定在 `35`。
+- **compileSdk / targetSdk**: 统一锁定在 `36`。
 
 ### D. 动态图标 (Material 3 Dynamic Color Icon)
 **问题**：`flutter_launcher_icons` 插件在当前 Windows 环境下无法直接处理 SVG 转换为 Android Vector Drawable (VD)，导致 Android 13+ 的动态取色图标无法自动生成。
@@ -52,7 +54,7 @@ alwaysApply: true
 
 | 错误信息 | 原因 | 解决方法 |
 | :--- | :--- | :--- |
-| `Cannot query the value of this provider...` | 依赖项强制指向了损坏的 SDK 36 | 检查根目录 `build.gradle.kts` 的降级策略 |
+| `Cannot query the value of this provider...` | 环境变量中 SDK 36 损坏或缺失 `android.jar` | 重新安装 Android SDK 36 (VanillaIceCream) |
 | `NDK from ndk.dir disagrees with android.ndkVersion` | NDK 路径或版本不匹配 | 检查 `app/build.gradle.kts` 的 `ndkVersion` |
 | `Unresolved reference: StateNotifier` | Riverpod 被错误升级到了 3.x | 将 `flutter_riverpod` 降回 `^2.5.1` |
 | 莫名其妙的路径编码错误 | 中文路径下的 Kotlin 缓存冲突 | 执行 `flutter clean` 并重启编辑器 |
@@ -63,9 +65,8 @@ alwaysApply: true
 1. **添加插件**：`flutter pub add <plugin_name>`
 2. **检查构建**：`flutter build apk --release`
 3. **若失败**：
-   - 检查控制台输出的 `dependencies` 树，找出哪个库要求了 SDK 36。
-   - 在根目录 `build.gradle.kts` 拦截该库。
+   - 检查控制台输出。
    - `flutter clean` 后重试。
 
 ---
-*最后更新日期：2026-02-10*
+*最后更新日期：2026-02-14*

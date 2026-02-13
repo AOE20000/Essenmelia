@@ -5,24 +5,7 @@ allprojects {
     }
 }
 
-// 强制统一依赖版本，防止出现要求 SDK 36 的库
-subprojects {
-    configurations.all {
-        resolutionStrategy {
-            force("androidx.activity:activity:1.9.3")
-            force("androidx.activity:activity-ktx:1.9.3")
-            force("androidx.core:core:1.15.0")
-            force("androidx.core:core-ktx:1.15.0")
-            force("androidx.fragment:fragment:1.8.5")
-            force("androidx.fragment:fragment-ktx:1.8.5")
-            force("androidx.lifecycle:lifecycle-common:2.8.7")
-            force("androidx.lifecycle:lifecycle-runtime:2.8.7")
-            force("androidx.lifecycle:lifecycle-viewmodel:2.8.7")
-            force("androidx.browser:browser:1.8.0")
-        }
-    }
-}
-
+// 移除先前为兼容 SDK 35 强制锁定的依赖版本，允许使用 SDK 36 要求的最新版
 subprojects {
     project.afterEvaluate {
         if (project.plugins.hasPlugin("com.android.library") || project.plugins.hasPlugin("com.android.application")) {
@@ -38,12 +21,12 @@ subprojects {
                     namespace = "io.apparence.quick_settings"
                 }
                 
-                // 统一使用 SDK 35，因为本地 36 的 android.jar 缺失
-                compileSdkVersion(35)
+                // 统一使用 SDK 36
+                compileSdkVersion(36)
                 
                 defaultConfig {
                     minSdkVersion(24)
-                    targetSdkVersion(35)
+                    targetSdkVersion(36)
                     versionCode = 1
                     versionName = "1.0.0"
                 }

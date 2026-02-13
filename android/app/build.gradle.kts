@@ -15,8 +15,8 @@ plugins {
 
 android {
     namespace = "com.example.essenmelia_flutter"
-    // 统一使用 SDK 35 以解决本地 SDK 36 文件缺失导致的 Provider 报错
-    compileSdk = 35
+    // 升级到 SDK 36，用户已修复本地环境
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
 
     compileOptions {
@@ -32,7 +32,7 @@ android {
         applicationId = "com.example.essenmelia_flutter"
         // Flutter 3.38.9 (Preview) 建议 minSdk 至少为 24
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
         
