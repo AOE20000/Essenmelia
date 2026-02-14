@@ -2,35 +2,77 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'db_provider.dart';
 
-class UiStateNotifier extends StateNotifier<bool> {
-  final Ref ref;
-  Box? _box;
+enum WelcomeMode { welcome, help }
 
-  UiStateNotifier(this.ref) : super(false) {
-    // Start false until loaded to avoid flash
-    _init();
-  }
+class UiState {
+  final bool showWelcome;
+  final WelcomeMode mode;
 
-  Future<void> _init() async {
-    await ref.read(dbProvider.future);
-    _box = Hive.box('settings');
+  UiState({required this.showWelcome, required this.mode});
 
-    if (_box!.containsKey('hasSeenWelcome')) {
-      state = !(_box!.get('hasSeenWelcome') as bool);
-    } else {
-      state = true; // Show welcome if key doesn't exist
-    }
-  }
-
-  Future<void> dismissWelcome() async {
-    if (_box == null) await _init();
-    await _box!.put('hasSeenWelcome', true);
-    state = false;
+  UiState copyWith({bool? showWelcome, WelcomeMode? mode}) {
+    return UiState(
+      showWelcome: showWelcome ?? this.showWelcome,
+      mode: mode ?? this.mode,
+    );
   }
 }
 
-final showWelcomeProvider = StateNotifierProvider<UiStateNotifier, bool>((ref) {
+class UiStateNotifier extends StateNotifier<UiState> {
+  final Ref ref;
+  Box? _box;
+
+  UiStateNotifier(this.ref)
+    : super(UiState(showWelcome: false, mode: WelcomeMode.welcome)) {
+    reinit();
+  }
+
+  Future<void> reinit() async {
+    await ref.read(dbProvider.future);
+    _box = Hive.box('settings');
+
+    bool show;
+    if (_box!.containsKey('hasSeenWelcome')) {
+      show = !(_box!.get('hasSeenWelcome') as bool);
+    } else {
+      show = true;
+    }
+
+    // Restore last mode
+    WelcomeMode mode = WelcomeMode.welcome;
+    if (_box!.containsKey('lastWelcomeMode')) {
+      final modeIndex = _box!.get('lastWelcomeMode') as int;
+      mode = WelcomeMode.values[modeIndex];
+    }
+
+    state = state.copyWith(showWelcome: show, mode: mode);
+  }
+
+  Future<void> dismissWelcome() async {
+    if (_box == null) await reinit();
+    await _box!.put('hasSeenWelcome', true);
+    state = state.copyWith(showWelcome: false);
+  }
+
+  void showHelp() {
+    setMode(WelcomeMode.help);
+    state = state.copyWith(showWelcome: true);
+  }
+
+  Future<void> setMode(WelcomeMode mode) async {
+    if (_box == null) await reinit();
+    await _box!.put('lastWelcomeMode', mode.index);
+    state = state.copyWith(mode: mode);
+  }
+}
+
+final uiStateProvider = StateNotifierProvider<UiStateNotifier, UiState>((ref) {
   return UiStateNotifier(ref);
+});
+
+// For backward compatibility and easier watching of just the visibility
+final showWelcomeProvider = Provider<bool>((ref) {
+  return ref.watch(uiStateProvider).showWelcome;
 });
 
 class ExtensionGuideNotifier extends StateNotifier<bool> {
@@ -63,6 +105,38 @@ final showExtensionGuideProvider =
     StateNotifierProvider<ExtensionGuideNotifier, bool>((ref) {
       return ExtensionGuideNotifier(ref);
     });
+
+class OnboardingNotifier extends StateNotifier<bool> {
+  final Ref ref;
+  Box? _box;
+
+  OnboardingNotifier(this.ref) : super(false) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    await ref.read(dbProvider.future);
+    _box = Hive.box('settings');
+
+    if (_box!.containsKey('hasCompletedOnboarding')) {
+      state = !(_box!.get('hasCompletedOnboarding') as bool);
+    } else {
+      state = true; // Show onboarding if key doesn't exist
+    }
+  }
+
+  Future<void> completeOnboarding() async {
+    if (_box == null) await _init();
+    await _box!.put('hasCompletedOnboarding', true);
+    state = false;
+  }
+}
+
+final onboardingProvider = StateNotifierProvider<OnboardingNotifier, bool>((
+  ref,
+) {
+  return OnboardingNotifier(ref);
+});
 
 final selectedEventIdProvider = StateProvider<String?>((ref) => null);
 

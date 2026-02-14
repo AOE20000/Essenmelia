@@ -1,709 +1,965 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/tags_provider.dart';
-import 'base_extension.dart';
+import 'logic_engine.dart';
+import 'extension_console.dart';
 
-/// 动态 UI 渲染器与逻辑执行引擎 (Path B & C)
+/// 动态 UI 渲染器 (配合 ExtensionJsEngine 使用)
 class DynamicEngine extends ConsumerStatefulWidget {
-  final ExtensionMetadata metadata;
-  final ExtensionApi api;
-  final Function(void Function(String, Map<String, dynamic>))? onRegister;
+  final ExtensionJsEngine engine;
 
-  const DynamicEngine({
-    super.key,
-    required this.metadata,
-    required this.api,
-    this.onRegister,
-  });
+  const DynamicEngine({super.key, required this.engine});
 
   @override
   ConsumerState<DynamicEngine> createState() => _DynamicEngineState();
 }
 
 class _DynamicEngineState extends ConsumerState<DynamicEngine> {
-  final Map<String, dynamic> _state = {};
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
-    widget.onRegister?.call(handleEvent);
-    _initializeLogic();
-  }
+    widget.engine.setOnStateChanged(() {
+      if (mounted) setState(() {});
+    });
 
-  void handleEvent(String name, Map<String, dynamic> data) {
-    if (widget.metadata.logic != null) {
-      final onEvent =
-          widget.metadata.logic!['onEvent'] as Map<String, dynamic>?;
-      if (onEvent != null && onEvent.containsKey(name)) {
-        final actions = onEvent[name] as List?;
-        if (actions != null) {
-          for (var action in actions) {
-            _executeAction(action, eventData: data);
-          }
-        }
-      }
-    }
-  }
-
-  Future<void> _initializeLogic() async {
-    if (widget.metadata.logic != null) {
-      final onLoad = widget.metadata.logic!['onLoad'] as List?;
-      if (onLoad != null) {
-        for (var action in onLoad) {
-          await _executeAction(action);
-        }
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
+    if (!widget.engine.isInitialized) {
+      widget.engine.init().then((_) {
+        if (mounted) setState(() {});
       });
-    }
-  }
-
-  Future<void> _executeAction(
-    dynamic actionDef, {
-    Map<String, dynamic>? eventData,
-  }) async {
-    debugPrint('Executing action: $actionDef');
-    if (actionDef is String) {
-      // Named action reference
-      final actions =
-          widget.metadata.logic?['actions'] as Map<String, dynamic>?;
-      final sequence = actions?[actionDef] as List?;
-      if (sequence != null) {
-        for (var step in sequence) {
-          await _executeAction(step, eventData: eventData);
-        }
-      }
-      return;
-    }
-
-    if (actionDef is! Map<String, dynamic>) return;
-
-    // --- Control Flow ---
-    if (actionDef.containsKey('if')) {
-      final condition = _resolveValue(actionDef['if'], eventData: eventData);
-      final isTrue =
-          condition == true ||
-          (condition is String && condition.toLowerCase() == 'true');
-      final branch = isTrue ? actionDef['then'] : actionDef['else'];
-      if (branch is List) {
-        for (var step in branch) {
-          await _executeAction(step, eventData: eventData);
-        }
-      } else if (branch != null) {
-        await _executeAction(branch, eventData: eventData);
-      }
-      return;
-    }
-
-    if (actionDef.containsKey('for')) {
-      final list = _resolveValue(actionDef['in'], eventData: eventData);
-      final varName = actionDef['for'] as String;
-      final actions = actionDef['do'];
-      if (list is List && actions != null) {
-        for (var item in list) {
-          final localEventData = Map<String, dynamic>.from(eventData ?? {});
-          localEventData[varName] = item;
-          if (actions is List) {
-            for (var step in actions) {
-              await _executeAction(step, eventData: localEventData);
-            }
-          } else {
-            await _executeAction(actions, eventData: localEventData);
-          }
-        }
-      }
-      return;
-    }
-
-    final call = actionDef['call'] as String?;
-    final assignTo = actionDef['assignTo'] as String?;
-    final params = actionDef['params'] as Map<String, dynamic>? ?? {};
-
-    debugPrint('Calling: $call with params: $params');
-    dynamic result;
-
-    // API Calls mapping
-    switch (call) {
-      case 'api.getEvents':
-        result = await widget.api.getEvents();
-        debugPrint('Got events: ${result?.length}');
-        break;
-      case 'api.getTags':
-        result = await widget.api.getTags();
-        break;
-      case 'api.showSnackBar':
-        final msg = _resolveValue(params['message'], eventData: eventData);
-        widget.api.showSnackBar(msg.toString());
-        break;
-      case 'api.showConfirmDialog':
-        result = await widget.api.showConfirmDialog(
-          title: _resolveValue(
-            params['title'],
-            eventData: eventData,
-          ).toString(),
-          message: _resolveValue(
-            params['message'],
-            eventData: eventData,
-          ).toString(),
-          confirmLabel:
-              _resolveValue(
-                params['confirmLabel'],
-                eventData: eventData,
-              )?.toString() ??
-              '确定',
-          cancelLabel:
-              _resolveValue(
-                params['cancelLabel'],
-                eventData: eventData,
-              )?.toString() ??
-              '取消',
-        );
-        break;
-      case 'api.navigateTo':
-        widget.api.navigateTo(params['route']);
-        break;
-      case 'api.exportFile':
-        final content = _resolveValue(
-          params['content'],
-          eventData: eventData,
-        ).toString();
-        final fileName = _resolveValue(
-          params['fileName'],
-          eventData: eventData,
-        ).toString();
-        result = await widget.api.exportFile(content, fileName);
-        break;
-      case 'api.pickFile':
-        result = await widget.api.pickFile(
-          allowedExtensions: (params['allowedExtensions'] as List?)
-              ?.map((e) => e.toString())
-              .toList(),
-        );
-        break;
-      case 'api.httpGet':
-        result = await widget.api.httpGet(
-          _resolveValue(params['url'], eventData: eventData).toString(),
-          headers: (params['headers'] as Map?)?.cast<String, String>(),
-        );
-        break;
-      case 'api.httpPost':
-        result = await widget.api.httpPost(
-          _resolveValue(params['url'], eventData: eventData).toString(),
-          headers: (params['headers'] as Map?)?.cast<String, String>(),
-          body: _resolveValue(params['body'], eventData: eventData),
-        );
-        break;
-      case 'api.httpPut':
-        result = await widget.api.httpPut(
-          _resolveValue(params['url'], eventData: eventData).toString(),
-          headers: (params['headers'] as Map?)?.cast<String, String>(),
-          body: _resolveValue(params['body'], eventData: eventData),
-        );
-        break;
-      case 'api.httpDelete':
-        result = await widget.api.httpDelete(
-          _resolveValue(params['url'], eventData: eventData).toString(),
-          headers: (params['headers'] as Map?)?.cast<String, String>(),
-        );
-        break;
-      case 'api.openUrl':
-        await widget.api.openUrl(
-          _resolveValue(params['url'], eventData: eventData).toString(),
-        );
-        break;
-      case 'api.publishEvent':
-        widget.api.publishEvent(
-          _resolveValue(params['name'], eventData: eventData).toString(),
-          (_resolveValue(params['data'], eventData: eventData) as Map?)
-                  ?.cast<String, dynamic>() ??
-              {},
-        );
-        break;
-      case 'api.setSearchQuery':
-        widget.api.setSearchQuery(
-          _resolveValue(params['query'], eventData: eventData).toString(),
-        );
-        break;
-      case 'api.addEvent':
-        await widget.api.addEvent(
-          title: _resolveValue(
-            params['title'],
-            eventData: eventData,
-          ).toString(),
-          description: _resolveValue(
-            params['description'],
-            eventData: eventData,
-          )?.toString(),
-          tags: (params['tags'] as List?)?.map((e) => e.toString()).toList(),
-        );
-        break;
-      case 'api.deleteEvent':
-        await widget.api.deleteEvent(
-          _resolveValue(params['id'], eventData: eventData).toString(),
-        );
-        break;
-      case 'api.addStep':
-        await widget.api.addStep(
-          _resolveValue(params['eventId'], eventData: eventData).toString(),
-          _resolveValue(params['description'], eventData: eventData).toString(),
-        );
-        break;
-      case 'api.addTag':
-        await widget.api.addTag(
-          _resolveValue(params['tag'], eventData: eventData).toString(),
-        );
-        break;
-      case 'api.getDbSize':
-        result = await widget.api.getDbSize();
-        break;
-      case 'api.getThemeMode':
-        result = widget.api.getThemeMode();
-        break;
-      case 'api.getLocale':
-        result = widget.api.getLocale();
-        break;
-      case 'state.set':
-        result = _resolveValue(params['value'], eventData: eventData);
-        break;
-      case 'list.length':
-        final list = _resolveValue(params['list'], eventData: eventData);
-        result = (list is List) ? list.length : 0;
-        debugPrint('List length: $result');
-        break;
-    }
-
-    if (assignTo != null) {
-      debugPrint('Assigning result to state.$assignTo: $result');
-      if (mounted) {
-        setState(() {
-          _state[assignTo] = result;
-        });
-      }
-    }
-  }
-
-  dynamic _resolveValue(dynamic val, {Map<String, dynamic>? eventData}) {
-    if (val is Map) {
-      return val.map(
-        (k, v) => MapEntry(k, _resolveValue(v, eventData: eventData)),
-      );
-    }
-    if (val is List) {
-      return val.map((e) => _resolveValue(e, eventData: eventData)).toList();
-    }
-    if (val is! String) return val;
-
-    // 1. 处理 ${event.xxx}
-    final eventRegex = RegExp(r'\$\{event\.([^\}]+)\}');
-    final eventMatches = eventRegex.allMatches(val).toList();
-    if (eventMatches.length == 1 && eventMatches.first.group(0) == val) {
-      final key = eventMatches.first.group(1)!;
-      return eventData?[key];
-    }
-
-    // 2. 处理 ${state.xxx}
-    final stateRegex = RegExp(r'\$\{state\.([^\}]+)\}');
-    final stateMatches = stateRegex.allMatches(val).toList();
-    if (stateMatches.length == 1 && stateMatches.first.group(0) == val) {
-      final key = stateMatches.first.group(1)!;
-      return _state[key];
-    }
-
-    String result = val;
-    // 3. 混合替换
-    for (final match in eventMatches) {
-      final fullMatch = match.group(0)!;
-      final key = match.group(1)!;
-      final val = eventData?[key];
-      result = result.replaceFirst(fullMatch, _stringify(val));
-    }
-    for (final match in stateMatches) {
-      final fullMatch = match.group(0)!;
-      final key = match.group(1)!;
-      final val = _state[key];
-      result = result.replaceFirst(fullMatch, _stringify(val));
-    }
-    return result;
-  }
-
-  String _stringify(dynamic stateValue) {
-    if (stateValue == null) return '';
-    if (stateValue is String || stateValue is num || stateValue is bool) {
-      return stateValue.toString();
-    }
-    try {
-      return jsonEncode(
-        stateValue,
-        toEncodable: (nonEncodable) {
-          try {
-            return (nonEncodable as dynamic).toJson();
-          } catch (_) {
-            return nonEncodable.toString();
-          }
-        },
-      );
-    } catch (e) {
-      return stateValue.toString();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final theme = Theme.of(context);
+    if (widget.engine.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                '扩展脚本运行错误:\n${widget.engine.error}',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {});
+                  widget.engine.init();
+                },
+                child: const Text('重试'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
-    final viewDef = widget.metadata.view;
+    if (!widget.engine.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final viewDef = widget.engine.metadata.view;
     if (viewDef == null) {
-      return const Scaffold(body: Center(child: Text('此扩展未定义界面 (Path C)')));
+      return const Center(child: Text('此扩展没有 UI 界面'));
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: Text(widget.metadata.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _initializeLogic,
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.small(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (_) => SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: ExtensionConsole(engine: widget.engine),
+            ),
+          );
+        },
+        child: const Icon(Icons.bug_report),
       ),
-      body: _buildWidget(context, viewDef),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar.large(
+              title: Text(widget.engine.metadata.name),
+              centerTitle: false,
+              pinned: true,
+              backgroundColor: theme.colorScheme.surface,
+              surfaceTintColor: theme.colorScheme.surfaceTint,
+            ),
+          ];
+        },
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: _buildWidget(viewDef),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildWidget(
-    BuildContext context,
-    Map<String, dynamic> def, {
-    Map<String, dynamic>? eventData,
-  }) {
-    final type = def['type'] as String?;
+  Widget _buildWidget(Map<String, dynamic> def) {
+    // 提取该组件引用的所有状态键
+    final stateKeys = _extractStateKeys(def);
+
+    if (stateKeys.isEmpty) {
+      return _buildWidgetInternal(def);
+    }
+
+    // 如果组件引用了状态，则使用 ValueListenableBuilder 包装
+    // 注意：这里简单起见，如果引用多个状态，目前仅绑定第一个发现的状态，或者绑定整体变化
+    // 为了极致性能，后续可以改为监听多个 ValueNotifier
+    return ValueListenableBuilder(
+      valueListenable: widget.engine.getStateNotifier(stateKeys.first),
+      builder: (context, value, child) {
+        return _buildWidgetInternal(def);
+      },
+    );
+  }
+
+  /// 内部构建逻辑，不包含状态绑定
+  Widget _buildWidgetInternal(Map<String, dynamic> def) {
+    final type = def['type'] as String? ?? 'container';
+    final children = def['children'] as List?;
     final props = def['props'] as Map<String, dynamic>? ?? {};
 
+    // 处理布局属性
+    final padding = _parsePadding(props['padding']);
+    final margin = _parsePadding(props['margin']);
+    final width = (props['width'] as num?)?.toDouble();
+    final height = (props['height'] as num?)?.toDouble();
+    final color = _parseColor(props['color'], context);
+
+    // 处理点击事件，优先支持 top-level onTap，其次支持 props.action
+    VoidCallback? onTap;
+    final action = def['onTap'] ?? props['action'];
+    if (action != null) {
+      onTap = () {
+        if (action is String) {
+          widget.engine.callFunction(action, props['params']);
+        } else if (action is Map && action.containsKey('call')) {
+          widget.engine.callFunction(action['call'], action['params']);
+        }
+      };
+    }
+
+    Widget current;
+    final theme = Theme.of(context);
+
     switch (type) {
-      case 'container':
-        return Container(
-          padding: _parseEdgeInsets(props['padding']),
-          margin: _parseEdgeInsets(props['margin']),
-          alignment: _parseAlignment(props['alignment']),
-          decoration: _parseDecoration(props),
-          width: (props['width'] as num?)?.toDouble(),
-          height: (props['height'] as num?)?.toDouble(),
-          child: _buildChild(context, def['child'], eventData: eventData),
-        );
-      case 'center':
-        return Center(
-          child: _buildChild(context, def['child'], eventData: eventData),
-        );
-      case 'padding':
-        return Padding(
-          padding: _parseEdgeInsets(props['padding'] ?? 8),
-          child: _buildChild(context, def['child'], eventData: eventData),
-        );
-      case 'expanded':
-        final child = _buildChild(context, def['child'], eventData: eventData);
-        return Expanded(child: child ?? const SizedBox());
-      case 'flexible':
-        final child = _buildChild(context, def['child'], eventData: eventData);
-        return Flexible(child: child ?? const SizedBox());
       case 'column':
-        return Column(
-          mainAxisAlignment: _parseMainAxisAlignment(
-            props['mainAxisAlignment'],
-          ),
+        final hasFlex = (children ?? []).any((c) {
+          final childType = (c as Map)['type'];
+          return childType == 'expanded' || childType == 'spacer';
+        });
+        current = Column(
+          mainAxisSize: props['mainAxisSize'] == 'max' || hasFlex
+              ? MainAxisSize.max
+              : MainAxisSize.min,
           crossAxisAlignment: _parseCrossAxisAlignment(
             props['crossAxisAlignment'],
           ),
-          mainAxisSize: props['mainAxisSize'] == 'min'
-              ? MainAxisSize.min
-              : MainAxisSize.max,
-          children: _buildChildren(
-            context,
-            def['children'],
-            eventData: eventData,
+          mainAxisAlignment: _parseMainAxisAlignment(
+            props['mainAxisAlignment'],
           ),
+          children: (children ?? [])
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
         );
+        break;
       case 'row':
-        return Row(
-          mainAxisAlignment: _parseMainAxisAlignment(
-            props['mainAxisAlignment'],
-          ),
+        final hasFlexRow = (children ?? []).any((c) {
+          final childType = (c as Map)['type'];
+          return childType == 'expanded' || childType == 'spacer';
+        });
+        current = Row(
+          mainAxisSize: props['mainAxisSize'] == 'max' || hasFlexRow
+              ? MainAxisSize.max
+              : MainAxisSize.min,
           crossAxisAlignment: _parseCrossAxisAlignment(
             props['crossAxisAlignment'],
           ),
-          mainAxisSize: props['mainAxisSize'] == 'min'
-              ? MainAxisSize.min
-              : MainAxisSize.max,
-          children: _buildChildren(
-            context,
-            def['children'],
-            eventData: eventData,
+          mainAxisAlignment: _parseMainAxisAlignment(
+            props['mainAxisAlignment'],
           ),
+          children: (children ?? [])
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
         );
+        break;
       case 'text':
-        final rawValue = props['value'] ?? '';
-        final value = _resolveValue(rawValue, eventData: eventData).toString();
-        return Text(
-          value,
+        TextStyle style;
+        final textStyleName = props['textStyle']?.toString();
+        if (textStyleName != null) {
+          style = _getThemeTextStyle(textStyleName, theme);
+        } else {
+          style = theme.textTheme.bodyMedium!;
+        }
+
+        current = Text(
+          _resolveValue(props['text'] ?? ''),
           textAlign: _parseTextAlign(props['textAlign']),
-          style: TextStyle(
+          style: style.copyWith(
             fontSize: (props['fontSize'] as num?)?.toDouble(),
             fontWeight: props['bold'] == true ? FontWeight.bold : null,
-            fontStyle: props['italic'] == true ? FontStyle.italic : null,
-            color: _parseColor(props['color']),
+            color: _parseColor(props['textColor'], context),
           ),
         );
-      case 'icon':
-        return Icon(
-          _parseIconData(props['icon']),
-          size: (props['size'] as num?)?.toDouble(),
-          color: _parseColor(props['color']),
-        );
-      case 'divider':
-        return Divider(
-          height: (props['height'] as num?)?.toDouble(),
-          thickness: (props['thickness'] as num?)?.toDouble(),
-          color: _parseColor(props['color']),
-          indent: (props['indent'] as num?)?.toDouble(),
-          endIndent: (props['endIndent'] as num?)?.toDouble(),
-        );
-      case 'spacer':
-        return const Spacer();
-      case 'sizedbox':
-        return SizedBox(
-          width: (props['width'] as num?)?.toDouble(),
-          height: (props['height'] as num?)?.toDouble(),
-          child: _buildChild(context, def['child'], eventData: eventData),
-        );
+        break;
       case 'button':
-        return FilledButton(
-          onPressed: props['onTap'] != null
-              ? () => _executeAction(props['onTap'], eventData: eventData)
-              : null,
-          style: props['color'] != null
-              ? FilledButton.styleFrom(
-                  backgroundColor: _parseColor(props['color']),
+        final label = Text(_resolveValue(props['label'] ?? '按钮'));
+        final variant = props['variant']?.toString().toLowerCase();
+        final iconData = props['icon'] != null
+            ? Icon(IconData(props['icon'], fontFamily: 'MaterialIcons'))
+            : null;
+
+        if (variant == 'filled') {
+          current = iconData != null
+              ? FilledButton.icon(
+                  onPressed: onTap,
+                  icon: iconData,
+                  label: label,
                 )
-              : null,
-          child:
-              _buildChild(context, def['child'], eventData: eventData) ??
-              const Text('Button'),
-        );
+              : FilledButton(onPressed: onTap, child: label);
+        } else if (variant == 'tonal') {
+          current = iconData != null
+              ? FilledButton.tonalIcon(
+                  onPressed: onTap,
+                  icon: iconData,
+                  label: label,
+                )
+              : FilledButton.tonal(onPressed: onTap, child: label);
+        } else if (variant == 'outlined') {
+          current = iconData != null
+              ? OutlinedButton.icon(
+                  onPressed: onTap,
+                  icon: iconData,
+                  label: label,
+                )
+              : OutlinedButton(onPressed: onTap, child: label);
+        } else if (variant == 'text') {
+          current = iconData != null
+              ? TextButton.icon(onPressed: onTap, icon: iconData, label: label)
+              : TextButton(onPressed: onTap, child: label);
+        } else {
+          current = iconData != null
+              ? ElevatedButton.icon(
+                  onPressed: onTap,
+                  icon: iconData,
+                  label: label,
+                )
+              : ElevatedButton(onPressed: onTap, child: label);
+        }
+        break;
       case 'card':
-        return Card(
-          elevation: (props['elevation'] as num?)?.toDouble(),
-          margin: _parseEdgeInsets(props['margin']),
-          color: _parseColor(props['color']),
-          shape: props['borderRadius'] != null
-              ? RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    (props['borderRadius'] as num).toDouble(),
+        final variant = props['variant']?.toString().toLowerCase();
+        final elevation = (props['elevation'] as num?)?.toDouble();
+        final color = _parseColor(props['color'], context);
+        final borderRadius = (props['borderRadius'] as num?)?.toDouble() ?? 12;
+        final child = children != null && children.isNotEmpty
+            ? _buildWidget(children.first as Map<String, dynamic>)
+            : const SizedBox.shrink();
+
+        if (variant == 'outlined') {
+          current = Card.outlined(
+            elevation: elevation ?? 0,
+            color: color,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            child: child,
+          );
+        } else if (variant == 'filled') {
+          current = Card.filled(
+            elevation: elevation ?? 0,
+            color: color,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            child: child,
+          );
+        } else {
+          current = Card(
+            elevation: elevation,
+            color: color,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            child: child,
+          );
+        }
+        break;
+      case 'settings_group':
+        final items = props['items'] as List? ?? [];
+        final title = props['title']?.toString();
+
+        current = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+                child: Text(
+                  title.toUpperCase(),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: items.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value as Map<String, dynamic>;
+                  return Column(
+                    children: [
+                      _buildWidget(item),
+                      if (index < items.length - 1)
+                        Divider(
+                          height: 1,
+                          indent: 64,
+                          endIndent: 16,
+                          color: theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        );
+        break;
+
+      case 'list_tile':
+        current = ListTile(
+          title: Text(
+            _resolveValue(props['title'] ?? ''),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: props['subtitle'] != null
+              ? Text(
+                  _resolveValue(props['subtitle']),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 )
               : null,
-          child: Padding(
-            padding: _parseEdgeInsets(props['padding'] ?? 16),
-            child: _buildChild(context, def['child'], eventData: eventData),
-          ),
+          leading: props['icon'] != null
+              ? Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color:
+                        _parseColor(props['iconBgColor'], context) ??
+                        theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.4,
+                        ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    IconData(props['icon'], fontFamily: 'MaterialIcons'),
+                    size: 20,
+                    color:
+                        _parseColor(props['iconColor'], context) ??
+                        theme.colorScheme.onPrimaryContainer,
+                  ),
+                )
+              : null,
+          trailing: props['trailing'] != null
+              ? _buildWidget(props['trailing'] as Map<String, dynamic>)
+              : (props['trailingIcon'] != null
+                    ? Icon(
+                        IconData(
+                          props['trailingIcon'],
+                          fontFamily: 'MaterialIcons',
+                        ),
+                        size: 18,
+                        color:
+                            _parseColor(props['trailingIconColor'], context) ??
+                            theme.colorScheme.outline,
+                      )
+                    : (props['showChevron'] == true
+                          ? Icon(
+                              Icons.chevron_right,
+                              size: 20,
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.7,
+                              ),
+                            )
+                          : null)),
+          contentPadding:
+              _parsePadding(props['contentPadding']) ??
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          onTap: onTap,
         );
-      case 'segmentedButton':
-        final segments =
-            (props['segments'] as List?)?.map((s) {
-              final sMap = s as Map<String, dynamic>;
-              return ButtonSegment<String>(
-                value: sMap['value'].toString(),
-                label: _buildWidget(
-                  context,
-                  sMap['label'] as Map<String, dynamic>,
-                  eventData: eventData,
-                ),
-                icon: sMap['icon'] != null
-                    ? Icon(_parseIconData(sMap['icon']))
-                    : null,
-              );
-            }).toList() ??
-            [];
-        final selectedValue = _resolveValue(
-          props['selected'],
-          eventData: eventData,
+        break;
+      case 'icon':
+        current = Icon(
+          IconData(props['icon'] ?? 0xe3af, fontFamily: 'MaterialIcons'),
+          size: (props['size'] as num?)?.toDouble(),
+          color: _parseColor(props['color'], context),
         );
-        return SegmentedButton<String>(
-          segments: segments,
-          selected: {selectedValue.toString()},
-          onSelectionChanged: (newSelection) {
-            if (props['onChanged'] != null) {
-              _executeAction(
-                props['onChanged'],
-                eventData: {'value': newSelection.first},
-              );
-            }
-          },
+        break;
+      case 'divider':
+        current = Divider(
+          height: (props['height'] as num?)?.toDouble(),
+          thickness: (props['thickness'] as num?)?.toDouble(),
+          color: _parseColor(props['color'], context),
         );
-      case 'switchListTile':
-        final value =
-            _resolveValue(props['value'], eventData: eventData) == true;
-        return SwitchListTile(
-          title: _buildChild(context, def['title'], eventData: eventData),
-          subtitle: _buildChild(context, def['subtitle'], eventData: eventData),
+        break;
+      case 'switch':
+        final stateKey = props['stateKey'] as String?;
+        final value = stateKey != null
+            ? (widget.engine.state[stateKey] == true)
+            : (props['value'] == true);
+        current = Switch(
           value: value,
           onChanged: (val) {
-            if (props['onChanged'] != null) {
-              _executeAction(props['onChanged'], eventData: {'value': val});
+            if (stateKey != null) {
+              widget.engine.updateState(stateKey, val);
+            }
+            if (onTap != null) onTap();
+          },
+        );
+        break;
+      case 'checkbox':
+        final stateKey = props['stateKey'] as String?;
+        final value = stateKey != null
+            ? (widget.engine.state[stateKey] == true)
+            : (props['value'] == true);
+        current = Checkbox(
+          value: value,
+          onChanged: (val) {
+            if (stateKey != null) {
+              widget.engine.updateState(stateKey, val ?? false);
+            }
+            if (onTap != null) onTap();
+          },
+        );
+        break;
+      case 'radio':
+        final stateKey = props['stateKey'] as String?;
+        final value = stateKey != null
+            ? widget.engine.state[stateKey]
+            : props['value'];
+        final groupValue = props['groupValue'];
+        current = RadioGroup(
+          groupValue: groupValue,
+          onChanged: (val) {
+            if (stateKey != null) {
+              widget.engine.updateState(stateKey, val);
+            }
+            if (onTap != null) onTap();
+          },
+          child: Radio(value: value),
+        );
+        break;
+      case 'slider':
+        final stateKey = props['stateKey'] as String?;
+        final value = stateKey != null
+            ? (widget.engine.state[stateKey] as num?)?.toDouble() ?? 0.0
+            : (props['value'] as num?)?.toDouble() ?? 0.0;
+        current = Slider(
+          value: value,
+          min: (props['min'] as num?)?.toDouble() ?? 0.0,
+          max: (props['max'] as num?)?.toDouble() ?? 1.0,
+          divisions: props['divisions'] as int?,
+          label: props['label']?.toString(),
+          onChanged: (val) {
+            if (stateKey != null) {
+              widget.engine.updateState(stateKey, val);
+            }
+          },
+          onChangeEnd: (val) {
+            if (onTap != null) onTap();
+          },
+        );
+        break;
+      case 'chip':
+        final label = Text(_resolveValue(props['label'] ?? ''));
+        final avatar = props['icon'] != null
+            ? Icon(
+                IconData(props['icon'], fontFamily: 'MaterialIcons'),
+                size: 18,
+              )
+            : null;
+        final selected = props['selected'] == true;
+        final variant = props['variant']?.toString().toLowerCase();
+
+        if (variant == 'filter') {
+          current = FilterChip(
+            label: label,
+            avatar: avatar,
+            selected: selected,
+            onSelected: (val) {
+              final stateKey = props['stateKey'] as String?;
+              if (stateKey != null) {
+                widget.engine.updateState(stateKey, val);
+              }
+              if (onTap != null) onTap();
+            },
+          );
+        } else if (variant == 'choice') {
+          current = ChoiceChip(
+            label: label,
+            avatar: avatar,
+            selected: selected,
+            onSelected: (val) {
+              final stateKey = props['stateKey'] as String?;
+              if (stateKey != null) {
+                widget.engine.updateState(stateKey, val);
+              }
+              if (onTap != null) onTap();
+            },
+          );
+        } else {
+          current = ActionChip(label: label, avatar: avatar, onPressed: onTap);
+        }
+        break;
+      case 'badge':
+        final label = props['label']?.toString();
+        current = Badge(
+          label: label != null ? Text(label) : null,
+          backgroundColor: _parseColor(props['backgroundColor'], context),
+          textColor: _parseColor(props['textColor'], context),
+          child: children != null && children.isNotEmpty
+              ? _buildWidget(children.first as Map<String, dynamic>)
+              : null,
+        );
+        break;
+      case 'segmented_button':
+        final segments = (props['segments'] as List? ?? []).map((s) {
+          final sMap = s as Map<String, dynamic>;
+          return ButtonSegment(
+            value: sMap['value'],
+            label: Text(_resolveValue(sMap['label'] ?? '')),
+            icon: sMap['icon'] != null
+                ? Icon(IconData(sMap['icon'], fontFamily: 'MaterialIcons'))
+                : null,
+          );
+        }).toList();
+
+        final stateKey = props['stateKey'] as String?;
+        final selected = stateKey != null
+            ? {widget.engine.state[stateKey]}
+            : {props['selected']};
+
+        current = SegmentedButton(
+          segments: segments,
+          selected: selected,
+          onSelectionChanged: (newSelection) {
+            if (stateKey != null) {
+              widget.engine.updateState(stateKey, newSelection.first);
+            }
+            if (onTap != null) onTap();
+          },
+        );
+        break;
+      case 'grid_view':
+        final crossAxisCount = props['crossAxisCount'] as int? ?? 2;
+        current = GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const ClampingScrollPhysics(),
+          padding: padding,
+          mainAxisSpacing: (props['mainAxisSpacing'] as num?)?.toDouble() ?? 0,
+          crossAxisSpacing:
+              (props['crossAxisSpacing'] as num?)?.toDouble() ?? 0,
+          childAspectRatio:
+              (props['childAspectRatio'] as num?)?.toDouble() ?? 1,
+          children: (children ?? [])
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
+        );
+        break;
+      case 'textfield':
+        final stateKey = props['stateKey'] as String?;
+        final value = stateKey != null
+            ? (widget.engine.state[stateKey]?.toString() ?? '')
+            : (props['value']?.toString() ?? '');
+        current = TextField(
+          controller: TextEditingController(text: value)
+            ..selection = TextSelection.fromPosition(
+              TextPosition(offset: value.length),
+            ),
+          decoration: InputDecoration(
+            labelText: _resolveValue(props['label'] ?? ''),
+            hintText: _resolveValue(props['hint'] ?? ''),
+            filled: props['filled'] ?? true,
+            border: props['noBorder'] == true
+                ? InputBorder.none
+                : const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+          ),
+          onChanged: (val) {
+            if (stateKey != null) {
+              widget.engine.updateState(stateKey, val);
             }
           },
         );
-      case 'listview':
-        final items =
-            _resolveValue(props['items'], eventData: eventData) as List?;
-        if (items == null) return const SizedBox();
-        final itemDef = def['itemTemplate'] as Map<String, dynamic>?;
-        if (itemDef == null) return const Text('Missing itemTemplate');
-        final varName = props['var'] as String? ?? 'item';
-
-        return ListView.builder(
-          shrinkWrap: props['shrinkWrap'] == true,
-          physics: props['scrollable'] == false
-              ? const NeverScrollableScrollPhysics()
+        break;
+      case 'image':
+        current = Image.network(
+          _resolveValue(props['url'] ?? ''),
+          width: width,
+          height: height,
+          fit: _parseBoxFit(props['fit']),
+          errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+        );
+        break;
+      case 'spacer':
+        current = const Spacer();
+        break;
+      case 'expanded':
+        current = Expanded(
+          flex: props['flex'] as int? ?? 1,
+          child: children != null && children.isNotEmpty
+              ? _buildWidget(children.first as Map<String, dynamic>)
+              : const SizedBox.shrink(),
+        );
+        break;
+      case 'circular_progress':
+        current = CircularProgressIndicator(
+          value: (props['value'] as num?)?.toDouble(),
+          color: _parseColor(props['color'], context),
+        );
+        break;
+      case 'linear_progress':
+        current = LinearProgressIndicator(
+          value: (props['value'] as num?)?.toDouble(),
+          color: _parseColor(props['color'], context),
+          backgroundColor: _parseColor(props['backgroundColor'], context),
+        );
+        break;
+      case 'sized_box':
+        current = SizedBox(
+          width: (props['width'] as num?)?.toDouble(),
+          height: (props['height'] as num?)?.toDouble(),
+          child: children != null && children.isNotEmpty
+              ? _buildWidget(children.first as Map<String, dynamic>)
               : null,
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final localEventData = Map<String, dynamic>.from(eventData ?? {});
-            localEventData[varName] = items[index];
-            localEventData['index'] = index;
-            return _buildWidget(context, itemDef, eventData: localEventData);
-          },
         );
-      case 'tag_panel':
-        final allTags = ref.watch(tagsProvider).value ?? [];
-        final selectedTags =
-            (_resolveValue(props['selected'], eventData: eventData) as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [];
-        final recommendSource = _resolveValue(
-          props['recommendSource'],
-          eventData: eventData,
-        )?.toString();
-
-        final recommendations = recommendSource != null
-            ? allTags.where((tag) {
-                return recommendSource.toLowerCase().contains(
-                  tag.toLowerCase(),
-                );
-              }).toList()
-            : <String>[];
-
-        final sortedTags = List<String>.from(allTags);
-        sortedTags.sort((a, b) {
-          final aRec = recommendations.contains(a);
-          final bRec = recommendations.contains(b);
-          if (aRec && !bRec) return -1;
-          if (!aRec && bRec) return 1;
-          return a.compareTo(b);
-        });
-
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: sortedTags.map((tag) {
-            final isSelected = selectedTags.contains(tag);
-            final isRecommended = recommendations.contains(tag);
-            return FilterChip(
-              label: Text(tag, style: const TextStyle(fontSize: 12)),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (props['onChanged'] != null) {
-                  final newList = List<String>.from(selectedTags);
-                  if (selected) {
-                    newList.add(tag);
-                  } else {
-                    newList.remove(tag);
-                  }
-                  _executeAction(
-                    props['onChanged'],
-                    eventData: {'value': newList},
-                  );
-                }
-              },
-              avatar: isRecommended && !isSelected
-                  ? const Icon(Icons.auto_awesome, size: 14)
-                  : null,
-            );
-          }).toList(),
+        break;
+      case 'wrap':
+        current = Wrap(
+          spacing: (props['spacing'] as num?)?.toDouble() ?? 0,
+          runSpacing: (props['runSpacing'] as num?)?.toDouble() ?? 0,
+          alignment: _parseWrapAlignment(props['alignment']),
+          children: (children ?? [])
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
         );
+        break;
+      case 'stack':
+        current = Stack(
+          alignment: _parseAlignment(props['alignment']) ?? Alignment.topLeft,
+          children: (children ?? [])
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
+        );
+        break;
+      case 'positioned':
+        current = Positioned(
+          left: (props['left'] as num?)?.toDouble(),
+          top: (props['top'] as num?)?.toDouble(),
+          right: (props['right'] as num?)?.toDouble(),
+          bottom: (props['bottom'] as num?)?.toDouble(),
+          child: children != null && children.isNotEmpty
+              ? _buildWidget(children.first as Map<String, dynamic>)
+              : const SizedBox.shrink(),
+        );
+        break;
+      case 'list_view':
+        current = ListView(
+          shrinkWrap: true,
+          physics: const ClampingScrollPhysics(),
+          padding: padding,
+          children: (children ?? [])
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
+        );
+        break;
+      case 'container':
+        current = children != null && children.isNotEmpty
+            ? _buildWidget(children.first as Map<String, dynamic>)
+            : const SizedBox.shrink();
+        break;
       default:
-        return Text('Unknown widget: $type');
+        current = const SizedBox.shrink();
     }
-  }
 
-  Widget? _buildChild(
-    BuildContext context,
-    dynamic def, {
-    Map<String, dynamic>? eventData,
-  }) {
-    if (def == null) return null;
-    if (def is Map<String, dynamic>) {
-      return _buildWidget(context, def, eventData: eventData);
-    }
-    return Text(def.toString());
-  }
+    // 应用通用的 Container 属性
+    if (type != 'spacer' && type != 'expanded' && type != 'positioned') {
+      if (onTap != null &&
+          type != 'button' &&
+          type != 'list_tile' &&
+          type != 'switch') {
+        current = GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: current,
+        );
+      }
 
-  List<Widget> _buildChildren(
-    BuildContext context,
-    dynamic def, {
-    Map<String, dynamic>? eventData,
-  }) {
-    if (def is! List) return [];
-    return def
-        .map((child) => _buildChild(context, child, eventData: eventData))
-        .whereType<Widget>()
-        .toList();
-  }
-
-  // Parsers
-  EdgeInsets _parseEdgeInsets(dynamic val) {
-    if (val is num) return EdgeInsets.all(val.toDouble());
-    if (val is List && val.length == 4) {
-      return EdgeInsets.fromLTRB(
-        (val[0] as num).toDouble(),
-        (val[1] as num).toDouble(),
-        (val[2] as num).toDouble(),
-        (val[3] as num).toDouble(),
+      current = Container(
+        padding: padding,
+        margin: margin,
+        width: width,
+        height: height,
+        alignment: _parseAlignment(props['alignment']),
+        decoration: color != null
+            ? BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(
+                  (props['borderRadius'] as num?)?.toDouble() ?? 0,
+                ),
+              )
+            : null,
+        child: current,
       );
     }
-    return EdgeInsets.zero;
+
+    return current;
   }
 
-  Color? _parseColor(dynamic val) {
+  /// 提取组件中引用的状态键
+  List<String> _extractStateKeys(Map<String, dynamic> def) {
+    final Set<String> keys = {};
+    final props = def['props'] as Map<String, dynamic>? ?? {};
+
+    // 检查 stateKey
+    if (props.containsKey('stateKey')) {
+      keys.add(props['stateKey'].toString());
+    }
+
+    // 检查插值
+    void checkString(dynamic value) {
+      if (value is String) {
+        final matches = RegExp(r'\$state\.([a-zA-Z0-9_]+)').allMatches(value);
+        for (final match in matches) {
+          keys.add(match.group(1)!);
+        }
+      } else if (value is Map) {
+        value.values.forEach(checkString);
+      } else if (value is List) {
+        value.forEach(checkString);
+      }
+    }
+
+    props.values.forEach(checkString);
+
+    return keys.toList();
+  }
+
+  // --- 解析工具方法 ---
+
+  EdgeInsets? _parsePadding(dynamic val) {
+    if (val == null) return null;
+    if (val is num) return EdgeInsets.all(val.toDouble());
+    if (val is Map) {
+      return EdgeInsets.only(
+        left: (val['left'] as num?)?.toDouble() ?? 0,
+        top: (val['top'] as num?)?.toDouble() ?? 0,
+        right: (val['right'] as num?)?.toDouble() ?? 0,
+        bottom: (val['bottom'] as num?)?.toDouble() ?? 0,
+      );
+    }
+    return null;
+  }
+
+  Color? _parseColor(dynamic val, BuildContext context) {
+    if (val == null) return null;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (val is String) {
+      // MD3 Theme Colors
+      switch (val.toLowerCase()) {
+        case 'primary':
+          return colorScheme.primary;
+        case 'onprimary':
+          return colorScheme.onPrimary;
+        case 'primarycontainer':
+          return colorScheme.primaryContainer;
+        case 'onprimarycontainer':
+          return colorScheme.onPrimaryContainer;
+        case 'secondary':
+          return colorScheme.secondary;
+        case 'onsecondary':
+          return colorScheme.onSecondary;
+        case 'secondarycontainer':
+          return colorScheme.secondaryContainer;
+        case 'onsecondarycontainer':
+          return colorScheme.onSecondaryContainer;
+        case 'tertiary':
+          return colorScheme.tertiary;
+        case 'ontertiary':
+          return colorScheme.onTertiary;
+        case 'tertiarycontainer':
+          return colorScheme.tertiaryContainer;
+        case 'ontertiarycontainer':
+          return colorScheme.onTertiaryContainer;
+        case 'error':
+          return colorScheme.error;
+        case 'onerror':
+          return colorScheme.onError;
+        case 'errorcontainer':
+          return colorScheme.errorContainer;
+        case 'onerrorcontainer':
+          return colorScheme.onErrorContainer;
+        case 'outline':
+          return colorScheme.outline;
+        case 'outlinevariant':
+          return colorScheme.outlineVariant;
+        case 'surface':
+          return colorScheme.surface;
+        case 'onsurface':
+          return colorScheme.onSurface;
+        case 'surfacevariant':
+          return colorScheme.surfaceContainerHighest;
+        case 'onsurfacevariant':
+          return colorScheme.onSurfaceVariant;
+        case 'inverseprimary':
+          return colorScheme.inversePrimary;
+        case 'inversesurface':
+          return colorScheme.inverseSurface;
+        case 'oninversesurface':
+          return colorScheme.onInverseSurface;
+        case 'scrim':
+          return colorScheme.scrim;
+        case 'shadow':
+          return colorScheme.shadow;
+      }
+
       if (val.startsWith('#')) {
-        return Color(int.parse(val.substring(1), radix: 16) + 0xFF000000);
+        final hex = val.replaceFirst('#', '');
+        return Color(int.parse(hex.length == 6 ? 'FF$hex' : hex, radix: 16));
+      }
+      // 支持简单的颜色名称
+      switch (val.toLowerCase()) {
+        case 'red':
+          return Colors.red;
+        case 'blue':
+          return Colors.blue;
+        case 'green':
+          return Colors.green;
+        case 'grey':
+          return Colors.grey;
+        case 'white':
+          return Colors.white;
+        case 'black':
+          return Colors.black;
+        case 'transparent':
+          return Colors.transparent;
       }
     }
     return null;
   }
 
+  TextStyle _getThemeTextStyle(String name, ThemeData theme) {
+    switch (name.toLowerCase()) {
+      case 'displaylarge':
+        return theme.textTheme.displayLarge!;
+      case 'displaymedium':
+        return theme.textTheme.displayMedium!;
+      case 'displaysmall':
+        return theme.textTheme.displaySmall!;
+      case 'headlinelarge':
+        return theme.textTheme.headlineLarge!;
+      case 'headlinemedium':
+        return theme.textTheme.headlineMedium!;
+      case 'headlinesmall':
+        return theme.textTheme.headlineSmall!;
+      case 'titlelarge':
+        return theme.textTheme.titleLarge!;
+      case 'titlemedium':
+        return theme.textTheme.titleMedium!;
+      case 'titlesmall':
+        return theme.textTheme.titleSmall!;
+      case 'bodylarge':
+        return theme.textTheme.bodyLarge!;
+      case 'bodymedium':
+        return theme.textTheme.bodyMedium!;
+      case 'bodysmall':
+        return theme.textTheme.bodySmall!;
+      case 'labellarge':
+        return theme.textTheme.labelLarge!;
+      case 'labelmedium':
+        return theme.textTheme.labelMedium!;
+      case 'labelsmall':
+        return theme.textTheme.labelSmall!;
+      default:
+        return theme.textTheme.bodyMedium!;
+    }
+  }
+
+  Alignment? _parseAlignment(dynamic val) {
+    switch (val?.toString().toLowerCase()) {
+      case 'center':
+        return Alignment.center;
+      case 'topcenter':
+        return Alignment.topCenter;
+      case 'bottomcenter':
+        return Alignment.bottomCenter;
+      case 'centerleft':
+        return Alignment.centerLeft;
+      case 'centerright':
+        return Alignment.centerRight;
+      default:
+        return null;
+    }
+  }
+
   MainAxisAlignment _parseMainAxisAlignment(dynamic val) {
-    switch (val) {
+    switch (val?.toString().toLowerCase()) {
       case 'center':
         return MainAxisAlignment.center;
-      case 'spaceBetween':
+      case 'end':
+        return MainAxisAlignment.end;
+      case 'spacebetween':
         return MainAxisAlignment.spaceBetween;
+      case 'spacearound':
+        return MainAxisAlignment.spaceAround;
+      case 'spaceevenly':
+        return MainAxisAlignment.spaceEvenly;
       default:
         return MainAxisAlignment.start;
     }
   }
 
   CrossAxisAlignment _parseCrossAxisAlignment(dynamic val) {
-    switch (val) {
+    switch (val?.toString().toLowerCase()) {
       case 'center':
         return CrossAxisAlignment.center;
+      case 'end':
+        return CrossAxisAlignment.end;
       case 'stretch':
         return CrossAxisAlignment.stretch;
       default:
@@ -712,95 +968,65 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   }
 
   TextAlign _parseTextAlign(dynamic val) {
-    switch (val) {
+    switch (val?.toString().toLowerCase()) {
       case 'center':
         return TextAlign.center;
       case 'right':
-      case 'end':
-        return TextAlign.end;
+        return TextAlign.right;
       case 'justify':
         return TextAlign.justify;
       default:
-        return TextAlign.start;
+        return TextAlign.left;
     }
   }
 
-  Alignment _parseAlignment(dynamic val) {
-    switch (val) {
+  BoxFit? _parseBoxFit(dynamic val) {
+    switch (val?.toString().toLowerCase()) {
+      case 'cover':
+        return BoxFit.cover;
+      case 'contain':
+        return BoxFit.contain;
+      case 'fill':
+        return BoxFit.fill;
+      case 'fitwidth':
+        return BoxFit.fitWidth;
+      case 'fitheight':
+        return BoxFit.fitHeight;
+      default:
+        return null;
+    }
+  }
+
+  WrapAlignment _parseWrapAlignment(dynamic val) {
+    switch (val?.toString().toLowerCase()) {
       case 'center':
-        return Alignment.center;
-      case 'topLeft':
-        return Alignment.topLeft;
-      case 'topRight':
-        return Alignment.topRight;
-      case 'bottomLeft':
-        return Alignment.bottomLeft;
-      case 'bottomRight':
-        return Alignment.bottomRight;
+        return WrapAlignment.center;
+      case 'end':
+        return WrapAlignment.end;
+      case 'spacearound':
+        return WrapAlignment.spaceAround;
+      case 'spacebetween':
+        return WrapAlignment.spaceBetween;
+      case 'spaceevenly':
+        return WrapAlignment.spaceEvenly;
       default:
-        return Alignment.center;
+        return WrapAlignment.start;
     }
   }
 
-  IconData _parseIconData(dynamic val) {
-    // 简单映射，实际项目中可以使用完整的 MaterialIcons 映射表
-    switch (val) {
-      case 'home':
-        return Icons.home;
-      case 'settings':
-        return Icons.settings;
-      case 'person':
-        return Icons.person;
-      case 'add':
-        return Icons.add;
-      case 'edit':
-        return Icons.edit;
-      case 'delete':
-        return Icons.delete;
-      case 'refresh':
-        return Icons.refresh;
-      case 'check':
-        return Icons.check;
-      case 'close':
-        return Icons.close;
-      case 'info':
-        return Icons.info;
-      case 'warning':
-        return Icons.warning;
-      case 'error':
-        return Icons.error;
-      case 'arrow_forward':
-        return Icons.arrow_forward;
-      case 'arrow_back':
-        return Icons.arrow_back;
-      case 'notifications':
-        return Icons.notifications;
-      case 'event':
-        return Icons.event;
-      case 'list':
-        return Icons.list;
-      case 'grid_view':
-        return Icons.grid_view;
-      case 'trending_up':
-        return Icons.trending_up;
-      case 'pie_chart':
-        return Icons.pie_chart;
-      default:
-        return Icons.help_outline;
+  String _resolveValue(dynamic value) {
+    if (value is! String) return value.toString();
+
+    // 支持全量替换 $state.key
+    if (value.startsWith('\$state.')) {
+      final key = value.substring(7);
+      return widget.engine.state[key]?.toString() ?? '';
     }
-  }
 
-  BoxDecoration? _parseDecoration(Map<String, dynamic> props) {
-    final color = _parseColor(props['color']);
-    final radius = (props['borderRadius'] as num?)?.toDouble();
-    final border = props['border'];
-
-    if (color == null && radius == null && border == null) return null;
-
-    return BoxDecoration(
-      color: color,
-      borderRadius: radius != null ? BorderRadius.circular(radius) : null,
-      border: border == true ? Border.all(color: Colors.grey.shade300) : null,
-    );
+    // 支持插值: "Count is $state.counter"
+    return value.replaceAllMapped(RegExp(r'\$state\.([a-zA-Z0-9_]+)'), (match) {
+      final key = match.group(1);
+      return widget.engine.state[key]?.toString() ?? '';
+    });
   }
 }

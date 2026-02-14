@@ -11,14 +11,15 @@ subprojects {
         if (project.plugins.hasPlugin("com.android.library") || project.plugins.hasPlugin("com.android.application")) {
             val android = project.extensions.findByName("android") as? com.android.build.gradle.BaseExtension
             android?.apply {
+                // 仅在插件未定义 namespace 时进行注入，避免与新版插件冲突
                 if (namespace == null) {
-                    namespace = "com.example.plugin.${project.name.replace("-", "_")}"
-                }
-                
-                // 解决 AGP 8.x 对旧版插件 Manifest package 属性的限制
-                // 通过动态注入 namespace 来覆盖旧版 package 声明
-                if (project.name == "quick_settings") {
-                    namespace = "io.apparence.quick_settings"
+                    if (project.name == "quick_settings") {
+                        namespace = "io.apparence.quick_settings"
+                    } else if (project.name == "device_calendar") {
+                        namespace = "com.builttoroam.devicecalendar"
+                    } else {
+                        namespace = "com.example.plugin.${project.name.replace("-", "_")}"
+                    }
                 }
                 
                 // 统一使用 SDK 36

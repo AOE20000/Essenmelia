@@ -23,13 +23,20 @@ class EventAdapter extends TypeAdapter<Event> {
       ..createdAt = fields[3] as DateTime
       ..imageUrl = fields[4] as String?
       ..tags = (fields[5] as List?)?.cast<String>()
-      ..steps = (fields[6] as List).cast<EventStep>();
+      ..steps = (fields[6] as List).cast<EventStep>()
+      ..stepDisplayMode = fields[7] as String?
+      ..stepSuffix = fields[8] as String?
+      ..reminderTime = fields[9] as DateTime?
+      ..reminderId = fields[10] as int?
+      ..reminderRecurrence = fields[11] as String?
+      ..reminderScheme = fields[12] as String?
+      ..calendarEventId = fields[13] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Event obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -43,7 +50,21 @@ class EventAdapter extends TypeAdapter<Event> {
       ..writeByte(5)
       ..write(obj.tags)
       ..writeByte(6)
-      ..write(obj.steps);
+      ..write(obj.steps)
+      ..writeByte(7)
+      ..write(obj.stepDisplayMode)
+      ..writeByte(8)
+      ..write(obj.stepSuffix)
+      ..writeByte(9)
+      ..write(obj.reminderTime)
+      ..writeByte(10)
+      ..write(obj.reminderId)
+      ..writeByte(11)
+      ..write(obj.reminderRecurrence)
+      ..writeByte(12)
+      ..write(obj.reminderScheme)
+      ..writeByte(13)
+      ..write(obj.calendarEventId);
   }
 
   @override

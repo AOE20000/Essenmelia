@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
 import '../providers/ui_state_provider.dart';
@@ -61,11 +61,9 @@ class EventDetailScreen extends ConsumerWidget {
           if (!isSidePanel)
             SliverAppBar(
               pinned: true,
-              title: Text(
-                event.title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              title: const Text(
+                '事件详情',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
               centerTitle: false,
               actions: [
@@ -105,6 +103,17 @@ class EventDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                // Title Section
+                if (!isSidePanel) ...[
+                  Text(
+                    event.title,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 // Info Section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,6 +208,42 @@ class EventDetailScreen extends ConsumerWidget {
                               ),
                             )
                             .toList(),
+                      ),
+                    ],
+                    if (event.reminderTime != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer
+                              .withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.colorScheme.primary
+                                .withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.notifications_active_outlined,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '提醒：${DateFormat('MM月dd日 HH:mm').format(event.reminderTime!)}',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                     if (event.description != null &&
@@ -719,7 +764,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
@@ -747,7 +792,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           GestureDetector(
             onPanStart: _handleDragStart,
             onPanUpdate: _handleDragUpdate,
@@ -756,7 +801,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Wrap(
-                spacing: 12,
+                spacing: 8,
                 runSpacing: 12,
                 children: List.generate(widget.event.steps.length, (index) {
                   final isBeingDragged = _startDragIndex != null &&
@@ -770,6 +815,15 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                   final effectiveCompleted = isBeingDragged
                       ? _dragTargetState
                       : widget.event.steps[index].completed;
+
+                  final step = widget.event.steps[index];
+                  String stepMarker;
+                  if (widget.event.stepDisplayMode == 'firstChar' &&
+                      step.description.trim().isNotEmpty) {
+                    stepMarker = step.description.trim()[0];
+                  } else {
+                    stepMarker = '${index + 1}';
+                  }
 
                   return MouseRegion(
                     cursor: SystemMouseCursors.click,
@@ -811,7 +865,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                                   color: theme.colorScheme.onPrimary,
                                 )
                               : Text(
-                                  "${index + 1}",
+                                  stepMarker,
                                   style: theme.textTheme.labelMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                     fontWeight: FontWeight.bold,

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:intl/intl.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
 import '../providers/tags_provider.dart';
@@ -33,10 +35,15 @@ class EditEventSheet extends ConsumerStatefulWidget {
 class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
+  late TextEditingController _suffixController;
   String? _currentImageUrl;
   List<String> _selectedTags = [];
   List<String> _recommendedTags = [];
   bool _isSaving = false;
+  String _stepDisplayMode = 'number';
+  DateTime? _reminderTime;
+  String? _reminderRecurrence;
+  String? _reminderScheme;
 
   // ML 状态
   final OcrService _ocrService = OcrService();
@@ -53,8 +60,15 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     _descController = TextEditingController(
       text: widget.event?.description ?? '',
     );
+    _suffixController = TextEditingController(
+      text: widget.event?.stepSuffix ?? '',
+    );
     _currentImageUrl = widget.event?.imageUrl;
     _selectedTags = widget.event?.tags ?? [];
+    _stepDisplayMode = widget.event?.stepDisplayMode ?? 'number';
+    _reminderTime = widget.event?.reminderTime;
+    _reminderRecurrence = widget.event?.reminderRecurrence ?? 'none';
+    _reminderScheme = widget.event?.reminderScheme ?? 'notification';
 
     _titleController.addListener(_updateRecommendations);
     _descController.addListener(_updateRecommendations);
@@ -65,12 +79,505 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     );
   }
 
+  Widget _buildAdvancedSettingsButton(ThemeData theme) {
+    return InkWell(
+      onTap: () => _showAdvancedSettings(theme),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.settings_suggest_outlined,
+              size: 22,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '高级设置与提醒',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '显示方式、数量后缀、定时提醒',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_reminderTime != null)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  size: 12,
+                  color: Colors.white,
+                ),
+              ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAdvancedSettings(ThemeData theme) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '高级设置',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStepDisplaySettingsInModal(theme, setModalState),
+                        const SizedBox(height: 32),
+                        _buildReminderSectionInModal(theme, setModalState),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    12,
+                    24,
+                    12 + MediaQuery.of(context).viewPadding.bottom,
+                  ),
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text('完成设置'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStepDisplaySettingsInModal(
+    ThemeData theme,
+    StateSetter setModalState,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.settings_suggest_outlined,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '显示设置',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '步骤标记显示方式',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 'number',
+                      label: Text('序号 (1, 2, 3)'),
+                      icon: Icon(Icons.format_list_numbered),
+                    ),
+                    ButtonSegment(
+                      value: 'firstChar',
+                      label: Text('首字 (简, 繁, 拼)'),
+                      icon: Icon(Icons.sort_by_alpha),
+                    ),
+                  ],
+                  selected: {_stepDisplayMode},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    setModalState(() {
+                      _stepDisplayMode = newSelection.first;
+                    });
+                    setState(() {}); // 同步到外部状态
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '自定义数量后缀',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _suffixController,
+                onChanged: (_) => setState(() {}), // 同步到外部状态
+                decoration: InputDecoration(
+                  hintText: '例如：任务、步骤、个',
+                  prefixIcon: const Icon(Icons.label_outline),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '留空则使用默认后缀',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReminderSectionInModal(
+    ThemeData theme,
+    StateSetter setModalState,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.notifications_active_outlined,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '定时提醒',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        InkWell(
+          onTap: () => _pickReminderTimeInModal(theme, setModalState),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _reminderTime == null
+                            ? '未设置提醒'
+                            : DateFormat(
+                                'yyyy年MM月dd日 HH:mm',
+                              ).format(_reminderTime!),
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: _reminderTime == null
+                              ? theme.colorScheme.onSurfaceVariant
+                              : theme.colorScheme.onSurface,
+                          fontWeight: _reminderTime == null
+                              ? FontWeight.normal
+                              : FontWeight.bold,
+                        ),
+                      ),
+                      if (_reminderTime != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _reminderScheme == 'calendar'
+                              ? '将注册到系统日历，无需后台运行'
+                              : '将在指定时间发送通知提醒您',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_reminderTime != null)
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () {
+                      setModalState(() {
+                        _reminderTime = null;
+                        _reminderRecurrence = 'none';
+                        _reminderScheme = 'notification';
+                      });
+                      setState(() {}); // 同步到外部状态
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (_reminderTime != null) ...[
+          const SizedBox(height: 24),
+          Text(
+            '提醒方案',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'notification',
+                  label: Text('应用内通知'),
+                  icon: Icon(Icons.notifications_outlined),
+                ),
+                ButtonSegment(
+                  value: 'calendar',
+                  label: Text('系统日历'),
+                  icon: Icon(Icons.calendar_today_outlined),
+                ),
+              ],
+              selected: {_reminderScheme ?? 'notification'},
+              onSelectionChanged: (Set<String> newSelection) {
+                setModalState(() {
+                  _reminderScheme = newSelection.first;
+                });
+                setState(() {}); // 同步到外部状态
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            '重复周期',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'none',
+                  label: Text('不重复'),
+                  icon: Icon(Icons.timer_outlined),
+                ),
+                ButtonSegment(
+                  value: 'daily',
+                  label: Text('每天'),
+                  icon: Icon(Icons.today_outlined),
+                ),
+                ButtonSegment(
+                  value: 'weekly',
+                  label: Text('每周'),
+                  icon: Icon(Icons.calendar_view_week_outlined),
+                ),
+                ButtonSegment(
+                  value: 'monthly',
+                  label: Text('每月'),
+                  icon: Icon(Icons.calendar_month_outlined),
+                ),
+              ],
+              selected: {_reminderRecurrence ?? 'none'},
+              onSelectionChanged: (Set<String> newSelection) {
+                setModalState(() {
+                  _reminderRecurrence = newSelection.first;
+                });
+                setState(() {}); // 同步到外部状态
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _pickReminderTimeInModal(
+    ThemeData theme,
+    StateSetter setModalState,
+  ) async {
+    final now = DateTime.now();
+    final initialDate = _reminderTime?.isAfter(now) == true
+        ? _reminderTime!
+        : now;
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              primary: theme.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (date != null && mounted) {
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(initialDate),
+      );
+
+      if (time != null && mounted) {
+        final selectedDateTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
+
+        if (selectedDateTime.isBefore(DateTime.now())) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('提醒时间不能早于当前时间')));
+          }
+          return;
+        }
+
+        setModalState(() {
+          _reminderTime = selectedDateTime;
+        });
+        setState(() {}); // 同步到外部状态
+      }
+    }
+  }
+
   @override
   void dispose() {
     _titleController.removeListener(_updateRecommendations);
     _descController.removeListener(_updateRecommendations);
     _titleController.dispose();
     _descController.dispose();
+    _suffixController.dispose();
     _ocrService.dispose();
     _contourService.dispose();
     super.dispose();
@@ -223,297 +730,355 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     String tempImageUrl = _currentImageUrl ?? originalFile.path;
     String tempTitle = _titleController.text;
     String tempDescription = _descController.text;
-    final List<int> selectedBlockIndices = [];
+    final Set<int> selectedBlockIndices = {};
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 顶部栏
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text(
-                      '智能分析选择',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+        builder: (context, setModalState) => DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) => Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
+              children: [
+                // 顶部把手
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 32,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 精彩画面 (物体识别结果)
-                      Row(
-                        children: [
-                          Text(
-                            '精彩画面',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
+                Expanded(
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    slivers: [
+                      SliverAppBar(
+                        automaticallyImplyLeading: false,
+                        pinned: true,
+                        backgroundColor: theme.colorScheme.surface,
+                        surfaceTintColor: theme.colorScheme.surfaceTint,
+                        title: Text(
+                          '智能分析选择',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'AI 裁切',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        ),
+                        actions: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      // 使用成员变量确保实时刷新
-                      SizedBox(
-                        height: 120,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            // 原图选项
-                            _buildPickerImageItem(
-                              theme,
-                              originalFile.path,
-                              '完整原图',
-                              tempImageUrl,
-                              (path) =>
-                                  setModalState(() => tempImageUrl = path),
-                            ),
-                            const SizedBox(width: 12),
-                            // 识别出的物体
-                            ..._croppedImagePaths.map(
-                              (path) => Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: _buildPickerImageItem(
-                                  theme,
-                                  path,
-                                  null,
-                                  tempImageUrl,
-                                  (path) =>
-                                      setModalState(() => tempImageUrl = path),
-                                ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            // 精彩画面标题
+                            _buildSectionHeader(theme, '精彩画面', 'AI 裁切'),
+                            const SizedBox(height: 16),
+                            // 图片选择器
+                            SizedBox(
+                              height: 140,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                clipBehavior: Clip.none,
+                                children: [
+                                  _buildPickerImageItem(
+                                    theme,
+                                    originalFile.path,
+                                    '完整原图',
+                                    tempImageUrl,
+                                    (path) => setModalState(
+                                      () => tempImageUrl = path,
+                                    ),
+                                  ),
+                                  ..._croppedImagePaths.map(
+                                    (path) => Padding(
+                                      padding: const EdgeInsets.only(left: 12),
+                                      child: _buildPickerImageItem(
+                                        theme,
+                                        path,
+                                        null,
+                                        tempImageUrl,
+                                        (path) => setModalState(
+                                          () => tempImageUrl = path,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                            const SizedBox(height: 32),
 
-                      // 文字选择
-                      Text(
-                        '文字识别结果',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '点击选择：第1次点击设为标题，后续点击追加到描述',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: List.generate(blocks.length, (index) {
-                          final isSelected = selectedBlockIndices.contains(
-                            index,
-                          );
-                          return FilterChip(
-                            label: Text(
-                              (blocks[index]['text'] as String)
-                                  .replaceAll('\n', ' ')
-                                  .trim(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            // 文字识别标题
+                            _buildSectionHeader(theme, '文字识别结果', null),
+                            const SizedBox(height: 8),
+                            Text(
+                              '点击选择：第1次点击设为标题，后续点击追加到描述',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 4,
+                            const SizedBox(height: 16),
+                            // 文字选择 Wrap
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: List.generate(blocks.length, (index) {
+                                final isSelected = selectedBlockIndices
+                                    .contains(index);
+                                return FilterChip(
+                                      label: Text(
+                                        (blocks[index]['text'] as String)
+                                            .replaceAll('\n', ' ')
+                                            .trim(),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        setModalState(() {
+                                          if (selected) {
+                                            selectedBlockIndices.add(index);
+                                          } else {
+                                            selectedBlockIndices.remove(index);
+                                          }
+                                          _updateTempText(
+                                            blocks,
+                                            selectedBlockIndices,
+                                            (t, d) {
+                                              tempTitle = t;
+                                              tempDescription = d;
+                                            },
+                                          );
+                                        });
+                                      },
+                                      showCheckmark: true,
+                                    )
+                                    .animate()
+                                    .fadeIn(delay: (index * 30).ms)
+                                    .scale(duration: 200.ms);
+                              }),
                             ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setModalState(() {
-                                if (selected) {
-                                  selectedBlockIndices.add(index);
-                                } else {
-                                  selectedBlockIndices.remove(index);
-                                }
 
-                                // 重新计算预览内容
-                                if (selectedBlockIndices.isEmpty) {
-                                  tempTitle = '';
-                                  tempDescription = '';
-                                } else {
-                                  final firstIndex = selectedBlockIndices.first;
-                                  tempTitle =
-                                      (blocks[firstIndex]['text'] as String)
-                                          .replaceAll('\n', ' ')
-                                          .trim();
-
-                                  if (selectedBlockIndices.length > 1) {
-                                    tempDescription = selectedBlockIndices
-                                        .skip(1)
-                                        .map(
-                                          (idx) =>
-                                              (blocks[idx]['text'] as String)
-                                                  .replaceAll('\n', ' ')
-                                                  .trim(),
-                                        )
-                                        .join('\n');
-                                  } else {
-                                    tempDescription = '';
-                                  }
-                                }
-                              });
-                            },
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHighest,
-                            selectedColor: theme.colorScheme.primaryContainer,
-                            checkmarkColor: theme.colorScheme.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 16),
-                      if (selectedBlockIndices.isNotEmpty)
-                        TextButton.icon(
-                          onPressed: () {
-                            setModalState(() {
-                              tempTitle = '';
-                              tempDescription = '';
-                              selectedBlockIndices.clear();
-                            });
-                          },
-                          icon: const Icon(Icons.refresh, size: 16),
-                          label: const Text('重置文字选择'),
-                        ),
-                      const SizedBox(height: 24),
-
-                      // 预览区域
-                      if (tempTitle.isNotEmpty ||
-                          tempDescription.isNotEmpty) ...[
-                        Text(
-                          '应用预览',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (tempTitle.isNotEmpty) ...[
-                                Text(
-                                  tempTitle,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                            if (selectedBlockIndices.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: () {
+                                    setModalState(() {
+                                      tempTitle = '';
+                                      tempDescription = '';
+                                      selectedBlockIndices.clear();
+                                    });
+                                  },
+                                  icon: const Icon(Icons.refresh, size: 18),
+                                  label: const Text('重置文字选择'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: theme.colorScheme.error,
                                   ),
                                 ),
-                                if (tempDescription.isNotEmpty)
-                                  const SizedBox(height: 8),
-                              ],
-                              if (tempDescription.isNotEmpty)
-                                Text(
-                                  tempDescription,
-                                  style: theme.textTheme.bodyMedium,
-                                ),
+                              ),
                             ],
-                          ),
+
+                            const SizedBox(height: 32),
+
+                            // 预览区域
+                            if (tempTitle.isNotEmpty ||
+                                tempDescription.isNotEmpty) ...[
+                              _buildSectionHeader(theme, '应用预览', null),
+                              const SizedBox(height: 16),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (tempTitle.isNotEmpty) ...[
+                                      Text(
+                                        tempTitle,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                            ),
+                                      ),
+                                      if (tempDescription.isNotEmpty)
+                                        const SizedBox(height: 12),
+                                    ],
+                                    if (tempDescription.isNotEmpty)
+                                      Text(
+                                        tempDescription,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                              height: 1.5,
+                                            ),
+                                      ),
+                                  ],
+                                ),
+                              ).animate().fadeIn().slideY(begin: 0.1),
+                            ],
+                            const SizedBox(height: 40),
+                          ]),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-              ),
-
-              // 底部操作栏
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('取消'),
+                // 底部操作栏
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    16,
+                    24,
+                    16 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () {
-                          setState(() {
-                            _currentImageUrl = tempImageUrl;
-                            _titleController.text = tempTitle;
-                            _descController.text = tempDescription;
-                            _wasAutoFilled = true;
-                          });
-                          Navigator.pop(context);
-                          _clearAutoFillFlag();
-                        },
-                        child: const Text('确认应用'),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text('取消'),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            setState(() {
+                              _currentImageUrl = tempImageUrl;
+                              _titleController.text = tempTitle;
+                              _descController.text = tempDescription;
+                              _wasAutoFilled = true;
+                            });
+                            Navigator.pop(context);
+                            _clearAutoFillFlag();
+                          },
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text('确认应用'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  void _updateTempText(
+    List<Map<String, dynamic>> blocks,
+    Set<int> selectedIndices,
+    void Function(String title, String desc) onUpdate,
+  ) {
+    if (selectedIndices.isEmpty) {
+      onUpdate('', '');
+      return;
+    }
+    final sortedIndices = selectedIndices.toList()..sort();
+    final firstIndex = sortedIndices.first;
+    final title = (blocks[firstIndex]['text'] as String)
+        .replaceAll('\n', ' ')
+        .trim();
+
+    String desc = '';
+    if (sortedIndices.length > 1) {
+      desc = sortedIndices
+          .skip(1)
+          .map(
+            (idx) =>
+                (blocks[idx]['text'] as String).replaceAll('\n', ' ').trim(),
+          )
+          .join('\n');
+    }
+    onUpdate(title, desc);
+  }
+
+  Widget _buildSectionHeader(ThemeData theme, String title, String? badge) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        if (badge != null) ...[
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              badge,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -527,62 +1092,84 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     final isSelected = currentPath == path;
     return GestureDetector(
       onTap: () => onSelect(path),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: 110,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
-            width: isSelected ? 2 : 1,
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: isSelected ? 3 : 1,
           ),
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Image.file(
-                  File(path),
-                  fit: BoxFit.cover,
-                  cacheWidth: 220,
-                ),
-              ),
-            ),
-            if (label != null)
-              Positioned(
-                bottom: 4,
-                left: 4,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                ]
+              : [],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(21),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.file(File(path), fit: BoxFit.cover, cacheWidth: 220),
+              if (label != null)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.7),
+                        ],
+                      ),
+                    ),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            if (isSelected)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Icon(
-                  Icons.check_circle,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-          ],
+              if (isSelected)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ).animate().scale(duration: 200.ms, curve: Curves.easeOutBack),
+            ],
+          ),
         ),
       ),
     );
@@ -611,13 +1198,13 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Future<void> _pasteImage() async {
-    debugPrint('开始从剪贴板粘贴...');
+    debugPrint('Clipboard: Starting paste operation...');
     try {
       // 1. 尝试获取图片字节 (部分平台如 Android 0.3.0 可能未实现此方法)
       try {
         final bytes = await Pasteboard.image;
         if (bytes != null) {
-          debugPrint('获取到图片字节: ${bytes.length}');
+          debugPrint('Clipboard: Got image bytes (${bytes.length})');
           final tempDir = await getTemporaryDirectory();
           final file = File(
             p.join(
@@ -630,14 +1217,16 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           return;
         }
       } catch (e) {
-        debugPrint('获取图片字节失败 (可能平台不支持): $e');
+        debugPrint(
+          'Clipboard: Failed to get image bytes (Platform may not support): $e',
+        );
       }
 
       // 2. 尝试获取文件路径
       try {
         final files = await Pasteboard.files();
         if (files.isNotEmpty) {
-          debugPrint('获取到剪贴板文件: $files');
+          debugPrint('Clipboard: Got files: $files');
           final firstFile = files.first;
           final ext = p.extension(firstFile).toLowerCase();
           if (['.jpg', '.jpeg', '.png', '.webp', '.gif'].contains(ext)) {
@@ -646,14 +1235,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           }
         }
       } catch (e) {
-        debugPrint('获取剪贴板文件失败: $e');
+        debugPrint('Clipboard: Failed to get file: $e');
       }
 
       // 3. 尝试获取文本 (可能是图片 URL)
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
       final text = clipboardData?.text;
       if (text != null && text.isNotEmpty) {
-        debugPrint('获取到剪贴板文本: $text');
+        debugPrint('Clipboard: Got text: $text');
         if (text.startsWith('http') &&
             (text.toLowerCase().contains('.jpg') ||
                 text.toLowerCase().contains('.jpeg') ||
@@ -671,7 +1260,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         ).showSnackBar(const SnackBar(content: Text('剪贴板中没有识别到图片或有效链接')));
       }
     } catch (e) {
-      debugPrint('粘贴流程发生异常: $e');
+      debugPrint('Clipboard: Paste flow error: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -792,7 +1381,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Future<void> _handleContentInsertion(KeyboardInsertedContent content) async {
-    debugPrint('接收到输入法内容插入: ${content.mimeType}');
+    debugPrint('Keyboard: Received content insertion: ${content.mimeType}');
     if (content.data != null) {
       try {
         final tempDir = await getTemporaryDirectory();
@@ -805,7 +1394,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         await file.writeAsBytes(content.data!);
         await _handleImageFile(file);
       } catch (e) {
-        debugPrint('处理输入法插入内容失败: $e');
+        debugPrint('Keyboard: Failed to handle content insertion: $e');
       }
     }
   }
@@ -817,18 +1406,23 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     setState(() => _isSaving = true);
 
     try {
-      // 在保存前，将所有新标签同步到全局库
-      for (final tag in _selectedTags) {
-        ref.read(tagsProvider.notifier).addTag(tag);
-      }
-
       if (widget.event != null) {
-        final event = widget.event!;
-        event.title = title;
-        event.description = _descController.text.trim();
-        event.imageUrl = _currentImageUrl;
-        event.tags = _selectedTags;
-        await event.save();
+        await ref
+            .read(eventsProvider.notifier)
+            .updateEvent(
+              id: widget.event!.id,
+              title: title,
+              description: _descController.text.trim(),
+              imageUrl: _currentImageUrl,
+              tags: _selectedTags,
+              stepDisplayMode: _stepDisplayMode,
+              stepSuffix: _suffixController.text.trim().isEmpty
+                  ? null
+                  : _suffixController.text.trim(),
+              reminderTime: _reminderTime,
+              reminderRecurrence: _reminderRecurrence,
+              reminderScheme: _reminderScheme,
+            );
       } else {
         await ref
             .read(eventsProvider.notifier)
@@ -837,6 +1431,13 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               description: _descController.text.trim(),
               imageUrl: _currentImageUrl,
               tags: _selectedTags,
+              stepDisplayMode: _stepDisplayMode,
+              stepSuffix: _suffixController.text.trim().isEmpty
+                  ? null
+                  : _suffixController.text.trim(),
+              reminderTime: _reminderTime,
+              reminderRecurrence: _reminderRecurrence,
+              reminderScheme: _reminderScheme,
             );
       }
 
@@ -853,485 +1454,499 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     }
   }
 
+  Widget _buildImageArea(ThemeData theme) {
+    return GestureDetector(
+      onTap: _showImageOptions,
+      onLongPress: _currentImageUrl != null ? _exportImage : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: 280,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28), // MD3 Card radius
+          boxShadow: _currentImageUrl != null
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            if (_currentImageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    UniversalImage(
+                      imageUrl: _currentImageUrl!,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    ).animate().fadeIn(duration: 400.ms),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.2),
+                              Colors.transparent,
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.4),
+                            ],
+                            stops: const [0.0, 0.2, 0.7, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 32,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ).animate().scale(
+                      duration: 400.ms,
+                      curve: Curves.easeOutBack,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '添加有故事的图片',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '拖放、粘贴或选择图片',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            if (_isProcessingML)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      color: theme.colorScheme.surface.withValues(alpha: 0.4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                                '正在智能解析内容...',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              )
+                              .animate(
+                                onPlay: (controller) => controller.repeat(),
+                              )
+                              .shimmer(
+                                duration: 1500.ms,
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            if (_currentImageUrl != null)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: IconButton.filledTonal(
+                  onPressed: _clearImage,
+                  icon: const Icon(Icons.close, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surface.withValues(
+                      alpha: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Row(
+                children: [
+                  if (_currentImageUrl != null) ...[
+                    _ImageActionButton(
+                      icon: Icons.auto_awesome,
+                      onPressed: () => _processImageML(File(_currentImageUrl!)),
+                      tooltip: '智能解析内容',
+                    ),
+                    const SizedBox(width: 8),
+                    _ImageActionButton(
+                      icon: Icons.ios_share,
+                      onPressed: _exportImage,
+                      tooltip: '导出原图',
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  _ImageActionButton(
+                    icon: Icons.content_paste,
+                    onPressed: _pasteImage,
+                    tooltip: '从剪贴板粘贴',
+                  ),
+                  const SizedBox(width: 8),
+                  _ImageActionButton(
+                    icon: Icons.photo_library,
+                    onPressed: _pickImage,
+                    tooltip: '选择图片',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextFields(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _titleController,
+          contentInsertionConfiguration: ContentInsertionConfiguration(
+            onContentInserted: _handleContentInsertion,
+            allowedMimeTypes: const [
+              'image/png',
+              'image/jpeg',
+              'image/gif',
+              'image/webp',
+            ],
+          ),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            hintText: '标题',
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            suffixIcon: _wasAutoFilled
+                ? Tooltip(
+                    message: '由智能助手自动填充',
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _descController,
+          maxLines: null,
+          contentInsertionConfiguration: ContentInsertionConfiguration(
+            onContentInserted: _handleContentInsertion,
+            allowedMimeTypes: const [
+              'image/png',
+              'image/jpeg',
+              'image/gif',
+              'image/webp',
+            ],
+          ),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+            height: 1.6,
+          ),
+          decoration: InputDecoration(
+            hintText: '详细描述内容...',
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTagSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.label_outline,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '标签',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        TagInput(
+          initialTags: _selectedTags,
+          recommendedTags: _recommendedTags,
+          onChanged: (tags) {
+            setState(() => _selectedTags = tags);
+            _updateRecommendations();
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1024;
+    final l10n = AppLocalizations.of(context)!;
 
-    final bodyContent = SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 图片区域
-          GestureDetector(
-            onTap: _showImageOptions,
-            onLongPress: _currentImageUrl != null ? _exportImage : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              height: 280,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: _currentImageUrl != null
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (_currentImageUrl != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          UniversalImage(
-                            imageUrl: _currentImageUrl!,
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.black.withValues(alpha: 0.2),
-                                    Colors.transparent,
-                                    Colors.transparent,
-                                    Colors.black.withValues(alpha: 0.4),
-                                  ],
-                                  stops: const [0.0, 0.2, 0.7, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
-                                  .withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.add_photo_alternate_outlined,
-                              size: 40,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '添加一张有故事的图片',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '支持拖放、粘贴或相册选择',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  if (_isProcessingML)
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(
-                                  width: 48,
-                                  height: 48,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  '正在智能解析内容...',
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  if (_currentImageUrl != null)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: IconButton.filledTonal(
-                        onPressed: _clearImage,
-                        icon: const Icon(Icons.close, size: 20),
-                        style: IconButton.styleFrom(
-                          backgroundColor: theme.colorScheme.surface.withValues(
-                            alpha: 0.8,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  Positioned(
-                    right: 12,
-                    bottom: 12,
-                    child: Row(
-                      children: [
-                        if (_currentImageUrl != null) ...[
-                          _ImageActionButton(
-                            icon: Icons.auto_awesome,
-                            onPressed: () =>
-                                _processImageML(File(_currentImageUrl!)),
-                            tooltip: '智能解析内容',
-                          ),
-                          const SizedBox(width: 8),
-                          _ImageActionButton(
-                            icon: Icons.ios_share,
-                            onPressed: _exportImage,
-                            tooltip: '导出原图',
-                          ),
-                        ],
-                        const SizedBox(width: 8),
-                        _ImageActionButton(
-                          icon: Icons.content_paste,
-                          onPressed: _pasteImage,
-                          tooltip: '从剪贴板粘贴',
-                        ),
-                        const SizedBox(width: 8),
-                        _ImageActionButton(
-                          icon: Icons.photo_library,
-                          onPressed: _pickImage,
-                          tooltip: '选择图片',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
+    final content = SliverPadding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          _buildImageArea(theme),
           const SizedBox(height: 32),
-
-          // 标题输入框
-          TextField(
-            controller: _titleController,
-            contentInsertionConfiguration: ContentInsertionConfiguration(
-              onContentInserted: _handleContentInsertion,
-              allowedMimeTypes: const [
-                'image/png',
-                'image/jpeg',
-                'image/gif',
-                'image/webp',
-              ],
-            ),
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-            decoration: InputDecoration(
-              hintText: '给事件起个标题...',
-              hintStyle: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-              suffixIcon: _wasAutoFilled
-                  ? Tooltip(
-                      message: '由智能助手自动填充',
-                      child: Icon(
-                        Icons.auto_awesome,
-                        color: theme.colorScheme.primary,
-                        size: 20,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          Divider(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-
-          // 描述输入框
-          TextField(
-            controller: _descController,
-            maxLines: null,
-            contentInsertionConfiguration: ContentInsertionConfiguration(
-              onContentInserted: _handleContentInsertion,
-              allowedMimeTypes: const [
-                'image/png',
-                'image/jpeg',
-                'image/gif',
-                'image/webp',
-              ],
-            ),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface,
-              height: 1.5,
-            ),
-            decoration: InputDecoration(
-              hintText: '记录这一刻的详细内容...',
-              hintStyle: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // 标签
-          Row(
-            children: [
-              Icon(
-                Icons.label_outline,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '标签',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TagInput(
-            initialTags: _selectedTags,
-            recommendedTags: _recommendedTags,
-            onChanged: (tags) {
-              setState(() => _selectedTags = tags);
-              _updateRecommendations();
-            },
-          ),
-          const SizedBox(height: 120), // 为悬浮按钮留出空间
-        ],
+          _buildTextFields(theme),
+          const SizedBox(height: 24),
+          _buildAdvancedSettingsButton(theme),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 24),
+          _buildTagSection(theme),
+        ]),
       ),
     );
 
     final body = DropTarget(
       onDragDone: _handleDrop,
-      child: Stack(
-        children: [
-          bodyContent,
-          // 底部悬浮按钮 (仅在移动端或非桌面端正常显示时显示)
-          if (!isDesktop || widget.isSidePanel)
-            Positioned(
-              left: 24,
-              right: 24,
-              bottom: 24,
-              child: SafeArea(
-                child: FilledButton(
-                  onPressed: _isSaving ? null : _save,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 8,
-                    shadowColor: theme.colorScheme.shadow.withValues(
-                      alpha: 0.3,
+      child: CustomScrollView(
+        slivers: [
+          if (!widget.isSidePanel && !isDesktop)
+            SliverAppBar.large(
+              title: Text(
+                widget.event == null ? l10n.newEvent : l10n.editEvent,
+              ),
+              actions: [
+                if (!_isSaving)
+                  IconButton(icon: const Icon(Icons.check), onPressed: _save),
+              ],
+            )
+          else if (widget.isSidePanel)
+            SliverAppBar(
+              floating: true,
+              pinned: true,
+              title: Text(
+                widget.event == null ? l10n.newEvent : l10n.editEvent,
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () =>
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.none,
+              ),
+              actions: [
+                if (!_isSaving)
+                  IconButton(icon: const Icon(Icons.check), onPressed: _save),
+              ],
+            )
+          else if (isDesktop)
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 48,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isSaving)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          widget.event == null ? l10n.newEvent : l10n.editEvent,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
-                      else
-                        Icon(widget.event == null ? Icons.add : Icons.check),
-                      const SizedBox(width: 12),
-                      Text(
-                        widget.event == null ? '创建记录' : '保存修改',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                          fontWeight: FontWeight.bold,
                         ),
-                      ),
-                    ],
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonalIcon(
+                          onPressed: _isSaving ? null : _save,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.check, size: 18),
+                          label: Text(widget.event == null ? '创建' : '保存'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const Divider(height: 1),
+                ],
               ),
             ),
+          content,
         ],
       ),
     );
 
-    if (widget.isSidePanel) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            widget.event == null
-                ? AppLocalizations.of(context)!.newEvent
-                : AppLocalizations.of(context)!.editEvent,
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => ref.read(leftPanelContentProvider.notifier).state =
-                LeftPanelContent.none,
-          ),
-          actions: [
-            if (!_isSaving)
-              IconButton(icon: const Icon(Icons.check), onPressed: _save),
-          ],
-        ),
-        body: body,
-      );
-    }
-
-    if (isDesktop) {
-      // 桌面端作为对话框或固定面板展示
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
+    return Scaffold(
+      backgroundColor: isDesktop
+          ? Colors.transparent
+          : theme.colorScheme.surface,
+      body: isDesktop && !widget.isSidePanel
+          ? Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // 拖动手柄
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 48,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
+              child: body,
+            )
+          : body,
+      bottomNavigationBar: (!isDesktop || widget.isSidePanel)
+          ? Container(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                12,
+                24,
+                12 + MediaQuery.of(context).viewPadding.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                    width: 1,
+                  ),
                 ),
               ),
-              // 顶部栏
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      widget.event == null
-                          ? AppLocalizations.of(context)!.newEvent
-                          : AppLocalizations.of(context)!.editEvent,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
                       onPressed: _isSaving ? null : _save,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                       icon: _isSaving
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: 20,
+                              height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.check, size: 18),
-                      label: Text(widget.event == null ? '创建' : '保存'),
+                          : Icon(
+                              widget.event == null ? Icons.add : Icons.check,
+                            ),
+                      label: Text(
+                        widget.event == null ? '创建记录' : '保存修改',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Divider(height: 1),
-              Expanded(child: body),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // 移动端普通底部面板
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.event == null
-              ? AppLocalizations.of(context)!.newEvent
-              : AppLocalizations.of(context)!.editEvent,
-        ),
-        actions: [
-          if (!_isSaving)
-            IconButton(icon: const Icon(Icons.check), onPressed: _save),
-        ],
-      ),
-      body: body,
+            ).animate().slideY(
+              begin: 1,
+              end: 0,
+              duration: 400.ms,
+              curve: Curves.easeOutCubic,
+            )
+          : null,
     );
   }
 }
@@ -1349,20 +1964,14 @@ class _ImageActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: theme.colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(20),
-        elevation: 2,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(icon, size: 20, color: theme.colorScheme.primary),
-          ),
+      child: IconButton.filledTonal(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(40, 40),
+          padding: EdgeInsets.zero,
         ),
       ),
     );

@@ -26,6 +26,27 @@ class Event extends HiveObject {
   @HiveField(6)
   List<EventStep> steps = [];
 
+  @HiveField(7)
+  String? stepDisplayMode; // 'number' or 'firstChar'
+
+  @HiveField(8)
+  String? stepSuffix; // e.g., '步骤', '任务'
+
+  @HiveField(9)
+  DateTime? reminderTime;
+
+  @HiveField(10)
+  int? reminderId;
+
+  @HiveField(11)
+  String? reminderRecurrence; // 'none', 'daily', 'weekly', 'monthly'
+
+  @HiveField(12)
+  String? reminderScheme; // 'notification' or 'calendar'
+
+  @HiveField(13)
+  String? calendarEventId;
+
   bool get isCompleted => steps.isNotEmpty && steps.every((s) => s.completed);
 
   double get completionRate => steps.isEmpty
@@ -45,9 +66,44 @@ class Event extends HiveObject {
       'imageUrl': imageUrl,
       'tags': tags,
       'steps': steps.map((s) => s.toJson()).toList(),
+      'stepDisplayMode': stepDisplayMode,
+      'stepSuffix': stepSuffix,
+      'reminderTime': reminderTime?.toIso8601String(),
+      'reminderId': reminderId,
+      'reminderRecurrence': reminderRecurrence,
+      'reminderScheme': reminderScheme,
+      'calendarEventId': calendarEventId,
       'isCompleted': isCompleted,
       'completionRate': completionRate,
     };
+  }
+
+  factory Event.fromJson(Map<String, dynamic> json) {
+    final event = Event()
+      ..id = json['id'] ?? const Uuid().v4()
+      ..title = json['title'] ?? ''
+      ..description = json['description']
+      ..createdAt = json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now()
+      ..imageUrl = json['imageUrl']
+      ..tags = (json['tags'] as List?)?.cast<String>()
+      ..stepDisplayMode = json['stepDisplayMode']
+      ..stepSuffix = json['stepSuffix']
+      ..reminderTime = json['reminderTime'] != null
+          ? DateTime.parse(json['reminderTime'])
+          : null
+      ..reminderId = json['reminderId']
+      ..reminderRecurrence = json['reminderRecurrence']
+      ..reminderScheme = json['reminderScheme']
+      ..calendarEventId = json['calendarEventId'];
+
+    if (json['steps'] != null) {
+      event.steps = (json['steps'] as List)
+          .map((s) => EventStep.fromJson(s as Map<String, dynamic>))
+          .toList();
+    }
+    return event;
   }
 }
 
@@ -62,12 +118,24 @@ class EventStep extends HiveObject {
   @HiveField(2)
   bool completed = false;
 
+  EventStep();
+
   Map<String, dynamic> toJson() {
     return {
       'description': description,
       'timestamp': timestamp.toIso8601String(),
       'completed': completed,
     };
+  }
+
+  factory EventStep.fromJson(Map<String, dynamic> json) {
+    final step = EventStep()
+      ..description = json['description'] ?? ''
+      ..timestamp = json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
+          : DateTime.now()
+      ..completed = json['completed'] ?? false;
+    return step;
   }
 
   EventStep copyWith({

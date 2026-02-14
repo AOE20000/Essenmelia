@@ -48,6 +48,14 @@ alwaysApply: true
 - **手动补全**：如果需要修复动态图标，需将 SVG 转换为 Android 兼容的 Vector XML，放置在 `res/drawable/ic_launcher_monochrome.xml`，并手动创建 `res/mipmap-anydpi-v33/launcher_icon.xml` 引用它。
 - 当前状态：由于环境工具链限制，动态图标需手动维护，插件仅处理标准/自适应 PNG 图标。
 
+### E. 系统日历权限
+**状态**：已添加 `device_calendar` 支持方案 2 提醒。
+
+**对策**：
+- **Android**：已在 `AndroidManifest.xml` 声明 `READ_CALENDAR` 和 `WRITE_CALENDAR`。
+- **iOS**：若后续支持 iOS，需在 `Info.plist` 添加 `NSCalendarsUsageDescription`。
+- **权限请求**：应用会在用户选择“系统日历”方案时动态请求权限。
+
 ---
 
 ## 3. 常见报错排查

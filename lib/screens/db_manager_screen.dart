@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -10,6 +13,8 @@ import '../models/event.dart';
 import '../providers/db_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../services/file_service.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class DatabaseManagerScreen extends ConsumerStatefulWidget {
   final bool isSidePanel;
@@ -21,7 +26,6 @@ class DatabaseManagerScreen extends ConsumerStatefulWidget {
 }
 
 class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
-  final _nameController = TextEditingController();
   final Map<String, (int, int)> _dbStats = {};
 
   @override
@@ -54,18 +58,23 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     super.dispose();
   }
 
   Future<void> _exportData() async {
     try {
       await ref.read(dbProvider.future);
-      final eventBox = Hive.box<Event>('events');
-      final templateBox = Hive.box<StepTemplate>('templates');
-      final setTemplateBox = Hive.box<StepSetTemplate>('set_templates');
+      final prefix = ref.read(activePrefixProvider);
+
+      final eventBox = Hive.box<Event>('${prefix}_events');
+      final templateBox = Hive.box<StepTemplate>('${prefix}_templates');
+      final setTemplateBox = Hive.box<StepSetTemplate>(
+        '${prefix}_set_templates',
+      );
+      final tagBox = Hive.box<String>('${prefix}_tags');
 
       final data = {
+        'tags': tagBox.values.toList(),
         'events': eventBox.values
             .map(
               (e) => {
@@ -105,7 +114,44 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
       };
 
       final jsonString = jsonEncode(data);
-      await FileService.exportData(jsonString, 'essenmelia_backup.json');
+
+      // Create ZIP archive
+      final archive = Archive();
+
+      // Add JSON data
+      final jsonBytes = utf8.encode(jsonString);
+      archive.addFile(ArchiveFile('data.json', jsonBytes.length, jsonBytes));
+
+      // Add images
+      for (final event in eventBox.values) {
+        if (event.imageUrl != null &&
+            event.imageUrl!.isNotEmpty &&
+            !event.imageUrl!.startsWith('http') &&
+            !event.imageUrl!.startsWith('data:')) {
+          final file = File(event.imageUrl!);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            final fileName = p.basename(event.imageUrl!);
+            archive.addFile(
+              ArchiveFile('images/$fileName', bytes.length, bytes),
+            );
+          }
+        }
+      }
+
+      final zipEncoder = ZipEncoder();
+      final zipBytes = zipEncoder.encode(archive);
+
+      await FileService.exportZip(
+        Uint8List.fromList(zipBytes),
+        'essenmelia_backup_${DateTime.now().millisecondsSinceEpoch}.zip',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.exportSuccess)),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -119,31 +165,89 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['json'],
+        allowedExtensions: ['json', 'zip'],
       );
 
       if (result != null) {
-        final jsonString = await FileService.readData(result.files.single);
+        final pickedFile = result.files.single;
+        final isZip = pickedFile.extension?.toLowerCase() == 'zip';
+        String jsonString = '';
+        Map<String, Uint8List> imageMap = {};
+
+        if (isZip) {
+          final zipBytes = await FileService.readZip(pickedFile);
+          if (zipBytes == null) return;
+
+          final archive = ZipDecoder().decodeBytes(zipBytes);
+          for (final file in archive) {
+            if (file.isFile) {
+              if (file.name == 'data.json') {
+                jsonString = utf8.decode(file.content as List<int>);
+              } else if (file.name.startsWith('images/')) {
+                final imageName = p.basename(file.name);
+                imageMap[imageName] = file.content;
+              }
+            }
+          }
+        } else {
+          jsonString = await FileService.readData(pickedFile);
+        }
+
         if (jsonString.isEmpty) return;
 
         final data = jsonDecode(jsonString);
 
         if (data is Map<String, dynamic>) {
           await ref.read(dbProvider.future);
-          final eventBox = Hive.box<Event>('events');
-          final templateBox = Hive.box<StepTemplate>('templates');
-          final setTemplateBox = Hive.box<StepSetTemplate>('set_templates');
+          final prefix = ref.read(activePrefixProvider);
+
+          final eventBox = Hive.box<Event>('${prefix}_events');
+          final templateBox = Hive.box<StepTemplate>('${prefix}_templates');
+          final setTemplateBox = Hive.box<StepSetTemplate>(
+            '${prefix}_set_templates',
+          );
+          final tagBox = Hive.box<String>('${prefix}_tags');
+
+          // Prepare image directory
+          final appDir = await getApplicationDocumentsDirectory();
+          final imagesDir = Directory(p.join(appDir.path, 'event_images'));
+          if (!await imagesDir.exists()) {
+            await imagesDir.create(recursive: true);
+          }
+
+          // Import Tags
+          if (data['tags'] is List) {
+            final tags = (data['tags'] as List).cast<String>();
+            for (final tag in tags) {
+              if (!tagBox.values.contains(tag)) {
+                await tagBox.add(tag);
+              }
+            }
+          }
 
           // Import Events
           if (data['events'] is List) {
             for (var e in data['events']) {
+              String? finalImageUrl = e['imageUrl'];
+
+              // If it's a ZIP import and has an image, restore it
+              if (isZip && finalImageUrl != null && finalImageUrl.isNotEmpty) {
+                final imageName = p.basename(finalImageUrl);
+                if (imageMap.containsKey(imageName)) {
+                  final newPath = p.join(imagesDir.path, imageName);
+                  final imageFile = File(newPath);
+                  await imageFile.writeAsBytes(imageMap[imageName]!);
+                  finalImageUrl = newPath; // Update to local path
+                }
+              }
+
               final event = Event()
                 ..id = e['id'] ?? const Uuid().v4()
                 ..title = e['title']
                 ..description = e['description']
                 ..createdAt =
                     DateTime.tryParse(e['createdAt'] ?? '') ?? DateTime.now()
-                ..imageUrl = e['imageUrl']
+                ..imageUrl = finalImageUrl
                 ..tags = (e['tags'] as List?)?.cast<String>()
                 ..steps =
                     (e['steps'] as List?)
@@ -191,6 +295,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
           }
 
           if (mounted) {
+            _loadAllStats();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(AppLocalizations.of(context)!.importSuccess),
@@ -213,84 +318,148 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
   }
 
   Future<void> _deleteAllData() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmController = TextEditingController();
+    bool canDelete = false;
+
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deleteAllDataTitle),
-        content: Text(AppLocalizations.of(context)!.deleteAllDataMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+          title: Text(l10n.formatApp),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.formatAppWarning),
+              const SizedBox(height: 24),
+              Text(
+                l10n.formatAppConfirm,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.formatAppPlaceholder,
+                  border: const OutlineInputBorder(),
+                  errorText: confirmController.text.isNotEmpty &&
+                          confirmController.text != 'DELETE'
+                      ? 'Invalid input'
+                      : null,
+                ),
+                onChanged: (val) {
+                  setState(() => canDelete = val == 'DELETE');
+                },
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              AppLocalizations.of(context)!.delete,
-              style: const TextStyle(color: Colors.red),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
             ),
-          ),
-        ],
+            FilledButton(
+              onPressed: canDelete ? () => Navigator.pop(context, true) : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              child: Text(l10n.formatApp),
+            ),
+          ],
+        ),
       ),
     );
 
     if (confirm == true) {
-      await ref.read(dbProvider.future);
-      await Hive.box<Event>('events').clear();
-      await Hive.box<StepTemplate>('templates').clear();
-      await Hive.box<StepSetTemplate>('set_templates').clear();
+      // Show loading overlay
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.deleteAllDataSuccess),
-          ),
-        );
+      try {
+        await ref.read(dbControllerProvider.notifier).resetAll();
+        if (mounted) {
+          Navigator.pop(context); // Close loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.deleteAllDataSuccess)),
+          );
+          _loadAllStats();
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Reset failed: $e')),
+          );
+        }
       }
     }
   }
 
-  void _showCreateDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.createNewDatabase),
-        content: TextField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.of(context)!.enterDatabaseName,
-            hintText: AppLocalizations.of(context)!.dbNameHint,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = _nameController.text.trim();
-              if (name.isNotEmpty) {
-                // Basic validation: alphanumeric and hyphens only
-                if (!RegExp(r'^[a-zA-Z0-9-_]+$').hasMatch(name)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context)!.invalidDbName,
-                      ),
-                    ),
-                  );
-                  return;
-                }
+  Future<void> _showCreateDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
 
-                ref.read(dbControllerProvider.notifier).createDb(name);
-                _nameController.clear();
-                Navigator.pop(context);
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.create),
-          ),
-        ],
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final name = controller.text.trim();
+          final isValid = name.isNotEmpty && RegExp(r'^[a-zA-Z0-9-_]+$').hasMatch(name);
+
+          return AlertDialog(
+            icon: const Icon(Icons.add_to_photos_rounded),
+            title: Text(l10n.createNewDatabase),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.enterDatabaseName,
+                    hintText: l10n.dbNameHint,
+                    prefixIcon: const Icon(Icons.drive_file_rename_outline_rounded),
+                    border: const OutlineInputBorder(),
+                    errorText: name.isNotEmpty && !isValid ? l10n.invalidDbName : null,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (val) {
+                    if (isValid) {
+                      ref.read(dbControllerProvider.notifier).createDb(name);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: isValid
+                    ? () {
+                        ref.read(dbControllerProvider.notifier).createDb(name);
+                        Navigator.pop(context);
+                      }
+                    : null,
+                child: Text(l10n.create),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -301,47 +470,41 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    final body = dbStateAsync.when(
-      data: (state) {
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          children: [
-            _buildSectionHeader(theme, l10n.availableDatabases),
-            const SizedBox(height: 16),
-            ...state.availableDbs.map((dbName) {
-              final isActive = dbName == state.activeDbPrefix;
-              return _buildDatabaseCard(context, dbName, isActive);
-            }),
-            const SizedBox(height: 12),
-            Center(
-              child: FilledButton.tonalIcon(
-                onPressed: _showCreateDialog,
-                icon: const Icon(Icons.add),
-                label: Text(l10n.createNewDatabase),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(200, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionHeader(theme, l10n.dataMaintenance),
-            const SizedBox(height: 16),
-            _buildMaintenanceCard(context, theme, l10n),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+    final body = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: dbStateAsync.when(
+        data: (state) {
+          return ListView(
+            key: const ValueKey('db_list_data'),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+            children: [
+              _buildSectionHeader(theme, l10n.availableDatabases),
+              ...state.availableDbs.map((dbName) {
+                final isActive = dbName == state.activeDbPrefix;
+                return _buildDatabaseCard(context, dbName, isActive, state);
+              }),
+              const SizedBox(height: 8),
+              _buildSectionHeader(theme, l10n.dataMaintenance),
+              _buildMaintenanceCard(context, theme, l10n),
+            ],
+          );
+        },
+        loading: () => const Center(
+          key: ValueKey('db_list_loading'),
+          child: CircularProgressIndicator(),
+        ),
+        error: (err, _) => Center(
+          key: ValueKey('db_list_error'),
+          child: Text('Error: $err'),
+        ),
+      ),
     );
 
     if (widget.isSidePanel) {
       return Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
             child: Row(
               children: [
                 IconButton(
@@ -350,6 +513,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                       ref.read(leftPanelContentProvider.notifier).state =
                           LeftPanelContent.none,
                 ),
+                const SizedBox(width: 8),
                 Text(
                   l10n.databaseManager,
                   style: theme.textTheme.titleLarge?.copyWith(
@@ -360,25 +524,40 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
             ),
           ),
           Expanded(child: body),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: FloatingActionButton.extended(
+              onPressed: _showCreateDialog,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.createNewDatabase),
+            ),
+          ),
         ],
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.databaseManager), centerTitle: true),
+      appBar: AppBar(
+        title: Text(l10n.databaseManager),
+        centerTitle: true,
+      ),
       body: body,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showCreateDialog,
+        icon: const Icon(Icons.add),
+        label: Text(l10n.createNewDatabase),
+      ),
     );
   }
 
   Widget _buildSectionHeader(ThemeData theme, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsets.fromLTRB(4, 24, 4, 12),
       child: Text(
         title,
-        style: theme.textTheme.labelLarge?.copyWith(
+        style: theme.textTheme.titleSmall?.copyWith(
           color: theme.colorScheme.primary,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
         ),
       ),
     );
@@ -388,111 +567,99 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     BuildContext context,
     String dbName,
     bool isActive,
+    DbState state,
   ) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: isActive
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-            : theme.colorScheme.surfaceContainerLow,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: isActive
-                ? theme.colorScheme.primary.withValues(alpha: 0.3)
-                : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-            width: isActive ? 2 : 1,
-          ),
-        ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          onTap: () {
-            if (!isActive) {
-              ref.read(dbControllerProvider.notifier).switchDb(dbName);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text(l10n.switchedToDb(dbName)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isActive
+            ? BorderSide(color: theme.colorScheme.primary, width: 2)
+            : BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      color: isActive
+          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+          : theme.colorScheme.surface,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          if (!isActive) {
+            ref.read(dbControllerProvider.notifier).switchDb(dbName);
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline,
+                    width: 2,
                   ),
                 ),
-              );
-            }
-          },
-          leading: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              isActive ? Icons.storage_rounded : Icons.storage_outlined,
-              color: isActive
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-              size: 24,
-            ),
-          ),
-          title: Text(
-            dbName == kDefaultDbName ? l10n.defaultDbName : dbName,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive
-                  ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.onSurface,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isActive ? l10n.currentlyActive : l10n.inactive,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isActive
-                      ? theme.colorScheme.primary.withValues(alpha: 0.8)
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
+                child: isActive
+                    ? Center(
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
-              if (_dbStats.containsKey(dbName)) ...[
-                const SizedBox(height: 4),
-                Row(
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildStatChip(
-                      theme,
-                      Icons.event_note_rounded,
-                      '${_dbStats[dbName]!.$1}',
+                    Text(
+                      dbName == kDefaultDbName ? l10n.defaultDbName : dbName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    _buildStatChip(
-                      theme,
-                      Icons.copy_all_rounded,
-                      '${_dbStats[dbName]!.$2}',
-                    ),
+                    const SizedBox(height: 4),
+                    if (_dbStats.containsKey(dbName))
+                      Row(
+                        children: [
+                          _buildStatChip(
+                            theme,
+                            Icons.event_note_rounded,
+                            '${_dbStats[dbName]!.$1}',
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatChip(
+                            theme,
+                            Icons.copy_all_rounded,
+                            '${_dbStats[dbName]!.$2}',
+                          ),
+                        ],
+                      ),
                   ],
                 ),
-              ],
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (dbName != kDefaultDbName) ...[
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: theme.colorScheme.error,
-                  ),
+              ),
+              if (dbName != kDefaultDbName)
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.delete_outline_rounded),
                   onPressed: () => _handleDeleteDb(context, dbName),
+                  style: IconButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
+                  ),
                 ),
-              ],
             ],
           ),
         ),
@@ -559,40 +726,60 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    return Material(
-      color: theme.colorScheme.surfaceContainerLow,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Current Database Actions
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          color: theme.colorScheme.surfaceContainerLow,
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              _buildMaintenanceTile(
+                context,
+                icon: Icons.file_download_outlined,
+                title: l10n.exportData,
+                onTap: _exportData,
+              ),
+              Divider(
+                height: 1,
+                indent: 56,
+                endIndent: 16,
+                color: theme.colorScheme.outlineVariant,
+              ),
+              _buildMaintenanceTile(
+                context,
+                icon: Icons.file_upload_outlined,
+                title: l10n.importData,
+                onTap: _importData,
+              ),
+            ],
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          _buildMaintenanceTile(
-            context,
-            icon: Icons.file_download_outlined,
-            title: l10n.exportData,
-            onTap: _exportData,
+        const SizedBox(height: 24),
+        _buildSectionHeader(theme, l10n.dangerZone),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.errorContainer),
           ),
-          const Divider(height: 1, indent: 64),
-          _buildMaintenanceTile(
-            context,
-            icon: Icons.file_upload_outlined,
-            title: l10n.importData,
-            onTap: _importData,
-          ),
-          const Divider(height: 1, indent: 64),
-          _buildMaintenanceTile(
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+          clipBehavior: Clip.antiAlias,
+          child: _buildMaintenanceTile(
             context,
             icon: Icons.delete_forever_rounded,
             title: l10n.deleteAllDataTitle,
             onTap: _deleteAllData,
             isDestructive: true,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -605,25 +792,25 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Icon(
         icon,
         color: isDestructive
             ? theme.colorScheme.error
-            : theme.colorScheme.primary,
+            : theme.colorScheme.onSurfaceVariant,
       ),
       title: Text(
         title,
-        style: theme.textTheme.bodyLarge?.copyWith(
+        style: theme.textTheme.labelLarge?.copyWith(
           color: isDestructive
               ? theme.colorScheme.error
               : theme.colorScheme.onSurface,
-          fontWeight: isDestructive ? FontWeight.w600 : FontWeight.w500,
+          fontWeight: isDestructive ? FontWeight.bold : FontWeight.w500,
         ),
       ),
       trailing: Icon(
-        Icons.chevron_right_rounded,
-        size: 20,
+        Icons.arrow_forward_ios_rounded,
+        size: 14,
         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
       ),
       onTap: onTap,

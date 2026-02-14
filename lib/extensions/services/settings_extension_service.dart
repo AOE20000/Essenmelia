@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import '../extension_api_registry.dart';
+import '../base_extension.dart';
 
 /// 扩展私有设置相关的 API 实现
 class SettingsExtensionApiHandler {
@@ -10,8 +11,24 @@ class SettingsExtensionApiHandler {
   SettingsExtensionApiHandler(Ref ref);
 
   void register(ExtensionApiRegistry registry) {
-    registry.register('getSetting', _getSetting);
-    registry.register('saveSetting', _saveSetting);
+    registry.register(
+      'getSetting',
+      _getSetting,
+      permission: ExtensionPermission.systemInfo,
+      operation: '读取扩展私有配置',
+      operationEn: 'Read Extension Private Settings',
+      category: '系统信息',
+      categoryEn: 'System Info',
+    );
+    registry.register(
+      'saveSetting',
+      _saveSetting,
+      permission: ExtensionPermission.systemInfo,
+      operation: '保存扩展私有配置',
+      operationEn: 'Save Extension Private Settings',
+      category: '系统信息',
+      categoryEn: 'System Info',
+    );
   }
 
   Future<dynamic> _getSetting(

@@ -37,16 +37,21 @@ class DisplaySettingsNotifier extends StateNotifier<DisplaySettings> {
   Future<void> _init() async {
     await ref.read(dbProvider.future);
     _box = Hive.box('settings');
-    
+
     final itemsPerRow = _box!.get('itemsPerRow', defaultValue: 2);
     final collapseImages = _box!.get('collapseImages', defaultValue: false);
     final useSystemFont = _box!.get('useSystemFont', defaultValue: true);
-    
+
     state = DisplaySettings(
       itemsPerRow: itemsPerRow,
       collapseImages: collapseImages,
       useSystemFont: useSystemFont,
     );
+  }
+
+  Future<void> reinit() async {
+    _box = null;
+    await _init();
   }
 
   Future<void> setItemsPerRow(int count) async {

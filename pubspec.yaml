@@ -50,6 +50,14 @@ dependencies:
   dotted_border: ^2.1.0
   path: ^1.9.1
   dynamic_color: ^1.8.1
+  archive: ^4.0.7
+  flutter_js: ^0.8.4
+  yaml: ^3.1.2
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  device_calendar: ^4.3.3
+  flutter_markdown: ^0.7.7+1
+  crypto: ^3.0.7
   # receive_intent: ^0.2.7
 
 dev_dependencies:
@@ -78,5 +86,10 @@ flutter_launcher_icons:
 flutter:
   assets:
     - assets/images/
+    - assets/extensions/com.essenmelia.api_tester/
+    - assets/extensions/com.essenmelia.event_test/
+    - assets/extensions/com.essenmelia.kitchen_sink/
+    - assets/extensions/system.external_call/
+    - assets/docs/
   generate: true
   uses-material-design: true

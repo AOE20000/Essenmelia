@@ -1,24 +1,137 @@
 import 'package:flutter/material.dart';
+import 'package:yaml/yaml.dart';
 import '../models/event.dart';
 
 /// 扩展权限定义
 enum ExtensionPermission {
-  readEvents('读取事件', 'Read Events', '允许扩展查看您的所有事件和任务。'),
-  writeEvents('修改事件', 'Write Events', '允许扩展创建、修改或删除您的任务。'),
-  readTags('读取标签', 'Read Tags', '允许扩展查看您的标签列表。'),
-  manageDb('数据库管理', 'Manage Database', '允许扩展进行数据库导出、备份或切换。'),
-  fileSystem('文件访问', 'File System', '允许扩展保存文件到您的设备或读取文件。'),
-  notifications('通知权限', 'Notifications', '允许扩展向您发送桌面或系统通知。'),
-  network('网络访问', 'Network Access', '允许扩展访问网络。');
+  readEvents(
+    '读取事件',
+    'Read Events',
+    '允许扩展查看您的所有事件和任务。',
+    'Allows the extension to view all your events and tasks.',
+    Icons.event_note_rounded,
+  ),
+  addEvents(
+    '创建事件',
+    'Add Events',
+    '允许扩展创建新的任务。',
+    'Allows the extension to create new tasks.',
+    Icons.add_task_rounded,
+  ),
+  updateEvents(
+    '编辑事件',
+    'Update Events',
+    '允许扩展修改现有的任务。',
+    'Allows the extension to modify existing tasks.',
+    Icons.edit_calendar_rounded,
+  ),
+  deleteEvents(
+    '删除事件',
+    'Delete Events',
+    '允许扩展删除您的任务。',
+    'Allows the extension to delete your tasks.',
+    Icons.delete_sweep_rounded,
+  ),
+  readTags(
+    '读取标签',
+    'Read Tags',
+    '允许扩展查看您的标签列表。',
+    'Allows the extension to view your tag list.',
+    Icons.tag_rounded,
+  ),
+  manageTags(
+    '管理标签',
+    'Manage Tags',
+    '允许扩展添加或删除全局标签。',
+    'Allows the extension to add or remove global tags.',
+    Icons.label_important_rounded,
+  ),
+  manageDb(
+    '数据库管理',
+    'Manage Database',
+    '允许扩展进行数据库导出、备份或切换。',
+    'Allows the extension to perform database export, backup, or switching.',
+    Icons.storage_rounded,
+  ),
+  fileSystem(
+    '文件访问',
+    'File System',
+    '允许扩展保存文件到您的设备或读取文件。',
+    'Allows the extension to save files to your device or read files.',
+    Icons.folder_open_rounded,
+  ),
+  notifications(
+    '通知权限',
+    'Notifications',
+    '允许扩展向您发送桌面或系统通知。',
+    'Allows the extension to send you desktop or system notifications.',
+    Icons.notifications_active_rounded,
+  ),
+  readCalendar(
+    '读取日历',
+    'Read Calendar',
+    '允许扩展读取您的系统日历日程。',
+    'Allows the extension to read your system calendar events.',
+    Icons.calendar_month_rounded,
+  ),
+  writeCalendar(
+    '写入日历',
+    'Write Calendar',
+    '允许扩展向您的系统日历添加或修改日程。',
+    'Allows the extension to add or modify events in your system calendar.',
+    Icons.edit_calendar_rounded,
+  ),
+  network(
+    '网络访问',
+    'Network Access',
+    '允许扩展访问网络。',
+    'Allows the extension to access the network.',
+    Icons.language_rounded,
+  ),
+  systemInfo(
+    '系统信息',
+    'System Info',
+    '允许扩展访问主题、语言、发送提示条等系统状态。',
+    'Allows the extension to access system status like themes, language, and snackbars.',
+    Icons.info_outline_rounded,
+  ),
+  navigation(
+    '界面导航',
+    'Navigation',
+    '允许扩展在应用内进行页面跳转或搜索过滤。',
+    'Allows the extension to navigate between pages or filter search results.',
+    Icons.explore_rounded,
+  ),
+  uiInteraction(
+    '界面交互',
+    'UI Interaction',
+    '允许扩展显示提示条、对话框或加载遮罩。',
+    'Allows the extension to show snackbars, dialogs, or loading overlays.',
+    Icons.touch_app_rounded,
+  );
 
   final String label;
   final String labelEn;
   final String description;
-  const ExtensionPermission(this.label, this.labelEn, this.description);
+  final String descriptionEn;
+  final IconData icon;
+
+  const ExtensionPermission(
+    this.label,
+    this.labelEn,
+    this.description,
+    this.descriptionEn, [
+    this.icon = Icons.security_rounded,
+  ]);
 
   String getLabel(BuildContext context) {
     final locale = Localizations.maybeLocaleOf(context);
     return locale?.languageCode == 'en' ? labelEn : label;
+  }
+
+  String getDescription(BuildContext context) {
+    final locale = Localizations.maybeLocaleOf(context);
+    return locale?.languageCode == 'en' ? descriptionEn : description;
   }
 }
 
@@ -33,6 +146,7 @@ class ExtensionMetadata {
   final List<ExtensionPermission> requiredPermissions;
   final Map<String, dynamic>? view;
   final Map<String, dynamic>? logic;
+  final String? script;
 
   const ExtensionMetadata({
     required this.id,
@@ -44,6 +158,7 @@ class ExtensionMetadata {
     this.requiredPermissions = const [],
     this.view,
     this.logic,
+    this.script,
   });
 
   Map<String, dynamic> toJson() {
@@ -58,6 +173,7 @@ class ExtensionMetadata {
       'permissions': requiredPermissions.map((e) => e.name).toList(),
       'view': view,
       'logic': logic,
+      'script': script,
     };
   }
 
@@ -72,8 +188,9 @@ class ExtensionMetadata {
         json['icon_code'] ?? 0xe3af, // Default to 'extension' icon
         fontFamily: json['icon_font'] ?? 'MaterialIcons',
       ),
-      view: json['view'] as Map<String, dynamic>?,
-      logic: json['logic'] as Map<String, dynamic>?,
+      view: json['view'] is Map ? _convertYamlNode(json['view']) : null,
+      logic: json['logic'] is Map ? _convertYamlNode(json['logic']) : null,
+      script: json['script'] as String?,
       requiredPermissions:
           (json['permissions'] as List?)
               ?.map((e) {
@@ -103,28 +220,80 @@ class ExtensionMetadata {
     );
   }
 
+  /// 将 YAML 内容转换为 `Map<String, dynamic>`
+  static Map<String, dynamic> yamlToMap(String yamlStr) {
+    try {
+      final doc = loadYaml(yamlStr);
+      if (doc == null) return {};
+      if (doc is! Map) {
+        return {};
+      }
+      return _convertYamlNode(doc) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error parsing YAML: $e');
+      return {};
+    }
+  }
+
+  /// 递归转换 YAML 节点
+  static dynamic _convertYamlNode(dynamic node) {
+    if (node is YamlMap) {
+      final map = <String, dynamic>{};
+      node.forEach((key, value) {
+        map[key.toString()] = _convertYamlNode(value);
+      });
+      return map;
+    } else if (node is YamlList) {
+      return node.map((item) => _convertYamlNode(item)).toList();
+    } else {
+      return node;
+    }
+  }
+
+  /// 从 YAML 字符串创建元数据
+  factory ExtensionMetadata.fromYaml(String yamlStr) {
+    final map = yamlToMap(yamlStr);
+    return ExtensionMetadata.fromJson(map);
+  }
+
   static String _mapPermissionName(String name) {
     // Basic snake_case to camelCase conversion
     // e.g., read_events -> readEvents
     final parts = name.split('_');
+    String camelCase = name;
     if (parts.length > 1) {
-      final camelCase =
+      camelCase =
           parts[0] +
           parts
               .skip(1)
               .map((p) => p.isEmpty ? '' : p[0].toUpperCase() + p.substring(1))
               .join();
-
-      // Special manual mappings
-      if (camelCase == 'showNotification') return 'notifications';
-
-      return camelCase;
     }
 
-    // Manual fallback for names that don't follow snake_case exactly
-    if (name == 'show_notification') return 'notifications';
+    // Special manual mappings
+    final manualMap = {
+      'showNotification': 'notifications',
+      'show_notification': 'notifications',
+      'write_events': 'addEvents',
+      'writeEvents': 'addEvents',
+      'editEvents': 'updateEvents',
+      'edit_events': 'updateEvents',
+      'removeEvents': 'deleteEvents',
+      'remove_events': 'deleteEvents',
+      'database': 'manageDb',
+      'storage': 'fileSystem',
+      'calendar': 'readCalendar',
+      'calendar_read': 'readCalendar',
+      'calendar_write': 'writeCalendar',
+      'internet': 'network',
+      'theme': 'systemInfo',
+      'ui': 'systemInfo',
+      'info': 'systemInfo',
+      'jump': 'navigation',
+      'search': 'navigation',
+    };
 
-    return name;
+    return manualMap[camelCase] ?? manualMap[name] ?? camelCase;
   }
 }
 
@@ -136,11 +305,22 @@ abstract class ExtensionApi {
   /// 获取所有标签
   Future<List<String>> getTags();
 
+  /// 添加新标签
+  Future<void> addTag(String tag);
+
   /// 导航到主程序的特定路由
   void navigateTo(String route);
 
   /// 显示通知/提示
   void showSnackBar(String message);
+
+  /// 显示系统通知
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    int? id,
+    String? payload,
+  });
 
   /// 显示确认对话框
   Future<bool> showConfirmDialog({
@@ -187,19 +367,33 @@ abstract class ExtensionApi {
     required String title,
     String? description,
     List<String>? tags,
+    String? imageUrl,
+    String? stepDisplayMode,
+    String? stepSuffix,
+    DateTime? reminderTime,
+    String? reminderRecurrence,
+    String? reminderScheme,
   });
 
   /// 删除事件
   Future<void> deleteEvent(String id);
 
-  /// 更新事件
-  Future<void> updateEvent(Event event);
+  /// 更新现有事件
+  Future<void> updateEvent({
+    required String id,
+    String? title,
+    String? description,
+    List<String>? tags,
+    String? imageUrl,
+    String? stepDisplayMode,
+    String? stepSuffix,
+    DateTime? reminderTime,
+    String? reminderRecurrence,
+    String? reminderScheme,
+  });
 
   /// 为事件添加步骤
   Future<void> addStep(String eventId, String description);
-
-  /// 添加标签
-  Future<void> addTag(String tag);
 
   /// 获取当前扩展的数据库占用大小 (字节)
   Future<int> getDbSize();
@@ -213,6 +407,9 @@ abstract class ExtensionApi {
   /// 获取/保存扩展专用设置
   Future<T?> getSetting<T>(String key);
   Future<void> saveSetting<T>(String key, T value);
+
+  /// 通用 API 调用方法（供逻辑引擎路由）
+  Future<dynamic> call(String method, Map<String, dynamic> params);
 
   /// 发布跨扩展事件
   void publishEvent(String name, Map<String, dynamic> data);

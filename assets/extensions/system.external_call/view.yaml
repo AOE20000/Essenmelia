@@ -1,0 +1,114 @@
+type: column
+props:
+  crossAxisAlignment: "start"
+children:
+  - type: container
+    props:
+      padding: { left: 16, right: 16, bottom: 16 }
+    children:
+      - type: text
+        props:
+          text: "管理外部应用的 API 调用与指令流"
+          textStyle: "bodyMedium"
+          textColor: "outline"
+
+  # 统计分组
+  - type: settings_group
+    props:
+      title: "系统状态"
+      items:
+        - type: list_tile
+          props:
+            title: "网关运行状态"
+            subtitle: "已连接至外部总线"
+            icon: 0xe8ac # settings_input_component
+            iconBgColor: "primaryContainer"
+            trailing:
+              type: badge
+              props: { label: "RUNNING", backgroundColor: "primaryContainer", textColor: "primary" }
+              children:
+                - type: text
+                  props: { text: " " } # 占位
+        - type: list_tile
+          props:
+            title: "请求统计"
+            subtitle: "总计 $state.totalRequests | 成功 $state.successCount"
+            icon: 0xe85d # assessment
+            iconBgColor: "secondaryContainer"
+            showChevron: true
+            action: "showStatsDetail"
+
+  # 控制面板
+  - type: settings_group
+    props:
+      title: "控制中心"
+      items:
+        - type: container
+          props:
+            padding: { left: 16, right: 16, top: 12, bottom: 12 }
+          children:
+            - type: column
+              props: { crossAxisAlignment: "start" }
+              children:
+                - type: text
+                  props: { text: "日志保留等级", textStyle: "labelLarge" }
+                - type: sized_box
+                  props: { height: 8 }
+                - type: segmented_button
+                  props:
+                    stateKey: "logLevel"
+                    segments:
+                      - { value: "basic", label: "基础", icon: 0xe88e }
+                      - { value: "detail", label: "详细", icon: 0xe8b8 }
+                      - { value: "debug", label: "调试", icon: 0xef4f }
+
+  # 活动日志分组
+  - type: settings_group
+    props:
+      title: "最近活动"
+      items:
+        - type: list_tile
+          props:
+            title: "查看实时日志"
+            subtitle: "当前有 $state.logCount 条记录"
+            icon: 0xe88e # info
+            iconBgColor: "tertiaryContainer"
+            showChevron: true
+            action: "viewLogs"
+        - type: list_tile
+          props:
+            title: "清空历史数据"
+            subtitle: "此操作不可撤销"
+            icon: 0xe872 # delete
+            iconBgColor: "errorContainer"
+            iconColor: "error"
+            action: "clearLogs"
+
+  # 日志显示区域 (如果是展开状态)
+  - type: card
+    props:
+      margin: { top: 16, left: 16, right: 16 }
+      variant: "outlined"
+      borderRadius: 12
+    children:
+      - type: column
+        children:
+          - type: container
+            props:
+              padding: { left: 16, right: 16, top: 12, bottom: 12 }
+              color: "surfaceContainerHighest"
+            children:
+              - type: text
+                props: { text: "调试日志 (最近 5 条)", textStyle: "labelMedium" }
+          - type: divider
+            props: { height: 1, thickness: 1, color: "outlineVariant" }
+          - type: container
+            props:
+              padding: 20
+            children:
+              - type: text
+                props:
+                  text: "$state.logs"
+                  textStyle: "bodySmall"
+                  textColor: "onSurfaceVariant"
+                  maxLines: 10

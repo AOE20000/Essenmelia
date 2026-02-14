@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../providers/ui_state_provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/locale_provider.dart';
+import '../providers/settings_provider.dart';
+import '../extensions/extension_manager.dart';
 import '../models/event.dart';
 
 // Meta box to store app-wide settings like list of DBs and active DB
@@ -17,7 +22,8 @@ class DbState {
 }
 
 class DbController extends StateNotifier<AsyncValue<DbState>> {
-  DbController() : super(const AsyncValue.loading()) {
+  final Ref _ref;
+  DbController(this._ref) : super(const AsyncValue.loading()) {
     _init();
   }
 
@@ -124,11 +130,68 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
       }
     }
   }
+
+  /// 重置所有应用数据（格式化）
+  Future<void> resetAll() async {
+    try {
+      state = const AsyncValue.loading();
+
+      // 1. 获取所有数据库列表
+      final metaBox = Hive.box(kMetaBoxName);
+      final dbs = List<String>.from(
+        metaBox.get(kDbListKey, defaultValue: [kDefaultDbName]),
+      );
+
+      // 2. 关闭并删除所有相关数据库盒子
+      for (final dbName in dbs) {
+        // 在删除前先关闭盒子，确保文件句柄释放
+        if (Hive.isBoxOpen('${dbName}_events')) {
+          await Hive.box<Event>('${dbName}_events').close();
+        }
+        if (Hive.isBoxOpen('${dbName}_templates')) {
+          await Hive.box<StepTemplate>('${dbName}_templates').close();
+        }
+        if (Hive.isBoxOpen('${dbName}_set_templates')) {
+          await Hive.box<StepSetTemplate>('${dbName}_set_templates').close();
+        }
+        if (Hive.isBoxOpen('${dbName}_tags')) {
+          await Hive.box<String>('${dbName}_tags').close();
+        }
+
+        await Hive.deleteBoxFromDisk('${dbName}_events');
+        await Hive.deleteBoxFromDisk('${dbName}_templates');
+        await Hive.deleteBoxFromDisk('${dbName}_set_templates');
+        await Hive.deleteBoxFromDisk('${dbName}_tags');
+      }
+
+      // 3. 重置扩展框架
+      await _ref.read(extensionManagerProvider.notifier).resetAll();
+
+      // 4. 清除设置和元数据
+      if (Hive.isBoxOpen('settings')) {
+        await Hive.box('settings').clear();
+      }
+      await metaBox.clear();
+
+      // 5. 重新初始化数据库控制器状态 (这一步会将 state 设为 data，从而解除 dbProvider.future 的阻塞)
+      await _init();
+
+      // 6. 刷新依赖数据库的 UI 状态提供者
+      // 注意：必须在 _init() 之后调用，因为这些 provider 的 reinit() 内部会 await ref.read(dbProvider.future)
+      await _ref.read(uiStateProvider.notifier).reinit();
+      await _ref.read(themeProvider.notifier).reinit();
+      await _ref.read(localeProvider.notifier).reinit();
+      await _ref.read(displaySettingsProvider.notifier).reinit();
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow;
+    }
+  }
 }
 
 final dbControllerProvider =
     StateNotifierProvider<DbController, AsyncValue<DbState>>((ref) {
-      return DbController();
+      return DbController(ref);
     });
 
 // Helper to get current box name

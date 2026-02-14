@@ -15,9 +15,13 @@ import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化通知服务
+  await NotificationService().init();
 
   // 启用 Edge-to-Edge 沉浸式体验
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -165,35 +169,28 @@ class _MyAppState extends ConsumerState<MyApp> {
           ThemeModeOption.dark => ThemeMode.dark,
         };
 
-        // 获取当前实际是否为深色模式
-        final isDark = switch (themeMode) {
-          ThemeMode.system =>
-            View.of(context).platformDispatcher.platformBrightness ==
-                Brightness.dark,
-          ThemeMode.light => false,
-          ThemeMode.dark => true,
-        };
-
-        // 根据主题动态更新状态栏和导航栏图标颜色
-        SystemChrome.setSystemUIOverlayStyle(
-          SystemUiOverlayStyle(
-            systemNavigationBarColor: Colors.transparent,
-            systemNavigationBarDividerColor: Colors.transparent,
-            systemNavigationBarIconBrightness: isDark
-                ? Brightness.light
-                : Brightness.dark,
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: isDark
-                ? Brightness.light
-                : Brightness.dark,
-          ),
-        );
-
         // 构建主题
         ThemeData buildTheme(ColorScheme colorScheme) {
+          final isDark = colorScheme.brightness == Brightness.dark;
           final baseTheme = ThemeData(
             useMaterial3: true,
             colorScheme: colorScheme,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              surfaceTintColor: Colors.transparent,
+              centerTitle: true,
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+                systemNavigationBarColor: Colors.transparent,
+                systemNavigationBarDividerColor: Colors.transparent,
+                systemNavigationBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+              ),
+            ),
           );
 
           if (displaySettings.useSystemFont) {

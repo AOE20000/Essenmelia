@@ -11,10 +11,10 @@ class ThemeNotifier extends StateNotifier<ThemeModeOption> {
 
   // Default to system
   ThemeNotifier(this.ref) : super(ThemeModeOption.system) {
-    _init();
+    reinit();
   }
 
-  Future<void> _init() async {
+  Future<void> reinit() async {
     await ref.read(dbProvider.future);
     _box = Hive.box('settings');
 
@@ -27,11 +27,14 @@ class ThemeNotifier extends StateNotifier<ThemeModeOption> {
       state = isDark ? ThemeModeOption.dark : ThemeModeOption.light;
       await _box!.put('themeMode', state.index);
       await _box!.delete('isDarkMode');
+    } else {
+      // Reset to default
+      state = ThemeModeOption.system;
     }
   }
 
   Future<void> setThemeMode(ThemeModeOption mode) async {
-    if (_box == null) await _init();
+    if (_box == null) await reinit();
     state = mode;
     await _box!.put('themeMode', mode.index);
   }

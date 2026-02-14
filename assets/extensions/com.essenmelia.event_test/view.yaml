@@ -1,0 +1,58 @@
+type: column
+props:
+  padding: 16
+children:
+  - type: row
+    props:
+      mainAxisAlignment: "spaceBetween"
+      margin: { bottom: 16 }
+    children:
+      - type: text
+        props:
+          text: "事件沙盒"
+          textStyle: "headlineSmall"
+          textColor: "primary"
+      - type: button
+        props:
+          label: "刷新"
+          variant: "tonal"
+          icon: 0xe5d5 # refresh
+        onTap: refreshEvents
+
+  - type: card
+    props:
+      variant: "outlined"
+      margin: { bottom: 20 }
+    children:
+      - type: column
+        props:
+          padding: 12
+        children:
+          - type: text
+            props:
+              text: "快速操作"
+              textStyle: "titleSmall"
+              margin: { bottom: 8 }
+          - type: button
+            props:
+              label: "创建 10 个测试事件"
+              variant: "filled"
+              width: "max"
+            onTap: createTestEvent
+
+  - type: text
+    props:
+      text: "最近捕获的事件数据"
+      textStyle: "titleSmall"
+      margin: { bottom: 8 }
+
+  - type: card
+    props:
+      variant: "filled"
+      padding: 12
+    children:
+      - type: text
+        props:
+          text: "$state.eventList"
+          textStyle: "bodySmall"
+          textColor: "onSurfaceVariant"

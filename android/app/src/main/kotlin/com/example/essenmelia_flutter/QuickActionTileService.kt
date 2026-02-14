@@ -40,8 +40,8 @@ class QuickActionTileService : TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
-        val tile = qsTile ?: return
-        tile.label = "快速记录"
-        tile.updateTile()
+        // 移除冗余的 updateTile() 调用。
+        // 如果标签是静态的，已经在 AndroidManifest 中定义，
+        // 这里频繁调用 updateTile() 会在下拉通知栏时触发系统重复渲染，导致卡顿。
     }
 }

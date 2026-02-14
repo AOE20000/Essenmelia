@@ -8,10 +8,10 @@ class LocaleNotifier extends StateNotifier<Locale?> {
   Box? _box;
 
   LocaleNotifier(this.ref) : super(null) {
-    _init();
+    reinit();
   }
 
-  Future<void> _init() async {
+  Future<void> reinit() async {
     await ref.read(dbProvider.future);
     if (!Hive.isBoxOpen('settings')) {
       await Hive.openBox('settings');
@@ -21,11 +21,13 @@ class LocaleNotifier extends StateNotifier<Locale?> {
     final savedCode = _box!.get('languageCode');
     if (savedCode != null) {
       state = Locale(savedCode);
+    } else {
+      state = null; // Follow system
     }
   }
 
   Future<void> setLocale(Locale? locale) async {
-    if (_box == null) await _init();
+    if (_box == null) await reinit();
     
     if (locale == null) {
       await _box!.delete('languageCode');

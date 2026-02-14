@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
 import '../../models/event.dart';
-import '../../providers/db_provider.dart';
+import '../../providers/tags_provider.dart';
 import '../../providers/events_provider.dart';
 import '../../providers/filtered_events_provider.dart';
 import '../extension_api_registry.dart';
 import '../extension_manager.dart';
+import '../base_extension.dart';
 import '../utils/mock_data_generator.dart';
 
 /// 事件相关的扩展 API 实现
@@ -19,13 +19,87 @@ class EventsExtensionApiHandler {
   EventsExtensionApiHandler(this._ref);
 
   void register(ExtensionApiRegistry registry) {
-    registry.register('getEvents', _getEvents);
-    registry.register('addEvent', _addEvent);
-    registry.register('deleteEvent', _deleteEvent);
-    registry.register('updateEvent', _updateEvent);
-    registry.register('addStep', _addStep);
-    registry.register('setSearchQuery', _setSearchQuery);
-    registry.register('publishEvent', _publishEvent);
+    registry.register(
+      'getEvents',
+      _getEvents,
+      permission: ExtensionPermission.readEvents,
+      operation: '读取您的所有任务列表和步骤',
+      operationEn: 'Read All Tasks and Steps',
+      category: '数据读取',
+      categoryEn: 'Data Reading',
+    );
+    registry.register(
+      'addEvent',
+      _addEvent,
+      permission: ExtensionPermission.addEvents,
+      operation: '添加新任务',
+      operationEn: 'Add New Task',
+      category: '数据写入',
+      categoryEn: 'Data Writing',
+    );
+    registry.register(
+      'deleteEvent',
+      _deleteEvent,
+      permission: ExtensionPermission.deleteEvents,
+      operation: '删除任务',
+      operationEn: 'Delete Task',
+      category: '数据写入',
+      categoryEn: 'Data Writing',
+    );
+    registry.register(
+      'updateEvent',
+      _updateEvent,
+      permission: ExtensionPermission.updateEvents,
+      operation: '修改任务',
+      operationEn: 'Update Task',
+      category: '数据写入',
+      categoryEn: 'Data Writing',
+    );
+    registry.register(
+      'getTags',
+      _getTags,
+      permission: ExtensionPermission.readTags,
+      operation: '读取您的所有标签',
+      operationEn: 'Read All Tags',
+      category: '数据读取',
+      categoryEn: 'Data Reading',
+    );
+    registry.register(
+      'addTag',
+      _addTag,
+      permission: ExtensionPermission.manageTags,
+      operation: '添加新标签',
+      operationEn: 'Add New Tag',
+      category: '数据写入',
+      categoryEn: 'Data Writing',
+    );
+    registry.register(
+      'addStep',
+      _addStep,
+      permission: ExtensionPermission.updateEvents,
+      operation: '为任务添加步骤',
+      operationEn: 'Add Step to Task',
+      category: '数据写入',
+      categoryEn: 'Data Writing',
+    );
+    registry.register(
+      'setSearchQuery',
+      _setSearchQuery,
+      permission: ExtensionPermission.navigation,
+      operation: '触发全局搜索过滤',
+      operationEn: 'Trigger Global Search Filter',
+      category: '界面导航',
+      categoryEn: 'Navigation',
+    );
+    registry.register(
+      'publishEvent',
+      _publishEvent,
+      permission: ExtensionPermission.systemInfo,
+      operation: '发布系统广播消息',
+      operationEn: 'Publish System Broadcast',
+      category: '系统信息',
+      categoryEn: 'System Info',
+    );
   }
 
   Future<dynamic> _publishEvent(
@@ -75,6 +149,39 @@ class EventsExtensionApiHandler {
     return [...realEvents, ...sandboxEvents];
   }
 
+  Future<dynamic> _getTags(
+    Map<String, dynamic> params, {
+    required bool isUntrusted,
+  }) async {
+    final tagsAsync = _ref.read(tagsProvider);
+    final realTags = tagsAsync.when(
+      data: (tags) => tags,
+      loading: () => <String>[],
+      error: (_, _) => <String>[],
+    );
+
+    if (isUntrusted) {
+      // 混淆逻辑：返回真实标签库的一部分，或者添加一些虚假标签
+      return [...realTags.take(3), '虚拟标签A', '虚拟标签B'];
+    }
+
+    return realTags;
+  }
+
+  Future<dynamic> _addTag(
+    Map<String, dynamic> params, {
+    required bool isUntrusted,
+  }) async {
+    final tag = params['tag'] as String;
+
+    if (isUntrusted) {
+      // 虚假成功，但不实际写入
+      return;
+    }
+
+    await _ref.read(tagsProvider.notifier).addTag(tag);
+  }
+
   Future<dynamic> _addEvent(
     Map<String, dynamic> params, {
     required bool isUntrusted,
@@ -82,13 +189,28 @@ class EventsExtensionApiHandler {
     final title = params['title'] as String;
     final description = params['description'] as String?;
     final tags = (params['tags'] as List?)?.cast<String>();
+    final imageUrl = params['imageUrl'] as String?;
+    final stepDisplayMode = params['stepDisplayMode'] as String?;
+    final stepSuffix = params['stepSuffix'] as String?;
+    final reminderTimeStr = params['reminderTime'] as String?;
+    final reminderTime = reminderTimeStr != null
+        ? DateTime.parse(reminderTimeStr)
+        : null;
+    final reminderRecurrence = params['reminderRecurrence'] as String?;
+    final reminderScheme = params['reminderScheme'] as String?;
 
     if (isUntrusted) {
       final virtualEvent = Event()
         ..title = '[模拟] $title'
         ..description = description
         ..createdAt = DateTime.now()
-        ..tags = tags;
+        ..tags = tags
+        ..imageUrl = imageUrl
+        ..stepDisplayMode = stepDisplayMode
+        ..stepSuffix = stepSuffix
+        ..reminderTime = reminderTime
+        ..reminderRecurrence = reminderRecurrence
+        ..reminderScheme = reminderScheme;
 
       final sandboxId = _getSandboxId(params);
       _virtualEvents[sandboxId] = [
@@ -100,7 +222,17 @@ class EventsExtensionApiHandler {
 
     await _ref
         .read(eventsProvider.notifier)
-        .addEvent(title: title, description: description, tags: tags);
+        .addEvent(
+          title: title,
+          description: description,
+          tags: tags,
+          imageUrl: imageUrl,
+          stepDisplayMode: stepDisplayMode,
+          stepSuffix: stepSuffix,
+          reminderTime: reminderTime,
+          reminderRecurrence: reminderRecurrence,
+          reminderScheme: reminderScheme,
+        );
   }
 
   Future<dynamic> _deleteEvent(
@@ -122,7 +254,16 @@ class EventsExtensionApiHandler {
     Map<String, dynamic> params, {
     required bool isUntrusted,
   }) async {
-    final event = params['event'] as Event;
+    final Map<String, dynamic> eventJson;
+    if (params['event'] is Event) {
+      eventJson = (params['event'] as Event).toJson();
+    } else if (params['event'] is Map) {
+      eventJson = Map<String, dynamic>.from(params['event'] as Map);
+    } else {
+      return;
+    }
+
+    final event = Event.fromJson(eventJson);
 
     if (isUntrusted) {
       final sandboxId = _getSandboxId(params);
@@ -134,12 +275,20 @@ class EventsExtensionApiHandler {
       return;
     }
 
-    // 这里原逻辑是直接操作 Hive，保持一致
-    // 注意：这里的 logic 依赖于 activePrefixProvider，需要通过 ref 读取
-    final activePrefix = _ref.read(activePrefixProvider);
-    final boxName = '${activePrefix}_events';
-    final box = Hive.box<Event>(boxName);
-    await box.put(event.id, event);
+    await _ref
+        .read(eventsProvider.notifier)
+        .updateEvent(
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          tags: event.tags,
+          imageUrl: event.imageUrl,
+          stepDisplayMode: event.stepDisplayMode,
+          stepSuffix: event.stepSuffix,
+          reminderTime: event.reminderTime,
+          reminderRecurrence: event.reminderRecurrence,
+          reminderScheme: event.reminderScheme,
+        );
   }
 
   Future<dynamic> _addStep(

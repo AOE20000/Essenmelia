@@ -14,10 +14,10 @@ import '../providers/settings_provider.dart';
 import '../providers/tags_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../extensions/extension_manager.dart';
-import '../screens/extension_management_screen.dart';
+import '../screens/extension_details_screen.dart';
 import '../screens/extension_logs_page.dart';
 import '../widgets/universal_image.dart';
-import '../widgets/welcome_overlay.dart';
+import 'welcome_help_screen.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'edit_event_sheet.dart';
 import 'event_detail_screen.dart';
@@ -25,7 +25,7 @@ import 'settings_sheet.dart';
 import 'steps_editor_screen.dart';
 import 'db_manager_screen.dart';
 import 'manage_tags_screen.dart';
-import 'extension_repository_screen.dart';
+import 'extension_management_screen.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -36,154 +36,56 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final SearchController _searchController = SearchController();
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollToTop = false;
+  double _lastScrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (!_scrollController.hasClients) return;
+
+    final currentOffset = _scrollController.offset;
+    final delta = currentOffset - _lastScrollOffset;
+
+    // 逻辑：
+    // 1. 如果在顶部，必须显示“新建”
+    // 2. 如果向下滚动 (delta > 0)，显示“回到顶部”
+    // 3. 如果向上滚动 (delta < -10)，恢复为“新建” (添加一点阈值防止抖动)
+
+    if (currentOffset <= 0) {
+      if (_showScrollToTop) {
+        setState(() => _showScrollToTop = false);
+      }
+    } else if (delta > 0) {
+      if (!_showScrollToTop) {
+        setState(() => _showScrollToTop = true);
+      }
+    } else if (delta < -10) {
+      if (_showScrollToTop) {
+        setState(() => _showScrollToTop = false);
+      }
+    }
+
+    _lastScrollOffset = currentOffset;
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_scrollListener);
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _showAddExtensionDialog(BuildContext context) {
-    final urlController = TextEditingController();
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.extension_rounded),
-        title: Text(l10n.addExtension),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.localeName == 'zh'
-                  ? '请选择扩展包或进入仓库安装'
-                  : 'Select package or visit repository',
-            ),
-            const SizedBox(height: 20),
-            Material(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                leading: Icon(
-                  Icons.store_mall_directory_rounded,
-                  color: theme.colorScheme.primary,
-                ),
-                title: Text(l10n.extensionRepository),
-                subtitle: Text(l10n.browseAndInstallFromGithub),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ExtensionRepositoryScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            Material(
-              color: theme.colorScheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                leading: Icon(
-                  Icons.file_open_rounded,
-                  color: theme.colorScheme.primary,
-                ),
-                title: Text(l10n.importFromLocalFile),
-                subtitle: Text(l10n.selectJsonExtension),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () async {
-                  final navigator = Navigator.of(context);
-                  navigator.pop();
-                  await ref.read(extensionManagerProvider).importFromFile();
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            Material(
-              color: theme.colorScheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: ExpansionTile(
-                leading: Icon(
-                  Icons.cloud_download_rounded,
-                  color: theme.colorScheme.secondary,
-                ),
-                title: Text(l10n.downloadAndInstallFromLink),
-                subtitle: const Text('支持 URL 或 GitHub 链接'),
-                shape: const RoundedRectangleBorder(side: BorderSide.none),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                children: [
-                  TextField(
-                    controller: urlController,
-                    decoration: InputDecoration(
-                      labelText: l10n.enterUrlOrGithubLink,
-                      hintText: 'https://...',
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.arrow_forward_rounded),
-                        onPressed: () async {
-                          final url = urlController.text.trim();
-                          if (url.isNotEmpty) {
-                            final messenger = ScaffoldMessenger.of(context);
-                            final navigator = navigatorKey.currentState;
-                            Navigator.pop(context);
-                            final ext = await ref
-                                .read(extensionManagerProvider)
-                                .importFromUrl(url);
-
-                            if (!mounted) return;
-
-                            if (ext != null && navigator != null) {
-                              // 移除自动跳转详情逻辑，改为授权引导（在 ExtensionManager 中统一处理或由此处触发）
-                              // navigator.push(
-                              //   MaterialPageRoute(
-                              //     builder: (context) =>
-                              //         ExtensionManagementScreen(extension: ext),
-                              //   ),
-                              // );
-                            } else if (ext == null) {
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.downloadFailedCheckLink),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ExtensionManagementScreen(),
       ),
     );
   }
@@ -204,7 +106,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) =>
-                        ExtensionManagementScreen(extension: ext),
+                        ExtensionDetailsScreen(extension: ext),
                   ),
                 );
               },
@@ -286,6 +188,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildAdaptiveLayout(BuildContext context) {
+    ref.listen(uiStateProvider, (previous, next) {
+      if (next.showWelcome && (previous == null || !previous.showWelcome)) {
+        // 使用 rootNavigator 确保全屏，并防止重复弹窗
+        Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (context) => const WelcomeHelpScreen(),
+          ),
+        );
+      }
+    });
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= 1024;
     final currentTab = ref.watch(homeTabProvider);
@@ -302,7 +216,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                       leftPanelContent == LeftPanelContent.addEvent))
           ? FloatingActionButton(
               onPressed: () => _handleOpenAddEvent(context),
-              child: const Icon(Icons.add),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
+                child: Icon(
+                  _showScrollToTop ? Icons.arrow_upward : Icons.add,
+                  key: ValueKey(_showScrollToTop),
+                ),
+              ),
             )
           : null,
       bottomNavigationBar: !isLargeScreen
@@ -443,15 +366,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     bool isLargeScreen,
   ) {
     return AnimatedSwitcher(
-      duration: 400.ms,
+      duration: 300.ms,
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+        return Stack(
+          alignment: Alignment.topCenter,
+          children: <Widget>[
+            ...previousChildren.map((child) => IgnorePointer(child: child)),
+            currentChild ?? const SizedBox.shrink(),
+          ],
+        );
+      },
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 0.02),
+              begin: const Offset(0, 0.01),
               end: Offset.zero,
             ).animate(animation),
             child: child,
@@ -466,7 +398,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     final l10n = AppLocalizations.of(context)!;
     switch (tab) {
       case HomeTab.events:
-        return _buildMainContent(context);
+        return KeyedSubtree(
+          key: const ValueKey('events'),
+          child: _buildMainContent(context),
+        );
       case HomeTab.extensions:
         final extensionManager = ref.watch(extensionManagerProvider);
         final extensions = extensionManager.extensions;
@@ -476,75 +411,112 @@ class _HomePageState extends ConsumerState<HomePage> {
 
         return Scaffold(
           key: const ValueKey('extensions'),
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            scrolledUnderElevation: 0,
-            title: Text(
-              l10n.navExtensions,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            actions: [
-              IconButton.filledTonal(
-                icon: const Icon(Icons.assignment_outlined),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ExtensionLogsPage(),
-                    ),
-                  );
-                },
-                tooltip: '扩展日志',
-              ),
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                icon: const Icon(Icons.add),
-                onPressed: () => _showAddExtensionDialog(context),
-                tooltip: l10n.addExtension,
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
+          backgroundColor: theme.colorScheme.surface,
           body: extensions.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHigh,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.extension_off_outlined,
-                          size: 48,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.5,
-                          ),
+              ? Column(
+                  children: [
+                    AppBar(
+                      backgroundColor: Colors.transparent,
+                      scrolledUnderElevation: 0,
+                      title: Text(
+                        l10n.navExtensions,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        l10n.noExtensionsInstalled,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.outline,
-                          fontWeight: FontWeight.w500,
+                      actions: [
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.assignment_outlined),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ExtensionLogsPage(),
+                              ),
+                            );
+                          },
+                          tooltip: '扩展日志',
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => _showAddExtensionDialog(context),
+                          tooltip: l10n.addExtension,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHigh,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.extension_off_outlined,
+                                size: 48,
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              l10n.noExtensionsInstalled,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.outline,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            FilledButton.tonalIcon(
+                              onPressed: () => _showAddExtensionDialog(context),
+                              icon: const Icon(Icons.add),
+                              label: Text(l10n.addExtension),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      FilledButton.tonalIcon(
-                        onPressed: () => _showAddExtensionDialog(context),
-                        icon: const Icon(Icons.add),
-                        label: Text(l10n.addExtension),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 )
               : CustomScrollView(
                   slivers: [
+                    SliverAppBar.large(
+                      title: Text(
+                        l10n.navExtensions,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      pinned: true,
+                      backgroundColor: theme.colorScheme.surface,
+                      surfaceTintColor: theme.colorScheme.surfaceTint,
+                      actions: [
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.assignment_outlined),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ExtensionLogsPage(),
+                              ),
+                            );
+                          },
+                          tooltip: '扩展日志',
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => _showAddExtensionDialog(context),
+                          tooltip: l10n.addExtension,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
                     if (showExtensionGuide)
                       SliverToBoxAdapter(
                         child: Padding(
@@ -654,9 +626,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        ExtensionManagementScreen(
-                                          extension: ext,
-                                        ),
+                                        ExtensionDetailsScreen(extension: ext),
                                   ),
                                 );
                               },
@@ -667,7 +637,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          ExtensionManagementScreen(
+                                          ExtensionDetailsScreen(
                                             extension: ext,
                                           ),
                                     ),
@@ -850,11 +820,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               // Scrolling Content
               Expanded(
                 child: CustomScrollView(
+                  controller: _scrollController,
                   slivers: [
-                    // Welcome (only in normal mode)
-                    if (!isSelectionMode)
-                      const SliverToBoxAdapter(child: WelcomeCard()),
-
                     // The Grid
                     if (filteredEvents.isEmpty)
                       const _EmptyStateSliver()
@@ -902,6 +869,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _handleOpenAddEvent(BuildContext context) {
+    if (_scrollController.hasClients && _scrollController.offset > 0) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+      );
+      return;
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
     if (screenWidth >= 1024) {
       ref.read(leftPanelContentProvider.notifier).state =
@@ -1106,6 +1082,62 @@ class _HomePageState extends ConsumerState<HomePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _BatchEditTagsSheet(selectedIds: selectedIds),
+    );
+  }
+}
+
+class _ReminderInfo extends StatelessWidget {
+  final DateTime reminderTime;
+  final String? recurrence;
+
+  const _ReminderInfo({required this.reminderTime, this.recurrence});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).toString();
+
+    String recurrenceText = '';
+    IconData recurrenceIcon = Icons.notifications_outlined;
+
+    if (recurrence != null && recurrence != 'none') {
+      recurrenceIcon = Icons.update_rounded;
+      switch (recurrence) {
+        case 'daily':
+          recurrenceText = ' (每天)';
+          break;
+        case 'weekly':
+          recurrenceText = ' (每周)';
+          break;
+        case 'monthly':
+          recurrenceText = ' (每月)';
+          break;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(recurrenceIcon, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              '${DateFormat.jm(locale).format(reminderTime)}$recurrenceText',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1612,6 +1644,14 @@ class _EventCard extends ConsumerWidget {
                   progress: progress,
                   completed: completedSteps,
                   total: event.steps.length,
+                  suffix: event.stepSuffix,
+                ),
+              ],
+              if (event.reminderTime != null) ...[
+                const SizedBox(height: 8),
+                _ReminderInfo(
+                  reminderTime: event.reminderTime!,
+                  recurrence: event.reminderRecurrence,
                 ),
               ],
               const SizedBox(height: 8),
@@ -1675,16 +1715,21 @@ class _ProgressBar extends StatelessWidget {
   final double progress;
   final int completed;
   final int total;
+  final String? suffix;
 
   const _ProgressBar({
     required this.progress,
     required this.completed,
     required this.total,
+    this.suffix,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final suffixText = suffix ?? l10n.steps;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1704,7 +1749,7 @@ class _ProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '$completed / $total ${AppLocalizations.of(context)!.steps}',
+              '$completed / $total $suffixText',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
                 fontWeight: FontWeight.w500,

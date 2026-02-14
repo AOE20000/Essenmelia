@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -12,7 +13,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 import 'dynamic_engine.dart';
-
+import 'utils/extension_converter.dart';
 import 'base_extension.dart';
 import '../models/event.dart';
 import '../providers/theme_provider.dart';
@@ -23,9 +24,11 @@ import 'services/tags_extension_service.dart';
 import 'services/ui_extension_service.dart';
 import 'services/system_extension_service.dart';
 import 'services/settings_extension_service.dart';
+import 'services/extension_store_service.dart';
 import 'widgets/permission_management_dialog.dart';
-import 'impl/external_call_extension.dart';
 import 'extension_log_manager.dart';
+import 'models/repository_extension.dart';
+import 'logic_engine.dart';
 
 /// 扩展权限状态管理
 final extensionAuthStateProvider =
@@ -46,6 +49,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   static const _runningPrefix = 'running_';
   static const _nextRunPrefix = 'next_run_';
   static const _sandboxPrefix = 'sandbox_';
+  static const _manifestHashPrefix = 'hash_';
 
   /// 内存中维护的暂停状态，不需要持久化
   final Set<String> _pausedExtensions = {};
@@ -96,6 +100,14 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     }
     // 状态变更触发 UI 刷新（如果需要）
     state = {...state};
+  }
+
+  /// 重置所有权限和状态
+  Future<void> resetAll() async {
+    final box = await Hive.openBox(_boxName);
+    await box.clear();
+    _pausedExtensions.clear();
+    state = {};
   }
 
   bool isPaused(String extensionId) => _pausedExtensions.contains(extensionId);
@@ -200,6 +212,21 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     state = {...state}..remove(key);
   }
 
+  Future<void> setManifestHash(String extensionId, String hash) async {
+    final box = await Hive.openBox(_boxName);
+    final key = '$_manifestHashPrefix$extensionId';
+    await box.put(key, [hash]);
+    state = {
+      ...state,
+      key: [hash],
+    };
+  }
+
+  String? getManifestHash(String extensionId) {
+    final key = '$_manifestHashPrefix$extensionId';
+    return state[key]?.firstOrNull;
+  }
+
   Future<bool> consumeNextRunPermission(
     String extensionId,
     String category,
@@ -246,7 +273,12 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
       return newState;
     });
 
-    // 7. 更新状态触发 UI 刷新
+    // 7. 从存储服务移除扩展
+    await _ref
+        .read(extensionStoreServiceProvider.notifier)
+        .removeExtension(extensionId);
+
+    // 8. 更新状态触发 UI 刷新
     state = {...state}
       ..remove(extensionId)
       ..remove('$_untrustedPrefix$extensionId')
@@ -304,10 +336,19 @@ class ExtensionApiImpl implements ExtensionApi {
     // 映射权限到“受限访问”类别
     final categoryMap = {
       ExtensionPermission.readEvents: '数据读取',
-      ExtensionPermission.writeEvents: '数据写入',
+      ExtensionPermission.addEvents: '数据写入',
+      ExtensionPermission.updateEvents: '数据写入',
+      ExtensionPermission.deleteEvents: '数据写入',
       ExtensionPermission.readTags: '数据读取',
+      ExtensionPermission.manageTags: '数据写入',
+      ExtensionPermission.manageDb: '数据写入',
       ExtensionPermission.network: '网络访问',
       ExtensionPermission.fileSystem: '文件操作',
+      ExtensionPermission.notifications: '系统通知',
+      ExtensionPermission.readCalendar: '系统日历',
+      ExtensionPermission.writeCalendar: '系统日历',
+      ExtensionPermission.systemInfo: '系统信息',
+      ExtensionPermission.navigation: '界面导航',
     };
 
     final category = categoryMap[permission];
@@ -334,17 +375,35 @@ class ExtensionApiImpl implements ExtensionApi {
   }) async {
     final notifier = _ref.read(extensionAuthStateProvider.notifier);
     final extId = _metadata.id;
+    final registry = _ref.read(extensionApiRegistryProvider);
 
     if (!notifier.isRunning(extId)) {
       return null;
     }
 
+    // 1. 获取注册表元数据
+    final metadata = registry.getMetadata(methodName);
+
+    // 2. 优先使用显式传入的参数，否则使用元数据中的定义 (Fail-Closed 基础)
+    final effectivePermission = permission ?? metadata?.permission;
+    final effectiveOperation = operation ?? metadata?.operation;
+    final effectiveCategory = category ?? metadata?.category;
+
     bool isUntrusted = false;
-    if (operation != null && category != null) {
-      isUntrusted = !await _shieldIntercept(operation, category);
+
+    // 3. 隐私 Shield 拦截逻辑 (针对受限访问模式)
+    if (effectiveOperation != null && effectiveCategory != null) {
+      isUntrusted = !await _shieldIntercept(
+        effectiveOperation,
+        effectiveCategory,
+      );
     }
 
-    if (!isUntrusted && permission != null && !_checkPermission(permission)) {
+    // 4. 显式权限检查 (针对持久化授权)
+    // 如果 API 定义了权限，但检查未通过，则强制进入“不信任”模式（返回模拟数据）
+    if (!isUntrusted &&
+        effectivePermission != null &&
+        !_checkPermission(effectivePermission)) {
       isUntrusted = true;
     }
 
@@ -355,9 +414,7 @@ class ExtensionApiImpl implements ExtensionApi {
       'sandboxId': _getSandboxId(),
     };
 
-    final handler = _ref
-        .read(extensionApiRegistryProvider)
-        .getHandler(methodName);
+    final handler = registry.getHandler(methodName);
 
     dynamic result;
     bool success = true;
@@ -516,9 +573,11 @@ class ExtensionApiImpl implements ExtensionApi {
 
               final permissionMapping = {
                 '数据读取': ExtensionPermission.readEvents,
-                '数据写入': ExtensionPermission.writeEvents,
+                '数据写入': ExtensionPermission.addEvents,
                 '网络访问': ExtensionPermission.network,
                 '文件系统': ExtensionPermission.fileSystem,
+                '系统通知': ExtensionPermission.notifications,
+                '系统日历': ExtensionPermission.readCalendar,
               };
 
               final grantedPerm = permissionMapping[category];
@@ -542,39 +601,42 @@ class ExtensionApiImpl implements ExtensionApi {
 
   @override
   Future<List<Event>> getEvents() async {
-    final result = await _invokeApi(
-      'getEvents',
-      operation: '读取您的所有任务列表和步骤',
-      category: '数据读取',
-      permission: ExtensionPermission.readEvents,
-    );
+    final result = await _invokeApi('getEvents');
     return (result as List?)?.cast<Event>() ?? [];
   }
 
   @override
   Future<List<String>> getTags() async {
-    final result = await _invokeApi(
-      'getTags',
-      operation: '查看您创建的所有标签',
-      category: '数据读取',
-      permission: ExtensionPermission.readTags,
-    );
+    final result = await _invokeApi('getTags');
     return (result as List?)?.cast<String>() ?? [];
   }
 
   @override
+  Future<void> addTag(String tag) async {
+    await _invokeApi('addTag', params: {'tag': tag});
+  }
+
+  @override
   void navigateTo(String route) {
-    _invokeApi(
-      'navigateTo',
-      params: {'route': route},
-      operation: '将页面跳转至 $route',
-      category: '界面导航',
-    );
+    _invokeApi('navigateTo', params: {'route': route});
   }
 
   @override
   void showSnackBar(String message) {
     _invokeApi('showSnackBar', params: {'message': message});
+  }
+
+  @override
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    int? id,
+    String? payload,
+  }) async {
+    await _invokeApi(
+      'showNotification',
+      params: {'title': title, 'body': body, 'id': id, 'payload': payload},
+    );
   }
 
   @override
@@ -601,9 +663,6 @@ class ExtensionApiImpl implements ExtensionApi {
     final result = await _invokeApi(
       'exportFile',
       params: {'content': content, 'fileName': fileName},
-      operation: '导出文件并调起系统分享: $fileName',
-      category: '文件操作',
-      permission: ExtensionPermission.fileSystem,
     );
     return result ?? false;
   }
@@ -613,9 +672,6 @@ class ExtensionApiImpl implements ExtensionApi {
     final result = await _invokeApi(
       'pickFile',
       params: {'allowedExtensions': allowedExtensions},
-      operation: '从您的设备选择并读取文件',
-      category: '文件操作',
-      permission: ExtensionPermission.fileSystem,
     );
     return result as String?;
   }
@@ -625,9 +681,6 @@ class ExtensionApiImpl implements ExtensionApi {
     final result = await _invokeApi(
       'httpGet',
       params: {'url': url, 'headers': headers},
-      operation: '访问网络: $url',
-      category: '网络访问',
-      permission: ExtensionPermission.network,
     );
     return result as String?;
   }
@@ -641,9 +694,6 @@ class ExtensionApiImpl implements ExtensionApi {
     final result = await _invokeApi(
       'httpPost',
       params: {'url': url, 'headers': headers, 'body': body},
-      operation: '发送网络数据到: $url',
-      category: '网络访问',
-      permission: ExtensionPermission.network,
     );
     return result as String?;
   }
@@ -657,9 +707,6 @@ class ExtensionApiImpl implements ExtensionApi {
     final result = await _invokeApi(
       'httpPut',
       params: {'url': url, 'headers': headers, 'body': body},
-      operation: '更新网络数据: $url',
-      category: '网络访问',
-      permission: ExtensionPermission.network,
     );
     return result as String?;
   }
@@ -669,22 +716,19 @@ class ExtensionApiImpl implements ExtensionApi {
     final result = await _invokeApi(
       'httpDelete',
       params: {'url': url, 'headers': headers},
-      operation: '删除网络资源: $url',
-      category: '网络访问',
-      permission: ExtensionPermission.network,
     );
     return result as String?;
   }
 
   @override
   Future<void> openUrl(String url) async {
-    await _invokeApi(
-      'openUrl',
-      params: {'url': url},
-      operation: '在浏览器中打开链接: $url',
-      category: '网络访问',
-      permission: ExtensionPermission.network,
-    );
+    await _invokeApi('openUrl', params: {'url': url});
+  }
+
+  @override
+  Future<dynamic> call(String method, Map<String, dynamic> params) async {
+    // 自动基于注册表元数据进行调用，移除硬编码 switch
+    return await _invokeApi(method, params: params);
   }
 
   @override
@@ -702,35 +746,65 @@ class ExtensionApiImpl implements ExtensionApi {
     required String title,
     String? description,
     List<String>? tags,
+    String? imageUrl,
+    String? stepDisplayMode,
+    String? stepSuffix,
+    DateTime? reminderTime,
+    String? reminderRecurrence,
+    String? reminderScheme,
   }) async {
     await _invokeApi(
       'addEvent',
-      params: {'title': title, 'description': description, 'tags': tags},
-      operation: '创建新任务: $title',
-      category: '数据写入',
-      permission: ExtensionPermission.writeEvents,
+      params: {
+        'title': title,
+        'description': description,
+        'tags': tags,
+        'imageUrl': imageUrl,
+        'stepDisplayMode': stepDisplayMode,
+        'stepSuffix': stepSuffix,
+        'reminderTime': reminderTime?.toIso8601String(),
+        'reminderRecurrence': reminderRecurrence,
+        'reminderScheme': reminderScheme,
+      },
     );
   }
 
   @override
   Future<void> deleteEvent(String id) async {
-    await _invokeApi(
-      'deleteEvent',
-      params: {'id': id},
-      operation: '删除任务',
-      category: '数据写入',
-      permission: ExtensionPermission.writeEvents,
-    );
+    await _invokeApi('deleteEvent', params: {'id': id});
   }
 
   @override
-  Future<void> updateEvent(Event event) async {
+  Future<void> updateEvent({
+    required String id,
+    String? title,
+    String? description,
+    List<String>? tags,
+    String? imageUrl,
+    String? stepDisplayMode,
+    String? stepSuffix,
+    DateTime? reminderTime,
+    String? reminderRecurrence,
+    String? reminderScheme,
+  }) async {
+    // 构造一个临时的 Event 对象用于序列化或直接传递参数
+    // 在 updateEvent 的 handler 中，我们可以根据 params['event'] 或直接提取参数
     await _invokeApi(
       'updateEvent',
-      params: {'event': event},
-      operation: '修改任务: ${event.title}',
-      category: '数据写入',
-      permission: ExtensionPermission.writeEvents,
+      params: {
+        'event': {
+          'id': id,
+          'title': title,
+          'description': description,
+          'tags': tags,
+          'imageUrl': imageUrl,
+          'stepDisplayMode': stepDisplayMode,
+          'stepSuffix': stepSuffix,
+          'reminderTime': reminderTime?.toIso8601String(),
+          'reminderRecurrence': reminderRecurrence,
+          'reminderScheme': reminderScheme,
+        },
+      },
     );
   }
 
@@ -739,20 +813,6 @@ class ExtensionApiImpl implements ExtensionApi {
     await _invokeApi(
       'addStep',
       params: {'eventId': eventId, 'description': description},
-      operation: '为任务添加步骤',
-      category: '数据写入',
-      permission: ExtensionPermission.writeEvents,
-    );
-  }
-
-  @override
-  Future<void> addTag(String tag) async {
-    await _invokeApi(
-      'addTag',
-      params: {'tag': tag},
-      operation: '添加新标签: $tag',
-      category: '数据写入',
-      permission: ExtensionPermission.writeEvents,
     );
   }
 
@@ -764,6 +824,7 @@ class ExtensionApiImpl implements ExtensionApi {
 
   @override
   String getThemeMode() {
+    _invokeApi('getThemeMode');
     // 异步 API 转发到同步接口的折中方案：
     // 在 ExtensionApi 中，getThemeMode 和 getLocale 是同步的，
     // 但我们的转发机制是异步的。为了保持兼容性，我们可以直接在实现中读取，
@@ -785,6 +846,7 @@ class ExtensionApiImpl implements ExtensionApi {
 
   @override
   String getLocale() {
+    _invokeApi('getLocale');
     final locale = _ref.read(localeProvider);
     return locale?.languageCode ?? 'zh';
   }
@@ -804,24 +866,37 @@ class ExtensionApiImpl implements ExtensionApi {
 /// 动态加载的扩展占位符
 class ProxyExtension extends BaseExtension {
   final ExtensionManager? manager;
-  void Function(String, Map<String, dynamic>)? _eventHandler;
+  ExtensionJsEngine? _engine;
 
   ProxyExtension(super.metadata, {this.manager});
 
   @override
+  Future<void> onInit(ExtensionApi api) async {
+    _engine = ExtensionJsEngine(metadata: metadata, api: api);
+    await _engine!.init();
+  }
+
+  @override
+  Future<void> onDispose() async {
+    _engine?.dispose();
+    _engine = null;
+  }
+
+  @override
   void onExtensionEvent(String name, Map<String, dynamic> data) {
-    _eventHandler?.call(name, data);
+    _engine?.handleEvent(name, data);
+  }
+
+  /// 允许外部调用 JS 函数
+  Future<dynamic> callJsFunction(String name, [dynamic params]) async {
+    return await _engine?.callFunction(name, params);
   }
 
   @override
   Widget build(BuildContext context, ExtensionApi api) {
-    // 如果定义了动态界面或逻辑，使用动态引擎
-    if (metadata.view != null || metadata.logic != null) {
-      return DynamicEngine(
-        metadata: metadata,
-        api: api,
-        onRegister: (handler) => _eventHandler = handler,
-      );
+    // 如果定义了动态界面，使用动态引擎
+    if (metadata.view != null) {
+      return DynamicEngine(engine: _engine!);
     }
 
     return FutureBuilder<List<dynamic>>(
@@ -1059,16 +1134,13 @@ class ExtensionManager extends ChangeNotifier {
   final Map<String, BaseExtension> _activeExtensions = {};
 
   /// 外部调用入口扩展
-  ExternalCallExtension? _externalCallExtension;
+  ProxyExtension? _externalCallExtension;
 
   /// 所有已安装的扩展“蓝图” (extensionId -> Instance/Proxy for metadata)
   final Map<String, BaseExtension> _installedExtensions = {};
 
   /// 扩展暂停时的事件缓冲区
   final Map<String, List<Event>> _eventBuffers = {};
-
-  /// 存储动态加载的扩展元数据（用于持久化）
-  static const _extStoreBox = 'dynamic_extensions_metadata';
 
   /// 安全限制：扩展文件最大建议大小 (1MB)
   static const _maxSafeSize = 1024 * 1024;
@@ -1089,7 +1161,6 @@ class ExtensionManager extends ChangeNotifier {
         final args = call.arguments as Map;
         final apiMethod = args['method'] as String?;
         final paramsJson = args['params'] as String? ?? '{}';
-        final isUntrusted = args['isUntrusted'] as bool? ?? false;
         final requestId = args['requestId'] as String?;
 
         if (apiMethod == null) return;
@@ -1099,10 +1170,9 @@ class ExtensionManager extends ChangeNotifier {
 
           // --- 核心变更：通过 ExternalCallExtension 进行分发 ---
           if (_externalCallExtension != null) {
-            final result = await _externalCallExtension!.handleExternalRequest(
-              apiMethod,
-              params,
-              isUntrusted: isUntrusted,
+            final result = await _externalCallExtension!.callJsFunction(
+              'handleExternalRequest',
+              {'method': apiMethod, 'params': params},
             );
             debugPrint('Debug API Result via Extension ($apiMethod): $result');
 
@@ -1112,6 +1182,15 @@ class ExtensionManager extends ChangeNotifier {
                 'requestId': requestId,
                 'result': jsonEncode(result),
                 'success': true,
+              });
+            }
+          } else {
+            debugPrint('ExternalCallExtension is not installed or running');
+            if (requestId != null) {
+              channel.invokeMethod('apiResult', {
+                'requestId': requestId,
+                'error': 'ExternalCallExtension not installed or running',
+                'success': false,
               });
             }
           }
@@ -1146,17 +1225,15 @@ class ExtensionManager extends ChangeNotifier {
       }
 
       final paramsJson = parameters['params'] ?? '{}';
-      final isUntrusted = parameters['isUntrusted'] == 'true';
 
       try {
         final params = jsonDecode(paramsJson) as Map<String, dynamic>;
 
         // --- 核心变更：通过 ExternalCallExtension 进行分发 ---
         if (_externalCallExtension != null) {
-          final result = await _externalCallExtension!.handleExternalRequest(
-            apiMethod,
-            params,
-            isUntrusted: isUntrusted,
+          final result = await _externalCallExtension!.callJsFunction(
+            'handleExternalRequest',
+            {'method': apiMethod, 'params': params},
           );
           return developer.ServiceExtensionResponse.result(
             jsonEncode({'success': true, 'result': result}),
@@ -1185,24 +1262,19 @@ class ExtensionManager extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    // 注册并启动外部调用入口扩展
-    _externalCallExtension = ExternalCallExtension();
-    final extId = ExternalCallExtension.extensionId;
-    _installedExtensions[extId] = _externalCallExtension!;
+    // 初始化存储服务
+    await _ref.read(extensionStoreServiceProvider.notifier).init();
 
-    // 确保它处于运行状态
-    _ref.read(extensionAuthStateProvider.notifier).setRunning(extId, true);
+    // 监听存储服务变更
+    _ref.listen(extensionStoreServiceProvider, (previous, next) {
+      if (previous != null && !mapEquals(previous, next)) {
+        // 当存储内容发生变化时，重新加载动态扩展
+        _loadDynamicExtensions();
+      }
+    });
 
-    final proxy = ExtensionApiImpl(
-      _ref,
-      _externalCallExtension!.metadata,
-      this,
-    );
-    await _externalCallExtension!.onInit(proxy);
-    _activeExtensions[extId] = _externalCallExtension!;
-
-    // 立即通知一次 UI，确保“外部调用入口”能尽快显示出来
-    notifyListeners();
+    // 移除硬编码的外部调用入口初始化
+    // 现在改为从本地存储加载，并在 refresh 时根据 ID 激活特定内置实例
 
     // 监听权限和状态变更
     _ref.listen(extensionAuthStateProvider, (previous, next) {
@@ -1260,138 +1332,48 @@ class ExtensionManager extends ChangeNotifier {
   }
 
   Future<void> _loadDynamicExtensions() async {
-    final box = await Hive.openBox(_extStoreBox);
-    for (var key in box.keys) {
-      final json = box.get(key);
-      if (json != null) {
-        try {
-          final metadata = ExtensionMetadata.fromJson(jsonDecode(json));
-          // 所有扩展初始都作为 Proxy 加载元数据
-          _installedExtensions[metadata.id] = ProxyExtension(
-            metadata,
-            manager: this,
+    final installed = _ref.read(extensionStoreServiceProvider);
+
+    // 清除现有的动态扩展蓝图（保留内置的）
+    _installedExtensions.removeWhere((id, ext) => id != 'external_call');
+
+    for (var entry in installed.entries) {
+      final json = entry.value;
+      try {
+        final metadata = ExtensionMetadata.fromJson(jsonDecode(json));
+        final extId = metadata.id;
+
+        // 1. 严格 ID 绑定校验：清单中的 ID 必须与存储键匹配
+        if (extId != entry.key) {
+          debugPrint(
+            'Security Alert: Extension ID mismatch for ${entry.key}. Manifest claims $extId. Skipping.',
           );
-        } catch (e) {
-          debugPrint('Failed to load extension $key: $e');
+          continue;
         }
+
+        // 2. 完整性校验：检查清单内容是否被非法篡改
+        final auth = _ref.read(extensionAuthStateProvider.notifier);
+        final storedHash = auth.getManifestHash(extId);
+        if (storedHash != null) {
+          final currentHash = sha256.convert(utf8.encode(json)).toString();
+          if (currentHash != storedHash) {
+            debugPrint(
+              'Security Alert: Extension $extId manifest integrity check failed! Hash mismatch.',
+            );
+            // 发现篡改时，默认将其标记为不受信任且停止运行，保护用户隐私
+            await auth.setUntrusted(extId, true);
+            await auth.setRunning(extId, false);
+          }
+        }
+
+        // 所有扩展初始都作为 Proxy 加载元数据
+        _installedExtensions[extId] = ProxyExtension(metadata, manager: this);
+      } catch (e) {
+        debugPrint('Failed to load extension ${entry.key}: $e');
       }
     }
     // 加载完后刷新一次状态，根据运行状态和逻辑提供者激活真实实例
     refresh();
-  }
-
-  /// 尝试从 Dart 文件中提取元数据 JSON
-  String _tryExtractMetadataFromDart(String content) {
-    // 1. 尝试寻找被包裹在三引号中的 JSON 字符串 (Path C 风格)
-    final tripleMatch = RegExp(r"'''([\s\S]*?)'''").firstMatch(content);
-    if (tripleMatch != null) {
-      final potential = tripleMatch.group(1)!.trim();
-      if (potential.startsWith('{') && potential.endsWith('}')) {
-        try {
-          jsonDecode(potential);
-          return potential;
-        } catch (_) {}
-      }
-    }
-
-    // 2. 尝试从 ExtensionMetadata 构造函数中提取 (Path A 风格)
-    // 这种方式通过正则提取关键字段，主要用于兼容开发者直接分享的模板文件
-    try {
-      final id = RegExp(
-        "id:\\s*['\"]([^'\"]+)['\"]",
-      ).firstMatch(content)?.group(1);
-      final name = RegExp(
-        "name:\\s*['\"]([^'\"]+)['\"]",
-      ).firstMatch(content)?.group(1);
-      final description = RegExp(
-        "description:\\s*['\"]([^'\"]+)['\"]",
-      ).firstMatch(content)?.group(1);
-      final author = RegExp(
-        "author:\\s*['\"]([^'\"]+)['\"]",
-      ).firstMatch(content)?.group(1);
-      final version = RegExp(
-        "version:\\s*['\"]([^'\"]+)['\"]",
-      ).firstMatch(content)?.group(1);
-
-      // 尝试提取图标名称
-      final iconMatch = RegExp(
-        r"icon:\s*Icons\.([a-zA-Z0-9_]+)",
-      ).firstMatch(content);
-      int? iconCode;
-      if (iconMatch != null) {
-        final iconName = iconMatch.group(1);
-        // 这里可以做一个简单的映射，或者暂时保持默认
-        // 常见的几个图标映射
-        final iconMap = {
-          'insights_rounded': 0xf04e1,
-          'insights': 0xe32b,
-          'extension': 0xe23a,
-          'extension_rounded': 0xf71e,
-          'api': 0xe072,
-          'api_rounded': 0xf53b,
-          'settings_input_component': 0xe57e,
-        };
-        iconCode = iconMap[iconName];
-      }
-
-      if (id != null && name != null) {
-        final Map<String, dynamic> metadataMap = {
-          'id': id,
-          'name': name,
-          'description': description ?? '',
-          'author': author ?? 'Unknown',
-          'version': version ?? '1.0.0',
-        };
-
-        if (iconCode != null) {
-          metadataMap['icon_code'] = iconCode;
-        }
-
-        // 尝试提取权限
-        final permsMatch = RegExp(
-          r"requiredPermissions:\s*\[([\s\S]*?)\]",
-        ).firstMatch(content);
-        if (permsMatch != null) {
-          final permsStr = permsMatch.group(1)!;
-          final perms = <String>[];
-          for (final p in ExtensionPermission.values) {
-            if (permsStr.contains(p.name)) {
-              perms.add(p.name);
-            }
-          }
-          metadataMap['permissions'] = perms;
-        }
-
-        // 尝试提取 view 和 logic (如果存在的话)
-        // 匹配 view: { ... }
-        final viewMatch = RegExp(
-          r"view:\s*(\{[\s\S]*?\}),",
-        ).firstMatch(content);
-        if (viewMatch != null) {
-          try {
-            // 简单的括号匹配或直接 jsonDecode
-            final viewStr = viewMatch.group(1)!;
-            metadataMap['view'] = jsonDecode(viewStr);
-          } catch (_) {}
-        }
-
-        final logicMatch = RegExp(
-          r"logic:\s*(\{[\s\S]*?\}),",
-        ).firstMatch(content);
-        if (logicMatch != null) {
-          try {
-            final logicStr = logicMatch.group(1)!;
-            metadataMap['logic'] = jsonDecode(logicStr);
-          } catch (_) {}
-        }
-
-        return jsonEncode(metadataMap);
-      }
-    } catch (e) {
-      debugPrint('Failed to extract metadata from Dart: $e');
-    }
-
-    return content;
   }
 
   String _formatSize(int bytes) {
@@ -1401,11 +1383,51 @@ class ExtensionManager extends ChangeNotifier {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  /// 从剪贴板安装扩展（支持 JSON、URL 或 GitHub 链接）
+  Future<void> importFromClipboard() async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim();
+
+      if (text == null || text.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('剪贴板为空')));
+        }
+        return;
+      }
+
+      // 1. 尝试识别是否为 URL
+      if (Uri.tryParse(text)?.hasAbsolutePath ?? false) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('检测到 URL，正在下载...')));
+        }
+        await importFromUrl(text);
+        return;
+      }
+
+      // 2. 尝试作为内容安装 (JSON)
+      await importFromContent(text);
+    } catch (e) {
+      debugPrint('Import from clipboard failed: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('剪贴板解析失败: $e')));
+      }
+    }
+  }
+
   /// 导入扩展（从文件）
   Future<void> importFromFile() async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json', 'zip', 'dart'],
+      type: FileType.any,
       allowMultiple: true,
     );
 
@@ -1430,12 +1452,39 @@ class ExtensionManager extends ChangeNotifier {
       for (var file in result.files) {
         if (file.path != null) {
           try {
-            final content = await File(file.path!).readAsString();
-            final ext = await _processImportedContent(content);
-            if (ext != null) {
-              successCount++;
+            String? content;
+            final extName = file.extension?.toLowerCase();
+            if (extName == 'zip' || extName == 'ezip') {
+              final bytes = await File(file.path!).readAsBytes();
+              content = ExtensionConverter.extractContentFromZip(bytes);
             } else {
-              failedFiles.add(file.name);
+              // 支持 JSON 和 YAML
+              final raw = await File(file.path!).readAsString();
+              if (extName == 'yaml' ||
+                  extName == 'yml' ||
+                  (!raw.trim().startsWith('{') &&
+                      !raw.trim().startsWith('['))) {
+                try {
+                  content = jsonEncode(
+                    ExtensionMetadata.fromYaml(raw).toJson(),
+                  );
+                } catch (e) {
+                  content = raw; // 可能是 JSON 但后缀写错了
+                }
+              } else {
+                content = raw;
+              }
+            }
+
+            if (content != null) {
+              final ext = await importFromContent(content);
+              if (ext != null) {
+                successCount++;
+              } else {
+                failedFiles.add(file.name);
+              }
+            } else {
+              failedFiles.add('${file.name} (解析失败)');
             }
           } catch (e) {
             debugPrint('Error reading file ${file.name}: $e');
@@ -1499,29 +1548,77 @@ class ExtensionManager extends ChangeNotifier {
     }
   }
 
-  /// 导入扩展（从链接/GitHub）
+  /// 导入扩展（从链接/GitHub，支持 ZIP/JSON）
   Future<BaseExtension?> importFromUrl(String url) async {
     try {
-      // 简单处理 GitHub 链接：将 github.com 转换为 raw.githubusercontent.com
-      var finalUrl = url;
-      if (url.contains('github.com') &&
-          !url.contains('raw.githubusercontent.com')) {
-        finalUrl = url
-            .replaceFirst('github.com', 'raw.githubusercontent.com')
-            .replaceFirst('/blob/', '/');
+      // 1. 处理内置扩展
+      if (url.startsWith('builtin://')) {
+        final id = url.replaceFirst('builtin://', '');
+        return await installBuiltInExtensionById(id);
       }
 
+      // 2. 特殊处理 GitHub 链接
+      var finalUrl = url;
+      if (url.contains('github.com') &&
+          !url.contains('raw.githubusercontent.com') &&
+          !url.endsWith('.zip')) {
+        final uri = Uri.parse(url);
+        final segments = uri.pathSegments;
+        if (segments.length == 2) {
+          // 这是一个仓库主页，如 https://github.com/user/repo
+          finalUrl =
+              'https://github.com/${segments[0]}/${segments[1]}/archive/refs/heads/main.zip';
+        } else if (url.contains('/blob/')) {
+          // 这是一个具体文件的 blob 链接，转换为 raw
+          finalUrl = url
+              .replaceFirst('github.com', 'raw.githubusercontent.com')
+              .replaceFirst('/blob/', '/');
+        }
+      }
+
+      debugPrint('Downloading extension from: $finalUrl');
       final response = await http.get(Uri.parse(finalUrl));
       if (response.statusCode == 200) {
-        return await _processImportedContent(response.body);
+        // 如果响应头指示是 ZIP，或者 URL 以 .zip 结尾，尝试按字节处理
+        final isZip =
+            response.headers['content-type']?.contains('zip') == true ||
+            finalUrl.toLowerCase().contains('.zip');
+
+        if (isZip) {
+          return await importFromBytes(
+            response.bodyBytes,
+            fileName: finalUrl.split('/').last,
+          );
+        } else {
+          // 否则尝试作为 JSON 处理
+          return await importFromContent(response.body);
+        }
       }
     } catch (e) {
-      debugPrint('Import failed: $e');
+      debugPrint('Import from URL failed: $e');
     }
     return null;
   }
 
-  Future<BaseExtension?> _processImportedContent(String content) async {
+  /// 处理导入的二进制内容（主要用于 ZIP）
+  Future<BaseExtension?> importFromBytes(
+    Uint8List bytes, {
+    String? fileName,
+  }) async {
+    final content = ExtensionConverter.extractContentFromZip(bytes);
+    if (content != null) {
+      return await importFromContent(content);
+    }
+    debugPrint('Failed to extract content from ZIP bytes');
+    return null;
+  }
+
+  /// 处理导入的内容（核心安装流程，支持新架构多文件）
+  Future<BaseExtension?> importFromContent(
+    String content, {
+    String? logicJs,
+    Map<String, dynamic>? viewYaml,
+  }) async {
     debugPrint('Processing imported content, length: ${content.length}');
     final context = navigatorKey.currentContext;
     if (context == null) {
@@ -1540,13 +1637,12 @@ class ExtensionManager extends ChangeNotifier {
         if (proceed != true) return null;
       }
 
-      String processedContent = content;
-      // 如果看起来像 Dart 代码，尝试提取 JSON 块或元数据
-      if (content.contains('import ') || content.contains('class ')) {
-        processedContent = _tryExtractMetadataFromDart(content);
-      }
+      final Map<String, dynamic> data = jsonDecode(content);
 
-      final data = jsonDecode(processedContent);
+      // 如果传入了独立的逻辑或视图，则注入到元数据中
+      if (logicJs != null) data['logic'] = logicJs;
+      if (viewYaml != null) data['view'] = viewYaml;
+
       final metadata = ExtensionMetadata.fromJson(data);
       debugPrint('Parsed metadata for extension: ${metadata.id}');
 
@@ -1554,8 +1650,9 @@ class ExtensionManager extends ChangeNotifier {
       final oldExtension = _installedExtensions[metadata.id];
       String? oldContent;
       if (oldExtension != null) {
-        final box = await Hive.openBox(_extStoreBox);
-        oldContent = box.get(metadata.id);
+        oldContent = _ref
+            .read(extensionStoreServiceProvider.notifier)
+            .getExtensionContent(metadata.id);
       }
 
       if (!context.mounted) return null;
@@ -1563,7 +1660,7 @@ class ExtensionManager extends ChangeNotifier {
       final installResult = await _showInstallationConfirmDialog(
         context,
         metadata,
-        content,
+        jsonEncode(data),
         oldExtension?.metadata,
         oldContent,
       );
@@ -1574,8 +1671,10 @@ class ExtensionManager extends ChangeNotifier {
 
       final isUntrustedFromDialog = installResult['isUntrusted'] == true;
 
-      final box = await Hive.openBox(_extStoreBox);
-      await box.put(metadata.id, content);
+      // 使用存储服务保存扩展
+      await _ref
+          .read(extensionStoreServiceProvider.notifier)
+          .saveExtension(metadata.id, jsonEncode(data));
 
       if (!context.mounted) return null;
 
@@ -1589,6 +1688,12 @@ class ExtensionManager extends ChangeNotifier {
 
       // 设置信任级别
       await auth.setUntrusted(metadata.id, isUntrustedFromDialog);
+
+      // 保存清单哈希，用于完整性校验
+      final manifestHash = sha256
+          .convert(utf8.encode(jsonEncode(data)))
+          .toString();
+      await auth.setManifestHash(metadata.id, manifestHash);
 
       // 刷新管理器状态（会触发 _loadExtension）
       refresh();
@@ -1661,7 +1766,7 @@ class ExtensionManager extends ChangeNotifier {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('导入扩展时发生错误，请检查 JSON 格式是否正确：'),
+                const Text('导入扩展时发生错误，请检查内容格式是否正确（仅支持 JSON 或 ZIP 包）：'),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -2010,35 +2115,40 @@ class ExtensionManager extends ChangeNotifier {
                     else
                       Padding(
                         padding: const EdgeInsets.only(bottom: 24),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                        child: Column(
                           children: [
                             if (!isUpdate)
                               ...newPerms.map(
-                                (p) => _buildPermTag(
-                                  p.getLabel(context),
+                                (p) => _buildPermissionItem(
+                                  context,
+                                  p,
                                   theme.colorScheme.primary,
                                 ),
                               )
                             else ...[
                               ...addedPerms.map(
-                                (p) => _buildPermTag(
-                                  '${p.getLabel(context)} (+)',
+                                (p) => _buildPermissionItem(
+                                  context,
+                                  p,
                                   Colors.green,
+                                  suffix: ' (+)',
                                 ),
                               ),
                               ...removedPerms.map(
-                                (p) => _buildPermTag(
-                                  '${p.getLabel(context)} (-)',
+                                (p) => _buildPermissionItem(
+                                  context,
+                                  p,
                                   Colors.red,
+                                  suffix: ' (-)',
+                                  isRemoved: true,
                                 ),
                               ),
                               ...newPerms
                                   .intersection(oldPerms)
                                   .map(
-                                    (p) => _buildPermTag(
-                                      p.getLabel(context),
+                                    (p) => _buildPermissionItem(
+                                      context,
+                                      p,
                                       theme.colorScheme.outline,
                                     ),
                                   ),
@@ -2177,55 +2287,219 @@ class ExtensionManager extends ChangeNotifier {
     );
   }
 
-  Widget _buildPermTag(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-        ),
+  Widget _buildPermissionItem(
+    BuildContext context,
+    ExtensionPermission permission,
+    Color color, {
+    String suffix = '',
+    bool isRemoved = false,
+  }) {
+    final theme = Theme.of(context);
+    final isEn = Localizations.maybeLocaleOf(context)?.languageCode == 'en';
+    final registry = _ref.read(extensionApiRegistryProvider);
+    final permApis = registry.getRequiredPermissions()[permission] ?? [];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(permission.icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${permission.getLabel(context)}$suffix',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    decoration: isRemoved ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                Text(
+                  permission.getDescription(context),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                    decoration: isRemoved ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                if (permApis.isNotEmpty && !isRemoved) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: permApis.map((api) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          api.getOperation(isEn) ?? api.methodName,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// 导出扩展
-  Future<void> exportExtension(String extensionId) async {
-    final ext = _installedExtensions[extensionId];
+  /// 获取可用的内置扩展列表（以仓库扩展格式返回，统一 UI 处理）
+  List<RepositoryExtension> getBuiltInExtensions() {
+    return [
+      RepositoryExtension(
+        id: 'system.external_call',
+        name: '指令网关',
+        description: '系统级外部请求监控中心。负责拦截、验证并处理来自 ADB、Intent 或第三方应用的 API 调用。',
+        author: 'System',
+        version: '2.1.0',
+        downloadUrl: 'builtin://system.external_call',
+        tags: ['System', 'Gateway', 'API'],
+      ),
+      RepositoryExtension(
+        id: 'com.essenmelia.kitchen_sink',
+        name: '全能演示 (Kitchen Sink)',
+        description: '展示所有可用组件、API 指令与 JS 逻辑的参考扩展 (JS/YAML)',
+        author: 'Essenmelia Team',
+        version: '2.0.0',
+        downloadUrl: 'builtin://com.essenmelia.kitchen_sink',
+        tags: ['Demo', 'Reference', 'Kitchen Sink'],
+      ),
+      RepositoryExtension(
+        id: 'com.essenmelia.api_tester',
+        name: 'API 测试工具',
+        description: '测试扩展 API 的功能与响应 (JS/YAML)',
+        author: 'Essenmelia',
+        version: '2.0.0',
+        downloadUrl: 'builtin://com.essenmelia.api_tester',
+        tags: ['Tool', 'Debug', 'API'],
+      ),
+      RepositoryExtension(
+        id: 'com.essenmelia.event_test',
+        name: '事件列表测试',
+        description: '展示并操作系统中的事件 (JS/YAML)',
+        author: 'Essenmelia Team',
+        version: '2.0.0',
+        downloadUrl: 'builtin://com.essenmelia.event_test',
+        tags: ['Test', 'Events'],
+      ),
+    ];
+  }
+
+  /// 根据 ID 安装内置扩展
+  Future<BaseExtension?> installBuiltInExtensionById(String id) async {
+    // 找到对应的内置仓库条目
+    final builtInList = getBuiltInExtensions();
+    final repoExt = builtInList.firstWhere(
+      (e) => e.id == id,
+      orElse: () => throw Exception('Built-in extension not found: $id'),
+    );
+
+    // 1. 优先尝试从 Assets 加载（新的文件夹结构）
+    try {
+      final manifestStr = await rootBundle.loadString(
+        'assets/extensions/$id/manifest.yaml',
+      );
+      final manifestMap = ExtensionMetadata.yamlToMap(manifestStr);
+
+      // 加载配套文件并合并到 Map 中
+      try {
+        final viewStr = await rootBundle.loadString(
+          'assets/extensions/$id/view.yaml',
+        );
+        manifestMap['view'] = ExtensionMetadata.yamlToMap(viewStr);
+      } catch (_) {}
+
+      try {
+        final logicStr = await rootBundle.loadString(
+          'assets/extensions/$id/logic.yaml',
+        );
+        manifestMap['logic'] = ExtensionMetadata.yamlToMap(logicStr);
+      } catch (_) {}
+
+      // 加载脚本文件
+      try {
+        final scriptStr = await rootBundle.loadString(
+          'assets/extensions/$id/main.js',
+        );
+        manifestMap['script'] = scriptStr;
+      } catch (_) {}
+
+      // 从完整的 Map 实例化元数据，避免中途类型转换错误
+      final metadata = ExtensionMetadata.fromJson(manifestMap);
+      final result = await importFromContent(jsonEncode(metadata.toJson()));
+      return result;
+    } catch (e) {
+      debugPrint(
+        'Offline asset not found for $id, using generated metadata: $e',
+      );
+
+      // 如果没有 Asset，根据内置列表生成基础元数据
+      final metadata = ExtensionMetadata(
+        id: repoExt.id,
+        name: repoExt.name,
+        description: repoExt.description,
+        author: repoExt.author,
+        version: repoExt.version,
+        icon: Icons.extension,
+      );
+      return await importFromContent(jsonEncode(metadata.toJson()));
+    }
+  }
+
+  /// 导出扩展（ZIP 格式）
+  Future<void> exportExtensionAsZip(String extensionId) async {
+    final ext =
+        _installedExtensions[extensionId] ?? _activeExtensions[extensionId];
     if (ext == null) return;
 
-    // 获取原始存储的内容（可能是 .dart 或 .json）
-    final box = await Hive.openBox(_extStoreBox);
-    final originalContent = box.get(extensionId) as String?;
+    final zipBytes = ExtensionConverter.createZipPackage(ext.metadata);
 
-    String exportContent;
-    String fileName;
+    final tempDir = await getTemporaryDirectory();
+    final fileName = '${ext.metadata.id}_v${ext.metadata.version}.ezip';
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(zipBytes);
 
-    // 如果原始内容是 Dart 模板，或者是 ProxyExtension（意味着它是动态生成的）
-    // 我们统一将其序列化为标准的 JSON 格式
-    if (originalContent != null &&
-        (originalContent.contains('import ') ||
-            originalContent.contains('class '))) {
-      // 从 Dart 中提取 JSON 逻辑并重新构造为标准 JSON
-      final metadataJson = _tryExtractMetadataFromDart(originalContent);
-      final data = jsonDecode(metadataJson);
-      exportContent = const JsonEncoder.withIndent('  ').convert(data);
-      fileName = '${ext.metadata.id}.json';
-    } else {
-      // 如果已经是 JSON，则直接导出
-      exportContent = const JsonEncoder.withIndent(
-        '  ',
-      ).convert(ext.metadata.toJson());
-      fileName = '${ext.metadata.id}.json';
-    }
+    await Share.shareXFiles([
+      XFile(file.path),
+    ], subject: '导出扩展包 (ZIP): ${ext.metadata.name}');
+  }
+
+  Future<void> exportExtension(String extensionId) async {
+    final ext =
+        _installedExtensions[extensionId] ?? _activeExtensions[extensionId];
+    if (ext == null) return;
+
+    // 统一将其序列化为标准的 JSON 格式进行分发
+    final data = ext.metadata.toJson();
+    final exportContent = const JsonEncoder.withIndent('  ').convert(data);
+    final fileName = '${ext.metadata.id}.json';
 
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/$fileName');
@@ -2251,6 +2525,11 @@ class ExtensionManager extends ChangeNotifier {
     if (extension != null) {
       extension.onDispose();
       _eventBuffers.remove(extensionId);
+
+      // 如果卸载的是外部调用入口，清除引用
+      if (extensionId == 'system.external_call') {
+        _externalCallExtension = null;
+      }
     }
   }
 
@@ -2265,7 +2544,11 @@ class ExtensionManager extends ChangeNotifier {
 
       if (isRunning && !isLoaded) {
         // 需要启动
-        _loadExtension(ProxyExtension(entry.value.metadata, manager: this));
+        final realExt = ProxyExtension(entry.value.metadata, manager: this);
+        if (id == 'system.external_call') {
+          _externalCallExtension = realExt;
+        }
+        _loadExtension(realExt);
       } else if (!isRunning && isLoaded) {
         // 需要停止
         _unloadExtension(id);
@@ -2274,6 +2557,42 @@ class ExtensionManager extends ChangeNotifier {
 
     // 无论运行状态是否改变，只要调用了 refresh，就通知 UI 刷新一次，
     // 以确保初始化加载的扩展能显示出来。
+    notifyListeners();
+  }
+
+  /// 重置所有扩展相关数据（格式化）
+  Future<void> resetAll() async {
+    // 1. 停止所有正在运行的扩展
+    for (var id in _activeExtensions.keys.toList()) {
+      _unloadExtension(id);
+    }
+    _activeExtensions.clear();
+    _externalCallExtension = null;
+    _eventBuffers.clear();
+
+    // 2. 重置权限和状态存储
+    await _ref.read(extensionAuthStateProvider.notifier).resetAll();
+
+    // 3. 卸载所有已安装扩展并清除存储
+    final store = _ref.read(extensionStoreServiceProvider.notifier);
+    final installedIds = _installedExtensions.keys
+        .where((id) => id != 'external_call')
+        .toList();
+
+    // 先清除每个扩展的私有盒子
+    for (var id in installedIds) {
+      await Hive.deleteBoxFromDisk('extension_storage_$id');
+      await Hive.deleteBoxFromDisk('extension_logs_$id');
+    }
+
+    // 批量清除元数据存储
+    await store.clearAll();
+
+    _installedExtensions.removeWhere((id, _) => id != 'external_call');
+
+    // 4. 清除会话权限
+    _ref.read(sessionPermissionsProvider.notifier).state = {};
+
     notifyListeners();
   }
 
@@ -2381,8 +2700,9 @@ class ExtensionManager extends ChangeNotifier {
     _installedExtensions.remove(extensionId);
 
     // 3. 从持久化存储中移除
-    final box = await Hive.openBox(_extStoreBox);
-    await box.delete(extensionId);
+    await _ref
+        .read(extensionStoreServiceProvider.notifier)
+        .removeExtension(extensionId);
 
     notifyListeners();
   }

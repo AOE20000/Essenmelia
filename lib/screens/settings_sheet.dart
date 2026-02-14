@@ -224,6 +224,17 @@ class SettingsSheet extends ConsumerWidget {
                   ),
                 ),
 
+                _buildSectionHeader(context, l10n.help),
+                ListTile(
+                  leading: const Icon(Icons.help_outline),
+                  title: Text(l10n.welcomeAndHelp),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    // 仅更新状态，由 HomePage 的监听器负责导航，避免重复 push
+                    ref.read(uiStateProvider.notifier).showHelp();
+                  },
+                ),
+
                 _buildSectionHeader(context, l10n.databaseManager),
                 // Database Manager
                 ListTile(

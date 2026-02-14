@@ -1,318 +1,433 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../l10n/app_localizations.dart';
-import '../extensions/base_extension.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../extensions/services/extension_repository_service.dart';
+import '../extensions/models/repository_extension.dart';
 import '../extensions/extension_manager.dart';
+import '../extensions/base_extension.dart';
+import '../widgets/universal_image.dart';
+import '../l10n/app_localizations.dart';
+import 'extension_details_screen.dart';
 
-class ExtensionManagementScreen extends ConsumerStatefulWidget {
-  final BaseExtension extension;
-
-  const ExtensionManagementScreen({super.key, required this.extension});
+class ExtensionManagementScreen extends ConsumerWidget {
+  const ExtensionManagementScreen({super.key});
 
   @override
-  ConsumerState<ExtensionManagementScreen> createState() =>
-      _ExtensionManagementScreenState();
-}
-
-class _ExtensionManagementScreenState
-    extends ConsumerState<ExtensionManagementScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final manifestAsync = ref.watch(extensionRepositoryManifestProvider);
     final theme = Theme.of(context);
-    final metadata = widget.extension.metadata;
+    final manager = ref.watch(extensionManagerProvider);
     final l10n = AppLocalizations.of(context)!;
-    final authState = ref.watch(extensionAuthStateProvider);
-    final authNotifier = ref.read(extensionAuthStateProvider.notifier);
-    final isUntrusted = authNotifier.isUntrusted(metadata.id);
-    final isRunning = authNotifier.isRunning(metadata.id);
+
+    // 获取内置扩展元数据
+    final builtInExtensions = manager.getBuiltInExtensions();
+    // 获取已安装扩展的 ID
+    final installedIds = manager.extensions.map((e) => e.metadata.id).toSet();
+
+    // 筛选出未安装的内置扩展
+    final uninstalledBuiltIn = builtInExtensions
+        .where((e) => !installedIds.contains(e.id))
+        .toList();
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: Text(l10n.manageAndPermissions),
-        centerTitle: true,
-        scrolledUnderElevation: 0,
-        backgroundColor: theme.colorScheme.surface,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: [
-            // Header Info Card
-            _buildHeaderCard(theme, metadata),
-            const SizedBox(height: 24),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar.large(
+            title: Text(l10n.localeName == 'zh' ? '扩展管理' : 'Extensions'),
+            pinned: true,
+            backgroundColor: theme.colorScheme.surface,
+            surfaceTintColor: theme.colorScheme.surfaceTint,
+          ),
 
-            // Main Controls
-            _buildControlSection(
-              theme,
-              metadata,
-              isRunning,
-              isUntrusted,
-              authNotifier,
+          // --- 已安装扩展 ---
+          if (installedIds.isNotEmpty) ...[
+            _buildSectionHeader(context, '已安装', Icons.check_circle_outline),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final ext = manager.extensions[index];
+                  return _buildInstalledCard(context, ref, ext)
+                      .animate()
+                      .fadeIn(duration: 300.ms, delay: (index * 50).ms)
+                      .slideX(begin: 0.1, end: 0);
+                }, childCount: manager.extensions.length),
+              ),
             ),
-            const SizedBox(height: 24),
+          ],
 
-            // Permissions Section
-            _buildPermissionsSection(theme, metadata, authState, authNotifier),
-            const SizedBox(height: 32),
+          // --- 内置扩展 (未安装) ---
+          if (uninstalledBuiltIn.isNotEmpty) ...[
+            _buildSectionHeader(
+              context,
+              l10n.localeName == 'zh' ? '内置扩展' : 'Built-in',
+              Icons.extension_rounded,
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final ext = uninstalledBuiltIn[index];
+                  return _buildExtensionCard(context, ref, ext)
+                      .animate()
+                      .fadeIn(duration: 300.ms, delay: (index * 50).ms)
+                      .slideX(begin: 0.1, end: 0);
+                }, childCount: uninstalledBuiltIn.length),
+              ),
+            ),
+          ],
 
-            // Action Buttons
-            _buildActionButtons(theme, metadata, authNotifier),
-            const SizedBox(height: 40),
+          // --- 在线扩展 ---
+          _buildSectionHeader(
+            context,
+            l10n.localeName == 'zh' ? '在线扩展' : 'Online',
+            Icons.cloud_queue_rounded,
+          ),
+          manifestAsync.when(
+            data: (extensions) {
+              final uninstalledOnline = extensions
+                  .where((e) => !installedIds.contains(e.id))
+                  .toList();
+
+              return uninstalledOnline.isEmpty
+                  ? SliverToBoxAdapter(child: _buildEmptyState(theme))
+                  : SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final ext = uninstalledOnline[index];
+                          return _buildExtensionCard(context, ref, ext)
+                              .animate()
+                              .fadeIn(duration: 300.ms, delay: (index * 50).ms)
+                              .slideX(begin: 0.1, end: 0);
+                        }, childCount: uninstalledOnline.length),
+                      ),
+                    );
+            },
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildErrorState(context, theme, err.toString(), ref),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+      floatingActionButton:
+          FloatingActionButton.extended(
+            onPressed: () => _showAddOptions(context, ref),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addExtension),
+          ).animate().scale(
+            delay: 400.ms,
+            duration: 400.ms,
+            curve: Curves.easeOutBack,
+          ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
+    final theme = Theme.of(context);
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+      sliver: SliverToBoxAdapter(
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ).animate().fadeIn(duration: 400.ms),
+      ),
+    );
+  }
+
+  void _showAddOptions(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.file_open_rounded),
+              title: Text(l10n.importFromLocalFile),
+              subtitle: Text(l10n.selectJsonExtension),
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(extensionManagerProvider).importFromFile();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_download_rounded),
+              title: Text(l10n.downloadAndInstallFromLink),
+              subtitle: const Text('支持 URL 或 GitHub 链接'),
+              onTap: () {
+                Navigator.pop(context);
+                _showUrlImportDialog(context, ref);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste_rounded),
+              title: const Text('从剪贴板安装'),
+              subtitle: const Text('读取剪贴板中的 JSON 或 URL'),
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(extensionManagerProvider).importFromClipboard();
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderCard(ThemeData theme, ExtensionMetadata metadata) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Hero(
-            tag: 'ext_icon_${metadata.id}',
-            child: Icon(
-              metadata.icon,
-              size: 64,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          metadata.name,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'v${metadata.version} • ${metadata.author}',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(
-                metadata.description,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'ID: ${metadata.id}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildControlSection(
-    ThemeData theme,
-    ExtensionMetadata metadata,
-    bool isRunning,
-    bool isUntrusted,
-    ExtensionAuthNotifier authNotifier,
-  ) {
-    final sandboxId = authNotifier.getSandboxId(metadata.id);
-    final isShared = sandboxId != metadata.id;
+  void _showUrlImportDialog(BuildContext context, WidgetRef ref) {
+    final urlController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            l10n.localeName == 'zh' ? '运行与安全' : 'Runtime & Security',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Material(
-          color: theme.colorScheme.surfaceContainerLow,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-            side: BorderSide(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Column(
-            children: [
-              SwitchListTile(
-                value: isRunning,
-                onChanged: (val) => authNotifier.setRunning(metadata.id, val),
-                title: Text(
-                  l10n.localeName == 'zh' ? '启用扩展' : 'Enable Extension',
-                ),
-                subtitle: Text(
-                  isRunning
-                      ? (l10n.localeName == 'zh' ? '正在运行' : 'Running')
-                      : (l10n.localeName == 'zh' ? '已停止' : 'Stopped'),
-                ),
-                secondary: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isRunning
-                        ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isRunning ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                    color: isRunning
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outline,
-                  ),
-                ),
-              ),
-              const Divider(height: 1, indent: 64),
-              SwitchListTile(
-                value: isUntrusted,
-                onChanged: isRunning
-                    ? (val) => authNotifier.setUntrusted(metadata.id, val)
-                    : null,
-                title: Text(
-                  l10n.localeName == 'zh' ? '受限访问' : 'Restricted Access',
-                ),
-                subtitle: Text(
-                  l10n.localeName == 'zh'
-                      ? '开启后每次访问敏感数据需授权'
-                      : 'Grant access for sensitive data each time',
-                ),
-                secondary: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isUntrusted && isRunning
-                        ? theme.colorScheme.error.withValues(alpha: 0.1)
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isUntrusted
-                        ? Icons.security_rounded
-                        : Icons.verified_user_rounded,
-                    color: isUntrusted && isRunning
-                        ? theme.colorScheme.error
-                        : (isRunning
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outline),
-                  ),
-                ),
-              ),
-              const Divider(height: 1, indent: 64),
-              ListTile(
-                onTap: () => _showSandboxConfigDialog(
-                  theme,
-                  metadata,
-                  sandboxId,
-                  authNotifier,
-                ),
-                title: Text(
-                  l10n.localeName == 'zh' ? '沙箱隔离' : 'Sandbox Isolation',
-                ),
-                subtitle: Text(
-                  isShared
-                      ? (l10n.localeName == 'zh'
-                            ? '共用沙箱: $sandboxId'
-                            : 'Shared Sandbox: $sandboxId')
-                      : (l10n.localeName == 'zh' ? '独立沙箱' : 'Isolated Sandbox'),
-                ),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isShared
-                        ? theme.colorScheme.secondary.withValues(alpha: 0.1)
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isShared ? Icons.hub_rounded : Icons.lock_person_rounded,
-                    color: isShared
-                        ? theme.colorScheme.secondary
-                        : theme.colorScheme.outline,
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showSandboxConfigDialog(
-    ThemeData theme,
-    ExtensionMetadata metadata,
-    String currentSandboxId,
-    ExtensionAuthNotifier authNotifier,
-  ) {
-    final controller = TextEditingController(
-      text: currentSandboxId == metadata.id ? '' : currentSandboxId,
-    );
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.hub_rounded),
-        title: const Text('配置沙箱组'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        title: Text(l10n.downloadAndInstallFromLink),
+        content: TextField(
+          controller: urlController,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.enterUrlOrGithubLink,
+            hintText: 'https://...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              if (url.isNotEmpty) {
+                Navigator.pop(context);
+                await ref.read(extensionManagerProvider).importFromUrl(url);
+              }
+            },
+            child: const Text('安装'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstalledCard(
+    BuildContext context,
+    WidgetRef ref,
+    BaseExtension ext,
+  ) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Hero(
+          tag: 'ext_icon_${ext.metadata.id}',
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(ext.metadata.icon, color: theme.colorScheme.primary),
+          ),
+        ),
+        title: Text(
+          ext.metadata.name,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '沙箱组决定了扩展之间的数据隔离。输入相同的组 ID 以共享存储空间。',
-              style: TextStyle(fontSize: 13),
+            const SizedBox(height: 2),
+            Text(
+              ext.metadata.description,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: '沙箱组 ID',
-                hintText: '默认为扩展 ID',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                prefixIcon: const Icon(Icons.tag_rounded),
-                helperText: '提示：激活类程序通常需要与主扩展处于同一沙箱组',
+            const SizedBox(height: 4),
+            Text(
+              'v${ext.metadata.version} • ${ext.metadata.author}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.outline,
               ),
             ),
           ],
+        ),
+        trailing: IconButton(
+          icon: Icon(
+            Icons.delete_outline_rounded,
+            color: theme.colorScheme.error,
+          ),
+          onPressed: () => _confirmUninstall(context, ref, ext),
+        ),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ExtensionDetailsScreen(extension: ext),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmUninstall(
+    BuildContext context,
+    WidgetRef ref,
+    BaseExtension ext,
+  ) async {
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('卸载扩展'),
+        content: Text('确定要卸载 "${ext.metadata.name}" 吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('卸载'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(extensionManagerProvider).removeExtension(ext.metadata.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${ext.metadata.name} 已卸载')));
+      }
+    }
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.store_mall_directory_outlined,
+                size: 64,
+                color: theme.colorScheme.outline,
+              ),
+              const SizedBox(height: 16),
+              Text('商店中暂无可用扩展', style: theme.textTheme.bodyLarge),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(
+    BuildContext context,
+    ThemeData theme,
+    String error,
+    WidgetRef ref,
+  ) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+            const SizedBox(height: 16),
+            Text('无法加载商店', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => ref.refresh(extensionRepositoryManifestProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('重试'),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () => _showCustomUrlDialog(context, ref),
+              icon: const Icon(Icons.link),
+              label: const Text('使用自定义商店链接'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCustomUrlDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('自定义商店'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Manifest JSON URL',
+            hintText: 'https://example.com/manifest.json',
+          ),
         ),
         actions: [
           TextButton(
@@ -321,190 +436,250 @@ class _ExtensionManagementScreenState
           ),
           FilledButton(
             onPressed: () {
-              authNotifier.setSandboxId(metadata.id, controller.text.trim());
-              Navigator.pop(context);
+              final url = controller.text.trim();
+              if (url.isNotEmpty) {
+                Navigator.pop(context);
+                _loadCustomManifest(context, ref, url);
+              }
             },
-            child: const Text('保存配置'),
+            child: const Text('加载'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPermissionsSection(
-    ThemeData theme,
-    ExtensionMetadata metadata,
-    Map<String, List<String>> authState,
-    ExtensionAuthNotifier authNotifier,
+  Future<void> _loadCustomManifest(
+    BuildContext context,
+    WidgetRef ref,
+    String url,
+  ) async {
+    ref.read(repositoryUrlProvider.notifier).state = url;
+  }
+
+  Widget _buildExtensionCard(
+    BuildContext context,
+    WidgetRef ref,
+    RepositoryExtension ext,
   ) {
-    final permissions = metadata.requiredPermissions;
-    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${l10n.localeName == 'zh' ? '权限申请' : 'Requested Permissions'} (${permissions.length})',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () => _showAllPermissionsDialog(
-                theme,
-                metadata,
-                authState,
-                authNotifier,
-              ),
-              child: Text(l10n.localeName == 'zh' ? '查看全部' : 'View All'),
-            ),
-          ],
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
-        const SizedBox(height: 8),
-        if (permissions.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text(
-                l10n.localeName == 'zh'
-                    ? '此扩展未申请任何权限'
-                    : 'No permissions requested',
+      ),
+      child: InkWell(
+        onTap: () => _showExtensionDetails(context, ref, ext),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ext.iconUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: UniversalImage(imageUrl: ext.iconUrl!),
+                      )
+                    : Icon(Icons.extension, color: theme.colorScheme.primary),
               ),
-            ),
-          )
-        else
-          Card(
-            elevation: 0,
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.2,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: permissions.length,
-              separatorBuilder: (_, _) => const Divider(height: 1, indent: 56),
-              itemBuilder: (context, index) {
-                final perm = permissions[index];
-                final isGranted =
-                    authState[metadata.id]?.contains(perm.name) ?? false;
-
-                return SwitchListTile(
-                  value: isGranted,
-                  onChanged: (val) =>
-                      authNotifier.togglePermission(metadata.id, perm),
-                  title: Text(
-                    perm.getLabel(context),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            ext.name,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'v${ext.version}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  subtitle: Text(
-                    perm.description,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  secondary: Icon(
-                    isGranted
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: isGranted
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outline,
-                  ),
-                );
-              },
-            ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '作者: ${ext.author}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      ext.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.download),
+                onPressed: () => _installExtension(context, ref, ext),
+              ),
+            ],
           ),
-      ],
+        ),
+      ),
     );
   }
 
-  void _showAllPermissionsDialog(
-    ThemeData theme,
-    ExtensionMetadata metadata,
-    Map<String, List<String>> authState,
-    ExtensionAuthNotifier authNotifier,
+  void _showExtensionDetails(
+    BuildContext context,
+    WidgetRef ref,
+    RepositoryExtension ext,
   ) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) => Column(
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
           children: [
             const SizedBox(height: 12),
             Container(
-              width: 40,
+              width: 32,
               height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                '所有系统权限',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            const SizedBox(height: 24),
             Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: ExtensionPermission.values.length,
-                itemBuilder: (context, index) {
-                  final perm = ExtensionPermission.values[index];
-                  final isGranted =
-                      authState[metadata.id]?.contains(perm.name) ?? false;
-                  final isRequested = metadata.requiredPermissions.contains(
-                    perm,
-                  );
-
-                  return SwitchListTile(
-                    value: isGranted,
-                    onChanged: (val) =>
-                        authNotifier.togglePermission(metadata.id, perm),
-                    title: Row(
-                      children: [
-                        Text(perm.getLabel(context)),
-                        if (isRequested)
-                          Container(
-                            margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '已申请',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ext.iconUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: UniversalImage(imageUrl: ext.iconUrl!),
+                              )
+                            : Icon(
+                                Icons.extension,
+                                size: 40,
+                                color: theme.colorScheme.primary,
+                              ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ext.name,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                      ],
+                            const SizedBox(height: 4),
+                            Text(
+                              '版本 ${ext.version} • 作者 ${ext.author}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    '关于此扩展',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    subtitle: Text(perm.description),
-                  );
-                },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    ext.description,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      height: 1.6,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  if (ext.tags.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ext.tags.map((tag) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            tag,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _installExtension(context, ref, ext);
+                  },
+                  icon: const Icon(Icons.download),
+                  label: const Text('安装扩展'),
+                ),
               ),
             ),
           ],
@@ -513,114 +688,33 @@ class _ExtensionManagementScreenState
     );
   }
 
-  Widget _buildActionButtons(
-    ThemeData theme,
-    ExtensionMetadata metadata,
-    ExtensionAuthNotifier authNotifier,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: FilledButton.icon(
-            onPressed: () {
-              final manager = ref.read(extensionManagerProvider);
-              final extension = widget.extension;
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      extension.build(context, manager.getApiFor(extension)),
-                ),
-              );
-            },
-            icon: const Icon(Icons.launch_rounded),
-            label: Text(
-              l10n.localeName == 'zh' ? '打开扩展界面' : 'Open Extension',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => ref
-                    .read(extensionManagerProvider)
-                    .exportExtension(metadata.id),
-                icon: const Icon(Icons.ios_share_rounded),
-                label: Text(l10n.exportExtensionPackage),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () =>
-                    _confirmUninstall(theme, metadata, authNotifier),
-                icon: const Icon(Icons.delete_sweep_rounded),
-                label: const Text('卸载'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  side: BorderSide(
-                    color: theme.colorScheme.error.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  void _confirmUninstall(
-    ThemeData theme,
-    ExtensionMetadata metadata,
-    ExtensionAuthNotifier authNotifier,
+  Future<void> _installExtension(
+    BuildContext context,
+    WidgetRef ref,
+    RepositoryExtension ext,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-        title: const Text('卸载确认'),
-        content: Text('确定要卸载扩展 "${metadata.name}" 吗？此操作将删除其所有关联数据且不可撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
-            ),
-            child: const Text('确认卸载'),
-          ),
-        ],
-      ),
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(content: Text('正在下载并安装 ${ext.name}...')),
     );
 
-    if (confirmed == true) {
-      await ref.read(extensionManagerProvider).removeExtension(metadata.id);
-      if (mounted) Navigator.pop(context);
+    try {
+      final success = await ref
+          .read(extensionManagerProvider)
+          .importFromUrl(ext.downloadUrl);
+
+      if (success != null) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('${ext.name} 安装成功')),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('安装失败，请检查链接或网络')),
+        );
+      }
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(SnackBar(content: Text('安装出错: $e')));
     }
   }
 }

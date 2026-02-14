@@ -74,7 +74,7 @@ class UniversalImage extends StatelessWidget {
           errorBuilder: (context, error, stackTrace) => _errorWidget(context),
         );
       } else {
-        debugPrint('UniversalImage: 本地文件不存在: $imageUrl');
+        debugPrint('UniversalImage: Local file does not exist: $imageUrl');
         imageWidget = _errorWidget(context);
       }
     } else {

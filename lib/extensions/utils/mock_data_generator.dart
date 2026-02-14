@@ -20,6 +20,31 @@ class MockDataGenerator {
     '制定下周计划',
     '冥想 15 分钟',
     '练习书法',
+    '预约牙医检查',
+    '备份家庭照片',
+    '修理漏水的水龙头',
+    '研究新的烹饪菜谱',
+    '整理电子邮箱分类',
+    '给远方的朋友打电话',
+    '学习基础德语会话',
+    '参加社区志愿者活动',
+    '检查家庭保险箱',
+    '修剪花园草坪',
+    '更新简历与作品集',
+    '观看一部经典老电影',
+    '尝试一次手冲咖啡',
+    '整理旧衣物捐赠',
+    '制定年度储蓄目标',
+    '练习尤克里里',
+    '深度清洁厨房抽油烟机',
+    '购买一张音乐会门票',
+    '研究智能家居自动化方案',
+    '给爱车添加玻璃水',
+    '整理手机中的冗余应用',
+    '给阳台的番茄施肥',
+    '学习一项新的手工艺',
+    '完成在线课程的最终作业',
+    '给父母购买健康补品',
   ];
 
   static final List<String> _stepTemplates = [
@@ -31,24 +56,64 @@ class MockDataGenerator {
     '记录关键反馈',
     '清理工作区域',
     '提交最终版本',
+    '查阅相关技术文档',
+    '对比不同方案的优劣',
+    '拍摄现场照片记录',
+    '核对账单明细',
+    '同步数据到云端',
+    '测试极端情况下的表现',
+    '征求同事的意见',
+    '整理成演示文稿',
+    '回复所有相关邮件',
+    '清理浏览器的缓存',
+    '设置定期自动备份',
+    '记录过程中的灵感',
+    '标注待解决的问题',
+    '优化代码性能',
+    '增加单元测试用例',
+    '撰写项目总结报告',
+    '更新相关的 Wiki 页面',
   ];
 
-  static final List<String> _tags = ['工作', '生活', '学习', '健康', '紧急', '个人'];
+  static final List<String> _descriptionTemplates = [
+    '这是为了本周目标而准备的详细事项。',
+    '需要关注细节，确保不遗漏关键步骤。',
+    '根据上周的反馈进行了调整，重点在于执行效率。',
+    '长期跟进项目，需要保持定期的记录。',
+    '仅作为临时提醒，完成后可直接归档。',
+    '涉及多方协作，请务必在沟通后更新进度。',
+    '个人提升计划的一部分，旨在培养更好的习惯。',
+    '家庭事务，需要与家人共同协商完成。',
+    '学习笔记的整理与总结，方便后续复习。',
+    '针对紧急情况的预案，需在 24 小时内完成初稿。',
+    '季节性维护任务，确保生活环境整洁。',
+    '财务相关的核对工作，请保持严谨的态度。',
+    '社交活动的前期准备，包括邀约和选址。',
+    '这是从第三方应用导入的同步任务。',
+    '健康管理的重要环，请按时执行。',
+  ];
+
+  static final List<String> _tags = [
+    '工作', '生活', '学习', '健康', '紧急', '个人', '家庭', '社交', '财务', '娱乐', '技能', '待办'
+  ];
+  static final List<String> _suffixes = ['步骤', '个任务', '项检查', '次练习'];
+  static final List<String> _displayModes = ['number', 'firstChar'];
 
   /// 生成混淆后的模拟数据
-  /// [realCount] 允许混入一定比例的真实数据（如果提供了）
+  /// [realData] 允许混入一定比例的真实数据（如果提供了）
   static List<Event> generateEvents({
-    int count = 10,
+    int count = 15,
     List<Event>? realData,
-    bool mixReal = false,
+    bool mixReal = true,
   }) {
     final List<Event> result = [];
     final now = DateTime.now();
 
     // 1. 如果有真实数据且允许混合，先抽取一部分并进行“脱敏/模糊化”
+    // 提高真实数据混合比例到 40% 且上限提高，增加欺骗性
     if (mixReal && realData != null && realData.isNotEmpty) {
-      final takeCount = (count * 0.3).round().clamp(1, realData.length);
-      final sampled = (realData..shuffle()).take(takeCount);
+      final takeCount = (count * 0.4).round().clamp(1, realData.length);
+      final sampled = (List<Event>.from(realData)..shuffle()).take(takeCount);
 
       for (var real in sampled) {
         result.add(_obfuscateRealEvent(real));
@@ -67,18 +132,50 @@ class MockDataGenerator {
   /// 对真实数据进行混淆处理：修改 ID、微调时间、修改标题关键词
   static Event _obfuscateRealEvent(Event real) {
     final obfuscated = Event();
-    // 保持大致的标题意图，但修改关键词
-    obfuscated.title = real.title.replaceAll('项目', '任务').replaceAll('会议', '讨论');
-    obfuscated.description = real.description != null ? '已处理的备注' : null;
+    // 保持大致的标题意图，但修改关键词，增加模糊性
+    String title = real.title;
+    final replacements = {
+      '项目': '任务',
+      '会议': '讨论',
+      '计划': '安排',
+      '准备': '处理',
+      '购买': '获取',
+      '学习': '研究',
+      '工作': '事项',
+    };
+    replacements.forEach((old, newVal) {
+      title = title.replaceAll(old, newVal);
+    });
+    obfuscated.title = title;
 
-    // 时间偏移：随机偏移 +/- 2小时内
-    final offset = Duration(minutes: _random.nextInt(240) - 120);
+    if (real.description != null) {
+      // 混淆描述：保留原长度感，但内容随机化，或混入模板
+      if (_random.nextBool()) {
+        obfuscated.description = _descriptionTemplates[_random.nextInt(_descriptionTemplates.length)];
+      } else {
+        obfuscated.description = '（受限访问）已模糊处理的任务详情，原长度约为 ${real.description!.length} 个字符。';
+      }
+    }
+
+    // 时间偏移：随机偏移 +/- 4小时内，范围更大
+    final offset = Duration(minutes: _random.nextInt(480) - 240);
     obfuscated.createdAt = real.createdAt.add(offset);
 
     // 标签混淆：保留一部分，随机加一部分
     final tags = (real.tags ?? []).take(1).toList();
     if (tags.length < 2) tags.add(_tags[_random.nextInt(_tags.length)]);
     obfuscated.tags = tags;
+
+    // 自定义显示混淆：大部分保持原样，增加真实感
+    obfuscated.stepDisplayMode = real.stepDisplayMode;
+    obfuscated.stepSuffix = real.stepSuffix;
+
+    // 提醒时间混淆
+    if (real.reminderTime != null) {
+      obfuscated.reminderTime = real.reminderTime!.add(offset);
+      obfuscated.reminderId = _random.nextInt(100000);
+      obfuscated.reminderScheme = real.reminderScheme;
+    }
 
     // 步骤混淆
     obfuscated.steps = real.steps.map((s) {
@@ -98,6 +195,11 @@ class MockDataGenerator {
     final event = Event();
     event.title = _taskTemplates[_random.nextInt(_taskTemplates.length)];
 
+    // 随机 70% 概率生成简介
+    if (_random.nextDouble() < 0.7) {
+      event.description = _descriptionTemplates[_random.nextInt(_descriptionTemplates.length)];
+    }
+
     // 随机时间分布：过去 7 天内
     final daysOffset = _random.nextInt(7);
     final hoursOffset = _random.nextInt(24);
@@ -109,6 +211,22 @@ class MockDataGenerator {
       _tags[_random.nextInt(_tags.length)],
       if (_random.nextBool()) _tags[_random.nextInt(_tags.length)],
     ];
+
+    // 随机设置自定义显示
+    if (_random.nextBool()) {
+      event.stepDisplayMode =
+          _displayModes[_random.nextInt(_displayModes.length)];
+    }
+    if (_random.nextBool()) {
+      event.stepSuffix = _suffixes[_random.nextInt(_suffixes.length)];
+    }
+
+    // 随机 30% 概率生成提醒
+    if (_random.nextDouble() < 0.3) {
+      event.reminderTime = event.createdAt.add(Duration(days: 1, hours: 2));
+      event.reminderId = _random.nextInt(100000);
+      event.reminderScheme = _random.nextBool() ? 'notification' : 'calendar';
+    }
 
     // 随机生成 2-5 个步骤
     final stepCount = _random.nextInt(4) + 2;

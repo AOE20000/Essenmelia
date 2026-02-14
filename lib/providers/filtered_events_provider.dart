@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/event.dart';
 import 'events_provider.dart';
+import 'db_provider.dart';
 
 enum SortOrder {
   createdAtDesc,
@@ -9,6 +11,12 @@ enum SortOrder {
   titleDesc,
   progressDesc,
   progressAsc,
+  stepCountDesc,
+  stepCountAsc,
+  tagCountDesc,
+  tagCountAsc,
+  lastUpdatedDesc,
+  lastUpdatedAsc,
 }
 
 enum EventStatusFilter { all, notStarted, inProgress, completed }
@@ -18,12 +26,14 @@ class SearchState {
   final List<String> selectedTags;
   final SortOrder sortOrder;
   final EventStatusFilter statusFilter;
+  final bool onlyShowReminders;
 
   const SearchState({
     this.query = '',
     this.selectedTags = const [],
     this.sortOrder = SortOrder.createdAtDesc,
     this.statusFilter = EventStatusFilter.all,
+    this.onlyShowReminders = false,
   });
 
   SearchState copyWith({
@@ -31,18 +41,41 @@ class SearchState {
     List<String>? selectedTags,
     SortOrder? sortOrder,
     EventStatusFilter? statusFilter,
+    bool? onlyShowReminders,
   }) {
     return SearchState(
       query: query ?? this.query,
       selectedTags: selectedTags ?? this.selectedTags,
       sortOrder: sortOrder ?? this.sortOrder,
       statusFilter: statusFilter ?? this.statusFilter,
+      onlyShowReminders: onlyShowReminders ?? this.onlyShowReminders,
     );
   }
 }
 
 class SearchNotifier extends StateNotifier<SearchState> {
-  SearchNotifier() : super(const SearchState());
+  final Ref ref;
+  Box? _box;
+
+  SearchNotifier(this.ref) : super(const SearchState()) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    await ref.read(dbProvider.future);
+    _box = Hive.box('settings');
+    final savedSortOrder = _box!.get('sortOrder');
+    if (savedSortOrder != null) {
+      try {
+        state = state.copyWith(
+          sortOrder: SortOrder.values.firstWhere(
+            (e) => e.toString() == savedSortOrder,
+            orElse: () => SortOrder.createdAtDesc,
+          ),
+        );
+      } catch (_) {}
+    }
+  }
 
   void setQuery(String query) {
     state = state.copyWith(query: query);
@@ -62,19 +95,26 @@ class SearchNotifier extends StateNotifier<SearchState> {
     state = state.copyWith(selectedTags: []);
   }
 
-  void setSortOrder(SortOrder order) {
+  Future<void> setSortOrder(SortOrder order) async {
     state = state.copyWith(sortOrder: order);
+    if (_box != null) {
+      await _box!.put('sortOrder', order.toString());
+    }
   }
 
   void setStatusFilter(EventStatusFilter filter) {
     state = state.copyWith(statusFilter: filter);
+  }
+
+  void toggleOnlyShowReminders() {
+    state = state.copyWith(onlyShowReminders: !state.onlyShowReminders);
   }
 }
 
 final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
   ref,
 ) {
-  return SearchNotifier();
+  return SearchNotifier(ref);
 });
 
 final filteredEventsProvider = Provider<List<Event>>((ref) {
@@ -121,6 +161,11 @@ final filteredEventsProvider = Provider<List<Event>>((ref) {
       if (!titleMatch && !descMatch) return false;
     }
 
+    // Reminder Filter
+    if (searchState.onlyShowReminders) {
+      if (e.reminderTime == null) return false;
+    }
+
     return true;
   }).toList();
 
@@ -139,11 +184,33 @@ final filteredEventsProvider = Provider<List<Event>>((ref) {
         return _calculateProgress(b).compareTo(_calculateProgress(a));
       case SortOrder.progressAsc:
         return _calculateProgress(a).compareTo(_calculateProgress(b));
+      case SortOrder.stepCountDesc:
+        return b.steps.length.compareTo(a.steps.length);
+      case SortOrder.stepCountAsc:
+        return a.steps.length.compareTo(b.steps.length);
+      case SortOrder.tagCountDesc:
+        return (b.tags?.length ?? 0).compareTo(a.tags?.length ?? 0);
+      case SortOrder.tagCountAsc:
+        return (a.tags?.length ?? 0).compareTo(b.tags?.length ?? 0);
+      case SortOrder.lastUpdatedDesc:
+        final lastA = _getLastUpdated(a);
+        final lastB = _getLastUpdated(b);
+        return lastB.compareTo(lastA);
+      case SortOrder.lastUpdatedAsc:
+        final lastA = _getLastUpdated(a);
+        final lastB = _getLastUpdated(b);
+        return lastA.compareTo(lastB);
     }
   });
 
   return filtered;
 });
+
+DateTime _getLastUpdated(Event e) {
+  if (e.steps.isEmpty) return e.createdAt;
+  // 获取步骤中最晚的时间戳
+  return e.steps.map((s) => s.timestamp).reduce((v, e) => v.isAfter(e) ? v : e);
+}
 
 double _calculateProgress(Event e) {
   if (e.steps.isEmpty) return 0;

@@ -7,6 +7,8 @@ class RepositoryExtension {
   final String? iconUrl;
   final String downloadUrl;
   final List<String> tags;
+  final String? readmeUrl; // 新增：README 链接
+  final String? repoFullName; // 新增：GitHub 仓库全名
 
   RepositoryExtension({
     required this.id,
@@ -17,6 +19,8 @@ class RepositoryExtension {
     required this.downloadUrl,
     this.iconUrl,
     this.tags = const [],
+    this.readmeUrl,
+    this.repoFullName,
   });
 
   factory RepositoryExtension.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class RepositoryExtension {
       downloadUrl: json['downloadUrl'] ?? json['url'] ?? '',
       iconUrl: json['iconUrl'] ?? json['icon'],
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
+      readmeUrl: json['readmeUrl'],
+      repoFullName: json['repoFullName'],
     );
   }
 }

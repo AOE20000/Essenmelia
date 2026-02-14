@@ -180,6 +180,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sortProgressLow => '进度 (低-高)';
 
   @override
+  String get sortStepCountHigh => '步骤数 (多-少)';
+
+  @override
+  String get sortStepCountLow => '步骤数 (少-多)';
+
+  @override
+  String get sortTagCountHigh => '标签数 (多-少)';
+
+  @override
+  String get sortTagCountLow => '标签数 (少-多)';
+
+  @override
+  String get sortLastUpdated => '最近更新';
+
+  @override
+  String get sortLastUpdatedOldest => '最早更新';
+
+  @override
   String get statusAll => '全部';
 
   @override
@@ -450,7 +468,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFromLocalFile => '从本地文件导入';
 
   @override
-  String get selectJsonExtension => '选择 .json 或 .dart 扩展包';
+  String get selectJsonExtension => '选择 .json 或 .zip 扩展包';
 
   @override
   String get enterUrlOrGithubLink => '输入 URL 或 GitHub 链接';
@@ -520,6 +538,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get help => '帮助';
+
+  @override
+  String get welcomeAndHelp => '欢迎与帮助';
+
+  @override
+  String get helpTitle => '帮助中心';
+
+  @override
+  String get helpMessage => '在这里您可以了解如何使用 Essenmelia。管理您的日程、步骤和扩展。';
+
+  @override
+  String get backToWelcome => '返回欢迎';
+
+  @override
+  String get switchToHelp => '查看帮助';
+
+  @override
+  String get getStarted => '开始使用';
+
+  @override
   String get font => '字体';
 
   @override
@@ -530,6 +569,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dataMaintenance => '数据维护';
+
+  @override
+  String get dangerZone => '危险区域';
+
+  @override
+  String get formatApp => '格式化应用';
+
+  @override
+  String get formatAppWarning => '这将物理删除所有数据库，清空所有扩展沙箱，并重置所有应用设置。此操作不可逆！';
+
+  @override
+  String get formatAppConfirm => '输入 \'DELETE\' 以确认';
+
+  @override
+  String get formatAppPlaceholder => '在此输入 DELETE';
+
+  @override
+  String get currentDbActions => '当前数据库操作';
 
   @override
   String get filter => '筛选';

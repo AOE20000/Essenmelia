@@ -12,7 +12,9 @@ class StorageService {
       final appDir = await getApplicationDocumentsDirectory();
       final imagesDir = Directory(p.join(appDir.path, 'event_images'));
 
-      if (!await imagesDir.exists()) return 0;
+      if (!await imagesDir.exists()) {
+        return 0;
+      }
 
       // 1. 获取数据库中所有被引用的图片路径
       final box = Hive.box<Event>('${activePrefix}_events');
@@ -35,14 +37,14 @@ class StorageService {
             if (DateTime.now().difference(lastModified).inMinutes > 5) {
               await file.delete();
               deletedCount++;
-              debugPrint('清理孤儿图片: $filePath');
+              debugPrint('Storage Service: Deleting orphan image: $filePath');
             }
           }
         }
       }
       return deletedCount;
     } catch (e) {
-      debugPrint('存储清理异常: $e');
+      debugPrint('Storage Service Error: $e');
       return 0;
     }
   }

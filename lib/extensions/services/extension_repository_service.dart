@@ -5,8 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/repository_extension.dart';
+import 'github_discovery_service.dart';
 
+/// 扩展仓库服务，负责获取在线扩展列表
 class ExtensionRepositoryService {
+  final GitHubDiscoveryService _githubDiscovery = GitHubDiscoveryService();
+
   static const String defaultManifestUrl =
       'https://raw.githubusercontent.com/essenmelia/extensions-store/main/manifest.json';
 
@@ -14,6 +18,27 @@ class ExtensionRepositoryService {
   static const String mirrorManifestUrl =
       'https://fastly.jsdelivr.net/gh/essenmelia/extensions-store@main/manifest.json';
 
+  /// 获取所有可用扩展（整合清单文件 + GitHub 全局发现）
+  Future<List<RepositoryExtension>> fetchAllAvailable() async {
+    final results = await Future.wait([
+      fetchManifest().then((m) => m.extensions),
+      _githubDiscovery.searchExtensions().catchError((e) {
+        debugPrint('GitHub search failed: $e');
+        return <RepositoryExtension>[];
+      }),
+    ]);
+
+    // 合并结果并根据 ID 去重
+    final Map<String, RepositoryExtension> merged = {};
+    for (var list in results) {
+      for (var ext in list) {
+        merged[ext.id] = ext;
+      }
+    }
+    return merged.values.toList();
+  }
+
+  /// 获取清单文件中的扩展
   Future<RepositoryManifest> fetchManifest([String? url]) async {
     final targetUrl = url ?? defaultManifestUrl;
 
@@ -60,10 +85,16 @@ final extensionRepositoryServiceProvider = Provider(
 
 final repositoryUrlProvider = StateProvider<String?>((ref) => null);
 
-final extensionRepositoryManifestProvider = FutureProvider<RepositoryManifest>((
+final extensionRepositoryManifestProvider = FutureProvider<List<RepositoryExtension>>((
   ref,
 ) async {
   final service = ref.read(extensionRepositoryServiceProvider);
+  // 如果有自定义 URL，优先从自定义 URL 获取清单
   final customUrl = ref.watch(repositoryUrlProvider);
-  return service.fetchManifest(customUrl);
+  if (customUrl != null) {
+    final manifest = await service.fetchManifest(customUrl);
+    return manifest.extensions;
+  }
+  // 否则返回所有可用扩展（内置清单 + GitHub 发现）
+  return service.fetchAllAvailable();
 });

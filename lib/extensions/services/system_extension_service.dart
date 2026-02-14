@@ -6,20 +6,80 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../extension_api_registry.dart';
+import '../base_extension.dart';
 
 /// 系统/基础功能相关的扩展 API 实现 (网络、文件、分享)
 class SystemExtensionApiHandler {
   SystemExtensionApiHandler(Ref ref);
 
   void register(ExtensionApiRegistry registry) {
-    registry.register('httpGet', _httpGet);
-    registry.register('httpPost', _httpPost);
-    registry.register('httpPut', _httpPut);
-    registry.register('httpDelete', _httpDelete);
-    registry.register('openUrl', _openUrl);
-    registry.register('exportFile', _exportFile);
-    registry.register('pickFile', _pickFile);
-    registry.register('getDbSize', _getDbSize);
+    registry.register(
+      'httpGet',
+      _httpGet,
+      permission: ExtensionPermission.network,
+      operation: '访问网络资源',
+      category: '网络访问',
+    );
+    registry.register(
+      'httpPost',
+      _httpPost,
+      permission: ExtensionPermission.network,
+      operation: '发送网络数据',
+      category: '网络访问',
+    );
+    registry.register(
+      'httpPut',
+      _httpPut,
+      permission: ExtensionPermission.network,
+      operation: '更新网络数据',
+      category: '网络访问',
+    );
+    registry.register(
+      'httpDelete',
+      _httpDelete,
+      permission: ExtensionPermission.network,
+      operation: '删除网络资源',
+      category: '网络访问',
+    );
+    registry.register(
+      'openUrl',
+      _openUrl,
+      permission: ExtensionPermission.network,
+      operation: '在浏览器中打开链接',
+      category: '网络访问',
+    );
+    registry.register(
+      'exportFile',
+      _exportFile,
+      permission: ExtensionPermission.fileSystem,
+      operation: '导出文件并调起系统分享',
+      category: '文件操作',
+    );
+    registry.register(
+      'pickFile',
+      _pickFile,
+      permission: ExtensionPermission.fileSystem,
+      operation: '从您的设备选择并读取文件',
+      category: '文件操作',
+    );
+    registry.register(
+      'getSystemInfo',
+      _getSystemInfo,
+      permission: ExtensionPermission.systemInfo,
+      operation: '获取设备基础信息 (系统版本, SDK 等)',
+      operationEn: 'Get System Info (OS, SDK, etc.)',
+      category: '系统信息',
+      categoryEn: 'System Info',
+    );
+    registry.register(
+      'getDbSize',
+      _getDbSize,
+      permission: ExtensionPermission.manageDb,
+      operation: '获取数据库占用大小',
+      operationEn: 'Get Database Storage Size',
+      category: '数据管理',
+      categoryEn: 'Data Management',
+    );
   }
 
   Future<dynamic> _httpPut(
@@ -34,11 +94,9 @@ class SystemExtensionApiHandler {
       return '{"status": "success", "message": "PUT request simulated"}';
     }
 
-    final response = await http.put(
-      Uri.parse(url),
-      headers: headers,
-      body: body,
-    );
+    final response = await http
+        .put(Uri.parse(url), headers: headers, body: body)
+        .timeout(const Duration(seconds: 15));
     return response.body;
   }
 
@@ -53,7 +111,9 @@ class SystemExtensionApiHandler {
       return '{"status": "success", "message": "DELETE request simulated"}';
     }
 
-    final response = await http.delete(Uri.parse(url), headers: headers);
+    final response = await http
+        .delete(Uri.parse(url), headers: headers)
+        .timeout(const Duration(seconds: 15));
     return response.body;
   }
 
@@ -62,12 +122,8 @@ class SystemExtensionApiHandler {
     required bool isUntrusted,
   }) async {
     final url = params['url'] as String;
-    if (isUntrusted) return;
-
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+    if (isUntrusted) return false;
+    return await launchUrl(Uri.parse(url));
   }
 
   Future<dynamic> _getDbSize(
@@ -100,7 +156,9 @@ class SystemExtensionApiHandler {
       return '{"status": "success", "data": "Mock data from sandbox", "url": "$url"}';
     }
 
-    final response = await http.get(Uri.parse(url), headers: headers);
+    final response = await http
+        .get(Uri.parse(url), headers: headers)
+        .timeout(const Duration(seconds: 15));
     return response.body;
   }
 
@@ -116,11 +174,9 @@ class SystemExtensionApiHandler {
       return '{"status": "success", "message": "POST request simulated"}';
     }
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: headers,
-      body: body,
-    );
+    final response = await http
+        .post(Uri.parse(url), headers: headers, body: body)
+        .timeout(const Duration(seconds: 15));
     return response.body;
   }
 
@@ -173,6 +229,18 @@ class SystemExtensionApiHandler {
       return await file.readAsString();
     }
     return null;
+  }
+
+  Future<dynamic> _getSystemInfo(
+    Map<String, dynamic> params, {
+    required bool isUntrusted,
+  }) async {
+    return {
+      'platform': Platform.operatingSystem,
+      'version': Platform.operatingSystemVersion,
+      'locale': Platform.localeName,
+      'sdkVersion': '3.38.9-preview',
+    };
   }
 }
 

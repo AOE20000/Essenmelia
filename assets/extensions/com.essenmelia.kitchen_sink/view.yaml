@@ -1,0 +1,142 @@
+type: column
+props:
+  padding: 16
+children:
+  - type: text
+    props:
+      text: "Material 3 组件库"
+      textStyle: "headlineMedium"
+      textColor: "primary"
+      margin: { bottom: 20 }
+
+  - type: text
+    props:
+      text: "表单与输入"
+      textStyle: "titleMedium"
+      margin: { bottom: 8 }
+
+  - type: card
+    props:
+      variant: "outlined"
+      margin: { bottom: 20 }
+    children:
+      - type: column
+        props:
+          padding: 4
+        children:
+          - type: textfield
+            props:
+              label: "你的名字"
+              hint: "输入点什么..."
+              stateKey: "user_name"
+              filled: true
+              margin: { bottom: 12 }
+          - type: row
+            props:
+              mainAxisAlignment: "spaceBetween"
+              padding: { left: 8, right: 8 }
+            children:
+              - type: column
+                crossAxisAlignment: "start"
+                children:
+                  - type: text
+                    props:
+                      text: "实验室功能"
+                      textStyle: "bodyLarge"
+                  - type: text
+                    props:
+                      text: "当前状态: $state.is_lab_enabled"
+                      textStyle: "bodySmall"
+                      textColor: "outline"
+              - type: switch
+                props:
+                  stateKey: "is_lab_enabled"
+
+  - type: text
+    props:
+      text: "交互与状态 ($state.counter)"
+      textStyle: "titleMedium"
+      margin: { bottom: 8 }
+
+  - type: card
+    props:
+      variant: "filled"
+      margin: { bottom: 20 }
+    children:
+      - type: column
+        children:
+          - type: row
+            props:
+              mainAxisAlignment: "spaceAround"
+              padding: 12
+            children:
+              - type: button
+                props:
+                  label: "减少"
+                  variant: "outlined"
+                onTap: decrementCounter
+              - type: button
+                props:
+                  label: "增加"
+                  variant: "tonal"
+                onTap: incrementCounter
+          - type: divider
+            props:
+              color: "outlineVariant"
+          - type: list_tile
+            props:
+              title: "实时预览"
+              subtitle: "你好, $state.user_name!"
+              icon: 0xe853 # person
+              iconColor: "primary"
+
+  - type: text
+    props:
+      text: "反馈与进度"
+      textStyle: "titleMedium"
+      margin: { bottom: 8 }
+
+  - type: card
+    props:
+      elevation: 2
+      margin: { bottom: 20 }
+    children:
+      - type: column
+        children:
+          - type: image
+            props:
+              url: "https://picsum.photos/seed/essenmelia/400/200"
+              height: 140
+              fit: "cover"
+              borderRadius: 12
+          - type: column
+            props:
+              padding: 12
+            children:
+              - type: row
+                children:
+                  - type: circular_progress
+                    props:
+                      color: "primary"
+                      width: 20
+                      height: 20
+                  - type: text
+                    props:
+                      text: "后台任务正在同步..."
+                      textStyle: "bodyMedium"
+                      margin: { left: 12 }
+              - type: sized_box
+                props: { height: 12 }
+              - type: linear_progress
+                props:
+                  value: 0.6
+                  color: "secondary"
+                  backgroundColor: "secondaryContainer"
+
+  - type: button
+    props:
+      label: "清除所有数据"
+      variant: "text"
+      textColor: "error"
+      width: "max"
+    onTap: resetAll

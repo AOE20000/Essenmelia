@@ -1,0 +1,60 @@
+type: column
+props:
+  padding: 16
+children:
+  - type: text
+    props:
+      text: "API 能力测试"
+      textStyle: "headlineSmall"
+      textColor: "primary"
+      margin: { bottom: 4 }
+  - type: text
+    props:
+      text: "实时验证扩展系统的底层 API 连通性"
+      textStyle: "bodyMedium"
+      textColor: "outline"
+      margin: { bottom: 20 }
+
+  - type: column
+    children:
+      - type: list_tile
+        props:
+          title: "数据读取测试"
+          subtitle: "调用 getEvents 获取事件总数"
+          icon: 0xe24d # description
+          iconColor: "secondary"
+        onTap: testGetEvents
+      - type: list_tile
+        props:
+          title: "UI 反馈测试"
+          subtitle: "弹出 SnackBar 消息提醒"
+          icon: 0xe8cd # info
+          iconColor: "secondary"
+        onTap: testShowSnackBar
+      - type: list_tile
+        props:
+          title: "网络连通测试"
+          subtitle: "发起 HTTP GET 请求 (GitHub API)"
+          icon: 0xe2bf # public
+          iconColor: "secondary"
+        onTap: testHttpGet
+
+  - type: sized_box
+    props: { height: 24 }
+
+  - type: text
+    props:
+      text: "执行结果"
+      textStyle: "titleSmall"
+      margin: { bottom: 8 }
+
+  - type: card
+    props:
+      variant: "filled"
+      padding: 16
+    children:
+      - type: text
+        props:
+          text: "$state.result"
+          textStyle: "bodySmall"
+          textColor: "onSurfaceVariant"

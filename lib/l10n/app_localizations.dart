@@ -428,6 +428,42 @@ abstract class AppLocalizations {
   /// **'Progress (Low-High)'**
   String get sortProgressLow;
 
+  /// No description provided for @sortStepCountHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps (More-Less)'**
+  String get sortStepCountHigh;
+
+  /// No description provided for @sortStepCountLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps (Less-More)'**
+  String get sortStepCountLow;
+
+  /// No description provided for @sortTagCountHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags (More-Less)'**
+  String get sortTagCountHigh;
+
+  /// No description provided for @sortTagCountLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags (Less-More)'**
+  String get sortTagCountLow;
+
+  /// No description provided for @sortLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently Updated'**
+  String get sortLastUpdated;
+
+  /// No description provided for @sortLastUpdatedOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Least Recently Updated'**
+  String get sortLastUpdatedOldest;
+
   /// No description provided for @statusAll.
   ///
   /// In en, this message translates to:
@@ -911,7 +947,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectJsonExtension.
   ///
   /// In en, this message translates to:
-  /// **'Select .json or .dart extension package'**
+  /// **'Select .json or .zip extension package'**
   String get selectJsonExtension;
 
   /// No description provided for @enterUrlOrGithubLink.
@@ -1040,6 +1076,48 @@ abstract class AppLocalizations {
   /// **'Edit Tags for {count} items'**
   String batchEditTagsTitle(int count);
 
+  /// No description provided for @help.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get help;
+
+  /// No description provided for @welcomeAndHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome & Help'**
+  String get welcomeAndHelp;
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help Center'**
+  String get helpTitle;
+
+  /// No description provided for @helpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn how to use Essenmelia here. Manage your events, steps, and extensions.'**
+  String get helpMessage;
+
+  /// No description provided for @backToWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Welcome'**
+  String get backToWelcome;
+
+  /// No description provided for @switchToHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'View Help'**
+  String get switchToHelp;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get getStarted;
+
   /// No description provided for @font.
   ///
   /// In en, this message translates to:
@@ -1063,6 +1141,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data Maintenance'**
   String get dataMaintenance;
+
+  /// No description provided for @dangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get dangerZone;
+
+  /// No description provided for @formatApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Format Application'**
+  String get formatApp;
+
+  /// No description provided for @formatAppWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is IRREVERSIBLE!'**
+  String get formatAppWarning;
+
+  /// No description provided for @formatAppConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'TYPE \'DELETE\' TO CONFIRM'**
+  String get formatAppConfirm;
+
+  /// No description provided for @formatAppPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE here'**
+  String get formatAppPlaceholder;
+
+  /// No description provided for @currentDbActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Database Actions'**
+  String get currentDbActions;
 
   /// No description provided for @filter.
   ///

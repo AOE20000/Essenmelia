@@ -181,6 +181,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortProgressLow => 'Progress (Low-High)';
 
   @override
+  String get sortStepCountHigh => 'Steps (More-Less)';
+
+  @override
+  String get sortStepCountLow => 'Steps (Less-More)';
+
+  @override
+  String get sortTagCountHigh => 'Tags (More-Less)';
+
+  @override
+  String get sortTagCountLow => 'Tags (Less-More)';
+
+  @override
+  String get sortLastUpdated => 'Recently Updated';
+
+  @override
+  String get sortLastUpdatedOldest => 'Least Recently Updated';
+
+  @override
   String get statusAll => 'All';
 
   @override
@@ -454,7 +472,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFromLocalFile => 'Import from local file';
 
   @override
-  String get selectJsonExtension => 'Select .json or .dart extension package';
+  String get selectJsonExtension => 'Select .json or .zip extension package';
 
   @override
   String get enterUrlOrGithubLink => 'Enter URL or GitHub link';
@@ -527,6 +545,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get help => 'Help';
+
+  @override
+  String get welcomeAndHelp => 'Welcome & Help';
+
+  @override
+  String get helpTitle => 'Help Center';
+
+  @override
+  String get helpMessage =>
+      'Learn how to use Essenmelia here. Manage your events, steps, and extensions.';
+
+  @override
+  String get backToWelcome => 'Back to Welcome';
+
+  @override
+  String get switchToHelp => 'View Help';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
   String get font => 'Font';
 
   @override
@@ -537,6 +577,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataMaintenance => 'Data Maintenance';
+
+  @override
+  String get dangerZone => 'Danger Zone';
+
+  @override
+  String get formatApp => 'Format Application';
+
+  @override
+  String get formatAppWarning =>
+      'This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is IRREVERSIBLE!';
+
+  @override
+  String get formatAppConfirm => 'TYPE \'DELETE\' TO CONFIRM';
+
+  @override
+  String get formatAppPlaceholder => 'Type DELETE here';
+
+  @override
+  String get currentDbActions => 'Current Database Actions';
 
   @override
   String get filter => 'Filter';
