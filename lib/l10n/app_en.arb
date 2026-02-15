@@ -1,5 +1,36 @@
 {
   "@@locale": "en",
+  "uninstallExtension": "Uninstall Extension",
+  "@uninstallExtension": {
+    "description": "Title for uninstall confirmation dialog"
+  },
+  "uninstallConfirmation": "Are you sure you want to uninstall \"{name}\"?",
+  "@uninstallConfirmation": {
+    "description": "Message for uninstall confirmation dialog",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pasteFailed": "Paste failed: {error}",
+  "@pasteFailed": {
+    "description": "Error message when pasting from clipboard fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "description": "Error message when exporting image fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "appTitle": "Essenmelia",
   "@appTitle": {
     "description": "The title of the application"

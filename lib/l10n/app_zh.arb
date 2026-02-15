@@ -1,5 +1,9 @@
 {
   "@@locale": "zh",
+  "uninstallExtension": "卸载扩展",
+  "uninstallConfirmation": "确定要卸载“{name}”吗？",
+  "pasteFailed": "粘贴失败：{error}",
+  "exportFailed": "导出失败：{error}",
   "appTitle": "Essenmelia",
   "searchPlaceholder": "搜索事件...",
   "select": "选择",
@@ -165,13 +169,6 @@
   "installFromClipboard": "从剪贴板安装",
   "installFromClipboardSubtitle": "读取剪贴板中的 JSON 或 URL",
   "install": "安装",
-  "@extensionUninstalled": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "noAvailableExtensions": "商店中暂无可用扩展",
   "failedToLoadStore": "无法加载商店",
   "retry": "重试",
@@ -560,7 +557,7 @@
     }
   },
   "uninstall": "卸载",
-  "extensionUninstalled": "扩展已卸载",
+  "extensionUninstalled": "扩展“{name}”已卸载",
   "extensionRepository": "扩展仓库",
   "browseAndInstallFromGithub": "从 GitHub 浏览并安装",
   "noExtensionsInstalled": "未安装扩展",

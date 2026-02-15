@@ -38,24 +38,33 @@ class ExtensionApiMetadata {
 
   String? getCategory(AppLocalizations l10n) {
     // Priority: Try to map standard categories from arb
-    if (category == 'Data Reading' || category == '数据读取')
+    if (category == 'Data Reading' || category == '数据读取') {
       return l10n.extensionCategoryDataReading;
-    if (category == 'Data Writing' || category == '数据写入')
+    }
+    if (category == 'Data Writing' || category == '数据写入') {
       return l10n.extensionCategoryDataWriting;
-    if (category == 'File System' || category == '文件系统')
+    }
+    if (category == 'File System' || category == '文件系统') {
       return l10n.extensionCategoryFileSystem;
-    if (category == 'Network' || category == '网络访问')
+    }
+    if (category == 'Network' || category == '网络访问') {
       return l10n.extensionCategoryNetwork;
-    if (category == 'System Info' || category == '系统信息')
+    }
+    if (category == 'System Info' || category == '系统信息') {
       return l10n.extensionCategorySystemInfo;
-    if (category == 'Navigation' || category == '界面导航')
+    }
+    if (category == 'Navigation' || category == '界面导航') {
       return l10n.extensionCategoryNavigation;
-    if (category == 'UI Interaction' || category == '界面交互')
+    }
+    if (category == 'UI Interaction' || category == '界面交互') {
       return l10n.extensionCategoryUIInteraction;
-    if (category == 'Notifications' || category == '系统通知')
+    }
+    if (category == 'Notifications' || category == '系统通知') {
       return l10n.extensionCategoryNotifications;
-    if (category == 'General' || category == '通用')
+    }
+    if (category == 'General' || category == '通用') {
       return l10n.extensionCategoryGeneral;
+    }
 
     // If not a standard category, fall back to the bilingual strings from registration
     return l10n.localeName == 'en' ? (categoryEn ?? category) : category;

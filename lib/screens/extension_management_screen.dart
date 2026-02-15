@@ -101,7 +101,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                   .toList();
 
               return uninstalledOnline.isEmpty
-                  ? SliverToBoxAdapter(child: _buildEmptyState(theme))
+                  ? _buildEmptyState(context, theme)
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       sliver: SliverList(
@@ -253,7 +253,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
     BaseExtension ext,
   ) {
     final theme = Theme.of(context);
-
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
@@ -333,6 +333,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
     BaseExtension ext,
   ) async {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -364,7 +365,8 @@ class ExtensionManagementScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
@@ -482,7 +484,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
     RepositoryExtension ext,
   ) {
     final theme = Theme.of(context);
-
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
@@ -573,6 +575,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
     RepositoryExtension ext,
   ) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -712,8 +715,8 @@ class ExtensionManagementScreen extends ConsumerWidget {
     WidgetRef ref,
     RepositoryExtension ext,
   ) async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     scaffoldMessenger.showSnackBar(
       SnackBar(content: Text(l10n.installingExtension(ext.name))),

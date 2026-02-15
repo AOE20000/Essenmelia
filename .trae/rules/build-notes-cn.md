@@ -3,12 +3,12 @@ alwaysApply: true
 ---
 # 项目构建与环境维护注意事项
 
-本项目运行在 Flutter 预览版 (3.38.9) 环境下，由于涉及 Gradle 8.x 的 Lazy Property 特性以及 Windows 中文路径兼容性，构建环境相对敏感。后续维护请务必参考以下说明。
+本项目运行在 Flutter 3.38.9 环境下，由于涉及 Gradle 8.x 的 Lazy Property 特性以及 Windows 中文路径兼容性，构建环境相对敏感。后续维护请务必参考以下说明。
 
 ---
 
 ## 1. 核心构建环境
-- **Flutter SDK**: `3.38.9` (Preview/Master channel)
+- **Flutter SDK**: `3.38.9` (Stable channel)
 - **Gradle**: `8.12`
 - **Android Gradle Plugin (AGP)**: `8.9.1`
 - **Kotlin**: `2.1.0`
@@ -40,21 +40,29 @@ alwaysApply: true
 - **Riverpod**: 锁定在 `^2.5.1`。项目目前大量使用 `StateNotifier`，不支持 Riverpod 3.0 的破坏性更新。
 - **compileSdk / targetSdk**: 统一锁定在 `36`。
 
-### D. 动态图标 (Material 3 Dynamic Color Icon)
+### D. 国际化 (i18n) 维护
+**状态**：项目已完成全量 ARB 国际化迁移。
+
+**对策**：
+- **ARB 语法**：ARB 文件中的花括号 `{}` 具有特殊含义。若需显示字面量花括号，请使用单引号包裹，例如 `'{' "a": 1 '}'`。
+- **生成代码**：修改 `.arb` 文件后需运行 `flutter gen-l10n` 以更新 `AppLocalizations` 类。
+- **非 Context 访问**：逻辑层可通过 `ref.read(l10nProvider)` (Riverpod) 访问翻译字符串。
+
+### E. 系统日历权限
+**状态**：已添加 `device_calendar` 支持。
+
+**对策**：
+- **Android**：已在 `AndroidManifest.xml` 声明 `READ_CALENDAR` 和 `WRITE_CALENDAR`。
+- **iOS**：若后续支持 iOS，需在 `Info.plist` 添加 `NSCalendarsUsageDescription`。
+- **权限请求**：应用会在用户选择“系统日历”方案时动态请求权限。
+
+### F. 动态图标 (Material 3 Dynamic Color Icon)
 **问题**：`flutter_launcher_icons` 插件在当前 Windows 环境下无法直接处理 SVG 转换为 Android Vector Drawable (VD)，导致 Android 13+ 的动态取色图标无法自动生成。
 
 **对策**：
 - 在 `pubspec.yaml` 中，`monochrome_android` 指向 PNG 以通过构建。
 - **手动补全**：如果需要修复动态图标，需将 SVG 转换为 Android 兼容的 Vector XML，放置在 `res/drawable/ic_launcher_monochrome.xml`，并手动创建 `res/mipmap-anydpi-v33/launcher_icon.xml` 引用它。
 - 当前状态：由于环境工具链限制，动态图标需手动维护，插件仅处理标准/自适应 PNG 图标。
-
-### E. 系统日历权限
-**状态**：已添加 `device_calendar` 支持方案 2 提醒。
-
-**对策**：
-- **Android**：已在 `AndroidManifest.xml` 声明 `READ_CALENDAR` 和 `WRITE_CALENDAR`。
-- **iOS**：若后续支持 iOS，需在 `Info.plist` 添加 `NSCalendarsUsageDescription`。
-- **权限请求**：应用会在用户选择“系统日历”方案时动态请求权限。
 
 ---
 
@@ -66,6 +74,7 @@ alwaysApply: true
 | `NDK from ndk.dir disagrees with android.ndkVersion` | NDK 路径或版本不匹配 | 检查 `app/build.gradle.kts` 的 `ndkVersion` |
 | `Unresolved reference: StateNotifier` | Riverpod 被错误升级到了 3.x | 将 `flutter_riverpod` 降回 `^2.5.1` |
 | 莫名其妙的路径编码错误 | 中文路径下的 Kotlin 缓存冲突 | 执行 `flutter clean` 并重启编辑器 |
+| `ICU Syntax Error` | ARB 文件中的花括号未正确转义 | 检查并确保非变量花括号已用单引号包裹 |
 
 ---
 
@@ -77,4 +86,4 @@ alwaysApply: true
    - `flutter clean` 后重试。
 
 ---
-*最后更新日期：2026-02-14*
+*最后更新日期：2026-02-15*

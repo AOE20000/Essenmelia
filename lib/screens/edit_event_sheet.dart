@@ -521,6 +521,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     ThemeData theme,
     StateSetter setModalState,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final initialDate = _reminderTime?.isAfter(now) == true
         ? _reminderTime!
@@ -1199,9 +1200,13 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         await _handleImageFile(File(firstFile.path));
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.unsupportedFileFormat)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.unsupportedFileFormat,
+              ),
+            ),
+          );
         }
       }
     }
@@ -1265,16 +1270,22 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.noImageInClipboard)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.noImageInClipboard),
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Clipboard: Paste flow error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.pasteFailed(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.pasteFailed(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -1299,9 +1310,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.failedToGetImageFromLink(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToGetImageFromLink(e.toString()))),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -1321,9 +1332,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.exportFailed(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.exportFailed(e.toString()))),
+        );
       }
     }
   }
@@ -1381,7 +1392,10 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             if (_currentImageUrl != null)
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: Text(l10n.clearImage, style: const TextStyle(color: Colors.red)),
+                title: Text(
+                  l10n.clearImage,
+                  style: const TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _clearImage();
@@ -1867,7 +1881,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                                   ),
                                 )
                               : const Icon(Icons.check, size: 18),
-                          label: Text(widget.event == null ? l10n.create : l10n.save),
+                          label: Text(
+                            widget.event == null ? l10n.create : l10n.save,
+                          ),
                         ),
                       ],
                     ),
@@ -1946,7 +1962,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                               widget.event == null ? Icons.add : Icons.check,
                             ),
                       label: Text(
-                        widget.event == null ? l10n.createRecord : l10n.saveChanges,
+                        widget.event == null
+                            ? l10n.createRecord
+                            : l10n.saveChanges,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

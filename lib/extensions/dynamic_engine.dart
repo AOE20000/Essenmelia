@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import 'logic_engine.dart';
 import 'extension_console.dart';
 
@@ -156,6 +157,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
     Widget current;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     switch (type) {
       case 'column':

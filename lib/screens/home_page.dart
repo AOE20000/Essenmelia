@@ -161,7 +161,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
               if (!mounted) return;
               messenger.showSnackBar(
-                SnackBar(content: Text(l10n.extensionUninstalled)),
+                SnackBar(
+                  content: Text(l10n.extensionUninstalled(ext.metadata.name)),
+                ),
               );
             },
             child: Text(

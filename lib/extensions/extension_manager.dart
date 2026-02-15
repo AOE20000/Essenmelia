@@ -31,7 +31,6 @@ import 'extension_log_manager.dart';
 import 'models/repository_extension.dart';
 import 'logic_engine.dart';
 import '../l10n/l10n_provider.dart';
-import '../services/notification_service.dart';
 
 /// 扩展权限状态管理
 final extensionAuthStateProvider =

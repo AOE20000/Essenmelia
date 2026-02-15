@@ -67,6 +67,7 @@ class _ExtensionDetailsScreenState
   }
 
   Widget _buildHeaderCard(ThemeData theme, ExtensionMetadata metadata) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Container(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../main.dart';
 import '../../services/notification_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';

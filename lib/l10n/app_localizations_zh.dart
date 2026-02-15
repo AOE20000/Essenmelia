@@ -9,6 +9,24 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get uninstallExtension => '卸载扩展';
+
+  @override
+  String uninstallConfirmation(String name) {
+    return '确定要卸载“$name”吗？';
+  }
+
+  @override
+  String pasteFailed(String error) {
+    return '粘贴失败：$error';
+  }
+
+  @override
+  String exportFailed(String error) {
+    return '导出失败：$error';
+  }
+
+  @override
   String get appTitle => 'Essenmelia';
 
   @override
@@ -912,7 +930,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uninstall => '卸载';
 
   @override
-  String get extensionUninstalled => '扩展已卸载';
+  String extensionUninstalled(Object name) {
+    return '扩展“$name”已卸载';
+  }
 
   @override
   String get extensionRepository => '扩展仓库';

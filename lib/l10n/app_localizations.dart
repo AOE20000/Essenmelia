@@ -98,6 +98,30 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
+  /// Title for uninstall confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall Extension'**
+  String get uninstallExtension;
+
+  /// Message for uninstall confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to uninstall \"{name}\"?'**
+  String uninstallConfirmation(String name);
+
+  /// Error message when pasting from clipboard fails
+  ///
+  /// In en, this message translates to:
+  /// **'Paste failed: {error}'**
+  String pasteFailed(String error);
+
+  /// Error message when exporting image fails
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String exportFailed(String error);
+
   /// The title of the application
   ///
   /// In en, this message translates to:
@@ -1782,7 +1806,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Extension uninstalled'**
-  String get extensionUninstalled;
+  String extensionUninstalled(Object name);
 
   /// Title for extension repository page
   ///

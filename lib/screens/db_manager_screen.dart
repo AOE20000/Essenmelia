@@ -595,7 +595,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isActive ? Icons.database_rounded : Icons.storage_rounded,
+                isActive ? Icons.dns_rounded : Icons.storage_rounded,
                 color: isActive
                     ? colorScheme.onPrimary
                     : colorScheme.onSecondaryContainer,
@@ -697,30 +697,6 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
             child: Text(
               l10n.delete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(ThemeData theme, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.bold,
             ),
           ),
         ],

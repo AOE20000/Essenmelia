@@ -9,6 +9,24 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get uninstallExtension => 'Uninstall Extension';
+
+  @override
+  String uninstallConfirmation(String name) {
+    return 'Are you sure you want to uninstall \"$name\"?';
+  }
+
+  @override
+  String pasteFailed(String error) {
+    return 'Paste failed: $error';
+  }
+
+  @override
+  String exportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
   String get appTitle => 'Essenmelia';
 
   @override
@@ -940,7 +958,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uninstall => 'Uninstall';
 
   @override
-  String get extensionUninstalled => 'Extension uninstalled';
+  String extensionUninstalled(Object name) {
+    return 'Extension uninstalled';
+  }
 
   @override
   String get extensionRepository => 'Extension Repository';
