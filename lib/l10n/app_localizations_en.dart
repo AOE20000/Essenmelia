@@ -958,8 +958,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uninstall => 'Uninstall';
 
   @override
-  String extensionUninstalled(Object name) {
-    return 'Extension uninstalled';
+  String extensionUninstalled(String name) {
+    return 'Extension \"$name\" uninstalled';
   }
 
   @override

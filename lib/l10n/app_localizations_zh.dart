@@ -930,7 +930,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uninstall => '卸载';
 
   @override
-  String extensionUninstalled(Object name) {
+  String extensionUninstalled(String name) {
     return '扩展“$name”已卸载';
   }
 

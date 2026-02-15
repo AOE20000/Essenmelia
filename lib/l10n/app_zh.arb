@@ -2,8 +2,29 @@
   "@@locale": "zh",
   "uninstallExtension": "卸载扩展",
   "uninstallConfirmation": "确定要卸载“{name}”吗？",
+  "@uninstallConfirmation": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "pasteFailed": "粘贴失败：{error}",
+  "@pasteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "exportFailed": "导出失败：{error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "appTitle": "Essenmelia",
   "searchPlaceholder": "搜索事件...",
   "select": "选择",
@@ -558,6 +579,13 @@
   },
   "uninstall": "卸载",
   "extensionUninstalled": "扩展“{name}”已卸载",
+  "@extensionUninstalled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "extensionRepository": "扩展仓库",
   "browseAndInstallFromGithub": "从 GitHub 浏览并安装",
   "noExtensionsInstalled": "未安装扩展",

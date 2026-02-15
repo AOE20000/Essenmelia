@@ -1805,8 +1805,8 @@ abstract class AppLocalizations {
   /// Snackbar message after extension uninstalled
   ///
   /// In en, this message translates to:
-  /// **'Extension uninstalled'**
-  String extensionUninstalled(Object name);
+  /// **'Extension \"{name}\" uninstalled'**
+  String extensionUninstalled(String name);
 
   /// Title for extension repository page
   ///

@@ -1315,9 +1315,14 @@
   "@uninstall": {
     "description": "Label for uninstall button"
   },
-  "extensionUninstalled": "Extension uninstalled",
+  "extensionUninstalled": "Extension \"{name}\" uninstalled",
   "@extensionUninstalled": {
-    "description": "Snackbar message after extension uninstalled"
+    "description": "Snackbar message after extension uninstalled",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "extensionRepository": "Extension Repository",
   "@extensionRepository": {
