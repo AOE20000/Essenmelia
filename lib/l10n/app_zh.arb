@@ -165,7 +165,6 @@
   "installFromClipboard": "从剪贴板安装",
   "installFromClipboardSubtitle": "读取剪贴板中的 JSON 或 URL",
   "install": "安装",
-  "extensionUninstalled": "{name} 已卸载",
   "@extensionUninstalled": {
     "placeholders": {
       "name": {
@@ -178,7 +177,6 @@
   "retry": "重试",
   "extensionNoUI": "此扩展未定义界面。",
   "extensionPureMode": "纯净模式 (仅元数据)",
-  
   "extensionStorageOccupied": "存储占用: {size}",
   "@extensionStorageOccupied": {
     "placeholders": {
@@ -454,7 +452,7 @@
     }
   },
   "jsonFormatValue": "JSON 格式值",
-  "jsonHint": "例如: \"text\" 或 123 或 '{'\"a\": 1'}'",
+  "jsonHint": "例如: \"text\" 或 123 或 JSON 对象",
   "invalidJson": "无效的 JSON: {error}",
   "@invalidJson": {
     "placeholders": {

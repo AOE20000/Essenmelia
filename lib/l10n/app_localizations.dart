@@ -242,6 +242,18 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get language;
 
+  /// English language name
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// Chinese language name
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get chinese;
+
   /// Label for system language sync
   ///
   /// In en, this message translates to:
@@ -343,6 +355,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All Tags'**
   String get allTags;
+
+  /// Title for recommended tags section
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Tags'**
+  String get recommendedTags;
 
   /// Message shown when no tags exist
   ///
@@ -674,6 +692,18 @@ abstract class AppLocalizations {
   /// **'Add Step'**
   String get addStep;
 
+  /// Hint text for adding a new step
+  ///
+  /// In en, this message translates to:
+  /// **'Add new step...'**
+  String get addNewStepPlaceholder;
+
+  /// Snackbar message when an item is added to steps
+  ///
+  /// In en, this message translates to:
+  /// **'Added to steps'**
+  String get addedToSteps;
+
   /// Hint text for new step input
   ///
   /// In en, this message translates to:
@@ -703,6 +733,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Extension'**
   String get extensionOpen;
+
+  /// Subtitle for link-based extension installation
+  ///
+  /// In en, this message translates to:
+  /// **'Supports URL or GitHub links'**
+  String get extensionLinkSubtitle;
+
+  /// Label for clipboard-based extension installation
+  ///
+  /// In en, this message translates to:
+  /// **'Install from Clipboard'**
+  String get installFromClipboard;
+
+  /// Subtitle for clipboard-based extension installation
+  ///
+  /// In en, this message translates to:
+  /// **'Read JSON or URL from clipboard'**
+  String get installFromClipboardSubtitle;
+
+  /// Generic error message for invalid input
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid input'**
+  String get invalidInput;
+
+  /// Error message for failed reset
+  ///
+  /// In en, this message translates to:
+  /// **'Reset failed: {error}'**
+  String resetFailedDetailed(String error);
+
+  /// Statistics for a database
+  ///
+  /// In en, this message translates to:
+  /// **'{events} events, {templates} templates'**
+  String dbStats(int events, int templates);
+
+  /// Message shown when no extensions are found in store
+  ///
+  /// In en, this message translates to:
+  /// **'No extensions available in the store'**
+  String get noAvailableExtensions;
+
+  /// Error message when store fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load store'**
+  String get failedToLoadStore;
+
+  /// Label for pure metadata extension mode
+  ///
+  /// In en, this message translates to:
+  /// **'Pure Mode (Metadata only)'**
+  String get extensionPureMode;
+
+  /// Label for extension storage usage
+  ///
+  /// In en, this message translates to:
+  /// **'Storage: {size}'**
+  String extensionStorageOccupied(String size);
+
+  /// Title for extension developer sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Developer Sandbox'**
+  String get extensionDeveloperSandbox;
+
+  /// Instruction for extension developer sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'This extension is running as a \'pure shell\'. You can test its permissions below.'**
+  String get extensionSandboxInstruction;
+
+  /// Button label to get events in sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Get Events'**
+  String get extensionGetEvents;
+
+  /// Button label to send notification in sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Send Notification'**
+  String get extensionSendNotification;
+
+  /// Success message for getting events in sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully fetched {count} events'**
+  String extensionGetEventsSuccess(int count);
+
+  /// Error message for getting events in sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch failed: {error}'**
+  String extensionGetEventsFailed(String error);
+
+  /// Test notification message from sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Test notification from extension sandbox'**
+  String get extensionSandboxNotification;
+
+  /// Default label for extension buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Button'**
+  String get extensionDefaultButtonLabel;
+
+  /// Label for retry action
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// Label for using a custom extension store
+  ///
+  /// In en, this message translates to:
+  /// **'Use custom store link'**
+  String get useCustomStoreLink;
+
+  /// Title for custom store dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Store'**
+  String get customStore;
+
+  /// Label for load action
+  ///
+  /// In en, this message translates to:
+  /// **'Load'**
+  String get load;
+
+  /// Label for extension author
+  ///
+  /// In en, this message translates to:
+  /// **'Author: {author}'**
+  String authorLabel(String author);
+
+  /// Label for version and author
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} • Author {author}'**
+  String versionAuthorLabel(String version, String author);
+
+  /// Section header for extension info
+  ///
+  /// In en, this message translates to:
+  /// **'About this extension'**
+  String get aboutExtension;
+
+  /// Label for installing an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Install Extension'**
+  String get installExtension;
+
+  /// Snackbar message during installation
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading and installing {name}...'**
+  String installingExtension(String name);
+
+  /// Snackbar message after successful installation
+  ///
+  /// In en, this message translates to:
+  /// **'{name} installed successfully'**
+  String installSuccess(String name);
+
+  /// Error message for failed installation
+  ///
+  /// In en, this message translates to:
+  /// **'Installation failed, please check the link or network'**
+  String get installFailed;
+
+  /// Detailed error message for installation
+  ///
+  /// In en, this message translates to:
+  /// **'Installation error: {error}'**
+  String installError(String error);
+
+  /// Title for event reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Event Reminder'**
+  String get eventReminder;
+
+  /// Description for the event reminder notification channel
+  ///
+  /// In en, this message translates to:
+  /// **'Used for scheduled event reminders'**
+  String get eventReminderChannelDesc;
+
+  /// Title for system notifications
+  ///
+  /// In en, this message translates to:
+  /// **'System Notification'**
+  String get systemNotification;
+
+  /// Description for the system notification channel
+  ///
+  /// In en, this message translates to:
+  /// **'Instant notifications from the app or extensions'**
+  String get systemNotificationChannelDesc;
+
+  /// Category for extension notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get extensionCategoryNotifications;
 
   /// Label for uninstalling an extension
   ///
@@ -1112,23 +1352,113 @@ abstract class AppLocalizations {
   /// **'Sets'**
   String get sets;
 
-  /// Hint text for adding a new step
-  ///
-  /// In en, this message translates to:
-  /// **'Add new step...'**
-  String get addNewStepPlaceholder;
-
   /// Hint text for adding to archive
   ///
   /// In en, this message translates to:
   /// **'Add to archive...'**
   String get addToArchivePlaceholder;
 
-  /// Snackbar message after adding to steps
+  /// Title for extension logs screen
   ///
   /// In en, this message translates to:
-  /// **'Added to steps'**
-  String get addedToSteps;
+  /// **'Extension Logs'**
+  String get extensionLogsTitle;
+
+  /// Message shown when there are no API logs
+  ///
+  /// In en, this message translates to:
+  /// **'No API call records'**
+  String get noApiLogs;
+
+  /// Label for no parameters in logs
+  ///
+  /// In en, this message translates to:
+  /// **'No parameters'**
+  String get noParams;
+
+  /// Label for restricted access mode
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted Access'**
+  String get restrictedAccess;
+
+  /// Title for log details dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Call Details'**
+  String get logDetails;
+
+  /// Label for extension name in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Name'**
+  String get extensionNameLabel;
+
+  /// Label for extension ID in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Extension ID'**
+  String get extensionIdLabel;
+
+  /// Label for API method in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get methodLabel;
+
+  /// Label for call time in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeLabel;
+
+  /// Label for call status in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// Label for success status
+  ///
+  /// In en, this message translates to:
+  /// **'Success'**
+  String get successLabel;
+
+  /// Label for failed status
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get failedLabel;
+
+  /// Label for access mode in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Access Mode'**
+  String get accessModeLabel;
+
+  /// Description for intercepted restricted access
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted Access (Intercepted)'**
+  String get restrictedAccessIntercepted;
+
+  /// Description for trusted mode passthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted Mode (Passthrough)'**
+  String get trustedModePassthrough;
+
+  /// Label for error message in logs
+  ///
+  /// In en, this message translates to:
+  /// **'Error Message'**
+  String get errorMessageLabel;
+
+  /// Title for parameter details section
+  ///
+  /// In en, this message translates to:
+  /// **'Parameter Details'**
+  String get paramsDetails;
 
   /// Label for saving steps as a template set
   ///
@@ -1640,6 +1970,12 @@ abstract class AppLocalizations {
   /// **'Built-in'**
   String get builtInFont;
 
+  /// Label for last sync time
+  ///
+  /// In en, this message translates to:
+  /// **'Last Sync: {time}'**
+  String lastSync(String time);
+
   /// Label for data maintenance section
   ///
   /// In en, this message translates to:
@@ -1693,12 +2029,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm Choice'**
   String get extensionConfirmChoice;
-
-  /// Label for last sync time
-  ///
-  /// In en, this message translates to:
-  /// **'Last Sync: {time}'**
-  String lastSync(String time);
 
   /// Label for extension runtime and security section
   ///
@@ -2360,11 +2690,95 @@ abstract class AppLocalizations {
   /// **'Quick Edit (Long press to slide)'**
   String get quickEdit;
 
+  /// Title for the extension debug console
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Console'**
+  String get extensionConsole;
+
+  /// Label for logs tab
+  ///
+  /// In en, this message translates to:
+  /// **'Logs'**
+  String get logs;
+
+  /// Label for state tree tab
+  ///
+  /// In en, this message translates to:
+  /// **'State Tree'**
+  String get stateTree;
+
+  /// Tooltip for restarting the JS engine
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Engine'**
+  String get restartEngine;
+
+  /// Message shown when there are no logs
+  ///
+  /// In en, this message translates to:
+  /// **'No logs'**
+  String get noLogs;
+
+  /// Header for state variables list
+  ///
+  /// In en, this message translates to:
+  /// **'Current State Variables (State):'**
+  String get currentStateVariables;
+
+  /// Title for state editing dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Edit State: {key}'**
+  String editState(String key);
+
+  /// Label for JSON input field
+  ///
+  /// In en, this message translates to:
+  /// **'JSON Format Value'**
+  String get jsonFormatValue;
+
+  /// Hint for JSON input field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., \"text\" or 123 or JSON object'**
+  String get jsonHint;
+
+  /// Error message for invalid JSON input
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid JSON: {error}'**
+  String invalidJson(String error);
+
   /// Label for the full original image in picker
   ///
   /// In en, this message translates to:
   /// **'Full Original Image'**
   String get fullOriginalImage;
+
+  /// Title for the dialog showing all system permissions
+  ///
+  /// In en, this message translates to:
+  /// **'All System Permissions'**
+  String get allSystemPermissions;
+
+  /// Error message when an extension fails to run
+  ///
+  /// In en, this message translates to:
+  /// **'Extension runtime error'**
+  String get extensionError;
+
+  /// Message shown when an extension lacks a view definition
+  ///
+  /// In en, this message translates to:
+  /// **'This extension has no UI interface'**
+  String get extensionNoUI;
+
+  /// Default label for a button in dynamic UI
+  ///
+  /// In en, this message translates to:
+  /// **'Button'**
+  String get extensionButton;
 }
 
 class _AppLocalizationsDelegate

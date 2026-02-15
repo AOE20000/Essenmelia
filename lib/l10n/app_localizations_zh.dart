@@ -81,6 +81,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get language => '语言';
 
   @override
+  String get english => 'English';
+
+  @override
+  String get chinese => '中文';
+
+  @override
   String get systemLanguage => '系统默认';
 
   @override
@@ -136,6 +142,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get allTags => '所有标签';
+
+  @override
+  String get recommendedTags => '推荐标签';
 
   @override
   String get noTags => '暂无标签';
@@ -263,7 +272,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pickImage => '选择图片';
 
   @override
-  String get saveChanges => '保存修改';
+  String get saveChanges => '保存更改';
 
   @override
   String get createEvent => '创建事件';
@@ -302,13 +311,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steps => '步骤';
 
   @override
-  String get manageSteps => '步骤管理';
+  String get manageSteps => '管理步骤';
 
   @override
-  String get noStepsYet => '暂无步骤';
+  String get noStepsYet => '暂无步骤。';
 
   @override
   String get addStep => '添加步骤';
+
+  @override
+  String get addNewStepPlaceholder => '添加新步骤...';
+
+  @override
+  String get addedToSteps => '已添加到步骤';
 
   @override
   String get newStepPlaceholder => '新步骤...';
@@ -324,6 +339,132 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extensionOpen => '打开扩展';
+
+  @override
+  String get extensionLinkSubtitle => '支持 URL 或 GitHub 链接';
+
+  @override
+  String get installFromClipboard => '从剪贴板安装';
+
+  @override
+  String get installFromClipboardSubtitle => '读取剪贴板中的 JSON 或 URL';
+
+  @override
+  String get invalidInput => '输入无效';
+
+  @override
+  String resetFailedDetailed(String error) {
+    return '重置失败: $error';
+  }
+
+  @override
+  String dbStats(int events, int templates) {
+    return '$events 个事件, $templates 个模板';
+  }
+
+  @override
+  String get noAvailableExtensions => '商店中暂无可用扩展';
+
+  @override
+  String get failedToLoadStore => '无法加载商店';
+
+  @override
+  String get extensionPureMode => '纯净模式 (仅元数据)';
+
+  @override
+  String extensionStorageOccupied(String size) {
+    return '存储占用: $size';
+  }
+
+  @override
+  String get extensionDeveloperSandbox => '开发沙箱';
+
+  @override
+  String get extensionSandboxInstruction =>
+      '此扩展目前作为“纯净壳”运行。你可以点击下方按钮测试其申请的权限是否生效。';
+
+  @override
+  String get extensionGetEvents => '获取事件';
+
+  @override
+  String get extensionSendNotification => '发送通知';
+
+  @override
+  String extensionGetEventsSuccess(int count) {
+    return '成功获取 $count 个事件';
+  }
+
+  @override
+  String extensionGetEventsFailed(String error) {
+    return '获取失败: $error';
+  }
+
+  @override
+  String get extensionSandboxNotification => '来自扩展沙箱的测试通知';
+
+  @override
+  String get extensionDefaultButtonLabel => '按钮';
+
+  @override
+  String get retry => '重试';
+
+  @override
+  String get useCustomStoreLink => '使用自定义商店链接';
+
+  @override
+  String get customStore => '自定义商店';
+
+  @override
+  String get load => '加载';
+
+  @override
+  String authorLabel(String author) {
+    return '作者: $author';
+  }
+
+  @override
+  String versionAuthorLabel(String version, String author) {
+    return '版本 $version • 作者 $author';
+  }
+
+  @override
+  String get aboutExtension => '关于此扩展';
+
+  @override
+  String get installExtension => '安装扩展';
+
+  @override
+  String installingExtension(String name) {
+    return '正在下载并安装 $name...';
+  }
+
+  @override
+  String installSuccess(String name) {
+    return '$name 安装成功';
+  }
+
+  @override
+  String get installFailed => '安装失败，请检查链接或网络';
+
+  @override
+  String installError(String error) {
+    return '安装出错: $error';
+  }
+
+  @override
+  String get eventReminder => '事件提醒';
+
+  @override
+  String get eventReminderChannelDesc => '用于事件的定时提醒';
+
+  @override
+  String get systemNotification => '系统通知';
+
+  @override
+  String get systemNotificationChannelDesc => '来自应用或扩展的即时通知';
+
+  @override
+  String get extensionCategoryNotifications => '系统通知';
 
   @override
   String get extensionUninstall => '卸载';
@@ -534,13 +675,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sets => '模板集';
 
   @override
-  String get addNewStepPlaceholder => '添加新步骤...';
-
-  @override
   String get addToArchivePlaceholder => '添加到存档...';
 
   @override
-  String get addedToSteps => '已添加到步骤';
+  String get extensionLogsTitle => '系统扩展日志';
+
+  @override
+  String get noApiLogs => '暂无 API 调用记录';
+
+  @override
+  String get noParams => '无参数';
+
+  @override
+  String get restrictedAccess => '受限访问';
+
+  @override
+  String get logDetails => '调用详情';
+
+  @override
+  String get extensionNameLabel => '扩展名称';
+
+  @override
+  String get extensionIdLabel => '扩展 ID';
+
+  @override
+  String get methodLabel => '调用方法';
+
+  @override
+  String get timeLabel => '调用时间';
+
+  @override
+  String get statusLabel => '状态';
+
+  @override
+  String get successLabel => '成功';
+
+  @override
+  String get failedLabel => '失败';
+
+  @override
+  String get accessModeLabel => '访问模式';
+
+  @override
+  String get restrictedAccessIntercepted => '受限访问 (拦截)';
+
+  @override
+  String get trustedModePassthrough => '信任模式 (直通)';
+
+  @override
+  String get errorMessageLabel => '错误信息';
+
+  @override
+  String get paramsDetails => '参数详情';
 
   @override
   String get saveCurrentStepsAsSet => '将当前步骤保存为模板集';
@@ -826,6 +1012,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get builtInFont => '内置字体';
 
   @override
+  String lastSync(String time) {
+    return '上次同步: $time';
+  }
+
+  @override
   String get dataMaintenance => '数据维护';
 
   @override
@@ -851,11 +1042,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extensionConfirmChoice => '确认选择';
-
-  @override
-  String lastSync(String time) {
-    return '上次同步: $time';
-  }
 
   @override
   String get extensionRuntimeSection => '运行与安全';
@@ -1201,5 +1387,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickEdit => '快速编辑 (长按滑动)';
 
   @override
+  String get extensionConsole => '扩展控制台';
+
+  @override
+  String get logs => '日志';
+
+  @override
+  String get stateTree => '状态树';
+
+  @override
+  String get restartEngine => '重启引擎';
+
+  @override
+  String get noLogs => '暂无日志';
+
+  @override
+  String get currentStateVariables => '当前状态变量 (State):';
+
+  @override
+  String editState(String key) {
+    return '编辑状态: $key';
+  }
+
+  @override
+  String get jsonFormatValue => 'JSON 格式值';
+
+  @override
+  String get jsonHint => '例如: \"text\" 或 123 或 JSON 对象';
+
+  @override
+  String invalidJson(String error) {
+    return '无效的 JSON: $error';
+  }
+
+  @override
   String get fullOriginalImage => '完整原图';
+
+  @override
+  String get allSystemPermissions => '所有系统权限';
+
+  @override
+  String get extensionError => '扩展脚本运行错误';
+
+  @override
+  String get extensionNoUI => '此扩展未定义界面。';
+
+  @override
+  String get extensionButton => '按钮';
 }

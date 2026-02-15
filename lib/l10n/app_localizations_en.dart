@@ -81,6 +81,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
+  String get english => 'English';
+
+  @override
+  String get chinese => 'Chinese';
+
+  @override
   String get systemLanguage => 'System';
 
   @override
@@ -136,6 +142,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allTags => 'All Tags';
+
+  @override
+  String get recommendedTags => 'Recommended Tags';
 
   @override
   String get noTags => 'No tags available';
@@ -312,6 +321,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addStep => 'Add Step';
 
   @override
+  String get addNewStepPlaceholder => 'Add new step...';
+
+  @override
+  String get addedToSteps => 'Added to steps';
+
+  @override
   String get newStepPlaceholder => 'New step...';
 
   @override
@@ -325,6 +340,135 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extensionOpen => 'Open Extension';
+
+  @override
+  String get extensionLinkSubtitle => 'Supports URL or GitHub links';
+
+  @override
+  String get installFromClipboard => 'Install from Clipboard';
+
+  @override
+  String get installFromClipboardSubtitle => 'Read JSON or URL from clipboard';
+
+  @override
+  String get invalidInput => 'Invalid input';
+
+  @override
+  String resetFailedDetailed(String error) {
+    return 'Reset failed: $error';
+  }
+
+  @override
+  String dbStats(int events, int templates) {
+    return '$events events, $templates templates';
+  }
+
+  @override
+  String get noAvailableExtensions => 'No extensions available in the store';
+
+  @override
+  String get failedToLoadStore => 'Failed to load store';
+
+  @override
+  String get extensionPureMode => 'Pure Mode (Metadata only)';
+
+  @override
+  String extensionStorageOccupied(String size) {
+    return 'Storage: $size';
+  }
+
+  @override
+  String get extensionDeveloperSandbox => 'Developer Sandbox';
+
+  @override
+  String get extensionSandboxInstruction =>
+      'This extension is running as a \'pure shell\'. You can test its permissions below.';
+
+  @override
+  String get extensionGetEvents => 'Get Events';
+
+  @override
+  String get extensionSendNotification => 'Send Notification';
+
+  @override
+  String extensionGetEventsSuccess(int count) {
+    return 'Successfully fetched $count events';
+  }
+
+  @override
+  String extensionGetEventsFailed(String error) {
+    return 'Fetch failed: $error';
+  }
+
+  @override
+  String get extensionSandboxNotification =>
+      'Test notification from extension sandbox';
+
+  @override
+  String get extensionDefaultButtonLabel => 'Button';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get useCustomStoreLink => 'Use custom store link';
+
+  @override
+  String get customStore => 'Custom Store';
+
+  @override
+  String get load => 'Load';
+
+  @override
+  String authorLabel(String author) {
+    return 'Author: $author';
+  }
+
+  @override
+  String versionAuthorLabel(String version, String author) {
+    return 'Version $version • Author $author';
+  }
+
+  @override
+  String get aboutExtension => 'About this extension';
+
+  @override
+  String get installExtension => 'Install Extension';
+
+  @override
+  String installingExtension(String name) {
+    return 'Downloading and installing $name...';
+  }
+
+  @override
+  String installSuccess(String name) {
+    return '$name installed successfully';
+  }
+
+  @override
+  String get installFailed =>
+      'Installation failed, please check the link or network';
+
+  @override
+  String installError(String error) {
+    return 'Installation error: $error';
+  }
+
+  @override
+  String get eventReminder => 'Event Reminder';
+
+  @override
+  String get eventReminderChannelDesc => 'Used for scheduled event reminders';
+
+  @override
+  String get systemNotification => 'System Notification';
+
+  @override
+  String get systemNotificationChannelDesc =>
+      'Instant notifications from the app or extensions';
+
+  @override
+  String get extensionCategoryNotifications => 'Notifications';
 
   @override
   String get extensionUninstall => 'Uninstall';
@@ -556,13 +700,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sets => 'Sets';
 
   @override
-  String get addNewStepPlaceholder => 'Add new step...';
-
-  @override
   String get addToArchivePlaceholder => 'Add to archive...';
 
   @override
-  String get addedToSteps => 'Added to steps';
+  String get extensionLogsTitle => 'Extension Logs';
+
+  @override
+  String get noApiLogs => 'No API call records';
+
+  @override
+  String get noParams => 'No parameters';
+
+  @override
+  String get restrictedAccess => 'Restricted Access';
+
+  @override
+  String get logDetails => 'Call Details';
+
+  @override
+  String get extensionNameLabel => 'Extension Name';
+
+  @override
+  String get extensionIdLabel => 'Extension ID';
+
+  @override
+  String get methodLabel => 'Method';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get successLabel => 'Success';
+
+  @override
+  String get failedLabel => 'Failed';
+
+  @override
+  String get accessModeLabel => 'Access Mode';
+
+  @override
+  String get restrictedAccessIntercepted => 'Restricted Access (Intercepted)';
+
+  @override
+  String get trustedModePassthrough => 'Trusted Mode (Passthrough)';
+
+  @override
+  String get errorMessageLabel => 'Error Message';
+
+  @override
+  String get paramsDetails => 'Parameter Details';
 
   @override
   String get saveCurrentStepsAsSet => 'Save current steps as Template Set';
@@ -855,6 +1044,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get builtInFont => 'Built-in';
 
   @override
+  String lastSync(String time) {
+    return 'Last Sync: $time';
+  }
+
+  @override
   String get dataMaintenance => 'Data Maintenance';
 
   @override
@@ -881,11 +1075,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extensionConfirmChoice => 'Confirm Choice';
-
-  @override
-  String lastSync(String time) {
-    return 'Last Sync: $time';
-  }
 
   @override
   String get extensionRuntimeSection => 'Runtime & Security';
@@ -1242,5 +1431,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickEdit => 'Quick Edit (Long press to slide)';
 
   @override
+  String get extensionConsole => 'Extension Console';
+
+  @override
+  String get logs => 'Logs';
+
+  @override
+  String get stateTree => 'State Tree';
+
+  @override
+  String get restartEngine => 'Restart Engine';
+
+  @override
+  String get noLogs => 'No logs';
+
+  @override
+  String get currentStateVariables => 'Current State Variables (State):';
+
+  @override
+  String editState(String key) {
+    return 'Edit State: $key';
+  }
+
+  @override
+  String get jsonFormatValue => 'JSON Format Value';
+
+  @override
+  String get jsonHint => 'e.g., \"text\" or 123 or JSON object';
+
+  @override
+  String invalidJson(String error) {
+    return 'Invalid JSON: $error';
+  }
+
+  @override
   String get fullOriginalImage => 'Full Original Image';
+
+  @override
+  String get allSystemPermissions => 'All System Permissions';
+
+  @override
+  String get extensionError => 'Extension runtime error';
+
+  @override
+  String get extensionNoUI => 'This extension has no UI interface';
+
+  @override
+  String get extensionButton => 'Button';
 }
