@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 enum PermissionManagementDecision {
   allowOnce,
@@ -31,49 +32,39 @@ class _PermissionManagementDialogState
     extends State<PermissionManagementDialog> {
   double _sliderValue = 0;
 
-  List<Map<String, dynamic>> _getLevels(bool isEn) {
+  List<Map<String, dynamic>> _getLevels(AppLocalizations l10n) {
     return [
       {
-        'label': isEn ? 'Deny Access' : '拒绝访问',
-        'description': isEn
-            ? 'Provides no data, which may cause errors or limited functionality.'
-            : '不提供任何数据，可能导致扩展报错或功能受限。',
+        'label': l10n.extensionDecisionDeny,
+        'description': l10n.extensionDecisionDenyDesc,
         'decision': PermissionManagementDecision.deny,
         'color': Colors.red,
         'icon': Icons.block_flipped,
       },
       {
-        'label': isEn ? 'Allow Once' : '仅允许一次',
-        'description': isEn
-            ? 'Provides real data only for this specific request.'
-            : '仅针对本次特定的数据请求提供真实数据。',
+        'label': l10n.extensionDecisionOnce,
+        'description': l10n.extensionDecisionOnceDesc,
         'decision': PermissionManagementDecision.allowOnce,
         'color': Colors.orange,
         'icon': Icons.looks_one_outlined,
       },
       {
-        'label': isEn ? 'Allow Next Time' : '仅下次允许',
-        'description': isEn
-            ? 'Intercepts now, but automatically allows the next time this access occurs.'
-            : '本次保持拦截，但下次该扩展再次尝试此类访问时将自动通过。',
+        'label': l10n.extensionDecisionNext,
+        'description': l10n.extensionDecisionNextDesc,
         'decision': PermissionManagementDecision.allowNextRun,
         'color': Colors.blue,
         'icon': Icons.fast_forward_outlined,
       },
       {
-        'label': isEn ? 'Allow Category (Session)' : '本次运行时允许该类',
-        'description': isEn
-            ? 'Allows all access to this category until the app is closed.'
-            : '在应用关闭前，允许该扩展访问所有此类数据。',
+        'label': l10n.extensionDecisionSessionCategory,
+        'description': l10n.extensionDecisionSessionCategoryDesc,
         'decision': PermissionManagementDecision.allowCategoryOnce,
         'color': Colors.indigo,
         'icon': Icons.category_outlined,
       },
       {
-        'label': isEn ? 'Allow All (Session)' : '本次运行时全部允许',
-        'description': isEn
-            ? 'Allows all permissions for this extension until the app is closed.'
-            : '在应用关闭前，对该扩展开放所有权限，不再弹窗询问。',
+        'label': l10n.extensionDecisionSessionAll,
+        'description': l10n.extensionDecisionSessionAllDesc,
         'decision': PermissionManagementDecision.allowAllOnce,
         'color': Colors.purple,
         'icon': Icons.security_outlined,
@@ -84,9 +75,8 @@ class _PermissionManagementDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final locale = Localizations.maybeLocaleOf(context);
-    final isEn = locale?.languageCode == 'en';
-    final levels = _getLevels(isEn);
+    final l10n = AppLocalizations.of(context)!;
+    final levels = _getLevels(l10n);
     final currentLevel = levels[_sliderValue.toInt()];
 
     return AlertDialog(
@@ -103,8 +93,8 @@ class _PermissionManagementDialogState
           const SizedBox(width: 12),
           Text(
             widget.isPostHoc
-                ? (isEn ? 'Access Intercepted' : '拦截了一次访问')
-                : (isEn ? 'Restricted Access' : '已开启受限访问'),
+                ? l10n.extensionInterceptedTitle
+                : l10n.extensionRestrictedAccess,
           ),
         ],
       ),
@@ -118,15 +108,13 @@ class _PermissionManagementDialogState
               text: TextSpan(
                 style: theme.textTheme.bodyLarge,
                 children: [
-                  TextSpan(text: isEn ? 'Extension ' : '扩展 '),
                   TextSpan(
-                    text: widget.extensionName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(
-                    text: widget.isPostHoc
-                        ? (isEn ? ' just tried to:' : ' 刚才尝试：')
-                        : (isEn ? ' wants to:' : ' 想要：'),
+                    text: l10n.extensionInterceptedDesc(
+                      widget.extensionName,
+                      widget.isPostHoc
+                          ? l10n.extensionInterceptedActionTried
+                          : l10n.extensionInterceptedActionWants,
+                    ),
                   ),
                 ],
               ),
@@ -242,7 +230,7 @@ class _PermissionManagementDialogState
               minimumSize: const Size(double.infinity, 48),
               backgroundColor: currentLevel['color'],
             ),
-            child: Text(isEn ? 'Confirm Choice' : '确认选择'),
+            child: Text(l10n.extensionConfirmChoice),
           ),
         ),
       ],

@@ -182,8 +182,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       data: (_) => _buildAdaptiveLayout(context),
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) =>
-          Scaffold(body: Center(child: Text('Database Error: $err'))),
+      error: (err, stack) => Scaffold(
+        body: Center(
+          child: Text(
+            AppLocalizations.of(context)!.databaseError(err.toString()),
+          ),
+        ),
+      ),
     );
   }
 
@@ -411,112 +416,75 @@ class _HomePageState extends ConsumerState<HomePage> {
 
         return Scaffold(
           key: const ValueKey('extensions'),
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            title: Text(
+              l10n.navExtensions,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            actions: [
+              IconButton.filledTonal(
+                icon: const Icon(Icons.assignment_outlined),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ExtensionLogsPage(),
+                    ),
+                  );
+                },
+                tooltip: l10n.extensionLogs,
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.add),
+                onPressed: () => _showAddExtensionDialog(context),
+                tooltip: l10n.addExtension,
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
           body: extensions.isEmpty
-              ? Column(
-                  children: [
-                    AppBar(
-                      backgroundColor: Colors.transparent,
-                      scrolledUnderElevation: 0,
-                      title: Text(
-                        l10n.navExtensions,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.extension_off_outlined,
+                          size: 48,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
-                      actions: [
-                        IconButton.filledTonal(
-                          icon: const Icon(Icons.assignment_outlined),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const ExtensionLogsPage(),
-                              ),
-                            );
-                          },
-                          tooltip: '扩展日志',
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton.filledTonal(
-                          icon: const Icon(Icons.add),
-                          onPressed: () => _showAddExtensionDialog(context),
-                          tooltip: l10n.addExtension,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHigh,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.extension_off_outlined,
-                                size: 48,
-                                color: theme.colorScheme.primary.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              l10n.noExtensionsInstalled,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: theme.colorScheme.outline,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            FilledButton.tonalIcon(
-                              onPressed: () => _showAddExtensionDialog(context),
-                              icon: const Icon(Icons.add),
-                              label: Text(l10n.addExtension),
-                            ),
-                          ],
+                      const SizedBox(height: 24),
+                      Text(
+                        l10n.noExtensionsInstalled,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      FilledButton.tonalIcon(
+                        onPressed: () => _showAddExtensionDialog(context),
+                        icon: const Icon(Icons.add),
+                        label: Text(l10n.addExtension),
+                      ),
+                    ],
+                  ),
                 )
               : CustomScrollView(
                   slivers: [
-                    SliverAppBar.large(
-                      title: Text(
-                        l10n.navExtensions,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      pinned: true,
-                      backgroundColor: theme.colorScheme.surface,
-                      surfaceTintColor: theme.colorScheme.surfaceTint,
-                      actions: [
-                        IconButton.filledTonal(
-                          icon: const Icon(Icons.assignment_outlined),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const ExtensionLogsPage(),
-                              ),
-                            );
-                          },
-                          tooltip: '扩展日志',
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton.filledTonal(
-                          icon: const Icon(Icons.add),
-                          onPressed: () => _showAddExtensionDialog(context),
-                          tooltip: l10n.addExtension,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
                     if (showExtensionGuide)
                       SliverToBoxAdapter(
                         child: Padding(
@@ -547,7 +515,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          '欢迎使用扩展系统',
+                                          l10n.welcomeToExtensions,
                                           style: theme.textTheme.titleMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.bold,
@@ -567,13 +535,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                                               .dismissGuide();
                                         },
                                         icon: const Icon(Icons.close, size: 18),
-                                        tooltip: '不再显示',
+                                        tooltip: l10n.dontShowAgain,
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    '长按扩展进入管理页面',
+                                    l10n.longPressToManageExtension,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
                                       height: 1.5,
@@ -1096,6 +1064,7 @@ class _ReminderInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toString();
+    final l10n = AppLocalizations.of(context)!;
 
     String recurrenceText = '';
     IconData recurrenceIcon = Icons.notifications_outlined;
@@ -1104,13 +1073,13 @@ class _ReminderInfo extends StatelessWidget {
       recurrenceIcon = Icons.update_rounded;
       switch (recurrence) {
         case 'daily':
-          recurrenceText = ' (每天)';
+          recurrenceText = l10n.recurrenceDaily;
           break;
         case 'weekly':
-          recurrenceText = ' (每周)';
+          recurrenceText = l10n.recurrenceWeekly;
           break;
         case 'monthly':
-          recurrenceText = ' (每月)';
+          recurrenceText = l10n.recurrenceMonthly;
           break;
       }
     }

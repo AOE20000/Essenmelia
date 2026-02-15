@@ -33,15 +33,26 @@ class ExtensionManagementScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar.large(
-            title: Text(l10n.localeName == 'zh' ? '扩展管理' : 'Extensions'),
+            title: Text(l10n.extensionManagementTitle),
             pinned: true,
             backgroundColor: theme.colorScheme.surface,
             surfaceTintColor: theme.colorScheme.surfaceTint,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () =>
+                    ref.refresh(extensionRepositoryManifestProvider),
+              ),
+            ],
           ),
 
           // --- 已安装扩展 ---
           if (installedIds.isNotEmpty) ...[
-            _buildSectionHeader(context, '已安装', Icons.check_circle_outline),
+            _buildSectionHeader(
+              context,
+              l10n.extensionSectionInstalled,
+              Icons.check_circle_outline,
+            ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
@@ -60,7 +71,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
           if (uninstalledBuiltIn.isNotEmpty) ...[
             _buildSectionHeader(
               context,
-              l10n.localeName == 'zh' ? '内置扩展' : 'Built-in',
+              l10n.extensionSectionBuiltIn,
               Icons.extension_rounded,
             ),
             SliverPadding(
@@ -80,7 +91,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
           // --- 在线扩展 ---
           _buildSectionHeader(
             context,
-            l10n.localeName == 'zh' ? '在线扩展' : 'Online',
+            l10n.extensionSectionOnline,
             Icons.cloud_queue_rounded,
           ),
           manifestAsync.when(
@@ -178,7 +189,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.cloud_download_rounded),
               title: Text(l10n.downloadAndInstallFromLink),
-              subtitle: const Text('支持 URL 或 GitHub 链接'),
+              subtitle: Text(l10n.extensionLinkSubtitle),
               onTap: () {
                 Navigator.pop(context);
                 _showUrlImportDialog(context, ref);
@@ -186,8 +197,8 @@ class ExtensionManagementScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.content_paste_rounded),
-              title: const Text('从剪贴板安装'),
-              subtitle: const Text('读取剪贴板中的 JSON 或 URL'),
+              title: Text(l10n.installFromClipboard),
+              subtitle: Text(l10n.installFromClipboardSubtitle),
               onTap: () async {
                 Navigator.pop(context);
                 await ref.read(extensionManagerProvider).importFromClipboard();
@@ -229,7 +240,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                 await ref.read(extensionManagerProvider).importFromUrl(url);
               }
             },
-            child: const Text('安装'),
+            child: Text(l10n.install),
           ),
         ],
       ),
@@ -288,7 +299,10 @@ class ExtensionManagementScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'v${ext.metadata.version} • ${ext.metadata.author}',
+              l10n.versionAuthorLabel(
+                ext.metadata.version,
+                ext.metadata.author,
+              ),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -322,19 +336,19 @@ class ExtensionManagementScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('卸载扩展'),
-        content: Text('确定要卸载 "${ext.metadata.name}" 吗？'),
+        title: Text(l10n.uninstallExtension),
+        content: Text(l10n.uninstallConfirmation(ext.metadata.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               foregroundColor: theme.colorScheme.error,
             ),
-            child: const Text('卸载'),
+            child: Text(l10n.uninstall),
           ),
         ],
       ),
@@ -343,9 +357,9 @@ class ExtensionManagementScreen extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(extensionManagerProvider).removeExtension(ext.metadata.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('${ext.metadata.name} 已卸载')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.extensionUninstalled(ext.metadata.name))),
+        );
       }
     }
   }
@@ -366,7 +380,10 @@ class ExtensionManagementScreen extends ConsumerWidget {
                 color: theme.colorScheme.outline,
               ),
               const SizedBox(height: 16),
-              Text('商店中暂无可用扩展', style: theme.textTheme.bodyLarge),
+              Text(
+                l10n.noAvailableExtensions,
+                style: theme.textTheme.bodyLarge,
+              ),
             ],
           ),
         ),
@@ -380,6 +397,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
     String error,
     WidgetRef ref,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -389,7 +407,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
           children: [
             Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text('无法加载商店', style: theme.textTheme.titleMedium),
+            Text(l10n.failedToLoadStore, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               error,
@@ -402,13 +420,13 @@ class ExtensionManagementScreen extends ConsumerWidget {
             ElevatedButton.icon(
               onPressed: () => ref.refresh(extensionRepositoryManifestProvider),
               icon: const Icon(Icons.refresh),
-              label: const Text('重试'),
+              label: Text(l10n.retry),
             ),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () => _showCustomUrlDialog(context, ref),
               icon: const Icon(Icons.link),
-              label: const Text('使用自定义商店链接'),
+              label: Text(l10n.useCustomStoreLink),
             ),
           ],
         ),
@@ -418,10 +436,11 @@ class ExtensionManagementScreen extends ConsumerWidget {
 
   void _showCustomUrlDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('自定义商店'),
+        title: Text(l10n.customStore),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
@@ -432,7 +451,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -442,7 +461,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                 _loadCustomManifest(context, ref, url);
               }
             },
-            child: const Text('加载'),
+            child: Text(l10n.load),
           ),
         ],
       ),
@@ -521,7 +540,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '作者: ${ext.author}',
+                      l10n.authorLabel(ext.author),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -613,7 +632,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '版本 ${ext.version} • 作者 ${ext.author}',
+                              l10n.versionAuthorLabel(ext.version, ext.author),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -625,7 +644,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    '关于此扩展',
+                    l10n.aboutExtension,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -678,7 +697,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
                     _installExtension(context, ref, ext);
                   },
                   icon: const Icon(Icons.download),
-                  label: const Text('安装扩展'),
+                  label: Text(l10n.installExtension),
                 ),
               ),
             ),
@@ -694,9 +713,10 @@ class ExtensionManagementScreen extends ConsumerWidget {
     RepositoryExtension ext,
   ) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     scaffoldMessenger.showSnackBar(
-      SnackBar(content: Text('正在下载并安装 ${ext.name}...')),
+      SnackBar(content: Text(l10n.installingExtension(ext.name))),
     );
 
     try {
@@ -706,15 +726,17 @@ class ExtensionManagementScreen extends ConsumerWidget {
 
       if (success != null) {
         scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('${ext.name} 安装成功')),
+          SnackBar(content: Text(l10n.installSuccess(ext.name))),
         );
       } else {
         scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('安装失败，请检查链接或网络')),
+          SnackBar(content: Text(l10n.installFailed)),
         );
       }
     } catch (e) {
-      scaffoldMessenger.showSnackBar(SnackBar(content: Text('安装出错: $e')));
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text(l10n.installError(e.toString()))),
+      );
     }
   }
 }

@@ -47,7 +47,9 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
               if (Navigator.canPop(context)) Navigator.of(context).pop();
             },
           ),
-          title: Text(isWelcomeMode ? '探索 Essenmelia' : '帮助与文档'),
+          title: Text(
+            isWelcomeMode ? l10n.exploreEssenmelia : l10n.helpAndDocs,
+          ),
           centerTitle: true,
         ),
         body: AnimatedSwitcher(
@@ -88,16 +90,16 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
               setState(() => _selectedDocTitle = null);
             }
           },
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined),
-              selectedIcon: Icon(Icons.auto_awesome_rounded),
-              label: '欢迎',
+              icon: const Icon(Icons.auto_awesome_outlined),
+              selectedIcon: const Icon(Icons.auto_awesome_rounded),
+              label: l10n.welcome,
             ),
             NavigationDestination(
-              icon: Icon(Icons.help_outline_rounded),
-              selectedIcon: Icon(Icons.help_rounded),
-              label: '帮助',
+              icon: const Icon(Icons.help_outline_rounded),
+              selectedIcon: const Icon(Icons.help_rounded),
+              label: l10n.help,
             ),
           ],
         ),
@@ -116,22 +118,22 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     final steps = [
       _GuideStep(
         title: 'Essenmelia',
-        subtitle: '您的个人日程与灵感管理专家',
-        content: '高效组织生活中的每一个精彩瞬间。无论是琐碎的日常，还是宏大的计划，都能在这里找到归宿。',
+        subtitle: l10n.welcomeSubtitle1,
+        content: l10n.welcomeContent1,
         icon: Icons.auto_awesome_rounded,
         color: colorScheme.primary,
       ),
       _GuideStep(
-        title: '隐私优先',
-        subtitle: '安全、透明、可控',
-        content: '所有数据本地存储，非信任插件只能访问由系统生成的伪造数据，确保您的真实信息永不外泄。',
+        title: l10n.privacyFirst,
+        subtitle: l10n.welcomeSubtitle2,
+        content: l10n.welcomeContent2,
         icon: Icons.shield_rounded,
         color: colorScheme.secondary,
       ),
       _GuideStep(
-        title: '高度自定义',
-        subtitle: '随心而动，无限可能',
-        content: '通过强大的插件系统，您可以轻松扩展应用功能。使用声明式 UI 引擎，定制属于您的专属管理工具。',
+        title: l10n.highlyCustomizable,
+        subtitle: l10n.welcomeSubtitle3,
+        content: l10n.welcomeContent3,
         icon: Icons.dashboard_customize_rounded,
         color: colorScheme.tertiary,
       ),
@@ -254,7 +256,11 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: Text(_currentStep == totalSteps - 1 ? '开始体验' : '下一步'),
+              child: Text(
+                _currentStep == totalSteps - 1
+                    ? l10n.startExperience
+                    : l10n.nextStep,
+              ),
             ),
           ),
         ],
@@ -269,20 +275,20 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
   ) {
     final docs = [
       _DocItem(
-        title: '架构设计',
-        description: '系统分层、隐私黑盒与权限模型',
+        title: l10n.archDesign,
+        description: l10n.archDesignDesc,
         icon: Icons.account_tree_rounded,
         assetPath: 'assets/docs/architecture.md',
       ),
       _DocItem(
-        title: 'API 使用指南',
-        description: '核心方法、通知方案与外部集成',
+        title: l10n.apiGuide,
+        description: l10n.apiGuideDesc,
         icon: Icons.api_rounded,
         assetPath: 'assets/docs/api_usage.md',
       ),
       _DocItem(
-        title: '扩展开发规范',
-        description: '元数据、UI 组件库与逻辑引擎',
+        title: l10n.extDevSpecs,
+        description: l10n.extDevSpecsDesc,
         icon: Icons.extension_rounded,
         assetPath: 'assets/docs/extensions.md',
       ),
@@ -362,7 +368,7 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          '请选择一个文档进行阅读',
+                          l10n.selectDocToRead,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
@@ -373,6 +379,7 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                 : _buildMarkdownContent(
                     docs.firstWhere((d) => d.title == _selectedDocTitle),
                     theme,
+                    l10n,
                   ),
           ),
         ],
@@ -427,6 +434,7 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                   child: _buildMarkdownContent(
                     docs.firstWhere((d) => d.title == _selectedDocTitle),
                     theme,
+                    l10n,
                   ),
                 ),
               ],
@@ -434,7 +442,11 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     );
   }
 
-  Widget _buildMarkdownContent(_DocItem doc, ThemeData theme) {
+  Widget _buildMarkdownContent(
+    _DocItem doc,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return FutureBuilder<String>(
       future: rootBundle.loadString(doc.assetPath),
       builder: (context, snapshot) {
@@ -442,7 +454,9 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('加载失败: ${snapshot.error}'));
+          return Center(
+            child: Text(l10n.loadFailed(snapshot.error.toString())),
+          );
         }
 
         return Markdown(

@@ -9,6 +9,7 @@ import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/calendar_service.dart';
 import 'tags_provider.dart';
+import '../l10n/l10n_provider.dart';
 
 class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   final Ref ref;
@@ -87,18 +88,24 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       } else {
         event.reminderId =
             DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
-        await NotificationService().scheduleEventReminder(event);
+        final l10n = ref.read(l10nProvider);
+        await NotificationService().scheduleEventReminder(
+          event,
+          channelName: l10n.eventReminder,
+          channelDescription: l10n.eventReminderChannelDesc,
+          notificationTitle: l10n.eventReminder,
+        );
       }
     }
 
     await _box!.put(event.id, event);
 
-    // 自动同步标签到全局库
+    // Auto-sync tags to global library
     if (tags != null && tags.isNotEmpty) {
       _syncTags(tags);
     }
 
-    // 通知扩展管理器有新事件产生
+    // Notify extension manager of new event
     ref.read(extensionManagerProvider).notifyEventAdded(event);
   }
 
@@ -137,16 +144,16 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           reminderScheme != event.reminderScheme ||
           title != null ||
           description != null) {
-        // 1. 如果方案从 calendar 切换走，或者时间/标题变更且原本是 calendar，我们需要处理
-        // 注意：如果原本就是 calendar 且现在也是 calendar，addEvent(existingEventId) 会执行更新操作
+        // 1. If scheme switches from calendar, or time/title changes and it was calendar, we need to handle it
+        // Note: if it was calendar and still is, addEvent(existingEventId) will perform update
 
-        // 如果新方案不是 calendar，且旧方案是 calendar，则删除旧日历项
+        // If new scheme is not calendar, and old scheme was calendar, delete old calendar entry
         if (reminderScheme != 'calendar' && event.calendarEventId != null) {
           await CalendarService().deleteEvent(event.calendarEventId!);
           event.calendarEventId = null;
         }
 
-        // 如果新方案不是 notification，且旧方案是 notification，则取消旧通知
+        // If new scheme is not notification, and old scheme was notification, cancel old notification
         if (reminderScheme != 'notification' && event.reminderId != null) {
           await NotificationService().cancelReminder(event.reminderId!);
           event.reminderId = null;
@@ -159,7 +166,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         // 2. Schedule or Update reminder if provided
         if (reminderTime != null) {
           if (reminderScheme == 'calendar') {
-            // 这里利用 addEvent 的 existingEventId 参数执行覆盖更新或新建
+            // Use addEvent's existingEventId parameter for overwrite or create
             final calId = await CalendarService().addEvent(
               title: title ?? event.title,
               description: description ?? event.description ?? '',
@@ -169,10 +176,16 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
             );
             event.calendarEventId = calId;
           } else {
-            // 如果是通知方案，通常重新生成 ID 并调度
+            // For notification scheme, usually re-generate ID and schedule
             event.reminderId =
                 DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
-            await NotificationService().scheduleEventReminder(event);
+            final l10n = ref.read(l10nProvider);
+            await NotificationService().scheduleEventReminder(
+              event,
+              channelName: l10n.eventReminder,
+              channelDescription: l10n.eventReminderChannelDesc,
+              notificationTitle: l10n.eventReminder,
+            );
           }
         }
       }
@@ -187,7 +200,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
     final event = _box!.get(id);
     if (event != null) {
-      // 1. 如果有本地图片，尝试删除文件以节省空间
+      // 1. If there's a local image, try to delete file to save space
       if (event.imageUrl != null &&
           event.imageUrl!.isNotEmpty &&
           !event.imageUrl!.startsWith('http') &&
@@ -204,13 +217,13 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           debugPrint('Storage Service: Failed to delete image file: $e');
         }
       }
-      // 2. 如果有定时提醒，取消它
+      // 2. If there's a scheduled reminder, cancel it
       if (event.reminderId != null) {
         await NotificationService().cancelReminder(event.reminderId!);
       }
 
-      // 关键修复：先执行日历删除，等待完成后再删除本地数据库记录
-      // 避免 UI 刷新导致 calendarEventId 丢失从而无法清理系统日程
+      // Critical fix: delete calendar event first, wait for completion before deleting local DB record
+      // Avoids UI refresh losing calendarEventId and failing to clean up system calendar
       if (event.calendarEventId != null) {
         debugPrint(
           'EventsNotifier: Starting cleanup for calendar event ${event.calendarEventId}',
@@ -229,7 +242,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         }
       }
 
-      // 3. 最后从本地数据库删除
+      // 3. Finally delete from local database
       await event.delete();
       debugPrint('EventsNotifier: Deleted local event record $id');
     }
@@ -249,7 +262,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
   }
 
-  /// 内部方法：同步标签到全局标签库
+  /// Internal method: Sync tags to global tag library
   void _syncTags(List<String> tags) {
     final tagsNotifier = ref.read(tagsProvider.notifier);
     for (final tag in tags) {

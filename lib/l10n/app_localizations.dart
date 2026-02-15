@@ -98,1097 +98,2273 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
-  /// No description provided for @appTitle.
+  /// The title of the application
   ///
   /// In en, this message translates to:
   /// **'Essenmelia'**
   String get appTitle;
 
-  /// No description provided for @searchPlaceholder.
+  /// Placeholder text in the search bar
   ///
   /// In en, this message translates to:
   /// **'Search events...'**
   String get searchPlaceholder;
 
-  /// No description provided for @select.
+  /// Label for selection action
   ///
   /// In en, this message translates to:
   /// **'Select'**
   String get select;
 
-  /// No description provided for @cancel.
+  /// Label for cancel action
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
 
-  /// No description provided for @newTag.
+  /// Title for creating a new tag
   ///
   /// In en, this message translates to:
   /// **'New Tag'**
   String get newTag;
 
-  /// No description provided for @tagNameHint.
+  /// Hint text for tag name input
   ///
   /// In en, this message translates to:
   /// **'e.g., Work, Personal'**
   String get tagNameHint;
 
-  /// No description provided for @add.
+  /// Label for add action
   ///
   /// In en, this message translates to:
   /// **'Add'**
   String get add;
 
-  /// No description provided for @renameTag.
+  /// Title for renaming a tag
   ///
   /// In en, this message translates to:
   /// **'Rename Tag'**
   String get renameTag;
 
-  /// No description provided for @save.
+  /// Label for save action
   ///
   /// In en, this message translates to:
   /// **'Save'**
   String get save;
 
-  /// No description provided for @delete.
+  /// Label for delete action
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get delete;
 
-  /// No description provided for @confirm.
+  /// Label for confirm action
   ///
   /// In en, this message translates to:
   /// **'Confirm'**
   String get confirm;
 
-  /// No description provided for @edit.
+  /// Label for edit action
   ///
   /// In en, this message translates to:
   /// **'Edit'**
   String get edit;
 
-  /// No description provided for @create.
+  /// Label for create action
   ///
   /// In en, this message translates to:
   /// **'Create'**
   String get create;
 
-  /// No description provided for @settings.
+  /// Label for creating a new record
+  ///
+  /// In en, this message translates to:
+  /// **'Create Record'**
+  String get createRecord;
+
+  /// Label for settings
   ///
   /// In en, this message translates to:
   /// **'Settings'**
   String get settings;
 
-  /// No description provided for @manageTags.
+  /// Title for tag management
   ///
   /// In en, this message translates to:
   /// **'Manage Tags'**
   String get manageTags;
 
-  /// No description provided for @databaseManager.
+  /// Title for database management
   ///
   /// In en, this message translates to:
   /// **'Database Manager'**
   String get databaseManager;
 
-  /// No description provided for @importExport.
+  /// Label for import/export feature
   ///
   /// In en, this message translates to:
   /// **'Import / Export'**
   String get importExport;
 
-  /// No description provided for @appearance.
+  /// Title for appearance settings
   ///
   /// In en, this message translates to:
   /// **'Appearance'**
   String get appearance;
 
-  /// No description provided for @darkMode.
+  /// Label for dark mode toggle
   ///
   /// In en, this message translates to:
   /// **'Dark Mode'**
   String get darkMode;
 
-  /// No description provided for @light.
+  /// Label for light theme mode
   ///
   /// In en, this message translates to:
   /// **'Light'**
   String get light;
 
-  /// No description provided for @dark.
+  /// Label for dark theme mode
   ///
   /// In en, this message translates to:
   /// **'Dark'**
   String get dark;
 
-  /// No description provided for @useSystemTheme.
+  /// Label for system theme sync
   ///
   /// In en, this message translates to:
   /// **'Use System Theme'**
   String get useSystemTheme;
 
-  /// No description provided for @language.
+  /// Label for language selection
   ///
   /// In en, this message translates to:
   /// **'Language'**
   String get language;
 
-  /// No description provided for @systemLanguage.
+  /// Label for system language sync
   ///
   /// In en, this message translates to:
   /// **'System'**
   String get systemLanguage;
 
-  /// No description provided for @cardDensity.
+  /// Label for card layout density
   ///
   /// In en, this message translates to:
   /// **'Card Density'**
   String get cardDensity;
 
-  /// No description provided for @compact.
+  /// Label for compact layout
   ///
   /// In en, this message translates to:
   /// **'Compact'**
   String get compact;
 
-  /// No description provided for @comfortable.
+  /// Label for comfortable layout
   ///
   /// In en, this message translates to:
   /// **'Comfortable'**
   String get comfortable;
 
-  /// No description provided for @collapseImages.
+  /// Label for collapsing images toggle
   ///
   /// In en, this message translates to:
   /// **'Collapse Images'**
   String get collapseImages;
 
-  /// No description provided for @activeDatabase.
+  /// Label for currently active database
   ///
   /// In en, this message translates to:
   /// **'Active Database'**
   String get activeDatabase;
 
-  /// No description provided for @availableDatabases.
+  /// Label for list of available databases
   ///
   /// In en, this message translates to:
   /// **'Available Databases'**
   String get availableDatabases;
 
-  /// No description provided for @createNewDatabase.
+  /// Button label to create a new database
   ///
   /// In en, this message translates to:
   /// **'Create New Database'**
   String get createNewDatabase;
 
-  /// No description provided for @enterDatabaseName.
+  /// Hint text for database name input
   ///
   /// In en, this message translates to:
   /// **'Enter database name'**
   String get enterDatabaseName;
 
-  /// No description provided for @switchDbConfirmation.
+  /// Title for switching database dialog
   ///
   /// In en, this message translates to:
   /// **'Switch Database'**
   String get switchDbConfirmation;
 
-  /// No description provided for @switchDbMessage.
+  /// Confirmation message for switching database
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to switch to database \"{name}\"?'**
   String switchDbMessage(String name);
 
-  /// No description provided for @deleteDbConfirmation.
+  /// Title for deleting database dialog
   ///
   /// In en, this message translates to:
   /// **'Delete Database'**
   String get deleteDbConfirmation;
 
-  /// No description provided for @deleteDbMessage.
+  /// Confirmation message for deleting database
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete database \"{name}\"? This action cannot be undone.'**
   String deleteDbMessage(String name);
 
-  /// No description provided for @dbCreated.
+  /// Snackbar message after database creation
   ///
   /// In en, this message translates to:
   /// **'Database created'**
   String get dbCreated;
 
-  /// No description provided for @dbDeleted.
+  /// Snackbar message after database deletion
   ///
   /// In en, this message translates to:
   /// **'Database deleted'**
   String get dbDeleted;
 
-  /// No description provided for @dbSwitched.
+  /// Snackbar message after database switch
   ///
   /// In en, this message translates to:
   /// **'Switched to database: {name}'**
   String dbSwitched(String name);
 
-  /// No description provided for @allTags.
+  /// Label for showing all tags
   ///
   /// In en, this message translates to:
   /// **'All Tags'**
   String get allTags;
 
-  /// No description provided for @noTags.
+  /// Message shown when no tags exist
   ///
   /// In en, this message translates to:
   /// **'No tags available'**
   String get noTags;
 
-  /// No description provided for @tagName.
+  /// Label for tag name input
   ///
   /// In en, this message translates to:
   /// **'Tag Name'**
   String get tagName;
 
-  /// No description provided for @tagColor.
+  /// Label for tag color picker
   ///
   /// In en, this message translates to:
   /// **'Tag Color'**
   String get tagColor;
 
-  /// No description provided for @deleteTagMessage.
+  /// Confirmation message for deleting a tag
   ///
   /// In en, this message translates to:
   /// **'Delete this tag? It will be removed from all events.'**
   String get deleteTagMessage;
 
-  /// No description provided for @importData.
+  /// Label for data import
   ///
   /// In en, this message translates to:
   /// **'Import Data'**
   String get importData;
 
-  /// No description provided for @exportData.
+  /// Label for data export
   ///
   /// In en, this message translates to:
   /// **'Export Data'**
   String get exportData;
 
-  /// No description provided for @exportSuccess.
+  /// Snackbar message after successful export
   ///
   /// In en, this message translates to:
   /// **'Export successful'**
   String get exportSuccess;
 
-  /// No description provided for @importSuccess.
+  /// Snackbar message after successful import
   ///
   /// In en, this message translates to:
   /// **'Import successful'**
   String get importSuccess;
 
-  /// No description provided for @importError.
+  /// Snackbar message after failed import
   ///
   /// In en, this message translates to:
   /// **'Import failed'**
   String get importError;
 
-  /// No description provided for @sortNewest.
+  /// Label for newest first sorting
   ///
   /// In en, this message translates to:
   /// **'Newest First'**
   String get sortNewest;
 
-  /// No description provided for @sortOldest.
+  /// Short label for time sorting
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get sortTime;
+
+  /// Label for oldest first sorting
   ///
   /// In en, this message translates to:
   /// **'Oldest First'**
   String get sortOldest;
 
-  /// No description provided for @sortTitleAZ.
+  /// Label for alphabetical title sorting
   ///
   /// In en, this message translates to:
   /// **'Title (A-Z)'**
   String get sortTitleAZ;
 
-  /// No description provided for @sortTitleZA.
+  /// Short label for title sorting
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get sortTitle;
+
+  /// Label for reverse alphabetical title sorting
   ///
   /// In en, this message translates to:
   /// **'Title (Z-A)'**
   String get sortTitleZA;
 
-  /// No description provided for @sortProgressHigh.
+  /// Label for high progress sorting
   ///
   /// In en, this message translates to:
   /// **'Progress (High-Low)'**
   String get sortProgressHigh;
 
-  /// No description provided for @sortProgressLow.
+  /// Short label for progress sorting
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get sortProgress;
+
+  /// Label for low progress sorting
   ///
   /// In en, this message translates to:
   /// **'Progress (Low-High)'**
   String get sortProgressLow;
 
-  /// No description provided for @sortStepCountHigh.
+  /// Label for most steps sorting
   ///
   /// In en, this message translates to:
   /// **'Steps (More-Less)'**
   String get sortStepCountHigh;
 
-  /// No description provided for @sortStepCountLow.
+  /// Short label for steps sorting
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get sortSteps;
+
+  /// Label for least steps sorting
   ///
   /// In en, this message translates to:
   /// **'Steps (Less-More)'**
   String get sortStepCountLow;
 
-  /// No description provided for @sortTagCountHigh.
+  /// Label for most tags sorting
   ///
   /// In en, this message translates to:
   /// **'Tags (More-Less)'**
   String get sortTagCountHigh;
 
-  /// No description provided for @sortTagCountLow.
+  /// Short label for tags sorting
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get sortTags;
+
+  /// Label for least tags sorting
   ///
   /// In en, this message translates to:
   /// **'Tags (Less-More)'**
   String get sortTagCountLow;
 
-  /// No description provided for @sortLastUpdated.
+  /// Label for recently updated sorting
   ///
   /// In en, this message translates to:
   /// **'Recently Updated'**
   String get sortLastUpdated;
 
-  /// No description provided for @sortLastUpdatedOldest.
+  /// Short label for updated sorting
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get sortUpdated;
+
+  /// Label for least recently updated sorting
   ///
   /// In en, this message translates to:
   /// **'Least Recently Updated'**
   String get sortLastUpdatedOldest;
 
-  /// No description provided for @statusAll.
+  /// Label for 'all' status filter
   ///
   /// In en, this message translates to:
   /// **'All'**
   String get statusAll;
 
-  /// No description provided for @statusNotStarted.
+  /// Label for 'not started' status
   ///
   /// In en, this message translates to:
   /// **'Not Started'**
   String get statusNotStarted;
 
-  /// No description provided for @statusInProgress.
+  /// Label for 'in progress' status
   ///
   /// In en, this message translates to:
   /// **'In Progress'**
   String get statusInProgress;
 
-  /// No description provided for @statusCompleted.
+  /// Label for 'completed' status
   ///
   /// In en, this message translates to:
   /// **'Completed'**
   String get statusCompleted;
 
-  /// No description provided for @selected.
+  /// Label for selected items
   ///
   /// In en, this message translates to:
   /// **'Selected'**
   String get selected;
 
-  /// No description provided for @deleteSelectedConfirmation.
+  /// Confirmation dialog title for deleting selected items
   ///
   /// In en, this message translates to:
   /// **'Delete Selected?'**
   String get deleteSelectedConfirmation;
 
-  /// No description provided for @deleteSelectedMessage.
+  /// Confirmation message for deleting multiple selected items
   ///
   /// In en, this message translates to:
   /// **'Delete {count} items?'**
   String deleteSelectedMessage(int count);
 
-  /// No description provided for @editEvent.
+  /// Title for editing an event
   ///
   /// In en, this message translates to:
   /// **'Edit Event'**
   String get editEvent;
 
-  /// No description provided for @newEvent.
+  /// Title for creating a new event
   ///
   /// In en, this message translates to:
   /// **'New Event'**
   String get newEvent;
 
-  /// No description provided for @title.
+  /// Label for title input
   ///
   /// In en, this message translates to:
   /// **'Title'**
   String get title;
 
-  /// No description provided for @description.
+  /// Label for description input
   ///
   /// In en, this message translates to:
   /// **'Description'**
   String get description;
 
-  /// No description provided for @imageUrl.
+  /// Label for image URL input
   ///
   /// In en, this message translates to:
   /// **'Image URL'**
   String get imageUrl;
 
-  /// No description provided for @imageUrlPlaceholder.
+  /// Hint text for image URL input
   ///
   /// In en, this message translates to:
   /// **'http://... or data:image...'**
   String get imageUrlPlaceholder;
 
-  /// No description provided for @pickImage.
+  /// Label for image picker button
   ///
   /// In en, this message translates to:
   /// **'Pick Image'**
   String get pickImage;
 
-  /// No description provided for @saveChanges.
+  /// Button label to save changes
   ///
   /// In en, this message translates to:
   /// **'Save Changes'**
   String get saveChanges;
 
-  /// No description provided for @createEvent.
+  /// Button label to create a new event
   ///
   /// In en, this message translates to:
   /// **'Create Event'**
   String get createEvent;
 
-  /// No description provided for @noTagsYet.
+  /// Message shown when no tags are assigned
   ///
   /// In en, this message translates to:
   /// **'No tags yet'**
   String get noTagsYet;
 
-  /// No description provided for @tagsSelected.
+  /// Label showing number of selected tags
   ///
   /// In en, this message translates to:
   /// **'{count} tags selected'**
   String tagsSelected(int count);
 
-  /// No description provided for @clearAllTags.
+  /// Label for clearing tag selection
   ///
   /// In en, this message translates to:
   /// **'Clear Selection'**
   String get clearAllTags;
 
-  /// No description provided for @deleteTagConfirmation.
+  /// Confirmation dialog title for deleting a tag
   ///
   /// In en, this message translates to:
   /// **'Delete Tag?'**
   String get deleteTagConfirmation;
 
-  /// No description provided for @deleteTagWarning.
+  /// Warning message for tag deletion
   ///
   /// In en, this message translates to:
   /// **'This will remove \"{tag}\" from all events.'**
   String deleteTagWarning(String tag);
 
-  /// No description provided for @eventNotFound.
+  /// Message shown when an event cannot be found
   ///
   /// In en, this message translates to:
   /// **'Event not found'**
   String get eventNotFound;
 
-  /// No description provided for @eventDetails.
+  /// Title for event details page
   ///
   /// In en, this message translates to:
   /// **'Event Details'**
   String get eventDetails;
 
-  /// No description provided for @createdOn.
+  /// Label showing event creation date
   ///
   /// In en, this message translates to:
   /// **'Created on {date}'**
   String createdOn(String date);
 
-  /// No description provided for @steps.
+  /// Label for steps section
   ///
   /// In en, this message translates to:
   /// **'Steps'**
   String get steps;
 
-  /// No description provided for @manageSteps.
+  /// Label for step management
   ///
   /// In en, this message translates to:
   /// **'Manage Steps'**
   String get manageSteps;
 
-  /// No description provided for @noStepsYet.
+  /// Message shown when an event has no steps
   ///
   /// In en, this message translates to:
   /// **'No steps yet.'**
   String get noStepsYet;
 
-  /// No description provided for @addStep.
+  /// Label for adding a new step
   ///
   /// In en, this message translates to:
   /// **'Add Step'**
   String get addStep;
 
-  /// No description provided for @newStepPlaceholder.
+  /// Hint text for new step input
   ///
   /// In en, this message translates to:
   /// **'New step...'**
   String get newStepPlaceholder;
 
-  /// No description provided for @editSteps.
+  /// Title for editing steps
   ///
   /// In en, this message translates to:
   /// **'Edit Steps'**
   String get editSteps;
 
-  /// No description provided for @archive.
+  /// Label for extensions section
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions'**
+  String get extensions;
+
+  /// Title for extension details page
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Details'**
+  String get extensionDetails;
+
+  /// Label for opening an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Open Extension'**
+  String get extensionOpen;
+
+  /// Label for uninstalling an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall'**
+  String get extensionUninstall;
+
+  /// Title for extension uninstall confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Uninstall'**
+  String get extensionUninstallConfirm;
+
+  /// Confirmation message for uninstalling an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to uninstall \"{name}\"? This will delete all associated data and cannot be undone.'**
+  String extensionUninstallMessage(String name);
+
+  /// Label for exporting an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Export & Convert'**
+  String get extensionExport;
+
+  /// Label for JSON export format
+  ///
+  /// In en, this message translates to:
+  /// **'Standard JSON Package'**
+  String get extensionExportJson;
+
+  /// Subtitle for JSON export format
+  ///
+  /// In en, this message translates to:
+  /// **'Single file, best for sharing'**
+  String get extensionExportJsonSubtitle;
+
+  /// Label for ZIP export format
+  ///
+  /// In en, this message translates to:
+  /// **'Extension ZIP Package'**
+  String get extensionExportZip;
+
+  /// Subtitle for ZIP export format
+  ///
+  /// In en, this message translates to:
+  /// **'Complete repository archive'**
+  String get extensionExportZipSubtitle;
+
+  /// Permission label for reading events
+  ///
+  /// In en, this message translates to:
+  /// **'Read Events'**
+  String get extensionPermissionReadEvents;
+
+  /// Permission description for reading events
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to view all your events and tasks.'**
+  String get extensionPermissionReadEventsDesc;
+
+  /// Permission label for adding events
+  ///
+  /// In en, this message translates to:
+  /// **'Add Events'**
+  String get extensionPermissionAddEvents;
+
+  /// Permission description for adding events
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to create new tasks.'**
+  String get extensionPermissionAddEventsDesc;
+
+  /// Permission label for updating events
+  ///
+  /// In en, this message translates to:
+  /// **'Update Events'**
+  String get extensionPermissionUpdateEvents;
+
+  /// Permission description for updating events
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to modify existing tasks.'**
+  String get extensionPermissionUpdateEventsDesc;
+
+  /// Permission label for deleting events
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Events'**
+  String get extensionPermissionDeleteEvents;
+
+  /// Permission description for deleting events
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to delete your tasks.'**
+  String get extensionPermissionDeleteEventsDesc;
+
+  /// Permission label for reading tags
+  ///
+  /// In en, this message translates to:
+  /// **'Read Tags'**
+  String get extensionPermissionReadTags;
+
+  /// Permission description for reading tags
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to view your tag list.'**
+  String get extensionPermissionReadTagsDesc;
+
+  /// Permission label for managing tags
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Tags'**
+  String get extensionPermissionManageTags;
+
+  /// Permission description for managing tags
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to add or remove global tags.'**
+  String get extensionPermissionManageTagsDesc;
+
+  /// Permission label for database management
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Database'**
+  String get extensionPermissionManageDb;
+
+  /// Permission description for database management
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to perform database export, backup, or switching.'**
+  String get extensionPermissionManageDbDesc;
+
+  /// Permission label for file system access
+  ///
+  /// In en, this message translates to:
+  /// **'File System'**
+  String get extensionPermissionFileSystem;
+
+  /// Permission description for file system access
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to save files to your device or read files.'**
+  String get extensionPermissionFileSystemDesc;
+
+  /// Permission label for notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get extensionPermissionNotifications;
+
+  /// Permission description for notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to send you desktop or system notifications.'**
+  String get extensionPermissionNotificationsDesc;
+
+  /// Permission label for reading calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Read Calendar'**
+  String get extensionPermissionReadCalendar;
+
+  /// Permission description for reading calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to read your system calendar events.'**
+  String get extensionPermissionReadCalendarDesc;
+
+  /// Permission label for writing calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Write Calendar'**
+  String get extensionPermissionWriteCalendar;
+
+  /// Permission description for writing calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to add or modify events in your system calendar.'**
+  String get extensionPermissionWriteCalendarDesc;
+
+  /// Permission label for network access
+  ///
+  /// In en, this message translates to:
+  /// **'Network Access'**
+  String get extensionPermissionNetwork;
+
+  /// Permission description for network access
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to access the network.'**
+  String get extensionPermissionNetworkDesc;
+
+  /// Permission label for system info
+  ///
+  /// In en, this message translates to:
+  /// **'System Info'**
+  String get extensionPermissionSystemInfo;
+
+  /// Permission description for system info
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to access system status like themes, language, and snackbars.'**
+  String get extensionPermissionSystemInfoDesc;
+
+  /// Permission label for navigation
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get extensionPermissionNavigation;
+
+  /// Permission description for navigation
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to navigate to specific pages or filter searches.'**
+  String get extensionPermissionNavigationDesc;
+
+  /// Permission label for UI interaction
+  ///
+  /// In en, this message translates to:
+  /// **'UI Interaction'**
+  String get extensionPermissionUIInteraction;
+
+  /// Permission description for UI interaction
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the extension to show dialogs, snackbars, or custom UI elements.'**
+  String get extensionPermissionUIInteractionDesc;
+
+  /// Label for data reading category
+  ///
+  /// In en, this message translates to:
+  /// **'Data Reading'**
+  String get extensionCategoryDataReading;
+
+  /// Label for data writing category
+  ///
+  /// In en, this message translates to:
+  /// **'Data Writing'**
+  String get extensionCategoryDataWriting;
+
+  /// Label for file system category
+  ///
+  /// In en, this message translates to:
+  /// **'File System'**
+  String get extensionCategoryFileSystem;
+
+  /// Label for network access category
+  ///
+  /// In en, this message translates to:
+  /// **'Network Access'**
+  String get extensionCategoryNetwork;
+
+  /// Label for system info category
+  ///
+  /// In en, this message translates to:
+  /// **'System Info'**
+  String get extensionCategorySystemInfo;
+
+  /// Label for navigation category
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get extensionCategoryNavigation;
+
+  /// Label for UI interaction category
+  ///
+  /// In en, this message translates to:
+  /// **'UI Interaction'**
+  String get extensionCategoryUIInteraction;
+
+  /// Label for general extension category
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get extensionCategoryGeneral;
+
+  /// Title for extension management page
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions'**
+  String get extensionManagementTitle;
+
+  /// Header for installed extensions section
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get extensionSectionInstalled;
+
+  /// Header for built-in extensions section
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in'**
+  String get extensionSectionBuiltIn;
+
+  /// Header for online extension store section
+  ///
+  /// In en, this message translates to:
+  /// **'Online Store'**
+  String get extensionSectionOnline;
+
+  /// Label for restricted access mode
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted Access'**
+  String get extensionRestrictedAccess;
+
+  /// Description for restricted access mode
+  ///
+  /// In en, this message translates to:
+  /// **'Requires manual approval for all data access.'**
+  String get extensionRestrictedAccessDesc;
+
+  /// Title for access interception dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Access Intercepted'**
+  String get extensionInterceptedTitle;
+
+  /// Description for access interception
+  ///
+  /// In en, this message translates to:
+  /// **'Extension {name} {action}:'**
+  String extensionInterceptedDesc(String name, String action);
+
+  /// Label for tried action in interception
+  ///
+  /// In en, this message translates to:
+  /// **'just tried to'**
+  String get extensionInterceptedActionTried;
+
+  /// Label for wanted action in interception
+  ///
+  /// In en, this message translates to:
+  /// **'wants to'**
+  String get extensionInterceptedActionWants;
+
+  /// Button label to deny access
+  ///
+  /// In en, this message translates to:
+  /// **'Deny Access'**
+  String get extensionDecisionDeny;
+
+  /// Description for denying access
+  ///
+  /// In en, this message translates to:
+  /// **'Provides no data, which may cause errors or limited functionality.'**
+  String get extensionDecisionDenyDesc;
+
+  /// Button label to allow access once
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Once'**
+  String get extensionDecisionOnce;
+
+  /// Description for allowing access once
+  ///
+  /// In en, this message translates to:
+  /// **'Provides real data only for this specific request.'**
+  String get extensionDecisionOnceDesc;
+
+  /// Button label to allow access next time
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Next Time'**
+  String get extensionDecisionNext;
+
+  /// Description for allowing access next time
+  ///
+  /// In en, this message translates to:
+  /// **'Intercepts now, but automatically allows the next time this access occurs.'**
+  String get extensionDecisionNextDesc;
+
+  /// Button label to allow category access for session
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Category (Session)'**
+  String get extensionDecisionSessionCategory;
+
+  /// Description for allowing category access for session
+  ///
+  /// In en, this message translates to:
+  /// **'Allows all access to this category until the app is closed.'**
+  String get extensionDecisionSessionCategoryDesc;
+
+  /// Button label to allow all access for session
+  ///
+  /// In en, this message translates to:
+  /// **'Allow All (Session)'**
+  String get extensionDecisionSessionAll;
+
+  /// Description for allowing all access for session
+  ///
+  /// In en, this message translates to:
+  /// **'Allows all permissions for this extension until the app is closed.'**
+  String get extensionDecisionSessionAllDesc;
+
+  /// Label for archive section
   ///
   /// In en, this message translates to:
   /// **'Archive'**
   String get archive;
 
-  /// No description provided for @sets.
+  /// Label for sets section
   ///
   /// In en, this message translates to:
   /// **'Sets'**
   String get sets;
 
-  /// No description provided for @addNewStepPlaceholder.
+  /// Hint text for adding a new step
   ///
   /// In en, this message translates to:
   /// **'Add new step...'**
   String get addNewStepPlaceholder;
 
-  /// No description provided for @addToArchivePlaceholder.
+  /// Hint text for adding to archive
   ///
   /// In en, this message translates to:
   /// **'Add to archive...'**
   String get addToArchivePlaceholder;
 
-  /// No description provided for @addedToSteps.
+  /// Snackbar message after adding to steps
   ///
   /// In en, this message translates to:
   /// **'Added to steps'**
   String get addedToSteps;
 
-  /// No description provided for @saveCurrentStepsAsSet.
+  /// Label for saving steps as a template set
   ///
   /// In en, this message translates to:
   /// **'Save current steps as Template Set'**
   String get saveCurrentStepsAsSet;
 
-  /// No description provided for @addAllToSteps.
+  /// Button label to add all items to steps
   ///
   /// In en, this message translates to:
   /// **'Add All to Steps'**
   String get addAllToSteps;
 
-  /// No description provided for @addedStepsCount.
+  /// Label showing number of steps added
   ///
   /// In en, this message translates to:
-  /// **'Added {count} steps'**
+  /// **'{count} steps added'**
   String addedStepsCount(int count);
 
-  /// No description provided for @stepsCount.
+  /// Label showing total number of steps
   ///
   /// In en, this message translates to:
   /// **'{count} steps'**
   String stepsCount(int count);
 
-  /// No description provided for @dbNameHint.
+  /// Hint text for database name input
   ///
   /// In en, this message translates to:
   /// **'e.g., project-x, archive-2023'**
   String get dbNameHint;
 
-  /// No description provided for @invalidDbName.
+  /// Error message for invalid database name
   ///
   /// In en, this message translates to:
   /// **'Invalid name. Use letters, numbers, -, _'**
   String get invalidDbName;
 
-  /// No description provided for @defaultDbName.
+  /// Label for the default database
   ///
   /// In en, this message translates to:
   /// **'Main Archive (Default)'**
   String get defaultDbName;
 
-  /// No description provided for @currentlyActive.
+  /// Label for the currently active item
   ///
   /// In en, this message translates to:
   /// **'Currently Active'**
   String get currentlyActive;
 
-  /// No description provided for @inactive.
+  /// Label for inactive items
   ///
   /// In en, this message translates to:
   /// **'Inactive'**
   String get inactive;
 
-  /// No description provided for @switchDb.
+  /// Button label to switch database
   ///
   /// In en, this message translates to:
   /// **'Switch'**
   String get switchDb;
 
-  /// No description provided for @switchedToDb.
+  /// Snackbar message after switching database
   ///
   /// In en, this message translates to:
   /// **'Switched to {name}'**
   String switchedToDb(String name);
 
-  /// No description provided for @deleteDbTitle.
+  /// Title for delete database confirmation
   ///
   /// In en, this message translates to:
   /// **'Delete \"{name}\"?'**
   String deleteDbTitle(String name);
 
-  /// No description provided for @deleteDbWarning.
+  /// Warning message for deleting a database
   ///
   /// In en, this message translates to:
   /// **'This action cannot be undone. All data in this database will be lost.'**
   String get deleteDbWarning;
 
-  /// No description provided for @saveTemplateSet.
+  /// Label for saving a template set
   ///
   /// In en, this message translates to:
   /// **'Save Template Set'**
   String get saveTemplateSet;
 
-  /// No description provided for @templateName.
+  /// Label for template name input
   ///
   /// In en, this message translates to:
   /// **'Template Name'**
   String get templateName;
 
-  /// No description provided for @templateSetSaved.
+  /// Snackbar message after saving a template set
   ///
   /// In en, this message translates to:
   /// **'Template Set Saved'**
   String get templateSetSaved;
 
-  /// No description provided for @noEventsFound.
+  /// Message shown when no events match criteria
   ///
   /// In en, this message translates to:
   /// **'No events found'**
   String get noEventsFound;
 
-  /// No description provided for @sort.
+  /// Label for sorting options
   ///
   /// In en, this message translates to:
   /// **'Sort'**
   String get sort;
 
-  /// No description provided for @welcomeTitle.
+  /// Title for welcome screen
   ///
   /// In en, this message translates to:
   /// **'Welcome to Essenmelia'**
   String get welcomeTitle;
 
-  /// No description provided for @welcomeMessage.
+  /// Message for welcome screen
   ///
   /// In en, this message translates to:
   /// **'Manage your events, track steps, and organize your life with tags. Tap the + button to get started.'**
   String get welcomeMessage;
 
-  /// No description provided for @selectedItemsCount.
+  /// Label showing number of selected items
   ///
   /// In en, this message translates to:
   /// **'{count} items selected'**
   String selectedItemsCount(int count);
 
-  /// No description provided for @batchArchive.
+  /// Button label for batch archiving
   ///
   /// In en, this message translates to:
   /// **'Batch Archive'**
   String get batchArchive;
 
-  /// No description provided for @batchAdd.
+  /// Button label for batch adding
   ///
   /// In en, this message translates to:
   /// **'Batch Add'**
   String get batchAdd;
 
-  /// No description provided for @saveAsSet.
+  /// Button label for saving items as a set
   ///
   /// In en, this message translates to:
   /// **'Save as Set'**
   String get saveAsSet;
 
-  /// No description provided for @movedToArchive.
+  /// Snackbar message after batch archiving
   ///
   /// In en, this message translates to:
   /// **'Moved {count} items to archive'**
   String movedToArchive(int count);
 
-  /// No description provided for @noArchiveSteps.
+  /// Message shown when no steps are in archive
   ///
   /// In en, this message translates to:
   /// **'No archived steps'**
   String get noArchiveSteps;
 
-  /// No description provided for @noStepSets.
+  /// Message shown when no step sets exist
   ///
   /// In en, this message translates to:
   /// **'No step sets'**
   String get noStepSets;
 
-  /// No description provided for @saveCurrentAsSetHint.
+  /// Hint text for saving steps as a set
   ///
   /// In en, this message translates to:
   /// **'You can save current steps as a set for quick reuse later'**
   String get saveCurrentAsSetHint;
 
-  /// No description provided for @setName.
+  /// Label for set name input
   ///
   /// In en, this message translates to:
   /// **'Set Name'**
   String get setName;
 
-  /// No description provided for @setSaved.
+  /// Snackbar message after saving a set
   ///
   /// In en, this message translates to:
   /// **'Set saved'**
   String get setSaved;
 
-  /// No description provided for @tags.
+  /// Label for tags section
   ///
   /// In en, this message translates to:
   /// **'Tags'**
   String get tags;
 
-  /// No description provided for @tagsPlaceholder.
+  /// Message shown when no events have the selected tag
+  ///
+  /// In en, this message translates to:
+  /// **'No events with this tag'**
+  String get noEventsWithTag;
+
+  /// Label for showing all events
+  ///
+  /// In en, this message translates to:
+  /// **'All Events'**
+  String get allEvents;
+
+  /// Hint text for tag search/creation
   ///
   /// In en, this message translates to:
   /// **'Type to search or create...'**
   String get tagsPlaceholder;
 
-  /// No description provided for @createTag.
+  /// Label for creating a new tag
   ///
   /// In en, this message translates to:
   /// **'Create \"{tag}\"'**
   String createTag(String tag);
 
-  /// No description provided for @failedToPickImage.
+  /// Error message when image picking fails
   ///
   /// In en, this message translates to:
   /// **'Failed to pick image: {error}'**
   String failedToPickImage(String error);
 
-  /// No description provided for @titleRequired.
+  /// Validation error when title is empty
   ///
   /// In en, this message translates to:
   /// **'Title is required'**
   String get titleRequired;
 
-  /// No description provided for @error.
+  /// Generic error message with details
   ///
   /// In en, this message translates to:
   /// **'Error: {error}'**
   String error(String error);
 
-  /// No description provided for @deleteAllDataTitle.
+  /// Title for delete all data confirmation
   ///
   /// In en, this message translates to:
   /// **'Delete All Data?'**
   String get deleteAllDataTitle;
 
-  /// No description provided for @deleteAllDataMessage.
+  /// Warning message for deleting all data
   ///
   /// In en, this message translates to:
   /// **'This cannot be undone.'**
   String get deleteAllDataMessage;
 
-  /// No description provided for @deleteAllDataSuccess.
+  /// Snackbar message after deleting all data
   ///
   /// In en, this message translates to:
   /// **'All data deleted'**
   String get deleteAllDataSuccess;
 
-  /// No description provided for @importFailedDetailed.
+  /// Error message when import fails
   ///
   /// In en, this message translates to:
   /// **'Import failed: {error}'**
   String importFailedDetailed(String error);
 
-  /// No description provided for @exportFailedDetailed.
+  /// Error message when export fails
   ///
   /// In en, this message translates to:
   /// **'Export failed: {error}'**
   String exportFailedDetailed(String error);
 
-  /// No description provided for @navEvents.
+  /// Navigation label for events
   ///
   /// In en, this message translates to:
   /// **'Events'**
   String get navEvents;
 
-  /// No description provided for @navExtensions.
+  /// Navigation label for extensions
   ///
   /// In en, this message translates to:
   /// **'Extensions'**
   String get navExtensions;
 
-  /// No description provided for @addExtension.
+  /// Button label to add an extension
   ///
   /// In en, this message translates to:
   /// **'Add Extension'**
   String get addExtension;
 
-  /// No description provided for @importFromLocalFile.
+  /// Label for importing extension from local file
   ///
   /// In en, this message translates to:
   /// **'Import from local file'**
   String get importFromLocalFile;
 
-  /// No description provided for @selectJsonExtension.
+  /// Hint text for selecting extension package
   ///
   /// In en, this message translates to:
   /// **'Select .json or .zip extension package'**
   String get selectJsonExtension;
 
-  /// No description provided for @enterUrlOrGithubLink.
+  /// Hint text for extension URL input
   ///
   /// In en, this message translates to:
   /// **'Enter URL or GitHub link'**
   String get enterUrlOrGithubLink;
 
-  /// No description provided for @downloadAndInstallFromLink.
+  /// Button label to install extension from link
   ///
   /// In en, this message translates to:
   /// **'Download and install from link'**
   String get downloadAndInstallFromLink;
 
-  /// No description provided for @confirmUninstall.
+  /// Title for confirm uninstall dialog
   ///
   /// In en, this message translates to:
   /// **'Confirm Uninstall'**
   String get confirmUninstall;
 
-  /// No description provided for @uninstallExtensionWarning.
+  /// Warning message for extension uninstallation
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to uninstall extension \"{name}\"? All related settings will be cleared.'**
   String uninstallExtensionWarning(String name);
 
-  /// No description provided for @uninstall.
+  /// Label for uninstall button
   ///
   /// In en, this message translates to:
   /// **'Uninstall'**
   String get uninstall;
 
-  /// No description provided for @extensionUninstalled.
+  /// Snackbar message after extension uninstalled
   ///
   /// In en, this message translates to:
   /// **'Extension uninstalled'**
   String get extensionUninstalled;
 
-  /// No description provided for @extensionRepository.
+  /// Title for extension repository page
   ///
   /// In en, this message translates to:
   /// **'Extension Repository'**
   String get extensionRepository;
 
-  /// No description provided for @browseAndInstallFromGithub.
+  /// Label for browsing extensions on GitHub
   ///
   /// In en, this message translates to:
   /// **'Browse and install from GitHub'**
   String get browseAndInstallFromGithub;
 
-  /// No description provided for @noExtensionsInstalled.
+  /// Message shown when no extensions are installed
   ///
   /// In en, this message translates to:
   /// **'No extensions installed'**
   String get noExtensionsInstalled;
 
-  /// No description provided for @deactivated.
+  /// Label for deactivated extensions
   ///
   /// In en, this message translates to:
   /// **'Deactivated'**
   String get deactivated;
 
-  /// No description provided for @downloadFailedCheckLink.
+  /// Error message when extension download fails
   ///
   /// In en, this message translates to:
   /// **'Download failed, please check the link'**
   String get downloadFailedCheckLink;
 
-  /// No description provided for @manageAndPermissions.
+  /// Label for extension management and permissions
   ///
   /// In en, this message translates to:
   /// **'Manage & Permissions'**
   String get manageAndPermissions;
 
-  /// No description provided for @exportExtensionPackage.
+  /// Label for exporting extension package
   ///
   /// In en, this message translates to:
   /// **'Export Extension Package'**
   String get exportExtensionPackage;
 
-  /// No description provided for @expandTags.
+  /// Label for expanding tags section
   ///
   /// In en, this message translates to:
   /// **'Expand Tags'**
   String get expandTags;
 
-  /// No description provided for @noEventSelected.
+  /// Message shown when no event is selected
   ///
   /// In en, this message translates to:
   /// **'No event selected'**
   String get noEventSelected;
 
-  /// No description provided for @noMatchingEvents.
+  /// Message shown when no events match filters
   ///
   /// In en, this message translates to:
   /// **'No matching events found'**
   String get noMatchingEvents;
 
-  /// No description provided for @noEventsYet.
+  /// Message shown when there are no events in the database
   ///
   /// In en, this message translates to:
   /// **'No events yet'**
   String get noEventsYet;
 
-  /// No description provided for @createFirstEvent.
+  /// Instruction to create the first event
   ///
   /// In en, this message translates to:
   /// **'Click the + button to create your first event'**
   String get createFirstEvent;
 
-  /// No description provided for @tryAdjustingFilters.
+  /// Suggestion when no matching events are found
   ///
   /// In en, this message translates to:
   /// **'Try adjusting your filters or search query'**
   String get tryAdjustingFilters;
 
-  /// No description provided for @batchEditTags.
+  /// Label for batch editing tags
   ///
   /// In en, this message translates to:
   /// **'Batch Edit Tags'**
   String get batchEditTags;
 
-  /// No description provided for @batchEditTagsTitle.
+  /// Title for batch tag editing dialog
   ///
   /// In en, this message translates to:
   /// **'Edit Tags for {count} items'**
   String batchEditTagsTitle(int count);
 
-  /// No description provided for @help.
+  /// Label for adding tags
+  ///
+  /// In en, this message translates to:
+  /// **'Add Tags'**
+  String get addTags;
+
+  /// Label for removing tags
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Tags'**
+  String get removeTags;
+
+  /// Snackbar message after batch tag update
+  ///
+  /// In en, this message translates to:
+  /// **'Tags updated for {count} items'**
+  String tagsUpdated(int count);
+
+  /// Message shown when no tags are selected in batch edit
+  ///
+  /// In en, this message translates to:
+  /// **'No tags selected'**
+  String get noTagsSelected;
+
+  /// Button label to apply changes
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// Label for help section
   ///
   /// In en, this message translates to:
   /// **'Help'**
   String get help;
 
-  /// No description provided for @welcomeAndHelp.
+  /// Label for welcome section
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get welcome;
+
+  /// Title for welcome and help page
   ///
   /// In en, this message translates to:
   /// **'Welcome & Help'**
   String get welcomeAndHelp;
 
-  /// No description provided for @helpTitle.
+  /// Title for help center
   ///
   /// In en, this message translates to:
   /// **'Help Center'**
   String get helpTitle;
 
-  /// No description provided for @helpMessage.
+  /// Description for help center
   ///
   /// In en, this message translates to:
   /// **'Learn how to use Essenmelia here. Manage your events, steps, and extensions.'**
   String get helpMessage;
 
-  /// No description provided for @backToWelcome.
+  /// Button label to go back to welcome screen
   ///
   /// In en, this message translates to:
   /// **'Back to Welcome'**
   String get backToWelcome;
 
-  /// No description provided for @switchToHelp.
+  /// Button label to switch to help view
   ///
   /// In en, this message translates to:
   /// **'View Help'**
   String get switchToHelp;
 
-  /// No description provided for @getStarted.
+  /// Button label to get started
   ///
   /// In en, this message translates to:
   /// **'Get Started'**
   String get getStarted;
 
-  /// No description provided for @font.
+  /// Label for font settings
   ///
   /// In en, this message translates to:
   /// **'Font'**
   String get font;
 
-  /// No description provided for @systemFont.
+  /// Label for system font option
   ///
   /// In en, this message translates to:
   /// **'System'**
   String get systemFont;
 
-  /// No description provided for @builtInFont.
+  /// Label for built-in font option
   ///
   /// In en, this message translates to:
   /// **'Built-in'**
   String get builtInFont;
 
-  /// No description provided for @dataMaintenance.
+  /// Label for data maintenance section
   ///
   /// In en, this message translates to:
   /// **'Data Maintenance'**
   String get dataMaintenance;
 
-  /// No description provided for @dangerZone.
+  /// Label for danger zone section
   ///
   /// In en, this message translates to:
   /// **'Danger Zone'**
   String get dangerZone;
 
-  /// No description provided for @formatApp.
+  /// Label for formatting application (clearing all data)
   ///
   /// In en, this message translates to:
   /// **'Format Application'**
   String get formatApp;
 
-  /// No description provided for @formatAppWarning.
+  /// Warning message for formatting the application
   ///
   /// In en, this message translates to:
   /// **'This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is IRREVERSIBLE!'**
   String get formatAppWarning;
 
-  /// No description provided for @formatAppConfirm.
+  /// Instruction for confirmation word
   ///
   /// In en, this message translates to:
   /// **'TYPE \'DELETE\' TO CONFIRM'**
   String get formatAppConfirm;
 
-  /// No description provided for @formatAppPlaceholder.
+  /// Hint text for confirmation word input
   ///
   /// In en, this message translates to:
   /// **'Type DELETE here'**
   String get formatAppPlaceholder;
 
-  /// No description provided for @currentDbActions.
+  /// Label for current database actions section
   ///
   /// In en, this message translates to:
   /// **'Current Database Actions'**
   String get currentDbActions;
 
-  /// No description provided for @filter.
+  /// Label for granting all system permissions to an extension
+  ///
+  /// In en, this message translates to:
+  /// **'All System Permissions'**
+  String get extensionAllSystemPermissions;
+
+  /// Button label to confirm permission choice
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Choice'**
+  String get extensionConfirmChoice;
+
+  /// Label for last sync time
+  ///
+  /// In en, this message translates to:
+  /// **'Last Sync: {time}'**
+  String lastSync(String time);
+
+  /// Label for extension runtime and security section
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime & Security'**
+  String get extensionRuntimeSection;
+
+  /// Label for enabling an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Extension'**
+  String get extensionEnable;
+
+  /// Status label for a running extension
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get extensionRunning;
+
+  /// Status label for a stopped extension
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get extensionStopped;
+
+  /// Label for extension sandbox isolation settings
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox Isolation'**
+  String get extensionSandboxIsolation;
+
+  /// Label for isolated sandbox mode
+  ///
+  /// In en, this message translates to:
+  /// **'Isolated Sandbox'**
+  String get extensionIsolatedSandbox;
+
+  /// Label for shared sandbox mode
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Sandbox: {id}'**
+  String extensionSharedSandbox(String id);
+
+  /// Label for extension sandbox group
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox Group'**
+  String get extensionSandboxGroup;
+
+  /// Description for extension sandbox groups
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox groups determine data isolation. Enter the same ID to share storage.'**
+  String get extensionSandboxDesc;
+
+  /// Label for sandbox ID input
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox ID'**
+  String get extensionSandboxId;
+
+  /// Hint text for default sandbox ID
+  ///
+  /// In en, this message translates to:
+  /// **'Default to Extension ID'**
+  String get extensionSandboxDefaultHint;
+
+  /// Tip for extension sandbox groups
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: Active extensions usually share the same group'**
+  String get extensionSandboxTip;
+
+  /// Label for requested permissions section
+  ///
+  /// In en, this message translates to:
+  /// **'Requested Permissions'**
+  String get extensionRequestedPermissions;
+
+  /// Message shown when no permissions are requested
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions requested'**
+  String get extensionNoPermissions;
+
+  /// Button label to update an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Update Extension'**
+  String get extensionUpdate;
+
+  /// Button label to install an extension
+  ///
+  /// In en, this message translates to:
+  /// **'Install Extension'**
+  String get extensionInstall;
+
+  /// Label for extension information section
+  ///
+  /// In en, this message translates to:
+  /// **'Information'**
+  String get extensionInformation;
+
+  /// Label for extension version
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get extensionVersion;
+
+  /// Label for extension not installed status
+  ///
+  /// In en, this message translates to:
+  /// **'N/A'**
+  String get extensionNotInstalled;
+
+  /// Label for extension code size
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get extensionCodeSize;
+
+  /// Label for extension storage size
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get extensionStorageSize;
+
+  /// Label for full trust mode
+  ///
+  /// In en, this message translates to:
+  /// **'Full Trust'**
+  String get extensionFullTrust;
+
+  /// Description for full trust mode
+  ///
+  /// In en, this message translates to:
+  /// **'Direct access to system APIs'**
+  String get extensionFullTrustDesc;
+
+  /// Label for extension permissions statement
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get extensionPermissionsStatement;
+
+  /// Message shown when no changes are detected
+  ///
+  /// In en, this message translates to:
+  /// **'No changes'**
+  String get extensionNoChanges;
+
+  /// Message shown when no permissions are required
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions required'**
+  String get extensionNoPermissionsRequired;
+
+  /// Generic update button label
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// Generic install button label
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get install;
+
+  /// Error message for database operations
+  ///
+  /// In en, this message translates to:
+  /// **'Database Error: {error}'**
+  String databaseError(String error);
+
+  /// Generic filter label
   ///
   /// In en, this message translates to:
   /// **'Filter'**
   String get filter;
 
-  /// No description provided for @status.
+  /// Generic status label
   ///
   /// In en, this message translates to:
   /// **'Status'**
   String get status;
+
+  /// Label for requested extensions
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get extensionRequested;
+
+  /// Label for showing only events with reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Only Show Reminders'**
+  String get onlyShowReminders;
+
+  /// Subtitle for showing only events with reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Filter out tasks without reminders'**
+  String get onlyShowRemindersSubtitle;
+
+  /// Label for viewing all items
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get viewAll;
+
+  /// Tooltip for extension logs button
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Logs'**
+  String get extensionLogs;
+
+  /// Title for extension system guide
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Extensions'**
+  String get welcomeToExtensions;
+
+  /// Tooltip for dismissing guide
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show again'**
+  String get dontShowAgain;
+
+  /// Instruction for extension management
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to manage extension'**
+  String get longPressToManageExtension;
+
+  /// Recurrence option: Daily
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get daily;
+
+  /// Recurrence option: Weekly
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get weekly;
+
+  /// Recurrence option: Monthly
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get monthly;
+
+  /// Label for daily recurrence
+  ///
+  /// In en, this message translates to:
+  /// **' (Daily)'**
+  String get recurrenceDaily;
+
+  /// Label for weekly recurrence
+  ///
+  /// In en, this message translates to:
+  /// **' (Weekly)'**
+  String get recurrenceWeekly;
+
+  /// Label for monthly recurrence
+  ///
+  /// In en, this message translates to:
+  /// **' (Monthly)'**
+  String get recurrenceMonthly;
+
+  /// Title for welcome screen exploration
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Essenmelia'**
+  String get exploreEssenmelia;
+
+  /// Title for help and documentation
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Docs'**
+  String get helpAndDocs;
+
+  /// Subtitle for the first welcome slide
+  ///
+  /// In en, this message translates to:
+  /// **'Your personal schedule & inspiration manager'**
+  String get welcomeSubtitle1;
+
+  /// Content for the first welcome slide
+  ///
+  /// In en, this message translates to:
+  /// **'Efficiently organize every brilliant moment in your life. Whether it\'s trivial daily tasks or grand plans, they all find a home here.'**
+  String get welcomeContent1;
+
+  /// Title for privacy slide
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy First'**
+  String get privacyFirst;
+
+  /// Subtitle for privacy slide
+  ///
+  /// In en, this message translates to:
+  /// **'Secure, Transparent, Controllable'**
+  String get welcomeSubtitle2;
+
+  /// Content for privacy slide
+  ///
+  /// In en, this message translates to:
+  /// **'All data is stored locally. Untrusted plugins can only access forged data generated by the system, ensuring your real information never leaks.'**
+  String get welcomeContent2;
+
+  /// Title for customization slide
+  ///
+  /// In en, this message translates to:
+  /// **'Highly Customizable'**
+  String get highlyCustomizable;
+
+  /// Subtitle for customization slide
+  ///
+  /// In en, this message translates to:
+  /// **'Follow your heart, infinite possibilities'**
+  String get welcomeSubtitle3;
+
+  /// Content for customization slide
+  ///
+  /// In en, this message translates to:
+  /// **'With a powerful plugin system, you can easily extend app functionality. Use the declarative UI engine to customize your own exclusive management tool.'**
+  String get welcomeContent3;
+
+  /// Button label to end welcome tour
+  ///
+  /// In en, this message translates to:
+  /// **'Start Experience'**
+  String get startExperience;
+
+  /// Button label for next step in tour
+  ///
+  /// In en, this message translates to:
+  /// **'Next Step'**
+  String get nextStep;
+
+  /// Title for architecture design doc
+  ///
+  /// In en, this message translates to:
+  /// **'Architecture Design'**
+  String get archDesign;
+
+  /// Description for architecture design doc
+  ///
+  /// In en, this message translates to:
+  /// **'System layering, privacy black box & permission model'**
+  String get archDesignDesc;
+
+  /// Title for API guide doc
+  ///
+  /// In en, this message translates to:
+  /// **'API Usage Guide'**
+  String get apiGuide;
+
+  /// Description for API guide doc
+  ///
+  /// In en, this message translates to:
+  /// **'Core methods, notification schemes & external integration'**
+  String get apiGuideDesc;
+
+  /// Title for extension development doc
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Development Specs'**
+  String get extDevSpecs;
+
+  /// Description for extension development doc
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata, UI component library & logic engine'**
+  String get extDevSpecsDesc;
+
+  /// Placeholder when no doc is selected
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a document to read'**
+  String get selectDocToRead;
+
+  /// Error message when content fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Load failed: {error}'**
+  String loadFailed(String error);
+
+  /// Title for advanced settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Settings & Reminders'**
+  String get advancedSettingsAndReminders;
+
+  /// Subtitle for advanced settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Display mode, count suffix, scheduled reminders'**
+  String get advancedSettingsSubtitle;
+
+  /// Label for advanced settings
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Settings'**
+  String get advancedSettings;
+
+  /// Button label to finish settings
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Settings'**
+  String get finishSettings;
+
+  /// Title for display settings
+  ///
+  /// In en, this message translates to:
+  /// **'Display Settings'**
+  String get displaySettings;
+
+  /// Label for step marker mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Step Marker Display Mode'**
+  String get stepMarkerMode;
+
+  /// Option for numeric step markers
+  ///
+  /// In en, this message translates to:
+  /// **'Number (1, 2, 3)'**
+  String get markerNumber;
+
+  /// Option for first character step markers
+  ///
+  /// In en, this message translates to:
+  /// **'First Char (A, B, C)'**
+  String get markerFirstChar;
+
+  /// Label for custom count suffix setting
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Count Suffix'**
+  String get customCountSuffix;
+
+  /// Hint text for count suffix input
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., tasks, steps, items'**
+  String get suffixHint;
+
+  /// Tip for count suffix setting
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use default suffix'**
+  String get suffixDefaultTip;
+
+  /// Title for scheduled reminders section
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled Reminders'**
+  String get scheduledReminders;
+
+  /// Label when no reminder is configured
+  ///
+  /// In en, this message translates to:
+  /// **'No reminder set'**
+  String get noReminderSet;
+
+  /// Description for system calendar reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Will register to system calendar, no background running required'**
+  String get calendarReminderDesc;
+
+  /// Description for in-app notification reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Will send notification at specified time to remind you'**
+  String get notificationReminderDesc;
+
+  /// Label for reminder scheme setting
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Scheme'**
+  String get reminderScheme;
+
+  /// Option for in-app notification
+  ///
+  /// In en, this message translates to:
+  /// **'In-app Notification'**
+  String get inAppNotification;
+
+  /// Option for system calendar reminder
+  ///
+  /// In en, this message translates to:
+  /// **'System Calendar'**
+  String get systemCalendar;
+
+  /// Label for repeat cycle setting
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat Cycle'**
+  String get repeatCycle;
+
+  /// Option for no repetition
+  ///
+  /// In en, this message translates to:
+  /// **'No Repeat'**
+  String get noRepeat;
+
+  /// Error message for invalid reminder time
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder time cannot be earlier than current time'**
+  String get reminderTimeError;
+
+  /// Title for smart image analysis dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Analysis Selection'**
+  String get smartAnalysis;
+
+  /// Section header for AI-cropped images
+  ///
+  /// In en, this message translates to:
+  /// **'Brilliant Moments'**
+  String get brilliantMoments;
+
+  /// Label for AI cropping feature
+  ///
+  /// In en, this message translates to:
+  /// **'AI Crop'**
+  String get aiCrop;
+
+  /// Section header for OCR text results
+  ///
+  /// In en, this message translates to:
+  /// **'OCR Results'**
+  String get ocrResults;
+
+  /// Instruction for selecting OCR text
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select: 1st tap for title, subsequent taps append to description'**
+  String get ocrSelectionTip;
+
+  /// Button label to reset OCR selection
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Text Selection'**
+  String get resetOcrSelection;
+
+  /// Section header for application preview
+  ///
+  /// In en, this message translates to:
+  /// **'App Preview'**
+  String get appPreview;
+
+  /// Button label to confirm and apply AI results
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Apply'**
+  String get confirmApply;
+
+  /// Loading message during image analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing content...'**
+  String get analyzingContent;
+
+  /// Tooltip for smart analysis button
+  ///
+  /// In en, this message translates to:
+  /// **'Smartly analyze content'**
+  String get smartAnalysisTooltip;
+
+  /// Message indicating AI auto-fill
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-filled by AI Assistant'**
+  String get autoFilledByAi;
+
+  /// Error message for invalid file types
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported file format'**
+  String get unsupportedFileFormat;
+
+  /// Error message for empty or invalid clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'No image or valid link found in clipboard'**
+  String get noImageInClipboard;
+
+  /// Error message when link download fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to get image from link: {error}'**
+  String failedToGetImageFromLink(String error);
+
+  /// Option to pick image from gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Pick from Gallery'**
+  String get pickFromGallery;
+
+  /// Option to paste image from clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from Clipboard'**
+  String get pasteFromClipboard;
+
+  /// Option to remove the selected image
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Image'**
+  String get clearImage;
+
+  /// Placeholder for image selection area
+  ///
+  /// In en, this message translates to:
+  /// **'Add an image with a story'**
+  String get addStoryImage;
+
+  /// Instruction for uploading an image
+  ///
+  /// In en, this message translates to:
+  /// **'Drag & drop, paste, or select an image'**
+  String get imageUploadTip;
+
+  /// Tooltip for exporting original image
+  ///
+  /// In en, this message translates to:
+  /// **'Export Original Image'**
+  String get exportOriginalImage;
+
+  /// Label for image export action
+  ///
+  /// In en, this message translates to:
+  /// **'Export Image'**
+  String get exportImage;
+
+  /// Error message when image analysis fails
+  ///
+  /// In en, this message translates to:
+  /// **'Processing image failed: {error}'**
+  String processingImageFailed(String error);
+
+  /// Label showing reminder time
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder: {time}'**
+  String reminderAt(String time);
+
+  /// Label for quick edit feature
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Edit (Long press to slide)'**
+  String get quickEdit;
+
+  /// Label for the full original image in picker
+  ///
+  /// In en, this message translates to:
+  /// **'Full Original Image'**
+  String get fullOriginalImage;
 }
 
 class _AppLocalizationsDelegate

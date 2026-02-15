@@ -111,8 +111,8 @@ class _TagInputState extends ConsumerState<TagInput> {
       });
       widget.onChanged(_selectedTags);
 
-      // 注意：这里不再立即调用 ref.read(tagsProvider.notifier).addTag(cleanTag)
-      // 而是交给保存流程统一处理
+      // Note: We no longer call ref.read(tagsProvider.notifier).addTag(cleanTag) immediately here.
+      // It's handled collectively during the save process.
     } else {
       _controller.clear();
     }
@@ -166,7 +166,7 @@ class _TagInputState extends ConsumerState<TagInput> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '推荐标签',
+                      AppLocalizations.of(context)!.recommendedTags,
                       style: TextStyle(
                         fontSize: 11,
                         color: Theme.of(context).colorScheme.primary,

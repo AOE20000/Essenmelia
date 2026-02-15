@@ -131,20 +131,20 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
     }
   }
 
-  /// 重置所有应用数据（格式化）
+  /// Reset all app data (Format)
   Future<void> resetAll() async {
     try {
       state = const AsyncValue.loading();
 
-      // 1. 获取所有数据库列表
+      // 1. Get all database list
       final metaBox = Hive.box(kMetaBoxName);
       final dbs = List<String>.from(
         metaBox.get(kDbListKey, defaultValue: [kDefaultDbName]),
       );
 
-      // 2. 关闭并删除所有相关数据库盒子
+      // 2. Close and delete all related database boxes
       for (final dbName in dbs) {
-        // 在删除前先关闭盒子，确保文件句柄释放
+        // Close boxes before deleting to ensure file handles are released
         if (Hive.isBoxOpen('${dbName}_events')) {
           await Hive.box<Event>('${dbName}_events').close();
         }
@@ -164,20 +164,20 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
         await Hive.deleteBoxFromDisk('${dbName}_tags');
       }
 
-      // 3. 重置扩展框架
+      // 3. Reset extension framework
       await _ref.read(extensionManagerProvider.notifier).resetAll();
 
-      // 4. 清除设置和元数据
+      // 4. Clear settings and metadata
       if (Hive.isBoxOpen('settings')) {
         await Hive.box('settings').clear();
       }
       await metaBox.clear();
 
-      // 5. 重新初始化数据库控制器状态 (这一步会将 state 设为 data，从而解除 dbProvider.future 的阻塞)
+      // 5. Re-initialize database controller state (this will set state to data, unblocking dbProvider.future)
       await _init();
 
-      // 6. 刷新依赖数据库的 UI 状态提供者
-      // 注意：必须在 _init() 之后调用，因为这些 provider 的 reinit() 内部会 await ref.read(dbProvider.future)
+      // 6. Refresh UI state providers that depend on the database
+      // Note: Must be called after _init() because reinit() calls internally await ref.read(dbProvider.future)
       await _ref.read(uiStateProvider.notifier).reinit();
       await _ref.read(themeProvider.notifier).reinit();
       await _ref.read(localeProvider.notifier).reinit();

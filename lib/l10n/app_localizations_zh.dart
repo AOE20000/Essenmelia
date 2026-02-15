@@ -21,7 +21,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cancel => '取消';
 
   @override
-  String get newTag => '新建标签';
+  String get newTag => '新标签';
 
   @override
   String get tagNameHint => '例如：工作、个人';
@@ -48,10 +48,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get create => '创建';
 
   @override
+  String get createRecord => '创建记录';
+
+  @override
   String get settings => '设置';
 
   @override
-  String get manageTags => '管理标签';
+  String get manageTags => '标签管理';
 
   @override
   String get databaseManager => '数据库管理';
@@ -117,7 +120,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String deleteDbMessage(String name) {
-    return '确定要删除数据库 \"$name\" 吗？此操作无法撤销。';
+    return '确定要删除数据库 \"$name\" 吗？此操作不可撤销。';
   }
 
   @override
@@ -128,7 +131,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String dbSwitched(String name) {
-    return '已切换到数据库: $name';
+    return '已切换到数据库：$name';
   }
 
   @override
@@ -162,13 +165,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importError => '导入失败';
 
   @override
-  String get sortNewest => '最新';
+  String get sortNewest => '最新优先';
 
   @override
-  String get sortOldest => '最旧';
+  String get sortTime => '时间';
+
+  @override
+  String get sortOldest => '最早优先';
 
   @override
   String get sortTitleAZ => '标题 (A-Z)';
+
+  @override
+  String get sortTitle => '标题';
 
   @override
   String get sortTitleZA => '标题 (Z-A)';
@@ -177,22 +186,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sortProgressHigh => '进度 (高-低)';
 
   @override
+  String get sortProgress => '进度';
+
+  @override
   String get sortProgressLow => '进度 (低-高)';
 
   @override
-  String get sortStepCountHigh => '步骤数 (多-少)';
+  String get sortStepCountHigh => '步骤 (多-少)';
 
   @override
-  String get sortStepCountLow => '步骤数 (少-多)';
+  String get sortSteps => '步骤';
 
   @override
-  String get sortTagCountHigh => '标签数 (多-少)';
+  String get sortStepCountLow => '步骤 (少-多)';
 
   @override
-  String get sortTagCountLow => '标签数 (少-多)';
+  String get sortTagCountHigh => '标签 (多-少)';
+
+  @override
+  String get sortTags => '标签';
+
+  @override
+  String get sortTagCountLow => '标签 (少-多)';
 
   @override
   String get sortLastUpdated => '最近更新';
+
+  @override
+  String get sortUpdated => '更新';
 
   @override
   String get sortLastUpdatedOldest => '最早更新';
@@ -213,18 +234,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selected => '已选择';
 
   @override
-  String get deleteSelectedConfirmation => '删除选中项？';
+  String get deleteSelectedConfirmation => '删除所选？';
 
   @override
   String deleteSelectedMessage(int count) {
-    return '删除 $count 项？';
+    return '确认删除这 $count 个项目？';
   }
 
   @override
   String get editEvent => '编辑事件';
 
   @override
-  String get newEvent => '新建事件';
+  String get newEvent => '新事件';
 
   @override
   String get title => '标题';
@@ -233,7 +254,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get description => '描述';
 
   @override
-  String get imageUrl => '图片 URL';
+  String get imageUrl => '图片链接';
 
   @override
   String get imageUrlPlaceholder => 'http://... 或 data:image...';
@@ -242,7 +263,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pickImage => '选择图片';
 
   @override
-  String get saveChanges => '保存更改';
+  String get saveChanges => '保存修改';
 
   @override
   String get createEvent => '创建事件';
@@ -252,18 +273,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String tagsSelected(int count) {
-    return '已选择 $count 个标签';
+    return '已选 $count 个标签';
   }
 
   @override
-  String get clearAllTags => '清空选中';
+  String get clearAllTags => '清空选择';
 
   @override
   String get deleteTagConfirmation => '删除标签？';
 
   @override
   String deleteTagWarning(String tag) {
-    return '这将从所有事件中移除 \"$tag\"。';
+    return '这将从所有事件中移除标签 \"$tag\"。';
   }
 
   @override
@@ -281,10 +302,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steps => '步骤';
 
   @override
-  String get manageSteps => '管理步骤';
+  String get manageSteps => '步骤管理';
 
   @override
-  String get noStepsYet => '暂无步骤。';
+  String get noStepsYet => '暂无步骤';
 
   @override
   String get addStep => '添加步骤';
@@ -296,22 +317,233 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editSteps => '编辑步骤';
 
   @override
-  String get archive => '归档';
+  String get extensions => '扩展';
 
   @override
-  String get sets => '集合';
+  String get extensionDetails => '扩展详情';
+
+  @override
+  String get extensionOpen => '打开扩展';
+
+  @override
+  String get extensionUninstall => '卸载';
+
+  @override
+  String get extensionUninstallConfirm => '确认卸载';
+
+  @override
+  String extensionUninstallMessage(String name) {
+    return '确定要卸载扩展 \"$name\" 吗？此操作将删除其所有关联数据且不可撤销。';
+  }
+
+  @override
+  String get extensionExport => '导出与转换';
+
+  @override
+  String get extensionExportJson => '标准 JSON 包';
+
+  @override
+  String get extensionExportJsonSubtitle => '单文件，适合分享';
+
+  @override
+  String get extensionExportZip => '扩展 ZIP 源码包';
+
+  @override
+  String get extensionExportZipSubtitle => '包含完整仓库的存档';
+
+  @override
+  String get extensionPermissionReadEvents => '读取事件';
+
+  @override
+  String get extensionPermissionReadEventsDesc => '允许扩展查看您的所有事件和任务。';
+
+  @override
+  String get extensionPermissionAddEvents => '添加事件';
+
+  @override
+  String get extensionPermissionAddEventsDesc => '允许扩展创建新任务。';
+
+  @override
+  String get extensionPermissionUpdateEvents => '更新事件';
+
+  @override
+  String get extensionPermissionUpdateEventsDesc => '允许扩展修改现有任务。';
+
+  @override
+  String get extensionPermissionDeleteEvents => '删除事件';
+
+  @override
+  String get extensionPermissionDeleteEventsDesc => '允许扩展删除您的任务。';
+
+  @override
+  String get extensionPermissionReadTags => '读取标签';
+
+  @override
+  String get extensionPermissionReadTagsDesc => '允许扩展查看您的标签列表。';
+
+  @override
+  String get extensionPermissionManageTags => '管理标签';
+
+  @override
+  String get extensionPermissionManageTagsDesc => '允许扩展添加或删除全局标签。';
+
+  @override
+  String get extensionPermissionManageDb => '管理数据库';
+
+  @override
+  String get extensionPermissionManageDbDesc => '允许扩展执行数据库导出、备份或切换操作。';
+
+  @override
+  String get extensionPermissionFileSystem => '文件系统';
+
+  @override
+  String get extensionPermissionFileSystemDesc => '允许扩展将文件保存到您的设备或读取文件。';
+
+  @override
+  String get extensionPermissionNotifications => '通知权限';
+
+  @override
+  String get extensionPermissionNotificationsDesc => '允许扩展向您发送桌面或系统通知。';
+
+  @override
+  String get extensionPermissionReadCalendar => '读取日历';
+
+  @override
+  String get extensionPermissionReadCalendarDesc => '允许扩展读取您的系统日历事件。';
+
+  @override
+  String get extensionPermissionWriteCalendar => '写入日历';
+
+  @override
+  String get extensionPermissionWriteCalendarDesc => '允许扩展在您的系统日历中添加或修改事件。';
+
+  @override
+  String get extensionPermissionNetwork => '网络访问';
+
+  @override
+  String get extensionPermissionNetworkDesc => '允许扩展访问互联网。';
+
+  @override
+  String get extensionPermissionSystemInfo => '系统信息';
+
+  @override
+  String get extensionPermissionSystemInfoDesc => '允许扩展访问系统状态，如主题、语言和消息提示。';
+
+  @override
+  String get extensionPermissionNavigation => '界面导航';
+
+  @override
+  String get extensionPermissionNavigationDesc => '允许扩展跳转到特定页面或过滤搜索结果。';
+
+  @override
+  String get extensionPermissionUIInteraction => '界面交互';
+
+  @override
+  String get extensionPermissionUIInteractionDesc => '允许扩展显示对话框、提示条或自定义界面元素。';
+
+  @override
+  String get extensionCategoryDataReading => '数据读取';
+
+  @override
+  String get extensionCategoryDataWriting => '数据写入';
+
+  @override
+  String get extensionCategoryFileSystem => '文件系统';
+
+  @override
+  String get extensionCategoryNetwork => '网络访问';
+
+  @override
+  String get extensionCategorySystemInfo => '系统信息';
+
+  @override
+  String get extensionCategoryNavigation => '界面导航';
+
+  @override
+  String get extensionCategoryUIInteraction => '界面交互';
+
+  @override
+  String get extensionCategoryGeneral => '常规权限';
+
+  @override
+  String get extensionManagementTitle => '扩展程序';
+
+  @override
+  String get extensionSectionInstalled => '已安装';
+
+  @override
+  String get extensionSectionBuiltIn => '内置';
+
+  @override
+  String get extensionSectionOnline => '在线商店';
+
+  @override
+  String get extensionRestrictedAccess => '受限访问';
+
+  @override
+  String get extensionRestrictedAccessDesc => '所有数据访问均需手动授权。';
+
+  @override
+  String get extensionInterceptedTitle => '访问被拦截';
+
+  @override
+  String extensionInterceptedDesc(String name, String action) {
+    return '扩展 $name $action：';
+  }
+
+  @override
+  String get extensionInterceptedActionTried => '刚才尝试进行';
+
+  @override
+  String get extensionInterceptedActionWants => '想要进行';
+
+  @override
+  String get extensionDecisionDeny => '拒绝访问';
+
+  @override
+  String get extensionDecisionDenyDesc => '不提供数据，可能会导致扩展运行错误或功能受限。';
+
+  @override
+  String get extensionDecisionOnce => '允许本次';
+
+  @override
+  String get extensionDecisionOnceDesc => '仅为本次特定请求提供真实数据。';
+
+  @override
+  String get extensionDecisionNext => '下次允许';
+
+  @override
+  String get extensionDecisionNextDesc => '本次拦截，但下次发生同类访问时自动允许。';
+
+  @override
+  String get extensionDecisionSessionCategory => '允许此类 (本会话)';
+
+  @override
+  String get extensionDecisionSessionCategoryDesc => '在应用关闭前，允许此类别的所有访问。';
+
+  @override
+  String get extensionDecisionSessionAll => '允许全部 (本会话)';
+
+  @override
+  String get extensionDecisionSessionAllDesc => '在应用关闭前，允许此扩展的所有权限申请。';
+
+  @override
+  String get archive => '存档';
+
+  @override
+  String get sets => '模板集';
 
   @override
   String get addNewStepPlaceholder => '添加新步骤...';
 
   @override
-  String get addToArchivePlaceholder => '添加到归档...';
+  String get addToArchivePlaceholder => '添加到存档...';
 
   @override
   String get addedToSteps => '已添加到步骤';
 
   @override
-  String get saveCurrentStepsAsSet => '保存当前步骤为模板集';
+  String get saveCurrentStepsAsSet => '将当前步骤保存为模板集';
 
   @override
   String get addAllToSteps => '全部添加到步骤';
@@ -327,19 +559,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dbNameHint => '例如：project-x, archive-2023';
+  String get dbNameHint => '例如：项目-X, 2023存档';
 
   @override
-  String get invalidDbName => '无效名称。请使用字母、数字、-、_';
+  String get invalidDbName => '名称无效。请使用字母、数字、-、_';
 
   @override
-  String get defaultDbName => '主归档 (默认)';
+  String get defaultDbName => '主存档 (默认)';
 
   @override
-  String get currentlyActive => '当前激活';
+  String get currentlyActive => '当前活动';
 
   @override
-  String get inactive => '未激活';
+  String get inactive => '未启用';
 
   @override
   String get switchDb => '切换';
@@ -351,11 +583,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String deleteDbTitle(String name) {
-    return '删除 \"$name\"?';
+    return '删除 \"$name\"？';
   }
 
   @override
-  String get deleteDbWarning => '此操作无法撤销。该数据库中的所有数据都将丢失。';
+  String get deleteDbWarning => '此操作不可撤销。该数据库中的所有数据都将丢失。';
 
   @override
   String get saveTemplateSet => '保存模板集';
@@ -376,44 +608,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String get welcomeTitle => '欢迎使用 Essenmelia';
 
   @override
-  String get welcomeMessage => '管理事件、追踪步骤、使用标签整理生活。点击 + 按钮开始。';
+  String get welcomeMessage => '管理您的事件，追踪步骤，并使用标签组织生活。点击 + 按钮开始使用。';
 
   @override
   String selectedItemsCount(int count) {
-    return '已选 $count 项';
+    return '已选择 $count 个项目';
   }
 
   @override
-  String get batchArchive => '批量归档';
+  String get batchArchive => '批量存档';
 
   @override
   String get batchAdd => '批量添加';
 
   @override
-  String get saveAsSet => '保存为集合';
+  String get saveAsSet => '另存为模板集';
 
   @override
   String movedToArchive(int count) {
-    return '已将 $count 项移动到归档';
+    return '已将 $count 个项目移至存档';
   }
 
   @override
   String get noArchiveSteps => '暂无存档步骤';
 
   @override
-  String get noStepSets => '暂无步骤集';
+  String get noStepSets => '暂无模板集';
 
   @override
-  String get saveCurrentAsSetHint => '你可以将当前步骤保存为集合，方便以后快速复用';
+  String get saveCurrentAsSetHint => '您可以将当前步骤保存为模板集，以便日后快速复用';
 
   @override
-  String get setName => '集合名称';
+  String get setName => '模板集名称';
 
   @override
-  String get setSaved => '集合已保存';
+  String get setSaved => '组合已保存';
 
   @override
   String get tags => '标签';
+
+  @override
+  String get noEventsWithTag => '没有带有此标签的事件';
+
+  @override
+  String get allEvents => '所有事件';
 
   @override
   String get tagsPlaceholder => '输入以搜索或创建...';
@@ -425,7 +663,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String failedToPickImage(String error) {
-    return '选择图片失败: $error';
+    return '选择图片失败：$error';
   }
 
   @override
@@ -433,14 +671,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String error(String error) {
-    return '错误: $error';
+    return '错误：$error';
   }
 
   @override
   String get deleteAllDataTitle => '删除所有数据？';
 
   @override
-  String get deleteAllDataMessage => '此操作无法撤销。';
+  String get deleteAllDataMessage => '此操作不可撤销。';
 
   @override
   String get deleteAllDataSuccess => '所有数据已删除';
@@ -494,10 +732,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionRepository => '扩展仓库';
 
   @override
-  String get browseAndInstallFromGithub => '浏览并从 GitHub 安装';
+  String get browseAndInstallFromGithub => '从 GitHub 浏览并安装';
 
   @override
-  String get noExtensionsInstalled => '暂无已安装的扩展';
+  String get noExtensionsInstalled => '未安装扩展';
 
   @override
   String get deactivated => '已停用';
@@ -518,13 +756,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noEventSelected => '未选择事件';
 
   @override
-  String get noMatchingEvents => '未找到匹配的事件';
+  String get noMatchingEvents => '未找到匹配事件';
 
   @override
   String get noEventsYet => '暂无事件';
 
   @override
-  String get createFirstEvent => '点击 + 按钮创建你的第一个事件';
+  String get createFirstEvent => '点击 + 按钮创建您的第一个事件';
 
   @override
   String get tryAdjustingFilters => '尝试调整过滤器或搜索词';
@@ -534,11 +772,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String batchEditTagsTitle(int count) {
-    return '编辑 $count 项的标签';
+    return '编辑 $count 个项目的标签';
   }
 
   @override
+  String get addTags => '添加标签';
+
+  @override
+  String get removeTags => '移除标签';
+
+  @override
+  String tagsUpdated(int count) {
+    return '已更新 $count 个项目的标签';
+  }
+
+  @override
+  String get noTagsSelected => '未选择标签';
+
+  @override
+  String get apply => '应用';
+
+  @override
   String get help => '帮助';
+
+  @override
+  String get welcome => '欢迎';
 
   @override
   String get welcomeAndHelp => '欢迎与帮助';
@@ -547,10 +805,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get helpTitle => '帮助中心';
 
   @override
-  String get helpMessage => '在这里您可以了解如何使用 Essenmelia。管理您的日程、步骤和扩展。';
+  String get helpMessage => '在此学习如何使用 Essenmelia。管理您的事件、步骤和扩展。';
 
   @override
-  String get backToWelcome => '返回欢迎';
+  String get backToWelcome => '返回欢迎页';
 
   @override
   String get switchToHelp => '查看帮助';
@@ -562,7 +820,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get font => '字体';
 
   @override
-  String get systemFont => '系统字体';
+  String get systemFont => '系统默认';
 
   @override
   String get builtInFont => '内置字体';
@@ -577,7 +835,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get formatApp => '格式化应用';
 
   @override
-  String get formatAppWarning => '这将物理删除所有数据库，清空所有扩展沙箱，并重置所有应用设置。此操作不可逆！';
+  String get formatAppWarning => '这将物理删除所有数据库，清空所有扩展沙盒，并重置所有应用设置。此操作不可逆！';
 
   @override
   String get formatAppConfirm => '输入 \'DELETE\' 以确认';
@@ -589,8 +847,359 @@ class AppLocalizationsZh extends AppLocalizations {
   String get currentDbActions => '当前数据库操作';
 
   @override
+  String get extensionAllSystemPermissions => '所有系统权限';
+
+  @override
+  String get extensionConfirmChoice => '确认选择';
+
+  @override
+  String lastSync(String time) {
+    return '上次同步: $time';
+  }
+
+  @override
+  String get extensionRuntimeSection => '运行与安全';
+
+  @override
+  String get extensionEnable => '启用扩展';
+
+  @override
+  String get extensionRunning => '运行中';
+
+  @override
+  String get extensionStopped => '已停止';
+
+  @override
+  String get extensionSandboxIsolation => '沙盒隔离';
+
+  @override
+  String get extensionIsolatedSandbox => '独立沙盒';
+
+  @override
+  String extensionSharedSandbox(String id) {
+    return '共享沙盒：$id';
+  }
+
+  @override
+  String get extensionSandboxGroup => '沙盒组';
+
+  @override
+  String get extensionSandboxDesc => '沙盒组决定数据隔离。输入相同的 ID 以共享存储。';
+
+  @override
+  String get extensionSandboxId => '沙盒 ID';
+
+  @override
+  String get extensionSandboxDefaultHint => '默认为扩展 ID';
+
+  @override
+  String get extensionSandboxTip => '提示：活跃扩展通常共享同一分组';
+
+  @override
+  String get extensionRequestedPermissions => '申请的权限';
+
+  @override
+  String get extensionNoPermissions => '未申请权限';
+
+  @override
+  String get extensionUpdate => '更新扩展';
+
+  @override
+  String get extensionInstall => '安装扩展';
+
+  @override
+  String get extensionInformation => '扩展信息';
+
+  @override
+  String get extensionVersion => '版本';
+
+  @override
+  String get extensionNotInstalled => '未安装';
+
+  @override
+  String get extensionCodeSize => '代码大小';
+
+  @override
+  String get extensionStorageSize => '占用空间';
+
+  @override
+  String get extensionFullTrust => '完全信任';
+
+  @override
+  String get extensionFullTrustDesc => '直接访问系统 API';
+
+  @override
+  String get extensionPermissionsStatement => '权限声明';
+
+  @override
+  String get extensionNoChanges => '无变更';
+
+  @override
+  String get extensionNoPermissionsRequired => '无需权限';
+
+  @override
+  String get update => '更新';
+
+  @override
+  String get install => '安装';
+
+  @override
+  String databaseError(String error) {
+    return '数据库错误: $error';
+  }
+
+  @override
   String get filter => '筛选';
 
   @override
   String get status => '状态';
+
+  @override
+  String get extensionRequested => '扩展申请';
+
+  @override
+  String get onlyShowReminders => '仅显示提醒';
+
+  @override
+  String get onlyShowRemindersSubtitle => '过滤掉没有提醒的任务';
+
+  @override
+  String get viewAll => '查看全部';
+
+  @override
+  String get extensionLogs => '扩展日志';
+
+  @override
+  String get welcomeToExtensions => '欢迎使用扩展系统';
+
+  @override
+  String get dontShowAgain => '不再显示';
+
+  @override
+  String get longPressToManageExtension => '长按扩展进入管理页面';
+
+  @override
+  String get daily => '每天';
+
+  @override
+  String get weekly => '每周';
+
+  @override
+  String get monthly => '每月';
+
+  @override
+  String get recurrenceDaily => ' (每天)';
+
+  @override
+  String get recurrenceWeekly => ' (每周)';
+
+  @override
+  String get recurrenceMonthly => ' (每月)';
+
+  @override
+  String get exploreEssenmelia => '探索 Essenmelia';
+
+  @override
+  String get helpAndDocs => '帮助与文档';
+
+  @override
+  String get welcomeSubtitle1 => '您的个人日程与灵感管理专家';
+
+  @override
+  String get welcomeContent1 => '高效组织生活中的每一个精彩瞬间。无论是琐碎的日常，还是宏大的计划，都能在这里找到归宿。';
+
+  @override
+  String get privacyFirst => '隐私优先';
+
+  @override
+  String get welcomeSubtitle2 => '安全、透明、可控';
+
+  @override
+  String get welcomeContent2 => '所有数据本地存储，非信任插件只能访问由系统生成的伪造数据，确保您的真实信息永不外泄。';
+
+  @override
+  String get highlyCustomizable => '高度自定义';
+
+  @override
+  String get welcomeSubtitle3 => '随心而动，无限可能';
+
+  @override
+  String get welcomeContent3 =>
+      '通过强大的插件系统，您可以轻松扩展应用功能。使用声明式 UI 引擎，定制属于您的专属管理工具。';
+
+  @override
+  String get startExperience => '开始体验';
+
+  @override
+  String get nextStep => '下一步';
+
+  @override
+  String get archDesign => '架构设计';
+
+  @override
+  String get archDesignDesc => '系统分层、隐私黑盒与权限模型';
+
+  @override
+  String get apiGuide => 'API 使用指南';
+
+  @override
+  String get apiGuideDesc => '核心方法、通知方案与外部集成';
+
+  @override
+  String get extDevSpecs => '扩展开发规范';
+
+  @override
+  String get extDevSpecsDesc => '元数据、UI 组件库与逻辑引擎';
+
+  @override
+  String get selectDocToRead => '请选择一个文档进行阅读';
+
+  @override
+  String loadFailed(String error) {
+    return '加载失败: $error';
+  }
+
+  @override
+  String get advancedSettingsAndReminders => '高级设置与提醒';
+
+  @override
+  String get advancedSettingsSubtitle => '显示方式、数量后缀、定时提醒';
+
+  @override
+  String get advancedSettings => '高级设置';
+
+  @override
+  String get finishSettings => '完成设置';
+
+  @override
+  String get displaySettings => '显示设置';
+
+  @override
+  String get stepMarkerMode => '步骤标记显示方式';
+
+  @override
+  String get markerNumber => '序号 (1, 2, 3)';
+
+  @override
+  String get markerFirstChar => '首字 (简, 繁, 拼)';
+
+  @override
+  String get customCountSuffix => '自定义数量后缀';
+
+  @override
+  String get suffixHint => '例如：任务、步骤、个';
+
+  @override
+  String get suffixDefaultTip => '留空则使用默认后缀';
+
+  @override
+  String get scheduledReminders => '定时提醒';
+
+  @override
+  String get noReminderSet => '未设置提醒';
+
+  @override
+  String get calendarReminderDesc => '将注册到系统日历，无需后台运行';
+
+  @override
+  String get notificationReminderDesc => '将在指定时间发送通知提醒您';
+
+  @override
+  String get reminderScheme => '提醒方案';
+
+  @override
+  String get inAppNotification => '应用内通知';
+
+  @override
+  String get systemCalendar => '系统日历';
+
+  @override
+  String get repeatCycle => '重复周期';
+
+  @override
+  String get noRepeat => '不重复';
+
+  @override
+  String get reminderTimeError => '提醒时间不能早于当前时间';
+
+  @override
+  String get smartAnalysis => '智能分析选择';
+
+  @override
+  String get brilliantMoments => '精彩画面';
+
+  @override
+  String get aiCrop => 'AI 裁切';
+
+  @override
+  String get ocrResults => '识别结果';
+
+  @override
+  String get ocrSelectionTip => '点击选择：第一次点击设置为标题，后续点击追加到描述';
+
+  @override
+  String get resetOcrSelection => '重置文字选择';
+
+  @override
+  String get appPreview => '应用预览';
+
+  @override
+  String get confirmApply => '确认应用';
+
+  @override
+  String get analyzingContent => '正在分析内容...';
+
+  @override
+  String get smartAnalysisTooltip => '智能分析内容';
+
+  @override
+  String get autoFilledByAi => 'AI 助手已自动填充';
+
+  @override
+  String get unsupportedFileFormat => '不支持的文件格式';
+
+  @override
+  String get noImageInClipboard => '剪贴板中未找到图片或有效链接';
+
+  @override
+  String failedToGetImageFromLink(String error) {
+    return '从链接获取图片失败：$error';
+  }
+
+  @override
+  String get pickFromGallery => '从相册选择';
+
+  @override
+  String get pasteFromClipboard => '从剪贴板粘贴';
+
+  @override
+  String get clearImage => '清除图片';
+
+  @override
+  String get addStoryImage => '添加一张有故事的图片';
+
+  @override
+  String get imageUploadTip => '拖放、粘贴或选择图片';
+
+  @override
+  String get exportOriginalImage => '导出原图';
+
+  @override
+  String get exportImage => '导出图片';
+
+  @override
+  String processingImageFailed(String error) {
+    return '处理图片失败：$error';
+  }
+
+  @override
+  String reminderAt(String time) {
+    return '提醒：$time';
+  }
+
+  @override
+  String get quickEdit => '快速编辑 (长按滑动)';
+
+  @override
+  String get fullOriginalImage => '完整原图';
 }

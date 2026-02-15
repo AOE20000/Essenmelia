@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -29,6 +30,8 @@ import 'widgets/permission_management_dialog.dart';
 import 'extension_log_manager.dart';
 import 'models/repository_extension.dart';
 import 'logic_engine.dart';
+import '../l10n/l10n_provider.dart';
+import '../services/notification_service.dart';
 
 /// 扩展权限状态管理
 final extensionAuthStateProvider =
@@ -102,7 +105,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     state = {...state};
   }
 
-  /// 重置所有权限和状态
+  /// Reset all permissions and state
   Future<void> resetAll() async {
     final box = await Hive.openBox(_boxName);
     await box.clear();
@@ -333,28 +336,8 @@ class ExtensionApiImpl implements ExtensionApi {
     final sessionPerms = _ref.read(sessionPermissionsProvider)[extId] ?? {};
     if (sessionPerms.contains('all')) return true;
 
-    // 映射权限到“受限访问”类别
-    final categoryMap = {
-      ExtensionPermission.readEvents: '数据读取',
-      ExtensionPermission.addEvents: '数据写入',
-      ExtensionPermission.updateEvents: '数据写入',
-      ExtensionPermission.deleteEvents: '数据写入',
-      ExtensionPermission.readTags: '数据读取',
-      ExtensionPermission.manageTags: '数据写入',
-      ExtensionPermission.manageDb: '数据写入',
-      ExtensionPermission.network: '网络访问',
-      ExtensionPermission.fileSystem: '文件操作',
-      ExtensionPermission.notifications: '系统通知',
-      ExtensionPermission.readCalendar: '系统日历',
-      ExtensionPermission.writeCalendar: '系统日历',
-      ExtensionPermission.systemInfo: '系统信息',
-      ExtensionPermission.navigation: '界面导航',
-    };
-
-    final category = categoryMap[permission];
-    if (category != null && sessionPerms.contains(category)) {
-      return true;
-    }
+    // 检查具体的权限名
+    if (sessionPerms.contains(permission.name)) return true;
 
     return false;
   }
@@ -392,11 +375,22 @@ class ExtensionApiImpl implements ExtensionApi {
     bool isUntrusted = false;
 
     // 3. 隐私 Shield 拦截逻辑 (针对受限访问模式)
-    if (effectiveOperation != null && effectiveCategory != null) {
-      isUntrusted = !await _shieldIntercept(
-        effectiveOperation,
-        effectiveCategory,
-      );
+    if (effectiveOperation != null) {
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        final l10n = AppLocalizations.of(context)!;
+        final operation = metadata?.getOperation(l10n) ?? effectiveOperation;
+        final category =
+            metadata?.getCategory(l10n) ??
+            effectiveCategory ??
+            l10n.extensionCategoryGeneral;
+
+        isUntrusted = !await _shieldIntercept(
+          operation,
+          category,
+          permission: effectivePermission,
+        );
+      }
     }
 
     // 4. 显式权限检查 (针对持久化授权)
@@ -456,7 +450,11 @@ class ExtensionApiImpl implements ExtensionApi {
   }
 
   /// 权限管理拦截逻辑 (非阻塞 + 事后授权模式)
-  Future<bool> _shieldIntercept(String operation, String category) async {
+  Future<bool> _shieldIntercept(
+    String operation,
+    String category, {
+    ExtensionPermission? permission,
+  }) async {
     final notifier = _ref.read(extensionAuthStateProvider.notifier);
     final extId = _metadata.id;
 
@@ -472,13 +470,15 @@ class ExtensionApiImpl implements ExtensionApi {
     if (!notifier.isUntrusted(extId)) return true;
 
     // 检查是否有“仅下次允许”的权限，如果有则直接消费并放行
-    if (await notifier.consumeNextRunPermission(extId, category)) {
+    if (permission != null &&
+        await notifier.consumeNextRunPermission(extId, permission.name)) {
       return true;
     }
 
     // 检查本次会话是否已允许
     final sessionPerms = _ref.read(sessionPermissionsProvider)[extId] ?? {};
-    if (sessionPerms.contains('all') || sessionPerms.contains(category)) {
+    if (sessionPerms.contains('all') ||
+        (permission != null && sessionPerms.contains(permission.name))) {
       return true;
     }
 
@@ -488,16 +488,19 @@ class ExtensionApiImpl implements ExtensionApi {
     notifier.setPaused(extId, true);
 
     // 2. 异步弹出对话框（不 await）
-    // 使用 unawaited 避免 lint 警告，确保这是一个真正的 Fire-and-Forget
-    _showPrivacyDialogAsync(operation, category);
+    _showPrivacyDialogAsync(operation, category, permission: permission);
 
     // 3. 模拟正常耗时后返回 false (引导扩展使用假数据)
     await Future.delayed(Duration(milliseconds: 150 + (extId.hashCode % 150)));
     return false;
   }
 
-  void _showPrivacyDialogAsync(String operation, String category) {
-    final requestId = '${_metadata.id}_$category';
+  void _showPrivacyDialogAsync(
+    String operation,
+    String category, {
+    ExtensionPermission? permission,
+  }) {
+    final requestId = '${_metadata.id}_${permission?.name ?? category}';
 
     // 1. 如果当前扩展的这个类别的请求已经在处理中，直接忽略
     if (_manager._activePrivacyRequests.contains(requestId)) {
@@ -511,28 +514,21 @@ class ExtensionApiImpl implements ExtensionApi {
 
     Future.microtask(() async {
       try {
-        // 2. 等待之前的对话框关闭，增加超时机制防止多个弹窗重叠导致 ANR
+        // 2. 等待之前的对话框关闭
         if (_isDialogShowing && _currentDialogFuture != null) {
-          debugPrint(
-            'Shield: Waiting for previous dialog to close for $requestId',
-          );
           await _currentDialogFuture!.timeout(
             const Duration(seconds: 3),
-            onTimeout: () => debugPrint('Shield: Wait timeout for $requestId'),
+            onTimeout: () => null,
           );
         }
 
-        // 3. 再次检查是否还需要显示（可能在等待期间已经被允许了）
+        // 3. 再次检查是否还需要显示
         final authNotifier = _ref.read(extensionAuthStateProvider.notifier);
         if (!authNotifier.isPaused(_metadata.id)) {
           return;
         }
 
-        // 如果之前的对话框还在显示（超时后），则跳过本次，避免堆叠
-        if (_isDialogShowing) {
-          debugPrint('Shield: Skipping dialog for $requestId due to overlap');
-          return;
-        }
+        if (_isDialogShowing) return;
 
         if (!context.mounted) return;
 
@@ -554,15 +550,18 @@ class ExtensionApiImpl implements ExtensionApi {
 
           if (decision != null &&
               decision != PermissionManagementDecision.deny) {
+            final authNotifier = _ref.read(extensionAuthStateProvider.notifier);
+            final permKey = permission?.name ?? category;
+
             if (decision == PermissionManagementDecision.allowNextRun) {
-              await authNotifier.setNextRunPermission(_metadata.id, category);
+              await authNotifier.setNextRunPermission(_metadata.id, permKey);
             } else {
               _ref.read(sessionPermissionsProvider.notifier).update((state) {
                 final newState = Map<String, Set<String>>.from(state);
                 final extPerms = Set<String>.from(newState[_metadata.id] ?? {});
                 if (decision ==
                     PermissionManagementDecision.allowCategoryOnce) {
-                  extPerms.add(category);
+                  extPerms.add(permKey);
                 } else if (decision ==
                     PermissionManagementDecision.allowAllOnce) {
                   extPerms.add('all');
@@ -571,18 +570,8 @@ class ExtensionApiImpl implements ExtensionApi {
                 return newState;
               });
 
-              final permissionMapping = {
-                '数据读取': ExtensionPermission.readEvents,
-                '数据写入': ExtensionPermission.addEvents,
-                '网络访问': ExtensionPermission.network,
-                '文件系统': ExtensionPermission.fileSystem,
-                '系统通知': ExtensionPermission.notifications,
-                '系统日历': ExtensionPermission.readCalendar,
-              };
-
-              final grantedPerm = permissionMapping[category];
-              if (grantedPerm != null) {
-                _manager.notifyPermissionGranted(_metadata.id, grantedPerm);
+              if (permission != null) {
+                _manager.notifyPermissionGranted(_metadata.id, permission);
               }
             }
           }
@@ -643,16 +632,17 @@ class ExtensionApiImpl implements ExtensionApi {
   Future<bool> showConfirmDialog({
     required String title,
     required String message,
-    String confirmLabel = '确定',
-    String cancelLabel = '取消',
+    String? confirmLabel,
+    String? cancelLabel,
   }) async {
+    final l10n = _ref.read(l10nProvider);
     final result = await _invokeApi(
       'showConfirmDialog',
       params: {
         'title': title,
         'message': message,
-        'confirmLabel': confirmLabel,
-        'cancelLabel': cancelLabel,
+        'confirmLabel': confirmLabel ?? l10n.confirm,
+        'cancelLabel': cancelLabel ?? l10n.cancel,
       },
     );
     return result ?? false;
@@ -1808,8 +1798,7 @@ class ExtensionManager extends ChangeNotifier {
     String? oldContent,
   ) async {
     final theme = Theme.of(context);
-    final locale = Localizations.maybeLocaleOf(context);
-    final isEn = locale?.languageCode == 'en';
+    final l10n = AppLocalizations.of(context)!;
     final isUpdate = oldMeta != null;
 
     // 计算权限差异
@@ -1873,9 +1862,7 @@ class ExtensionManager extends ChangeNotifier {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        isUpdate
-                            ? (isEn ? 'Update Extension' : '更新扩展')
-                            : (isEn ? 'Install Extension' : '安装扩展'),
+                        isUpdate ? l10n.extensionUpdate : l10n.extensionInstall,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -1948,7 +1935,7 @@ class ExtensionManager extends ChangeNotifier {
 
                     // Version & Info Section
                     Text(
-                      isEn ? 'Information' : '版本详情',
+                      l10n.extensionInformation,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -1957,14 +1944,14 @@ class ExtensionManager extends ChangeNotifier {
                     const SizedBox(height: 12),
                     _buildDiffRow(
                       context,
-                      isEn ? 'Version' : '版本号',
-                      oldMeta?.version ?? (isEn ? 'N/A' : '未安装'),
+                      l10n.extensionVersion,
+                      oldMeta?.version ?? l10n.extensionNotInstalled,
                       newMeta.version,
                       isHighlight: oldMeta?.version != newMeta.version,
                     ),
                     _buildDiffRow(
                       context,
-                      isEn ? 'Code' : '代码量',
+                      l10n.extensionCodeSize,
                       '${oldContent?.length ?? 0} chars',
                       '${newContent.length} chars',
                       isHighlight: oldContent?.length != newContent.length,
@@ -1976,7 +1963,7 @@ class ExtensionManager extends ChangeNotifier {
                           final size = snapshot.data ?? 0;
                           return _buildDiffRow(
                             context,
-                            isEn ? 'Storage' : '数据占用',
+                            l10n.extensionStorageSize,
                             _formatSize(size),
                             _formatSize(size),
                           );
@@ -2039,10 +2026,8 @@ class ExtensionManager extends ChangeNotifier {
                                   children: [
                                     Text(
                                       isUntrusted
-                                          ? (isEn
-                                                ? 'Restricted Access'
-                                                : '受限访问')
-                                          : (isEn ? 'Full Trust' : '完全信任模式'),
+                                          ? l10n.extensionRestrictedAccess
+                                          : l10n.extensionFullTrust,
                                       style: theme.textTheme.labelLarge
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
@@ -2053,12 +2038,8 @@ class ExtensionManager extends ChangeNotifier {
                                     ),
                                     Text(
                                       isUntrusted
-                                          ? (isEn
-                                                ? 'Strictly intercept sensitive operations'
-                                                : '严格拦截敏感操作，保护数据隐私')
-                                          : (isEn
-                                                ? 'Direct access to system APIs'
-                                                : '允许扩展直接访问 API，无额外拦截'),
+                                          ? l10n.extensionRestrictedAccessDesc
+                                          : l10n.extensionFullTrustDesc,
                                       style: theme.textTheme.bodySmall,
                                     ),
                                   ],
@@ -2083,7 +2064,7 @@ class ExtensionManager extends ChangeNotifier {
                     Row(
                       children: [
                         Text(
-                          isEn ? 'Permissions' : '权限声明',
+                          l10n.extensionPermissionsStatement,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
@@ -2094,7 +2075,7 @@ class ExtensionManager extends ChangeNotifier {
                             addedPerms.isEmpty &&
                             removedPerms.isEmpty)
                           Text(
-                            isEn ? 'No changes' : '权限无变化',
+                            l10n.extensionNoChanges,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.outline,
                             ),
@@ -2106,7 +2087,7 @@ class ExtensionManager extends ChangeNotifier {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 24),
                         child: Text(
-                          isEn ? 'No permissions required' : '无需任何特殊权限',
+                          l10n.extensionNoPermissionsRequired,
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontStyle: FontStyle.italic,
                           ),
@@ -2184,7 +2165,7 @@ class ExtensionManager extends ChangeNotifier {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: Text(isEn ? 'Cancel' : '取消'),
+                        child: Text(l10n.cancel),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -2203,11 +2184,7 @@ class ExtensionManager extends ChangeNotifier {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: Text(
-                          isUpdate
-                              ? (isEn ? 'Update' : '更新')
-                              : (isEn ? 'Install' : '安装'),
-                        ),
+                        child: Text(isUpdate ? l10n.update : l10n.install),
                       ),
                     ),
                   ],
@@ -2295,7 +2272,7 @@ class ExtensionManager extends ChangeNotifier {
     bool isRemoved = false,
   }) {
     final theme = Theme.of(context);
-    final isEn = Localizations.maybeLocaleOf(context)?.languageCode == 'en';
+    final l10n = AppLocalizations.of(context)!;
     final registry = _ref.read(extensionApiRegistryProvider);
     final permApis = registry.getRequiredPermissions()[permission] ?? [];
 
@@ -2318,7 +2295,7 @@ class ExtensionManager extends ChangeNotifier {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${permission.getLabel(context)}$suffix',
+                  '${permission.getLabel(l10n)}$suffix',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -2326,7 +2303,7 @@ class ExtensionManager extends ChangeNotifier {
                   ),
                 ),
                 Text(
-                  permission.getDescription(context),
+                  permission.getDescription(l10n),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                     decoration: isRemoved ? TextDecoration.lineThrough : null,
@@ -2352,7 +2329,7 @@ class ExtensionManager extends ChangeNotifier {
                           ),
                         ),
                         child: Text(
-                          api.getOperation(isEn) ?? api.methodName,
+                          api.getOperation(l10n) ?? api.methodName,
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontSize: 10,
                             color: theme.colorScheme.onSurfaceVariant,

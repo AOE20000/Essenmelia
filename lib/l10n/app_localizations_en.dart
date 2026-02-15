@@ -48,6 +48,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create => 'Create';
 
   @override
+  String get createRecord => 'Create Record';
+
+  @override
   String get settings => 'Settings';
 
   @override
@@ -166,10 +169,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortNewest => 'Newest First';
 
   @override
+  String get sortTime => 'Time';
+
+  @override
   String get sortOldest => 'Oldest First';
 
   @override
   String get sortTitleAZ => 'Title (A-Z)';
+
+  @override
+  String get sortTitle => 'Title';
 
   @override
   String get sortTitleZA => 'Title (Z-A)';
@@ -178,10 +187,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortProgressHigh => 'Progress (High-Low)';
 
   @override
+  String get sortProgress => 'Progress';
+
+  @override
   String get sortProgressLow => 'Progress (Low-High)';
 
   @override
   String get sortStepCountHigh => 'Steps (More-Less)';
+
+  @override
+  String get sortSteps => 'Steps';
 
   @override
   String get sortStepCountLow => 'Steps (Less-More)';
@@ -190,10 +205,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortTagCountHigh => 'Tags (More-Less)';
 
   @override
+  String get sortTags => 'Tags';
+
+  @override
   String get sortTagCountLow => 'Tags (Less-More)';
 
   @override
   String get sortLastUpdated => 'Recently Updated';
+
+  @override
+  String get sortUpdated => 'Updated';
 
   @override
   String get sortLastUpdatedOldest => 'Least Recently Updated';
@@ -297,6 +318,238 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editSteps => 'Edit Steps';
 
   @override
+  String get extensions => 'Extensions';
+
+  @override
+  String get extensionDetails => 'Extension Details';
+
+  @override
+  String get extensionOpen => 'Open Extension';
+
+  @override
+  String get extensionUninstall => 'Uninstall';
+
+  @override
+  String get extensionUninstallConfirm => 'Confirm Uninstall';
+
+  @override
+  String extensionUninstallMessage(String name) {
+    return 'Are you sure you want to uninstall \"$name\"? This will delete all associated data and cannot be undone.';
+  }
+
+  @override
+  String get extensionExport => 'Export & Convert';
+
+  @override
+  String get extensionExportJson => 'Standard JSON Package';
+
+  @override
+  String get extensionExportJsonSubtitle => 'Single file, best for sharing';
+
+  @override
+  String get extensionExportZip => 'Extension ZIP Package';
+
+  @override
+  String get extensionExportZipSubtitle => 'Complete repository archive';
+
+  @override
+  String get extensionPermissionReadEvents => 'Read Events';
+
+  @override
+  String get extensionPermissionReadEventsDesc =>
+      'Allows the extension to view all your events and tasks.';
+
+  @override
+  String get extensionPermissionAddEvents => 'Add Events';
+
+  @override
+  String get extensionPermissionAddEventsDesc =>
+      'Allows the extension to create new tasks.';
+
+  @override
+  String get extensionPermissionUpdateEvents => 'Update Events';
+
+  @override
+  String get extensionPermissionUpdateEventsDesc =>
+      'Allows the extension to modify existing tasks.';
+
+  @override
+  String get extensionPermissionDeleteEvents => 'Delete Events';
+
+  @override
+  String get extensionPermissionDeleteEventsDesc =>
+      'Allows the extension to delete your tasks.';
+
+  @override
+  String get extensionPermissionReadTags => 'Read Tags';
+
+  @override
+  String get extensionPermissionReadTagsDesc =>
+      'Allows the extension to view your tag list.';
+
+  @override
+  String get extensionPermissionManageTags => 'Manage Tags';
+
+  @override
+  String get extensionPermissionManageTagsDesc =>
+      'Allows the extension to add or remove global tags.';
+
+  @override
+  String get extensionPermissionManageDb => 'Manage Database';
+
+  @override
+  String get extensionPermissionManageDbDesc =>
+      'Allows the extension to perform database export, backup, or switching.';
+
+  @override
+  String get extensionPermissionFileSystem => 'File System';
+
+  @override
+  String get extensionPermissionFileSystemDesc =>
+      'Allows the extension to save files to your device or read files.';
+
+  @override
+  String get extensionPermissionNotifications => 'Notifications';
+
+  @override
+  String get extensionPermissionNotificationsDesc =>
+      'Allows the extension to send you desktop or system notifications.';
+
+  @override
+  String get extensionPermissionReadCalendar => 'Read Calendar';
+
+  @override
+  String get extensionPermissionReadCalendarDesc =>
+      'Allows the extension to read your system calendar events.';
+
+  @override
+  String get extensionPermissionWriteCalendar => 'Write Calendar';
+
+  @override
+  String get extensionPermissionWriteCalendarDesc =>
+      'Allows the extension to add or modify events in your system calendar.';
+
+  @override
+  String get extensionPermissionNetwork => 'Network Access';
+
+  @override
+  String get extensionPermissionNetworkDesc =>
+      'Allows the extension to access the network.';
+
+  @override
+  String get extensionPermissionSystemInfo => 'System Info';
+
+  @override
+  String get extensionPermissionSystemInfoDesc =>
+      'Allows the extension to access system status like themes, language, and snackbars.';
+
+  @override
+  String get extensionPermissionNavigation => 'Navigation';
+
+  @override
+  String get extensionPermissionNavigationDesc =>
+      'Allows the extension to navigate to specific pages or filter searches.';
+
+  @override
+  String get extensionPermissionUIInteraction => 'UI Interaction';
+
+  @override
+  String get extensionPermissionUIInteractionDesc =>
+      'Allows the extension to show dialogs, snackbars, or custom UI elements.';
+
+  @override
+  String get extensionCategoryDataReading => 'Data Reading';
+
+  @override
+  String get extensionCategoryDataWriting => 'Data Writing';
+
+  @override
+  String get extensionCategoryFileSystem => 'File System';
+
+  @override
+  String get extensionCategoryNetwork => 'Network Access';
+
+  @override
+  String get extensionCategorySystemInfo => 'System Info';
+
+  @override
+  String get extensionCategoryNavigation => 'Navigation';
+
+  @override
+  String get extensionCategoryUIInteraction => 'UI Interaction';
+
+  @override
+  String get extensionCategoryGeneral => 'General';
+
+  @override
+  String get extensionManagementTitle => 'Extensions';
+
+  @override
+  String get extensionSectionInstalled => 'Installed';
+
+  @override
+  String get extensionSectionBuiltIn => 'Built-in';
+
+  @override
+  String get extensionSectionOnline => 'Online Store';
+
+  @override
+  String get extensionRestrictedAccess => 'Restricted Access';
+
+  @override
+  String get extensionRestrictedAccessDesc =>
+      'Requires manual approval for all data access.';
+
+  @override
+  String get extensionInterceptedTitle => 'Access Intercepted';
+
+  @override
+  String extensionInterceptedDesc(String name, String action) {
+    return 'Extension $name $action:';
+  }
+
+  @override
+  String get extensionInterceptedActionTried => 'just tried to';
+
+  @override
+  String get extensionInterceptedActionWants => 'wants to';
+
+  @override
+  String get extensionDecisionDeny => 'Deny Access';
+
+  @override
+  String get extensionDecisionDenyDesc =>
+      'Provides no data, which may cause errors or limited functionality.';
+
+  @override
+  String get extensionDecisionOnce => 'Allow Once';
+
+  @override
+  String get extensionDecisionOnceDesc =>
+      'Provides real data only for this specific request.';
+
+  @override
+  String get extensionDecisionNext => 'Allow Next Time';
+
+  @override
+  String get extensionDecisionNextDesc =>
+      'Intercepts now, but automatically allows the next time this access occurs.';
+
+  @override
+  String get extensionDecisionSessionCategory => 'Allow Category (Session)';
+
+  @override
+  String get extensionDecisionSessionCategoryDesc =>
+      'Allows all access to this category until the app is closed.';
+
+  @override
+  String get extensionDecisionSessionAll => 'Allow All (Session)';
+
+  @override
+  String get extensionDecisionSessionAllDesc =>
+      'Allows all permissions for this extension until the app is closed.';
+
+  @override
   String get archive => 'Archive';
 
   @override
@@ -319,7 +572,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String addedStepsCount(int count) {
-    return 'Added $count steps';
+    return '$count steps added';
   }
 
   @override
@@ -418,6 +671,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tags => 'Tags';
+
+  @override
+  String get noEventsWithTag => 'No events with this tag';
+
+  @override
+  String get allEvents => 'All Events';
 
   @override
   String get tagsPlaceholder => 'Type to search or create...';
@@ -545,7 +804,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addTags => 'Add Tags';
+
+  @override
+  String get removeTags => 'Remove Tags';
+
+  @override
+  String tagsUpdated(int count) {
+    return 'Tags updated for $count items';
+  }
+
+  @override
+  String get noTagsSelected => 'No tags selected';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
   String get help => 'Help';
+
+  @override
+  String get welcome => 'Welcome';
 
   @override
   String get welcomeAndHelp => 'Welcome & Help';
@@ -598,8 +877,370 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currentDbActions => 'Current Database Actions';
 
   @override
+  String get extensionAllSystemPermissions => 'All System Permissions';
+
+  @override
+  String get extensionConfirmChoice => 'Confirm Choice';
+
+  @override
+  String lastSync(String time) {
+    return 'Last Sync: $time';
+  }
+
+  @override
+  String get extensionRuntimeSection => 'Runtime & Security';
+
+  @override
+  String get extensionEnable => 'Enable Extension';
+
+  @override
+  String get extensionRunning => 'Running';
+
+  @override
+  String get extensionStopped => 'Stopped';
+
+  @override
+  String get extensionSandboxIsolation => 'Sandbox Isolation';
+
+  @override
+  String get extensionIsolatedSandbox => 'Isolated Sandbox';
+
+  @override
+  String extensionSharedSandbox(String id) {
+    return 'Shared Sandbox: $id';
+  }
+
+  @override
+  String get extensionSandboxGroup => 'Sandbox Group';
+
+  @override
+  String get extensionSandboxDesc =>
+      'Sandbox groups determine data isolation. Enter the same ID to share storage.';
+
+  @override
+  String get extensionSandboxId => 'Sandbox ID';
+
+  @override
+  String get extensionSandboxDefaultHint => 'Default to Extension ID';
+
+  @override
+  String get extensionSandboxTip =>
+      'Tip: Active extensions usually share the same group';
+
+  @override
+  String get extensionRequestedPermissions => 'Requested Permissions';
+
+  @override
+  String get extensionNoPermissions => 'No permissions requested';
+
+  @override
+  String get extensionUpdate => 'Update Extension';
+
+  @override
+  String get extensionInstall => 'Install Extension';
+
+  @override
+  String get extensionInformation => 'Information';
+
+  @override
+  String get extensionVersion => 'Version';
+
+  @override
+  String get extensionNotInstalled => 'N/A';
+
+  @override
+  String get extensionCodeSize => 'Code';
+
+  @override
+  String get extensionStorageSize => 'Storage';
+
+  @override
+  String get extensionFullTrust => 'Full Trust';
+
+  @override
+  String get extensionFullTrustDesc => 'Direct access to system APIs';
+
+  @override
+  String get extensionPermissionsStatement => 'Permissions';
+
+  @override
+  String get extensionNoChanges => 'No changes';
+
+  @override
+  String get extensionNoPermissionsRequired => 'No permissions required';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get install => 'Install';
+
+  @override
+  String databaseError(String error) {
+    return 'Database Error: $error';
+  }
+
+  @override
   String get filter => 'Filter';
 
   @override
   String get status => 'Status';
+
+  @override
+  String get extensionRequested => 'Requested';
+
+  @override
+  String get onlyShowReminders => 'Only Show Reminders';
+
+  @override
+  String get onlyShowRemindersSubtitle => 'Filter out tasks without reminders';
+
+  @override
+  String get viewAll => 'View All';
+
+  @override
+  String get extensionLogs => 'Extension Logs';
+
+  @override
+  String get welcomeToExtensions => 'Welcome to Extensions';
+
+  @override
+  String get dontShowAgain => 'Don\'t show again';
+
+  @override
+  String get longPressToManageExtension => 'Long press to manage extension';
+
+  @override
+  String get daily => 'Daily';
+
+  @override
+  String get weekly => 'Weekly';
+
+  @override
+  String get monthly => 'Monthly';
+
+  @override
+  String get recurrenceDaily => ' (Daily)';
+
+  @override
+  String get recurrenceWeekly => ' (Weekly)';
+
+  @override
+  String get recurrenceMonthly => ' (Monthly)';
+
+  @override
+  String get exploreEssenmelia => 'Explore Essenmelia';
+
+  @override
+  String get helpAndDocs => 'Help & Docs';
+
+  @override
+  String get welcomeSubtitle1 => 'Your personal schedule & inspiration manager';
+
+  @override
+  String get welcomeContent1 =>
+      'Efficiently organize every brilliant moment in your life. Whether it\'s trivial daily tasks or grand plans, they all find a home here.';
+
+  @override
+  String get privacyFirst => 'Privacy First';
+
+  @override
+  String get welcomeSubtitle2 => 'Secure, Transparent, Controllable';
+
+  @override
+  String get welcomeContent2 =>
+      'All data is stored locally. Untrusted plugins can only access forged data generated by the system, ensuring your real information never leaks.';
+
+  @override
+  String get highlyCustomizable => 'Highly Customizable';
+
+  @override
+  String get welcomeSubtitle3 => 'Follow your heart, infinite possibilities';
+
+  @override
+  String get welcomeContent3 =>
+      'With a powerful plugin system, you can easily extend app functionality. Use the declarative UI engine to customize your own exclusive management tool.';
+
+  @override
+  String get startExperience => 'Start Experience';
+
+  @override
+  String get nextStep => 'Next Step';
+
+  @override
+  String get archDesign => 'Architecture Design';
+
+  @override
+  String get archDesignDesc =>
+      'System layering, privacy black box & permission model';
+
+  @override
+  String get apiGuide => 'API Usage Guide';
+
+  @override
+  String get apiGuideDesc =>
+      'Core methods, notification schemes & external integration';
+
+  @override
+  String get extDevSpecs => 'Extension Development Specs';
+
+  @override
+  String get extDevSpecsDesc => 'Metadata, UI component library & logic engine';
+
+  @override
+  String get selectDocToRead => 'Please select a document to read';
+
+  @override
+  String loadFailed(String error) {
+    return 'Load failed: $error';
+  }
+
+  @override
+  String get advancedSettingsAndReminders => 'Advanced Settings & Reminders';
+
+  @override
+  String get advancedSettingsSubtitle =>
+      'Display mode, count suffix, scheduled reminders';
+
+  @override
+  String get advancedSettings => 'Advanced Settings';
+
+  @override
+  String get finishSettings => 'Finish Settings';
+
+  @override
+  String get displaySettings => 'Display Settings';
+
+  @override
+  String get stepMarkerMode => 'Step Marker Display Mode';
+
+  @override
+  String get markerNumber => 'Number (1, 2, 3)';
+
+  @override
+  String get markerFirstChar => 'First Char (A, B, C)';
+
+  @override
+  String get customCountSuffix => 'Custom Count Suffix';
+
+  @override
+  String get suffixHint => 'e.g., tasks, steps, items';
+
+  @override
+  String get suffixDefaultTip => 'Leave empty to use default suffix';
+
+  @override
+  String get scheduledReminders => 'Scheduled Reminders';
+
+  @override
+  String get noReminderSet => 'No reminder set';
+
+  @override
+  String get calendarReminderDesc =>
+      'Will register to system calendar, no background running required';
+
+  @override
+  String get notificationReminderDesc =>
+      'Will send notification at specified time to remind you';
+
+  @override
+  String get reminderScheme => 'Reminder Scheme';
+
+  @override
+  String get inAppNotification => 'In-app Notification';
+
+  @override
+  String get systemCalendar => 'System Calendar';
+
+  @override
+  String get repeatCycle => 'Repeat Cycle';
+
+  @override
+  String get noRepeat => 'No Repeat';
+
+  @override
+  String get reminderTimeError =>
+      'Reminder time cannot be earlier than current time';
+
+  @override
+  String get smartAnalysis => 'Smart Analysis Selection';
+
+  @override
+  String get brilliantMoments => 'Brilliant Moments';
+
+  @override
+  String get aiCrop => 'AI Crop';
+
+  @override
+  String get ocrResults => 'OCR Results';
+
+  @override
+  String get ocrSelectionTip =>
+      'Tap to select: 1st tap for title, subsequent taps append to description';
+
+  @override
+  String get resetOcrSelection => 'Reset Text Selection';
+
+  @override
+  String get appPreview => 'App Preview';
+
+  @override
+  String get confirmApply => 'Confirm Apply';
+
+  @override
+  String get analyzingContent => 'Analyzing content...';
+
+  @override
+  String get smartAnalysisTooltip => 'Smartly analyze content';
+
+  @override
+  String get autoFilledByAi => 'Auto-filled by AI Assistant';
+
+  @override
+  String get unsupportedFileFormat => 'Unsupported file format';
+
+  @override
+  String get noImageInClipboard => 'No image or valid link found in clipboard';
+
+  @override
+  String failedToGetImageFromLink(String error) {
+    return 'Failed to get image from link: $error';
+  }
+
+  @override
+  String get pickFromGallery => 'Pick from Gallery';
+
+  @override
+  String get pasteFromClipboard => 'Paste from Clipboard';
+
+  @override
+  String get clearImage => 'Clear Image';
+
+  @override
+  String get addStoryImage => 'Add an image with a story';
+
+  @override
+  String get imageUploadTip => 'Drag & drop, paste, or select an image';
+
+  @override
+  String get exportOriginalImage => 'Export Original Image';
+
+  @override
+  String get exportImage => 'Export Image';
+
+  @override
+  String processingImageFailed(String error) {
+    return 'Processing image failed: $error';
+  }
+
+  @override
+  String reminderAt(String time) {
+    return 'Reminder: $time';
+  }
+
+  @override
+  String get quickEdit => 'Quick Edit (Long press to slide)';
+
+  @override
+  String get fullOriginalImage => 'Full Original Image';
 }

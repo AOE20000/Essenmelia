@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../extensions/extension_log_manager.dart';
+import '../l10n/app_localizations.dart';
 
 class ExtensionLogsPage extends ConsumerWidget {
   const ExtensionLogsPage({super.key});
@@ -11,13 +12,14 @@ class ExtensionLogsPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final logs = ref.watch(extensionLogProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar.medium(
-            title: const Text('系统扩展日志'),
+            title: Text(l10n.extensionLogsTitle),
             actions: [
               IconButton(
                 icon: const Icon(Icons.delete_outline),
@@ -40,7 +42,7 @@ class ExtensionLogsPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '暂无 API 调用记录',
+                      l10n.noApiLogs,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: colorScheme.outline,
                       ),
@@ -67,6 +69,7 @@ class ExtensionLogsPage extends ConsumerWidget {
   Widget _buildLogItem(BuildContext context, ExtensionLogEntry log) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final timeStr = DateFormat('HH:mm:ss').format(log.timestamp);
 
     return Padding(
@@ -146,7 +149,7 @@ class ExtensionLogsPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        log.params.isEmpty ? '无参数' : log.params.toString(),
+                        log.params.isEmpty ? l10n.noParams : log.params.toString(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -168,7 +171,7 @@ class ExtensionLogsPage extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '受限访问',
+                      l10n.restrictedAccess,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onTertiaryContainer,
                         fontWeight: FontWeight.bold,
@@ -186,6 +189,7 @@ class ExtensionLogsPage extends ConsumerWidget {
   void _showLogDetails(BuildContext context, ExtensionLogEntry log) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final fullTimeStr = DateFormat(
       'yyyy-MM-dd HH:mm:ss.SSS',
     ).format(log.timestamp);
@@ -227,7 +231,7 @@ class ExtensionLogsPage extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '调用详情',
+                    l10n.logDetails,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -239,26 +243,26 @@ class ExtensionLogsPage extends ConsumerWidget {
                 child: ListView(
                   controller: scrollController,
                   children: [
-                    _buildDetailRow(context, '扩展名称', log.extensionName),
-                    _buildDetailRow(context, '扩展 ID', log.extensionId),
-                    _buildDetailRow(context, '调用方法', log.method),
-                    _buildDetailRow(context, '调用时间', fullTimeStr),
-                    _buildDetailRow(context, '状态', log.success ? '成功' : '失败'),
+                    _buildDetailRow(context, l10n.extensionNameLabel, log.extensionName),
+                    _buildDetailRow(context, l10n.extensionIdLabel, log.extensionId),
+                    _buildDetailRow(context, l10n.methodLabel, log.method),
+                    _buildDetailRow(context, l10n.timeLabel, fullTimeStr),
+                    _buildDetailRow(context, l10n.statusLabel, log.success ? l10n.successLabel : l10n.failedLabel),
                     _buildDetailRow(
                       context,
-                      '访问模式',
-                      log.isUntrusted ? '受限访问 (拦截)' : '信任模式 (直通)',
+                      l10n.accessModeLabel,
+                      log.isUntrusted ? l10n.restrictedAccessIntercepted : l10n.trustedModePassthrough,
                     ),
                     if (log.error != null)
                       _buildDetailRow(
                         context,
-                        '错误信息',
+                        l10n.errorMessageLabel,
                         log.error!,
                         isError: true,
                       ),
                     const SizedBox(height: 16),
                     Text(
-                      '参数详情',
+                      l10n.paramsDetails,
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,

@@ -62,8 +62,8 @@ class TagsExtensionApiHandler {
     final sandboxTags = _virtualTags[sandboxId] ?? [];
 
     if (isUntrusted) {
-      // 受限模式下，返回一些虚假的常用标签混合沙箱标签
-      return [...sandboxTags, '工作', '生活', '备忘', '紧急'];
+      // In untrusted mode, return some fake common tags mixed with sandbox tags
+      return [...sandboxTags, 'Work', 'Life', 'Memo', 'Urgent'];
     }
 
     return [...realTags, ...sandboxTags];

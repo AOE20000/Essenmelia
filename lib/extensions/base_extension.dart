@@ -1,137 +1,98 @@
 import 'package:flutter/material.dart';
 import 'package:yaml/yaml.dart';
 import '../models/event.dart';
+import '../l10n/app_localizations.dart';
 
-/// 扩展权限定义
+/// Extension permission definitions
 enum ExtensionPermission {
-  readEvents(
-    '读取事件',
-    'Read Events',
-    '允许扩展查看您的所有事件和任务。',
-    'Allows the extension to view all your events and tasks.',
-    Icons.event_note_rounded,
-  ),
-  addEvents(
-    '创建事件',
-    'Add Events',
-    '允许扩展创建新的任务。',
-    'Allows the extension to create new tasks.',
-    Icons.add_task_rounded,
-  ),
-  updateEvents(
-    '编辑事件',
-    'Update Events',
-    '允许扩展修改现有的任务。',
-    'Allows the extension to modify existing tasks.',
-    Icons.edit_calendar_rounded,
-  ),
-  deleteEvents(
-    '删除事件',
-    'Delete Events',
-    '允许扩展删除您的任务。',
-    'Allows the extension to delete your tasks.',
-    Icons.delete_sweep_rounded,
-  ),
-  readTags(
-    '读取标签',
-    'Read Tags',
-    '允许扩展查看您的标签列表。',
-    'Allows the extension to view your tag list.',
-    Icons.tag_rounded,
-  ),
-  manageTags(
-    '管理标签',
-    'Manage Tags',
-    '允许扩展添加或删除全局标签。',
-    'Allows the extension to add or remove global tags.',
-    Icons.label_important_rounded,
-  ),
-  manageDb(
-    '数据库管理',
-    'Manage Database',
-    '允许扩展进行数据库导出、备份或切换。',
-    'Allows the extension to perform database export, backup, or switching.',
-    Icons.storage_rounded,
-  ),
-  fileSystem(
-    '文件访问',
-    'File System',
-    '允许扩展保存文件到您的设备或读取文件。',
-    'Allows the extension to save files to your device or read files.',
-    Icons.folder_open_rounded,
-  ),
-  notifications(
-    '通知权限',
-    'Notifications',
-    '允许扩展向您发送桌面或系统通知。',
-    'Allows the extension to send you desktop or system notifications.',
-    Icons.notifications_active_rounded,
-  ),
-  readCalendar(
-    '读取日历',
-    'Read Calendar',
-    '允许扩展读取您的系统日历日程。',
-    'Allows the extension to read your system calendar events.',
-    Icons.calendar_month_rounded,
-  ),
-  writeCalendar(
-    '写入日历',
-    'Write Calendar',
-    '允许扩展向您的系统日历添加或修改日程。',
-    'Allows the extension to add or modify events in your system calendar.',
-    Icons.edit_calendar_rounded,
-  ),
-  network(
-    '网络访问',
-    'Network Access',
-    '允许扩展访问网络。',
-    'Allows the extension to access the network.',
-    Icons.language_rounded,
-  ),
-  systemInfo(
-    '系统信息',
-    'System Info',
-    '允许扩展访问主题、语言、发送提示条等系统状态。',
-    'Allows the extension to access system status like themes, language, and snackbars.',
-    Icons.info_outline_rounded,
-  ),
-  navigation(
-    '界面导航',
-    'Navigation',
-    '允许扩展在应用内进行页面跳转或搜索过滤。',
-    'Allows the extension to navigate between pages or filter search results.',
-    Icons.explore_rounded,
-  ),
-  uiInteraction(
-    '界面交互',
-    'UI Interaction',
-    '允许扩展显示提示条、对话框或加载遮罩。',
-    'Allows the extension to show snackbars, dialogs, or loading overlays.',
-    Icons.touch_app_rounded,
-  );
+  readEvents(Icons.event_note_rounded),
+  addEvents(Icons.add_task_rounded),
+  updateEvents(Icons.edit_calendar_rounded),
+  deleteEvents(Icons.delete_sweep_rounded),
+  readTags(Icons.tag_rounded),
+  manageTags(Icons.label_important_rounded),
+  manageDb(Icons.storage_rounded),
+  fileSystem(Icons.folder_open_rounded),
+  notifications(Icons.notifications_active_rounded),
+  readCalendar(Icons.calendar_month_rounded),
+  writeCalendar(Icons.edit_calendar_rounded),
+  network(Icons.language_rounded),
+  systemInfo(Icons.info_outline_rounded),
+  navigation(Icons.explore_rounded),
+  uiInteraction(Icons.touch_app_rounded);
 
-  final String label;
-  final String labelEn;
-  final String description;
-  final String descriptionEn;
   final IconData icon;
 
-  const ExtensionPermission(
-    this.label,
-    this.labelEn,
-    this.description,
-    this.descriptionEn, [
-    this.icon = Icons.security_rounded,
-  ]);
+  const ExtensionPermission(this.icon);
 
-  String getLabel(BuildContext context) {
-    final locale = Localizations.maybeLocaleOf(context);
-    return locale?.languageCode == 'en' ? labelEn : label;
+  String getLabel(AppLocalizations l10n) {
+    switch (this) {
+      case ExtensionPermission.readEvents:
+        return l10n.extensionPermissionReadEvents;
+      case ExtensionPermission.addEvents:
+        return l10n.extensionPermissionAddEvents;
+      case ExtensionPermission.updateEvents:
+        return l10n.extensionPermissionUpdateEvents;
+      case ExtensionPermission.deleteEvents:
+        return l10n.extensionPermissionDeleteEvents;
+      case ExtensionPermission.readTags:
+        return l10n.extensionPermissionReadTags;
+      case ExtensionPermission.manageTags:
+        return l10n.extensionPermissionManageTags;
+      case ExtensionPermission.manageDb:
+        return l10n.extensionPermissionManageDb;
+      case ExtensionPermission.fileSystem:
+        return l10n.extensionPermissionFileSystem;
+      case ExtensionPermission.notifications:
+        return l10n.extensionPermissionNotifications;
+      case ExtensionPermission.readCalendar:
+        return l10n.extensionPermissionReadCalendar;
+      case ExtensionPermission.writeCalendar:
+        return l10n.extensionPermissionWriteCalendar;
+      case ExtensionPermission.network:
+        return l10n.extensionPermissionNetwork;
+      case ExtensionPermission.systemInfo:
+        return l10n.extensionPermissionSystemInfo;
+      case ExtensionPermission.navigation:
+        return l10n.extensionPermissionNavigation;
+      case ExtensionPermission.uiInteraction:
+        return l10n.extensionPermissionUIInteraction;
+    }
   }
 
-  String getDescription(BuildContext context) {
-    final locale = Localizations.maybeLocaleOf(context);
-    return locale?.languageCode == 'en' ? descriptionEn : description;
+  String getDescription(AppLocalizations l10n) {
+    switch (this) {
+      case ExtensionPermission.readEvents:
+        return l10n.extensionPermissionReadEventsDesc;
+      case ExtensionPermission.addEvents:
+        return l10n.extensionPermissionAddEventsDesc;
+      case ExtensionPermission.updateEvents:
+        return l10n.extensionPermissionUpdateEventsDesc;
+      case ExtensionPermission.deleteEvents:
+        return l10n.extensionPermissionDeleteEventsDesc;
+      case ExtensionPermission.readTags:
+        return l10n.extensionPermissionReadTagsDesc;
+      case ExtensionPermission.manageTags:
+        return l10n.extensionPermissionManageTagsDesc;
+      case ExtensionPermission.manageDb:
+        return l10n.extensionPermissionManageDbDesc;
+      case ExtensionPermission.fileSystem:
+        return l10n.extensionPermissionFileSystemDesc;
+      case ExtensionPermission.notifications:
+        return l10n.extensionPermissionNotificationsDesc;
+      case ExtensionPermission.readCalendar:
+        return l10n.extensionPermissionReadCalendarDesc;
+      case ExtensionPermission.writeCalendar:
+        return l10n.extensionPermissionWriteCalendarDesc;
+      case ExtensionPermission.network:
+        return l10n.extensionPermissionNetworkDesc;
+      case ExtensionPermission.systemInfo:
+        return l10n.extensionPermissionSystemInfoDesc;
+      case ExtensionPermission.navigation:
+        return l10n.extensionPermissionNavigationDesc;
+      case ExtensionPermission.uiInteraction:
+        return l10n.extensionPermissionUIInteractionDesc;
+    }
   }
 }
 
@@ -180,8 +141,8 @@ class ExtensionMetadata {
   factory ExtensionMetadata.fromJson(Map<String, dynamic> json) {
     return ExtensionMetadata(
       id: json['id'] ?? 'unknown_id',
-      name: json['name'] ?? '未命名扩展',
-      description: json['description'] ?? '无描述',
+      name: json['name'] ?? 'Untitled Extension',
+      description: json['description'] ?? 'No description',
       author: json['author'] ?? 'Unknown',
       version: json['version'] ?? '1.0.0',
       icon: IconData(
@@ -220,7 +181,7 @@ class ExtensionMetadata {
     );
   }
 
-  /// 将 YAML 内容转换为 `Map<String, dynamic>`
+  /// Convert YAML content to `Map<String, dynamic>`
   static Map<String, dynamic> yamlToMap(String yamlStr) {
     try {
       final doc = loadYaml(yamlStr);
@@ -297,24 +258,24 @@ class ExtensionMetadata {
   }
 }
 
-/// 扩展受控 API 接口
+/// Extension controlled API interface
 abstract class ExtensionApi {
-  /// 获取所有事件（受权限控制）
+  /// Get all events (permission controlled)
   Future<List<Event>> getEvents();
 
-  /// 获取所有标签
+  /// Get all tags
   Future<List<String>> getTags();
 
-  /// 添加新标签
+  /// Add new tag
   Future<void> addTag(String tag);
 
-  /// 导航到主程序的特定路由
+  /// Navigate to a specific route in the main app
   void navigateTo(String route);
 
-  /// 显示通知/提示
+  /// Show snackbar message
   void showSnackBar(String message);
 
-  /// 显示系统通知
+  /// Show system notification
   Future<void> showNotification({
     required String title,
     required String body,
@@ -322,47 +283,47 @@ abstract class ExtensionApi {
     String? payload,
   });
 
-  /// 显示确认对话框
+  /// Show confirmation dialog
   Future<bool> showConfirmDialog({
     required String title,
     required String message,
-    String confirmLabel = '确定',
-    String cancelLabel = '取消',
+    String? confirmLabel,
+    String? cancelLabel,
   });
 
-  /// 导出数据到文件
+  /// Export data to file
   Future<bool> exportFile(String content, String fileName);
 
-  /// 选择文件并读取内容
+  /// Select file and read content
   Future<String?> pickFile({List<String>? allowedExtensions});
 
-  /// 网络 GET 请求
+  /// HTTP GET request
   Future<String?> httpGet(String url, {Map<String, String>? headers});
 
-  /// 网络 POST 请求
+  /// HTTP POST request
   Future<String?> httpPost(
     String url, {
     Map<String, String>? headers,
     Object? body,
   });
 
-  /// 网络 PUT 请求
+  /// HTTP PUT request
   Future<String?> httpPut(
     String url, {
     Map<String, String>? headers,
     Object? body,
   });
 
-  /// 网络 DELETE 请求
+  /// HTTP DELETE request
   Future<String?> httpDelete(String url, {Map<String, String>? headers});
 
-  /// 在系统浏览器中打开 URL
+  /// Open URL in system browser
   Future<void> openUrl(String url);
 
-  /// 设置主页搜索过滤
+  /// Set homepage search query filter
   void setSearchQuery(String query);
 
-  /// 创建新事件
+  /// Create new event
   Future<void> addEvent({
     required String title,
     String? description,
@@ -375,10 +336,10 @@ abstract class ExtensionApi {
     String? reminderScheme,
   });
 
-  /// 删除事件
+  /// Delete event
   Future<void> deleteEvent(String id);
 
-  /// 更新现有事件
+  /// Update existing event
   Future<void> updateEvent({
     required String id,
     String? title,
@@ -392,50 +353,50 @@ abstract class ExtensionApi {
     String? reminderScheme,
   });
 
-  /// 为事件添加步骤
+  /// Add step to event
   Future<void> addStep(String eventId, String description);
 
-  /// 获取当前扩展的数据库占用大小 (字节)
+  /// Get database size of the current extension (bytes)
   Future<int> getDbSize();
 
-  /// 获取当前主题模式 (light/dark)
+  /// Get current theme mode (light/dark)
   String getThemeMode();
 
-  /// 获取当前语言 (zh/en)
+  /// Get current locale (zh/en)
   String getLocale();
 
-  /// 获取/保存扩展专用设置
+  /// Get/Save extension specific settings
   Future<T?> getSetting<T>(String key);
   Future<void> saveSetting<T>(String key, T value);
 
-  /// 通用 API 调用方法（供逻辑引擎路由）
+  /// General API call method (routed by logic engine)
   Future<dynamic> call(String method, Map<String, dynamic> params);
 
-  /// 发布跨扩展事件
+  /// Publish cross-extension event
   void publishEvent(String name, Map<String, dynamic> data);
 }
 
-/// 扩展基类
+/// Extension base class
 abstract class BaseExtension {
   final ExtensionMetadata metadata;
 
   BaseExtension(this.metadata);
 
-  /// 扩展初始化逻辑
+  /// Extension initialization logic
   Future<void> onInit(ExtensionApi api) async {}
 
-  /// 扩展销毁逻辑
+  /// Extension disposal logic
   Future<void> onDispose() async {}
 
-  /// 当权限在运行时被授予时触发（事后授权模式）
+  /// Triggered when permission is granted at runtime
   void onPermissionGranted(ExtensionPermission permission) {}
 
-  /// 当新事件产生时触发（由 Manager 控制分发）
+  /// Triggered when a new event is produced (distributed by Manager)
   void onEventAdded(Event event) {}
 
-  /// 接收跨扩展事件的回调
+  /// Callback for receiving cross-extension events
   void onExtensionEvent(String name, Map<String, dynamic> data) {}
 
-  /// 扩展的主界面构建方法
+  /// Main UI build method for the extension
   Widget build(BuildContext context, ExtensionApi api);
 }

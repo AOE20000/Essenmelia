@@ -154,9 +154,13 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.exportFailedDetailed(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -337,9 +341,9 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
               Text(
                 l10n.formatAppConfirm,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -348,9 +352,10 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 decoration: InputDecoration(
                   hintText: l10n.formatAppPlaceholder,
                   border: const OutlineInputBorder(),
-                  errorText: confirmController.text.isNotEmpty &&
+                  errorText:
+                      confirmController.text.isNotEmpty &&
                           confirmController.text != 'DELETE'
-                      ? 'Invalid input'
+                      ? l10n.invalidInput
                       : null,
                 ),
                 onChanged: (val) {
@@ -390,16 +395,16 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
         await ref.read(dbControllerProvider.notifier).resetAll();
         if (mounted) {
           Navigator.pop(context); // Close loading
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.deleteAllDataSuccess)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.deleteAllDataSuccess)));
           _loadAllStats();
         }
       } catch (e) {
         if (mounted) {
           Navigator.pop(context); // Close loading
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reset failed: $e')),
+            SnackBar(content: Text(l10n.resetFailedDetailed(e.toString()))),
           );
         }
       }
@@ -407,61 +412,45 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
   }
 
   Future<void> _showCreateDialog() async {
-    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    await showDialog(
+    final name = await showDialog<String>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          final name = controller.text.trim();
-          final isValid = name.isNotEmpty && RegExp(r'^[a-zA-Z0-9-_]+$').hasMatch(name);
-
-          return AlertDialog(
-            icon: const Icon(Icons.add_to_photos_rounded),
-            title: Text(l10n.createNewDatabase),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.enterDatabaseName,
-                    hintText: l10n.dbNameHint,
-                    prefixIcon: const Icon(Icons.drive_file_rename_outline_rounded),
-                    border: const OutlineInputBorder(),
-                    errorText: name.isNotEmpty && !isValid ? l10n.invalidDbName : null,
-                  ),
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (val) {
-                    if (isValid) {
-                      ref.read(dbControllerProvider.notifier).createDb(name);
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        title: Text(l10n.createNewDatabase),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: l10n.dbNameHint,
+            filled: true,
+            fillColor: colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: isValid
-                    ? () {
-                        ref.read(dbControllerProvider.notifier).createDb(name);
-                        Navigator.pop(context);
-                      }
-                    : null,
-                child: Text(l10n.create),
-              ),
-            ],
-          );
-        },
+          ),
+          onSubmitted: (val) => Navigator.pop(context, val),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: Text(l10n.create),
+          ),
+        ],
       ),
     );
+
+    if (name != null && name.trim().isNotEmpty) {
+      await ref.read(dbControllerProvider.notifier).createDb(name.trim());
+    }
   }
 
   @override
@@ -495,7 +484,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
         ),
         error: (err, _) => Center(
           key: ValueKey('db_list_error'),
-          child: Text('Error: $err'),
+          child: Text(l10n.error(err.toString())),
         ),
       ),
     );
@@ -537,10 +526,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.databaseManager),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.databaseManager), centerTitle: true),
       body: body,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateDialog,
@@ -570,131 +556,152 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     DbState state,
   ) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+
+    final stats = _dbStats[dbName] ?? (0, 0);
+    final events = stats.$1;
+    final templates = stats.$2;
 
     return Card(
-      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      elevation: isActive ? 2 : 0,
+      color: isActive
+          ? colorScheme.primaryContainer
+          : colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isActive
-            ? BorderSide(color: theme.colorScheme.primary, width: 2)
-            : BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      color: isActive
-          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-          : theme.colorScheme.surface,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          if (!isActive) {
-            ref.read(dbControllerProvider.notifier).switchDb(dbName);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isActive
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outline,
-                    width: 2,
-                  ),
-                ),
-                child: isActive
-                    ? Center(
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      dbName == kDefaultDbName ? l10n.defaultDbName : dbName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (_dbStats.containsKey(dbName))
-                      Row(
-                        children: [
-                          _buildStatChip(
-                            theme,
-                            Icons.event_note_rounded,
-                            '${_dbStats[dbName]!.$1}',
-                          ),
-                          const SizedBox(width: 8),
-                          _buildStatChip(
-                            theme,
-                            Icons.copy_all_rounded,
-                            '${_dbStats[dbName]!.$2}',
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              if (dbName != kDefaultDbName)
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  onPressed: () => _handleDeleteDb(context, dbName),
-                  style: IconButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
-                  ),
-                ),
-            ],
-          ),
+        side: BorderSide(
+          color: isActive
+              ? colorScheme.primary.withValues(alpha: 0.5)
+              : Colors.transparent,
+          width: 2,
         ),
       ),
-    );
-  }
-
-  Future<void> _handleDeleteDb(BuildContext context, String dbName) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded),
-        title: Text(l10n.deleteDbTitle(dbName)),
-        content: Text(l10n.deleteDbWarning),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
             ),
-            child: Text(l10n.delete),
+            leading: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? colorScheme.primary
+                    : colorScheme.secondaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isActive ? Icons.database_rounded : Icons.storage_rounded,
+                color: isActive
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSecondaryContainer,
+              ),
+            ),
+            title: Text(
+              dbName == kDefaultDbName ? l10n.defaultDbName : dbName,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isActive ? colorScheme.onPrimaryContainer : null,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  l10n.dbStats(events, templates),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isActive
+                        ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? colorScheme.primary.withValues(alpha: 0.2)
+                        : colorScheme.outline.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isActive ? l10n.currentlyActive : l10n.inactive,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isActive
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isActive)
+                  FilledButton.tonal(
+                    onPressed: () async {
+                      await ref
+                          .read(dbControllerProvider.notifier)
+                          .switchDb(dbName);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l10n.switchedToDb(dbName))),
+                        );
+                      }
+                    },
+                    child: Text(l10n.switchDb),
+                  ),
+                if (dbName != kDefaultDbName)
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colorScheme.error,
+                    ),
+                    onPressed: () => _showDeleteConfirm(context, dbName),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
 
-    if (confirm == true) {
-      ref.read(dbControllerProvider.notifier).deleteDb(dbName);
-    }
+  void _showDeleteConfirm(BuildContext context, String dbName) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteDbTitle(dbName)),
+        content: Text(l10n.deleteDbWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(dbControllerProvider.notifier).deleteDb(dbName);
+              Navigator.pop(context);
+            },
+            child: Text(
+              l10n.delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatChip(ThemeData theme, IconData icon, String label) {

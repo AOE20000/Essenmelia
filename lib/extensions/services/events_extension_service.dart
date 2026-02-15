@@ -23,81 +23,81 @@ class EventsExtensionApiHandler {
       'getEvents',
       _getEvents,
       permission: ExtensionPermission.readEvents,
-      operation: '读取您的所有任务列表和步骤',
+      operation: 'Read All Tasks and Steps',
       operationEn: 'Read All Tasks and Steps',
-      category: '数据读取',
+      category: 'Data Reading',
       categoryEn: 'Data Reading',
     );
     registry.register(
       'addEvent',
       _addEvent,
       permission: ExtensionPermission.addEvents,
-      operation: '添加新任务',
+      operation: 'Add New Task',
       operationEn: 'Add New Task',
-      category: '数据写入',
+      category: 'Data Writing',
       categoryEn: 'Data Writing',
     );
     registry.register(
       'deleteEvent',
       _deleteEvent,
       permission: ExtensionPermission.deleteEvents,
-      operation: '删除任务',
+      operation: 'Delete Task',
       operationEn: 'Delete Task',
-      category: '数据写入',
+      category: 'Data Writing',
       categoryEn: 'Data Writing',
     );
     registry.register(
       'updateEvent',
       _updateEvent,
       permission: ExtensionPermission.updateEvents,
-      operation: '修改任务',
+      operation: 'Update Task',
       operationEn: 'Update Task',
-      category: '数据写入',
+      category: 'Data Writing',
       categoryEn: 'Data Writing',
     );
     registry.register(
       'getTags',
       _getTags,
       permission: ExtensionPermission.readTags,
-      operation: '读取您的所有标签',
+      operation: 'Read All Tags',
       operationEn: 'Read All Tags',
-      category: '数据读取',
+      category: 'Data Reading',
       categoryEn: 'Data Reading',
     );
     registry.register(
       'addTag',
       _addTag,
       permission: ExtensionPermission.manageTags,
-      operation: '添加新标签',
+      operation: 'Add New Tag',
       operationEn: 'Add New Tag',
-      category: '数据写入',
+      category: 'Data Writing',
       categoryEn: 'Data Writing',
     );
     registry.register(
       'addStep',
       _addStep,
       permission: ExtensionPermission.updateEvents,
-      operation: '为任务添加步骤',
+      operation: 'Add Step to Task',
       operationEn: 'Add Step to Task',
-      category: '数据写入',
+      category: 'Data Writing',
       categoryEn: 'Data Writing',
     );
     registry.register(
       'setSearchQuery',
       _setSearchQuery,
       permission: ExtensionPermission.navigation,
-      operation: '触发全局搜索过滤',
+      operation: 'Trigger Global Search Filter',
       operationEn: 'Trigger Global Search Filter',
-      category: '界面导航',
+      category: 'Navigation',
       categoryEn: 'Navigation',
     );
     registry.register(
       'publishEvent',
       _publishEvent,
       permission: ExtensionPermission.systemInfo,
-      operation: '发布系统广播消息',
+      operation: 'Publish System Broadcast',
       operationEn: 'Publish System Broadcast',
-      category: '系统信息',
+      category: 'System Info',
       categoryEn: 'System Info',
     );
   }
@@ -175,7 +175,7 @@ class EventsExtensionApiHandler {
     final tag = params['tag'] as String;
 
     if (isUntrusted) {
-      // 虚假成功，但不实际写入
+      // Fake success, but don't actually write
       return;
     }
 

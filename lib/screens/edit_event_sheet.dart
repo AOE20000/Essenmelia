@@ -80,6 +80,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Widget _buildAdvancedSettingsButton(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: () => _showAdvancedSettings(theme),
       borderRadius: BorderRadius.circular(16),
@@ -105,14 +106,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '高级设置与提醒',
+                    l10n.advancedSettingsAndReminders,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '显示方式、数量后缀、定时提醒',
+                    l10n.advancedSettingsSubtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -145,6 +146,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   void _showAdvancedSettings(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -175,7 +177,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                   child: Row(
                     children: [
                       Text(
-                        '高级设置',
+                        l10n.advancedSettings,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -217,7 +219,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text('完成设置'),
+                    child: Text(l10n.finishSettings),
                   ),
                 ),
               ],
@@ -232,6 +234,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     ThemeData theme,
     StateSetter setModalState,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -244,7 +247,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             ),
             const SizedBox(width: 12),
             Text(
-              '显示设置',
+              l10n.displaySettings,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
@@ -266,7 +269,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '步骤标记显示方式',
+                l10n.stepMarkerMode,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -275,16 +278,16 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               SizedBox(
                 width: double.infinity,
                 child: SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'number',
-                      label: Text('序号 (1, 2, 3)'),
-                      icon: Icon(Icons.format_list_numbered),
+                      label: Text(l10n.markerNumber),
+                      icon: const Icon(Icons.format_list_numbered),
                     ),
                     ButtonSegment(
                       value: 'firstChar',
-                      label: Text('首字 (简, 繁, 拼)'),
-                      icon: Icon(Icons.sort_by_alpha),
+                      label: Text(l10n.markerFirstChar),
+                      icon: const Icon(Icons.sort_by_alpha),
                     ),
                   ],
                   selected: {_stepDisplayMode},
@@ -298,7 +301,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               ),
               const SizedBox(height: 20),
               Text(
-                '自定义数量后缀',
+                l10n.customCountSuffix,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -308,7 +311,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 controller: _suffixController,
                 onChanged: (_) => setState(() {}), // 同步到外部状态
                 decoration: InputDecoration(
-                  hintText: '例如：任务、步骤、个',
+                  hintText: l10n.suffixHint,
                   prefixIcon: const Icon(Icons.label_outline),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
@@ -324,7 +327,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               ),
               const SizedBox(height: 4),
               Text(
-                '留空则使用默认后缀',
+                l10n.suffixDefaultTip,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -340,6 +343,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     ThemeData theme,
     StateSetter setModalState,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -352,7 +356,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             ),
             const SizedBox(width: 12),
             Text(
-              '定时提醒',
+              l10n.scheduledReminders,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
@@ -381,10 +385,10 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                     children: [
                       Text(
                         _reminderTime == null
-                            ? '未设置提醒'
-                            : DateFormat(
-                                'yyyy年MM月dd日 HH:mm',
-                              ).format(_reminderTime!),
+                            ? l10n.noReminderSet
+                            : DateFormat.yMMMd(
+                                Localizations.localeOf(context).toString(),
+                              ).add_Hm().format(_reminderTime!),
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: _reminderTime == null
                               ? theme.colorScheme.onSurfaceVariant
@@ -398,8 +402,8 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                         const SizedBox(height: 4),
                         Text(
                           _reminderScheme == 'calendar'
-                              ? '将注册到系统日历，无需后台运行'
-                              : '将在指定时间发送通知提醒您',
+                              ? l10n.calendarReminderDesc
+                              : l10n.notificationReminderDesc,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.primary,
                           ),
@@ -436,7 +440,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         if (_reminderTime != null) ...[
           const SizedBox(height: 24),
           Text(
-            '提醒方案',
+            l10n.reminderScheme,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -445,16 +449,16 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           SizedBox(
             width: double.infinity,
             child: SegmentedButton<String>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: 'notification',
-                  label: Text('应用内通知'),
-                  icon: Icon(Icons.notifications_outlined),
+                  label: Text(l10n.inAppNotification),
+                  icon: const Icon(Icons.notifications_outlined),
                 ),
                 ButtonSegment(
                   value: 'calendar',
-                  label: Text('系统日历'),
-                  icon: Icon(Icons.calendar_today_outlined),
+                  label: Text(l10n.systemCalendar),
+                  icon: const Icon(Icons.calendar_today_outlined),
                 ),
               ],
               selected: {_reminderScheme ?? 'notification'},
@@ -468,7 +472,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           ),
           const SizedBox(height: 24),
           Text(
-            '重复周期',
+            l10n.repeatCycle,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -477,26 +481,26 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           SizedBox(
             width: double.infinity,
             child: SegmentedButton<String>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: 'none',
-                  label: Text('不重复'),
-                  icon: Icon(Icons.timer_outlined),
+                  label: Text(l10n.noRepeat),
+                  icon: const Icon(Icons.timer_outlined),
                 ),
                 ButtonSegment(
                   value: 'daily',
-                  label: Text('每天'),
-                  icon: Icon(Icons.today_outlined),
+                  label: Text(l10n.daily),
+                  icon: const Icon(Icons.today_outlined),
                 ),
                 ButtonSegment(
                   value: 'weekly',
-                  label: Text('每周'),
-                  icon: Icon(Icons.calendar_view_week_outlined),
+                  label: Text(l10n.weekly),
+                  icon: const Icon(Icons.calendar_view_week_outlined),
                 ),
                 ButtonSegment(
                   value: 'monthly',
-                  label: Text('每月'),
-                  icon: Icon(Icons.calendar_month_outlined),
+                  label: Text(l10n.monthly),
+                  icon: const Icon(Icons.calendar_month_outlined),
                 ),
               ],
               selected: {_reminderRecurrence ?? 'none'},
@@ -558,7 +562,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           if (mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('提醒时间不能早于当前时间')));
+            ).showSnackBar(SnackBar(content: Text(l10n.reminderTimeError)));
           }
           return;
         }
@@ -615,6 +619,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Future<void> _handleImageFile(File file) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       setState(() {
         _isProcessingML = true;
@@ -641,9 +646,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     } catch (e) {
       debugPrint('Error handling image: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('处理图片失败: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.processingImageFailed(e.toString()))),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessingML = false);
@@ -725,6 +730,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     List<Map<String, dynamic>> blocks,
   ) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     // 本地暂存状态
     String tempImageUrl = _currentImageUrl ?? originalFile.path;
@@ -772,7 +778,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                         backgroundColor: theme.colorScheme.surface,
                         surfaceTintColor: theme.colorScheme.surfaceTint,
                         title: Text(
-                          '智能分析选择',
+                          l10n.smartAnalysis,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -792,7 +798,11 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                         sliver: SliverList(
                           delegate: SliverChildListDelegate([
                             // 精彩画面标题
-                            _buildSectionHeader(theme, '精彩画面', 'AI 裁切'),
+                            _buildSectionHeader(
+                              theme,
+                              l10n.brilliantMoments,
+                              l10n.aiCrop,
+                            ),
                             const SizedBox(height: 16),
                             // 图片选择器
                             SizedBox(
@@ -804,7 +814,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                                   _buildPickerImageItem(
                                     theme,
                                     originalFile.path,
-                                    '完整原图',
+                                    l10n.fullOriginalImage,
                                     tempImageUrl,
                                     (path) => setModalState(
                                       () => tempImageUrl = path,
@@ -830,10 +840,10 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                             const SizedBox(height: 32),
 
                             // 文字识别标题
-                            _buildSectionHeader(theme, '文字识别结果', null),
+                            _buildSectionHeader(theme, l10n.ocrResults, null),
                             const SizedBox(height: 8),
                             Text(
-                              '点击选择：第1次点击设为标题，后续点击追加到描述',
+                              l10n.ocrSelectionTip,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -893,7 +903,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                                     });
                                   },
                                   icon: const Icon(Icons.refresh, size: 18),
-                                  label: const Text('重置文字选择'),
+                                  label: Text(l10n.resetOcrSelection),
                                   style: TextButton.styleFrom(
                                     foregroundColor: theme.colorScheme.error,
                                   ),
@@ -906,7 +916,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                             // 预览区域
                             if (tempTitle.isNotEmpty ||
                                 tempDescription.isNotEmpty) ...[
-                              _buildSectionHeader(theme, '应用预览', null),
+                              _buildSectionHeader(theme, l10n.appPreview, null),
                               const SizedBox(height: 16),
                               Container(
                                 width: double.infinity,
@@ -986,7 +996,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Text('取消'),
+                          child: Text(l10n.cancel),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1008,7 +1018,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Text('确认应用'),
+                          child: Text(l10n.confirmApply),
                         ),
                       ),
                     ],
@@ -1191,7 +1201,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('不支持的文件格式')));
+          ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.unsupportedFileFormat)));
         }
       }
     }
@@ -1257,19 +1267,20 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('剪贴板中没有识别到图片或有效链接')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.noImageInClipboard)));
       }
     } catch (e) {
       debugPrint('Clipboard: Paste flow error: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('粘贴失败: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.pasteFailed(e.toString()))));
       }
     }
   }
 
   Future<void> _downloadAndHandleImage(String url) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       setState(() => _isSaving = true);
       final response = await http.get(Uri.parse(url));
@@ -1284,13 +1295,13 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         await file.writeAsBytes(response.bodyBytes);
         await _handleImageFile(file);
       } else {
-        throw '下载失败 (${response.statusCode})';
+        throw 'HTTP ${response.statusCode}';
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('无法从链接获取图片: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.failedToGetImageFromLink(e.toString()))));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -1299,19 +1310,20 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
   Future<void> _exportImage() async {
     if (_currentImageUrl == null || _currentImageUrl!.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       final file = File(_currentImageUrl!);
       if (await file.exists()) {
-        await Share.shareXFiles([XFile(file.path)], text: '导出图片');
+        await Share.shareXFiles([XFile(file.path)], text: l10n.exportImage);
       } else {
-        throw '文件不存在';
+        throw 'File not found';
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('导出失败: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.exportFailed(e.toString()))));
       }
     }
   }
@@ -1343,6 +1355,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   void _showImageOptions() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -1351,7 +1364,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('从相册选择'),
+              title: Text(l10n.pickFromGallery),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage();
@@ -1359,7 +1372,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             ),
             ListTile(
               leading: const Icon(Icons.content_paste),
-              title: const Text('从剪贴板粘贴'),
+              title: Text(l10n.pasteFromClipboard),
               onTap: () {
                 Navigator.pop(context);
                 _pasteImage();
@@ -1368,7 +1381,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             if (_currentImageUrl != null)
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('清除图片', style: TextStyle(color: Colors.red)),
+                title: Text(l10n.clearImage, style: const TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
                   _clearImage();
@@ -1455,6 +1468,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Widget _buildImageArea(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: _showImageOptions,
       onLongPress: _currentImageUrl != null ? _exportImage : null,
@@ -1542,7 +1556,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '添加有故事的图片',
+                      l10n.addStoryImage,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
@@ -1550,7 +1564,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '拖放、粘贴或选择图片',
+                      l10n.imageUploadTip,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1576,7 +1590,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                                '正在智能解析内容...',
+                                l10n.analyzingContent,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   color: theme.colorScheme.onSurface,
                                   fontWeight: FontWeight.bold,
@@ -1623,26 +1637,26 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                     _ImageActionButton(
                       icon: Icons.auto_awesome,
                       onPressed: () => _processImageML(File(_currentImageUrl!)),
-                      tooltip: '智能解析内容',
+                      tooltip: l10n.smartAnalysisTooltip,
                     ),
                     const SizedBox(width: 8),
                     _ImageActionButton(
                       icon: Icons.ios_share,
                       onPressed: _exportImage,
-                      tooltip: '导出原图',
+                      tooltip: l10n.exportOriginalImage,
                     ),
                   ],
                   const SizedBox(width: 8),
                   _ImageActionButton(
                     icon: Icons.content_paste,
                     onPressed: _pasteImage,
-                    tooltip: '从剪贴板粘贴',
+                    tooltip: l10n.pasteFromClipboard,
                   ),
                   const SizedBox(width: 8),
                   _ImageActionButton(
                     icon: Icons.photo_library,
                     onPressed: _pickImage,
-                    tooltip: '选择图片',
+                    tooltip: l10n.pickFromGallery,
                   ),
                 ],
               ),
@@ -1654,6 +1668,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Widget _buildTextFields(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1673,7 +1688,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             color: theme.colorScheme.onSurface,
           ),
           decoration: InputDecoration(
-            hintText: '标题',
+            hintText: l10n.title,
             hintStyle: TextStyle(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
@@ -1681,7 +1696,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             contentPadding: const EdgeInsets.symmetric(vertical: 8),
             suffixIcon: _wasAutoFilled
                 ? Tooltip(
-                    message: '由智能助手自动填充',
+                    message: l10n.autoFilledByAi,
                     child: Icon(
                       Icons.auto_awesome,
                       color: theme.colorScheme.primary,
@@ -1709,7 +1724,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             height: 1.6,
           ),
           decoration: InputDecoration(
-            hintText: '详细描述内容...',
+            hintText: l10n.description,
             hintStyle: TextStyle(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
@@ -1722,6 +1737,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Widget _buildTagSection(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1734,7 +1750,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             ),
             const SizedBox(width: 12),
             Text(
-              '标签',
+              l10n.tags,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
@@ -1851,7 +1867,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                                   ),
                                 )
                               : const Icon(Icons.check, size: 18),
-                          label: Text(widget.event == null ? '创建' : '保存'),
+                          label: Text(widget.event == null ? l10n.create : l10n.save),
                         ),
                       ],
                     ),
@@ -1930,7 +1946,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                               widget.event == null ? Icons.add : Icons.check,
                             ),
                       label: Text(
-                        widget.event == null ? '创建记录' : '保存修改',
+                        widget.event == null ? l10n.createRecord : l10n.saveChanges,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

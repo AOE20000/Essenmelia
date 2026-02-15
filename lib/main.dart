@@ -51,12 +51,12 @@ void main() async {
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   const Text(
-                    '应用初始化失败',
+                    'App Initialization Failed',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '错误信息: $e\n\n请尝试重启应用或联系开发者。',
+                    'Error: $e\n\nPlease try restarting the app or contact developers.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.grey),
                   ),

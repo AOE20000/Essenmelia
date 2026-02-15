@@ -61,9 +61,9 @@ class EventDetailScreen extends ConsumerWidget {
           if (!isSidePanel)
             SliverAppBar(
               pinned: true,
-              title: const Text(
-                '事件详情',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              title: Text(
+                l10n.eventDetails,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               centerTitle: false,
               actions: [
@@ -144,9 +144,11 @@ class EventDetailScreen extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    DateFormat('yyyy-MM-dd HH:mm').format(
-                                      event.createdAt,
-                                    ),
+                                    DateFormat.yMMMd(
+                                      Localizations.localeOf(
+                                        context,
+                                      ).toString(),
+                                    ).add_Hm().format(event.createdAt),
                                     style: theme.textTheme.labelMedium
                                         ?.copyWith(
                                           color: theme.colorScheme.outline,
@@ -170,7 +172,9 @@ class EventDetailScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            event.isCompleted ? l10n.statusCompleted : l10n.statusInProgress,
+                            event.isCompleted
+                                ? l10n.statusCompleted
+                                : l10n.statusInProgress,
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: event.isCompleted
                                   ? theme.colorScheme.onPrimaryContainer
@@ -218,12 +222,14 @@ class EventDetailScreen extends ConsumerWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer
-                              .withValues(alpha: 0.3),
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.2),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.2,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -236,7 +242,11 @@ class EventDetailScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '提醒：${DateFormat('MM月dd日 HH:mm').format(event.reminderTime!)}',
+                              l10n.reminderAt(
+                                DateFormat.MMMd(
+                                  Localizations.localeOf(context).toString(),
+                                ).add_Hm().format(event.reminderTime!),
+                              ),
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.bold,
@@ -762,6 +772,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   Widget build(BuildContext context) {
     _updateItemKeys(widget.event.steps.length);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -784,7 +795,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
               ),
               const SizedBox(width: 8),
               Text(
-                "快速编辑 (长按滑动)",
+                l10n.quickEdit,
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
@@ -804,7 +815,8 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                 spacing: 8,
                 runSpacing: 12,
                 children: List.generate(widget.event.steps.length, (index) {
-                  final isBeingDragged = _startDragIndex != null &&
+                  final isBeingDragged =
+                      _startDragIndex != null &&
                       ((index >= _startDragIndex! &&
                               index <=
                                   (_currentDragIndex ?? _startDragIndex!)) ||

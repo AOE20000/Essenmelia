@@ -31,6 +31,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     if (widget.engine.error != null) {
       return Center(
         child: Padding(
@@ -41,7 +42,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
               const Icon(Icons.error_outline, color: Colors.red, size: 48),
               const SizedBox(height: 16),
               Text(
-                '扩展脚本运行错误:\n${widget.engine.error}',
+                '${l10n.extensionError}:\n${widget.engine.error}',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -50,7 +51,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
                   setState(() {});
                   widget.engine.init();
                 },
-                child: const Text('重试'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
@@ -64,7 +65,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
     final viewDef = widget.engine.metadata.view;
     if (viewDef == null) {
-      return const Center(child: Text('此扩展没有 UI 界面'));
+      return Center(child: Text(l10n.extensionNoUI));
     }
 
     return Scaffold(
@@ -217,7 +218,9 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         );
         break;
       case 'button':
-        final label = Text(_resolveValue(props['label'] ?? '按钮'));
+        final label = Text(
+          _resolveValue(props['label'] ?? l10n.extensionDefaultButtonLabel),
+        );
         final variant = props['variant']?.toString().toLowerCase();
         final iconData = props['icon'] != null
             ? Icon(IconData(props['icon'], fontFamily: 'MaterialIcons'))

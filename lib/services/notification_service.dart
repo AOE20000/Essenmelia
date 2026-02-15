@@ -37,7 +37,12 @@ class NotificationService {
     );
   }
 
-  Future<void> scheduleEventReminder(Event event) async {
+  Future<void> scheduleEventReminder(
+    Event event, {
+    required String channelName,
+    required String channelDescription,
+    required String notificationTitle,
+  }) async {
     if (event.reminderTime == null) return;
 
     final id = event.reminderId ?? event.id.hashCode;
@@ -66,18 +71,18 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id,
-      '事件提醒',
+      notificationTitle,
       event.title,
       tz.TZDateTime.from(event.reminderTime!, tz.local),
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'event_reminders',
-          '事件提醒',
-          channelDescription: '用于事件的定时提醒',
+          channelName,
+          channelDescription: channelDescription,
           importance: Importance.max,
           priority: Priority.high,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -100,20 +105,22 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
+    required String channelName,
+    required String channelDescription,
   }) async {
     await _notifications.show(
       id,
       title,
       body,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'system_notifications',
-          '系统通知',
-          channelDescription: '来自应用或扩展的即时通知',
+          channelName,
+          channelDescription: channelDescription,
           importance: Importance.max,
           priority: Priority.high,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,

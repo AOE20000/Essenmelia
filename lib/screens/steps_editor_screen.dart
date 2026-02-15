@@ -201,7 +201,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
   }
 
   void _handleBatchArchive(Event event) {
-    // 按照步骤在列表中的原始顺序进行处理
+    // Process according to the original order of steps in the list
     final sortedSelectedIndices = _selectedStepIndices.toList()..sort();
     final selectedDescriptions = sortedSelectedIndices
         .map((i) => event.steps[i].description)
@@ -212,7 +212,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     }
 
     final newSteps = List<EventStep>.from(event.steps);
-    // 从后往前删，避免索引偏移
+    // Delete from back to front to avoid index shifting
     final reversedIndices = sortedSelectedIndices.reversed.toList();
     for (final i in reversedIndices) {
       newSteps.removeAt(i);
@@ -237,7 +237,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
 
   void _handleBatchAddToSteps() {
     final templates = ref.read(templatesProvider).asData?.value ?? [];
-    // 按照模板在归档列表中的原始顺序进行过滤
+    // Filter according to the original order in the archive list
     final selectedTemplates = templates
         .where((t) => _selectedArchiveIds.contains(t.id))
         .toList();
@@ -774,9 +774,8 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                         ),
                                         child: Icon(
                                           Icons.drag_indicator_rounded,
-                                          color: colorScheme.outline.withValues(
-                                            alpha: 0.5,
-                                          ),
+                                          color: colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.5),
                                           size: 20,
                                         ),
                                       ),

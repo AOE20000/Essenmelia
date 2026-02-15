@@ -80,7 +80,7 @@ class ExtensionConverter {
     }
   }
 
-  /// 辅助方法：解析分离的 view, logic 和 script 文件
+  /// Helper method: resolve separate view, logic, and script files
   static String _resolveSeparateFiles(
     Map<String, dynamic> manifest,
     Archive archive,
@@ -210,7 +210,7 @@ class ExtensionConverter {
     return Uint8List.fromList(zipEncoder.encode(archive));
   }
 
-  /// 简单的 Map 转 YAML 辅助方法 (不依赖外部库进行生成，以保证轻量)
+  /// Simple Map to YAML helper method (no external generator library for lightweightness)
   static String _mapToYaml(Map<String, dynamic> map, [int indent = 0]) {
     final sb = StringBuffer();
     final spaces = '  ' * indent;

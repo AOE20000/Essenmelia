@@ -57,13 +57,13 @@ class SettingsSheet extends ConsumerWidget {
                         value: null,
                         child: Text(l10n.systemLanguage),
                       ),
-                      const DropdownMenuItem(
-                        value: Locale('en'),
-                        child: Text('English'),
+                      DropdownMenuItem(
+                        value: const Locale('en'),
+                        child: Text(l10n.english),
                       ),
-                      const DropdownMenuItem(
-                        value: Locale('zh'),
-                        child: Text('中文'),
+                      DropdownMenuItem(
+                        value: const Locale('zh'),
+                        child: Text(l10n.chinese),
                       ),
                     ],
                     onChanged: (locale) {

@@ -1,40 +1,152 @@
 {
   "@@locale": "en",
   "appTitle": "Essenmelia",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
   "searchPlaceholder": "Search events...",
+  "@searchPlaceholder": {
+    "description": "Placeholder text in the search bar"
+  },
   "select": "Select",
+  "@select": {
+    "description": "Label for selection action"
+  },
   "cancel": "Cancel",
+  "@cancel": {
+    "description": "Label for cancel action"
+  },
   "newTag": "New Tag",
+  "@newTag": {
+    "description": "Title for creating a new tag"
+  },
   "tagNameHint": "e.g., Work, Personal",
+  "@tagNameHint": {
+    "description": "Hint text for tag name input"
+  },
   "add": "Add",
+  "@add": {
+    "description": "Label for add action"
+  },
   "renameTag": "Rename Tag",
+  "@renameTag": {
+    "description": "Title for renaming a tag"
+  },
   "save": "Save",
+  "@save": {
+    "description": "Label for save action"
+  },
   "delete": "Delete",
+  "@delete": {
+    "description": "Label for delete action"
+  },
   "confirm": "Confirm",
+  "@confirm": {
+    "description": "Label for confirm action"
+  },
   "edit": "Edit",
+  "@edit": {
+    "description": "Label for edit action"
+  },
   "create": "Create",
+  "@create": {
+    "description": "Label for create action"
+  },
+  "createRecord": "Create Record",
+  "@createRecord": {
+    "description": "Label for creating a new record"
+  },
   "settings": "Settings",
+  "@settings": {
+    "description": "Label for settings"
+  },
   "manageTags": "Manage Tags",
+  "@manageTags": {
+    "description": "Title for tag management"
+  },
   "databaseManager": "Database Manager",
+  "@databaseManager": {
+    "description": "Title for database management"
+  },
   "importExport": "Import / Export",
+  "@importExport": {
+    "description": "Label for import/export feature"
+  },
   "appearance": "Appearance",
+  "@appearance": {
+    "description": "Title for appearance settings"
+  },
   "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Label for dark mode toggle"
+  },
   "light": "Light",
+  "@light": {
+    "description": "Label for light theme mode"
+  },
   "dark": "Dark",
+  "@dark": {
+    "description": "Label for dark theme mode"
+  },
   "useSystemTheme": "Use System Theme",
+  "@useSystemTheme": {
+    "description": "Label for system theme sync"
+  },
   "language": "Language",
+  "@language": {
+    "description": "Label for language selection"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language name"
+  },
+  "chinese": "Chinese",
+  "@chinese": {
+    "description": "Chinese language name"
+  },
   "systemLanguage": "System",
+  "@systemLanguage": {
+    "description": "Label for system language sync"
+  },
   "cardDensity": "Card Density",
+  "@cardDensity": {
+    "description": "Label for card layout density"
+  },
   "compact": "Compact",
+  "@compact": {
+    "description": "Label for compact layout"
+  },
   "comfortable": "Comfortable",
+  "@comfortable": {
+    "description": "Label for comfortable layout"
+  },
   "collapseImages": "Collapse Images",
+  "@collapseImages": {
+    "description": "Label for collapsing images toggle"
+  },
   "activeDatabase": "Active Database",
+  "@activeDatabase": {
+    "description": "Label for currently active database"
+  },
   "availableDatabases": "Available Databases",
+  "@availableDatabases": {
+    "description": "Label for list of available databases"
+  },
   "createNewDatabase": "Create New Database",
+  "@createNewDatabase": {
+    "description": "Button label to create a new database"
+  },
   "enterDatabaseName": "Enter database name",
+  "@enterDatabaseName": {
+    "description": "Hint text for database name input"
+  },
   "switchDbConfirmation": "Switch Database",
+  "@switchDbConfirmation": {
+    "description": "Title for switching database dialog"
+  },
   "switchDbMessage": "Are you sure you want to switch to database \"{name}\"?",
   "@switchDbMessage": {
+    "description": "Confirmation message for switching database",
     "placeholders": {
       "name": {
         "type": "String"
@@ -42,8 +154,12 @@
     }
   },
   "deleteDbConfirmation": "Delete Database",
+  "@deleteDbConfirmation": {
+    "description": "Title for deleting database dialog"
+  },
   "deleteDbMessage": "Are you sure you want to delete database \"{name}\"? This action cannot be undone.",
   "@deleteDbMessage": {
+    "description": "Confirmation message for deleting database",
     "placeholders": {
       "name": {
         "type": "String"
@@ -51,9 +167,16 @@
     }
   },
   "dbCreated": "Database created",
+  "@dbCreated": {
+    "description": "Snackbar message after database creation"
+  },
   "dbDeleted": "Database deleted",
+  "@dbDeleted": {
+    "description": "Snackbar message after database deletion"
+  },
   "dbSwitched": "Switched to database: {name}",
   "@dbSwitched": {
+    "description": "Snackbar message after database switch",
     "placeholders": {
       "name": {
         "type": "String"
@@ -61,35 +184,144 @@
     }
   },
   "allTags": "All Tags",
+  "@allTags": {
+    "description": "Label for showing all tags"
+  },
   "noTags": "No tags available",
+  "@noTags": {
+    "description": "Message shown when no tags exist"
+  },
   "tagName": "Tag Name",
+  "@tagName": {
+    "description": "Label for tag name input"
+  },
   "tagColor": "Tag Color",
+  "@tagColor": {
+    "description": "Label for tag color picker"
+  },
   "deleteTagMessage": "Delete this tag? It will be removed from all events.",
+  "@deleteTagMessage": {
+    "description": "Confirmation message for deleting a tag"
+  },
   "importData": "Import Data",
+  "@importData": {
+    "description": "Label for data import"
+  },
   "exportData": "Export Data",
+  "@exportData": {
+    "description": "Label for data export"
+  },
   "exportSuccess": "Export successful",
+  "@exportSuccess": {
+    "description": "Snackbar message after successful export"
+  },
   "importSuccess": "Import successful",
+  "@importSuccess": {
+    "description": "Snackbar message after successful import"
+  },
   "importError": "Import failed",
+  "@importError": {
+    "description": "Snackbar message after failed import"
+  },
   "sortNewest": "Newest First",
+  "@sortNewest": {
+    "description": "Label for newest first sorting"
+  },
+  "sortTime": "Time",
+  "@sortTime": {
+    "description": "Short label for time sorting"
+  },
   "sortOldest": "Oldest First",
+  "@sortOldest": {
+    "description": "Label for oldest first sorting"
+  },
   "sortTitleAZ": "Title (A-Z)",
+  "@sortTitleAZ": {
+    "description": "Label for alphabetical title sorting"
+  },
+  "sortTitle": "Title",
+  "@sortTitle": {
+    "description": "Short label for title sorting"
+  },
   "sortTitleZA": "Title (Z-A)",
+  "@sortTitleZA": {
+    "description": "Label for reverse alphabetical title sorting"
+  },
   "sortProgressHigh": "Progress (High-Low)",
+  "@sortProgressHigh": {
+    "description": "Label for high progress sorting"
+  },
+  "sortProgress": "Progress",
+  "@sortProgress": {
+    "description": "Short label for progress sorting"
+  },
   "sortProgressLow": "Progress (Low-High)",
+  "@sortProgressLow": {
+    "description": "Label for low progress sorting"
+  },
   "sortStepCountHigh": "Steps (More-Less)",
+  "@sortStepCountHigh": {
+    "description": "Label for most steps sorting"
+  },
+  "sortSteps": "Steps",
+  "@sortSteps": {
+    "description": "Short label for steps sorting"
+  },
   "sortStepCountLow": "Steps (Less-More)",
+  "@sortStepCountLow": {
+    "description": "Label for least steps sorting"
+  },
   "sortTagCountHigh": "Tags (More-Less)",
+  "@sortTagCountHigh": {
+    "description": "Label for most tags sorting"
+  },
+  "sortTags": "Tags",
+  "@sortTags": {
+    "description": "Short label for tags sorting"
+  },
   "sortTagCountLow": "Tags (Less-More)",
+  "@sortTagCountLow": {
+    "description": "Label for least tags sorting"
+  },
   "sortLastUpdated": "Recently Updated",
+  "@sortLastUpdated": {
+    "description": "Label for recently updated sorting"
+  },
+  "sortUpdated": "Updated",
+  "@sortUpdated": {
+    "description": "Short label for updated sorting"
+  },
   "sortLastUpdatedOldest": "Least Recently Updated",
+  "@sortLastUpdatedOldest": {
+    "description": "Label for least recently updated sorting"
+  },
   "statusAll": "All",
+  "@statusAll": {
+    "description": "Label for 'all' status filter"
+  },
   "statusNotStarted": "Not Started",
+  "@statusNotStarted": {
+    "description": "Label for 'not started' status"
+  },
   "statusInProgress": "In Progress",
+  "@statusInProgress": {
+    "description": "Label for 'in progress' status"
+  },
   "statusCompleted": "Completed",
+  "@statusCompleted": {
+    "description": "Label for 'completed' status"
+  },
   "selected": "Selected",
+  "@selected": {
+    "description": "Label for selected items"
+  },
   "deleteSelectedConfirmation": "Delete Selected?",
+  "@deleteSelectedConfirmation": {
+    "description": "Confirmation dialog title for deleting selected items"
+  },
   "deleteSelectedMessage": "Delete {count} items?",
   "@deleteSelectedMessage": {
+    "description": "Confirmation message for deleting multiple selected items",
     "placeholders": {
       "count": {
         "type": "int"
@@ -97,17 +329,48 @@
     }
   },
   "editEvent": "Edit Event",
+  "@editEvent": {
+    "description": "Title for editing an event"
+  },
   "newEvent": "New Event",
+  "@newEvent": {
+    "description": "Title for creating a new event"
+  },
   "title": "Title",
+  "@title": {
+    "description": "Label for title input"
+  },
   "description": "Description",
+  "@description": {
+    "description": "Label for description input"
+  },
   "imageUrl": "Image URL",
+  "@imageUrl": {
+    "description": "Label for image URL input"
+  },
   "imageUrlPlaceholder": "http://... or data:image...",
+  "@imageUrlPlaceholder": {
+    "description": "Hint text for image URL input"
+  },
   "pickImage": "Pick Image",
+  "@pickImage": {
+    "description": "Label for image picker button"
+  },
   "saveChanges": "Save Changes",
+  "@saveChanges": {
+    "description": "Button label to save changes"
+  },
   "createEvent": "Create Event",
+  "@createEvent": {
+    "description": "Button label to create a new event"
+  },
   "noTagsYet": "No tags yet",
+  "@noTagsYet": {
+    "description": "Message shown when no tags are assigned"
+  },
   "tagsSelected": "{count} tags selected",
   "@tagsSelected": {
+    "description": "Label showing number of selected tags",
     "placeholders": {
       "count": {
         "type": "int"
@@ -115,9 +378,16 @@
     }
   },
   "clearAllTags": "Clear Selection",
+  "@clearAllTags": {
+    "description": "Label for clearing tag selection"
+  },
   "deleteTagConfirmation": "Delete Tag?",
+  "@deleteTagConfirmation": {
+    "description": "Confirmation dialog title for deleting a tag"
+  },
   "deleteTagWarning": "This will remove \"{tag}\" from all events.",
   "@deleteTagWarning": {
+    "description": "Warning message for tag deletion",
     "placeholders": {
       "tag": {
         "type": "String"
@@ -125,9 +395,16 @@
     }
   },
   "eventNotFound": "Event not found",
+  "@eventNotFound": {
+    "description": "Message shown when an event cannot be found"
+  },
   "eventDetails": "Event Details",
+  "@eventDetails": {
+    "description": "Title for event details page"
+  },
   "createdOn": "Created on {date}",
   "@createdOn": {
+    "description": "Label showing event creation date",
     "placeholders": {
       "date": {
         "type": "String"
@@ -135,42 +412,118 @@
     }
   },
   "steps": "Steps",
+  "@steps": {
+    "description": "Label for steps section"
+  },
   "manageSteps": "Manage Steps",
+  "@manageSteps": {
+    "description": "Label for step management"
+  },
   "noStepsYet": "No steps yet.",
+  "@noStepsYet": {
+    "description": "Message shown when an event has no steps"
+  },
   "addStep": "Add Step",
-  "newStepPlaceholder": "New step...",
-  "editSteps": "Edit Steps",
-  "archive": "Archive",
-  "sets": "Sets",
+  "@addStep": {
+    "description": "Label for adding a new step"
+  },
   "addNewStepPlaceholder": "Add new step...",
-  "addToArchivePlaceholder": "Add to archive...",
+  "@addNewStepPlaceholder": {
+    "description": "Hint text for adding a new step"
+  },
   "addedToSteps": "Added to steps",
-  "saveCurrentStepsAsSet": "Save current steps as Template Set",
-  "addAllToSteps": "Add All to Steps",
+  "@addedToSteps": {
+    "description": "Snackbar message when an item is added to steps"
+  },
   "addedStepsCount": "Added {count} steps",
   "@addedStepsCount": {
+    "description": "Snackbar message showing how many steps were added",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "stepsCount": "{count} steps",
-  "@stepsCount": {
+  "addAllToSteps": "Add all to steps",
+  "@addAllToSteps": {
+    "description": "Button label to add all items in a set to steps"
+  },
+  "saveCurrentStepsAsSet": "Save current steps as a set",
+  "@saveCurrentStepsAsSet": {
+    "description": "Button label to save current steps as a set"
+  },
+  "newStepPlaceholder": "New step...",
+  "@newStepPlaceholder": {
+    "description": "Hint text for new step input"
+  },
+  "editSteps": "Edit Steps",
+  "@editSteps": {
+    "description": "Title for editing steps"
+  },
+  "extensions": "Extensions",
+  "@extensions": {
+    "description": "Label for extensions section"
+  },
+  "extensionDetails": "Extension Details",
+  "@extensionDetails": {
+    "description": "Title for extension details page"
+  },
+  "extensionOpen": "Open Extension",
+  "@extensionOpen": {
+    "description": "Label for opening an extension"
+  },
+  "extensionLinkSubtitle": "Supports URL or GitHub links",
+  "@extensionLinkSubtitle": {
+    "description": "Subtitle for link-based extension installation"
+  },
+  "installFromClipboard": "Install from Clipboard",
+  "@installFromClipboard": {
+    "description": "Label for clipboard-based extension installation"
+  },
+  "installFromClipboardSubtitle": "Read JSON or URL from clipboard",
+  "@installFromClipboardSubtitle": {
+    "description": "Subtitle for clipboard-based extension installation"
+  },
+  "install": "Install",
+  "@install": {
+    "description": "Label for installation action"
+  },
+  "extensionUninstalled": "{name} uninstalled",
+  "@extensionUninstalled": {
+    "description": "Snackbar message after uninstallation",
     "placeholders": {
-      "count": {
-        "type": "int"
+      "name": {
+        "type": "String"
       }
     }
   },
-  "dbNameHint": "e.g., project-x, archive-2023",
+  "dbNameHint": "e.g. Project-X, 2023-Archive",
+  "@dbNameHint": {
+    "description": "Hint text for database name input"
+  },
   "invalidDbName": "Invalid name. Use letters, numbers, -, _",
-  "defaultDbName": "Main Archive (Default)",
-  "currentlyActive": "Currently Active",
+  "@invalidDbName": {
+    "description": "Error message for invalid database name"
+  },
+  "defaultDbName": "Main (Default)",
+  "@defaultDbName": {
+    "description": "Label for the default database"
+  },
+  "currentlyActive": "Currently active",
+  "@currentlyActive": {
+    "description": "Label for currently active database"
+  },
   "inactive": "Inactive",
+  "@inactive": {
+    "description": "Label for inactive database"
+  },
   "switchDb": "Switch",
+  "@switchDb": {
+    "description": "Label for switch database action"
+  },
   "switchedToDb": "Switched to {name}",
   "@switchedToDb": {
+    "description": "Snackbar message after switching database",
     "placeholders": {
       "name": {
         "type": "String"
@@ -179,6 +532,7 @@
   },
   "deleteDbTitle": "Delete \"{name}\"?",
   "@deleteDbTitle": {
+    "description": "Title for delete database confirmation dialog",
     "placeholders": {
       "name": {
         "type": "String"
@@ -186,15 +540,40 @@
     }
   },
   "deleteDbWarning": "This action cannot be undone. All data in this database will be lost.",
+  "@deleteDbWarning": {
+    "description": "Warning message for delete database confirmation dialog"
+  },
   "saveTemplateSet": "Save Template Set",
+  "@saveTemplateSet": {
+    "description": "Title for saving template set dialog"
+  },
   "templateName": "Template Name",
-  "templateSetSaved": "Template Set Saved",
+  "@templateName": {
+    "description": "Label for template name input"
+  },
+  "templateSetSaved": "Template set saved",
+  "@templateSetSaved": {
+    "description": "Snackbar message after saving template set"
+  },
   "noEventsFound": "No events found",
+  "@noEventsFound": {
+    "description": "Message shown when no events are found"
+  },
   "sort": "Sort",
+  "@sort": {
+    "description": "Label for sorting action"
+  },
   "welcomeTitle": "Welcome to Essenmelia",
-  "welcomeMessage": "Manage your events, track steps, and organize your life with tags. Tap the + button to get started.",
+  "@welcomeTitle": {
+    "description": "Title for welcome screen"
+  },
+  "welcomeMessage": "Manage your events, track steps, and organize your life with tags. Click the + button to get started.",
+  "@welcomeMessage": {
+    "description": "Message for welcome screen"
+  },
   "selectedItemsCount": "{count} items selected",
   "@selectedItemsCount": {
+    "description": "Label showing how many items are selected",
     "placeholders": {
       "count": {
         "type": "int"
@@ -202,10 +581,20 @@
     }
   },
   "batchArchive": "Batch Archive",
+  "@batchArchive": {
+    "description": "Label for batch archive action"
+  },
   "batchAdd": "Batch Add",
+  "@batchAdd": {
+    "description": "Label for batch add action"
+  },
   "saveAsSet": "Save as Set",
+  "@saveAsSet": {
+    "description": "Label for saving items as a set"
+  },
   "movedToArchive": "Moved {count} items to archive",
   "@movedToArchive": {
+    "description": "Snackbar message after batch archiving",
     "placeholders": {
       "count": {
         "type": "int"
@@ -213,14 +602,822 @@
     }
   },
   "noArchiveSteps": "No archived steps",
+  "@noArchiveSteps": {
+    "description": "Message shown when no archived steps are found"
+  },
   "noStepSets": "No step sets",
-  "saveCurrentAsSetHint": "You can save current steps as a set for quick reuse later",
+  "@noStepSets": {
+    "description": "Message shown when no step sets are found"
+  },
+  "saveCurrentAsSetHint": "You can save current steps as a set for future reuse",
+  "@saveCurrentAsSetHint": {
+    "description": "Hint text for saving current steps as a set"
+  },
   "setName": "Set Name",
+  "@setName": {
+    "description": "Label for set name input"
+  },
   "setSaved": "Set saved",
+  "@setSaved": {
+    "description": "Snackbar message after saving a set"
+  },
   "tags": "Tags",
+  "@tags": {
+    "description": "Label for tags section"
+  },
+  "noEventsWithTag": "No events with this tag",
+  "@noEventsWithTag": {
+    "description": "Message shown when no events match a tag filter"
+  },
+  "allEvents": "All Events",
+  "@allEvents": {
+    "description": "Label for all events filter"
+  },
+  "allSystemPermissions": "All System Permissions",
+  "@allSystemPermissions": {
+    "description": "Label for all system permissions"
+  },
+  "extensionConsole": "Extension Console",
+  "@extensionConsole": {
+    "description": "Title for extension console"
+  },
+  "logs": "Logs",
+  "@logs": {
+    "description": "Label for logs tab"
+  },
+  "stateTree": "State Tree",
+  "@stateTree": {
+    "description": "Label for state tree tab"
+  },
+  "restartEngine": "Restart Engine",
+  "@restartEngine": {
+    "description": "Label for restarting the JS engine"
+  },
+  "noLogs": "No logs",
+  "@noLogs": {
+    "description": "Message shown when no logs are available"
+  },
+  "currentStateVariables": "Current State Variables:",
+  "@currentStateVariables": {
+    "description": "Label for current state variables section"
+  },
+  "editState": "Edit State: {key}",
+  "@editState": {
+    "description": "Title for editing a state variable",
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "jsonFormatValue": "JSON Formatted Value",
+  "@jsonFormatValue": {
+    "description": "Label for JSON value input"
+  },
+  "jsonHint": "e.g. \"text\" or 123 or '{'\"a\": 1'}'",
+  "@jsonHint": {
+    "description": "Hint text for JSON input"
+  },
+  "invalidJson": "Invalid JSON: {error}",
+  "@invalidJson": {
+    "description": "Error message for invalid JSON input",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "tagsPlaceholder": "Type to search or create...",
+  "@tagsPlaceholder": {
+    "description": "Hint text for tags input"
+  },
+  "invalidInput": "Invalid input",
+  "@invalidInput": {
+    "description": "Generic error message for invalid input"
+  },
+  "importFailedDetailed": "Import failed: {error}",
+  "@importFailedDetailed": {
+    "description": "Error message for failed import",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resetFailedDetailed": "Reset failed: {error}",
+  "@resetFailedDetailed": {
+    "description": "Error message for failed reset",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dbStats": "{events} events, {templates} templates",
+  "@dbStats": {
+    "description": "Statistics for a database",
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "templates": {
+        "type": "int"
+      }
+    }
+  },
+  "noAvailableExtensions": "No extensions available in the store",
+  "@noAvailableExtensions": {
+    "description": "Message shown when no extensions are found in store"
+  },
+  "failedToLoadStore": "Failed to load store",
+  "@failedToLoadStore": {
+    "description": "Error message when store fails to load"
+  },
+  "extensionError": "Extension error",
+  "@extensionError": {
+    "description": "Label for extension error"
+  },
+  "extensionNoUI": "This extension has no UI definition.",
+  "@extensionNoUI": {
+    "description": "Message shown when an extension has no UI"
+  },
+  "extensionPureMode": "Pure Mode (Metadata only)",
+  "@extensionPureMode": {
+    "description": "Label for pure metadata extension mode"
+  },
+  "extensionStorageOccupied": "Storage: {size}",
+  "@extensionStorageOccupied": {
+    "description": "Label for extension storage usage",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionDeveloperSandbox": "Developer Sandbox",
+  "@extensionDeveloperSandbox": {
+    "description": "Title for extension developer sandbox"
+  },
+  "extensionSandboxInstruction": "This extension is running as a 'pure shell'. You can test its permissions below.",
+  "@extensionSandboxInstruction": {
+    "description": "Instruction for extension developer sandbox"
+  },
+  "extensionGetEvents": "Get Events",
+  "@extensionGetEvents": {
+    "description": "Button label to get events in sandbox"
+  },
+  "extensionSendNotification": "Send Notification",
+  "@extensionSendNotification": {
+    "description": "Button label to send notification in sandbox"
+  },
+  "extensionGetEventsSuccess": "Successfully fetched {count} events",
+  "@extensionGetEventsSuccess": {
+    "description": "Success message for getting events in sandbox",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "extensionGetEventsFailed": "Fetch failed: {error}",
+  "@extensionGetEventsFailed": {
+    "description": "Error message for getting events in sandbox",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionSandboxNotification": "Test notification from extension sandbox",
+  "@extensionSandboxNotification": {
+    "description": "Test notification message from sandbox"
+  },
+  "extensionDefaultButtonLabel": "Button",
+  "@extensionDefaultButtonLabel": {
+    "description": "Default label for extension buttons"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Label for retry action"
+  },
+  "useCustomStoreLink": "Use custom store link",
+  "@useCustomStoreLink": {
+    "description": "Label for using a custom extension store"
+  },
+  "customStore": "Custom Store",
+  "@customStore": {
+    "description": "Title for custom store dialog"
+  },
+  "load": "Load",
+  "@load": {
+    "description": "Label for load action"
+  },
+  "authorLabel": "Author: {author}",
+  "@authorLabel": {
+    "description": "Label for extension author",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "versionAuthorLabel": "Version {version} • Author {author}",
+  "@versionAuthorLabel": {
+    "description": "Label for version and author",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutExtension": "About this extension",
+  "@aboutExtension": {
+    "description": "Section header for extension info"
+  },
+  "installExtension": "Install Extension",
+  "@installExtension": {
+    "description": "Label for installing an extension"
+  },
+  "installingExtension": "Downloading and installing {name}...",
+  "@installingExtension": {
+    "description": "Snackbar message during installation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "installSuccess": "{name} installed successfully",
+  "@installSuccess": {
+    "description": "Snackbar message after successful installation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "installFailed": "Installation failed, please check the link or network",
+  "@installFailed": {
+    "description": "Error message for failed installation"
+  },
+  "installError": "Installation error: {error}",
+  "@installError": {
+    "description": "Detailed error message for installation",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "eventReminder": "Event Reminder",
+  "@eventReminder": {
+    "description": "Title for event reminder notifications"
+  },
+  "eventReminderChannelDesc": "Used for scheduled event reminders",
+  "@eventReminderChannelDesc": {
+    "description": "Description for the event reminder notification channel"
+  },
+  "systemNotification": "System Notification",
+  "@systemNotification": {
+    "description": "Title for system notifications"
+  },
+  "systemNotificationChannelDesc": "Instant notifications from the app or extensions",
+  "@systemNotificationChannelDesc": {
+    "description": "Description for the system notification channel"
+  },
+  "extensionCategoryNotifications": "Notifications",
+  "@extensionCategoryNotifications": {
+    "description": "Category for extension notifications"
+  },
+  "extensionUninstall": "Uninstall",
+  "@extensionUninstall": {
+    "description": "Label for uninstalling an extension"
+  },
+  "extensionUninstallConfirm": "Confirm Uninstall",
+  "@extensionUninstallConfirm": {
+    "description": "Title for extension uninstall confirmation"
+  },
+  "extensionUninstallMessage": "Are you sure you want to uninstall \"{name}\"? This will delete all associated data and cannot be undone.",
+  "@extensionUninstallMessage": {
+    "description": "Confirmation message for uninstalling an extension",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionExport": "Export & Convert",
+  "@extensionExport": {
+    "description": "Label for exporting an extension"
+  },
+  "extensionExportJson": "Standard JSON Package",
+  "@extensionExportJson": {
+    "description": "Label for JSON export format"
+  },
+  "extensionExportJsonSubtitle": "Single file, best for sharing",
+  "@extensionExportJsonSubtitle": {
+    "description": "Subtitle for JSON export format"
+  },
+  "extensionExportZip": "Extension ZIP Package",
+  "@extensionExportZip": {
+    "description": "Label for ZIP export format"
+  },
+  "extensionExportZipSubtitle": "Complete repository archive",
+  "@extensionExportZipSubtitle": {
+    "description": "Subtitle for ZIP export format"
+  },
+  "extensionPermissionReadEvents": "Read Events",
+  "@extensionPermissionReadEvents": {
+    "description": "Permission label for reading events"
+  },
+  "extensionPermissionReadEventsDesc": "Allows the extension to view all your events and tasks.",
+  "@extensionPermissionReadEventsDesc": {
+    "description": "Permission description for reading events"
+  },
+  "extensionPermissionAddEvents": "Add Events",
+  "@extensionPermissionAddEvents": {
+    "description": "Permission label for adding events"
+  },
+  "extensionPermissionAddEventsDesc": "Allows the extension to create new tasks.",
+  "@extensionPermissionAddEventsDesc": {
+    "description": "Permission description for adding events"
+  },
+  "extensionPermissionUpdateEvents": "Update Events",
+  "@extensionPermissionUpdateEvents": {
+    "description": "Permission label for updating events"
+  },
+  "extensionPermissionUpdateEventsDesc": "Allows the extension to modify existing tasks.",
+  "@extensionPermissionUpdateEventsDesc": {
+    "description": "Permission description for updating events"
+  },
+  "extensionPermissionDeleteEvents": "Delete Events",
+  "@extensionPermissionDeleteEvents": {
+    "description": "Permission label for deleting events"
+  },
+  "extensionPermissionDeleteEventsDesc": "Allows the extension to delete your tasks.",
+  "@extensionPermissionDeleteEventsDesc": {
+    "description": "Permission description for deleting events"
+  },
+  "extensionPermissionReadTags": "Read Tags",
+  "@extensionPermissionReadTags": {
+    "description": "Permission label for reading tags"
+  },
+  "extensionPermissionReadTagsDesc": "Allows the extension to view your tag list.",
+  "@extensionPermissionReadTagsDesc": {
+    "description": "Permission description for reading tags"
+  },
+  "extensionPermissionManageTags": "Manage Tags",
+  "@extensionPermissionManageTags": {
+    "description": "Permission label for managing tags"
+  },
+  "extensionPermissionManageTagsDesc": "Allows the extension to add or remove global tags.",
+  "@extensionPermissionManageTagsDesc": {
+    "description": "Permission description for managing tags"
+  },
+  "extensionPermissionManageDb": "Manage Database",
+  "@extensionPermissionManageDb": {
+    "description": "Permission label for database management"
+  },
+  "extensionPermissionManageDbDesc": "Allows the extension to perform database export, backup, or switching.",
+  "@extensionPermissionManageDbDesc": {
+    "description": "Permission description for database management"
+  },
+  "extensionPermissionFileSystem": "File System",
+  "@extensionPermissionFileSystem": {
+    "description": "Permission label for file system access"
+  },
+  "extensionPermissionFileSystemDesc": "Allows the extension to save files to your device or read files.",
+  "@extensionPermissionFileSystemDesc": {
+    "description": "Permission description for file system access"
+  },
+  "extensionPermissionNotifications": "Notifications",
+  "@extensionPermissionNotifications": {
+    "description": "Permission label for notifications"
+  },
+  "extensionPermissionNotificationsDesc": "Allows the extension to send you desktop or system notifications.",
+  "@extensionPermissionNotificationsDesc": {
+    "description": "Permission description for notifications"
+  },
+  "extensionPermissionReadCalendar": "Read Calendar",
+  "@extensionPermissionReadCalendar": {
+    "description": "Permission label for reading calendar"
+  },
+  "extensionPermissionReadCalendarDesc": "Allows the extension to read your system calendar events.",
+  "@extensionPermissionReadCalendarDesc": {
+    "description": "Permission description for reading calendar"
+  },
+  "extensionPermissionWriteCalendar": "Write Calendar",
+  "@extensionPermissionWriteCalendar": {
+    "description": "Permission label for writing calendar"
+  },
+  "extensionPermissionWriteCalendarDesc": "Allows the extension to add or modify events in your system calendar.",
+  "@extensionPermissionWriteCalendarDesc": {
+    "description": "Permission description for writing calendar"
+  },
+  "extensionPermissionNetwork": "Network Access",
+  "@extensionPermissionNetwork": {
+    "description": "Permission label for network access"
+  },
+  "extensionPermissionNetworkDesc": "Allows the extension to access the network.",
+  "@extensionPermissionNetworkDesc": {
+    "description": "Permission description for network access"
+  },
+  "extensionPermissionSystemInfo": "System Info",
+  "@extensionPermissionSystemInfo": {
+    "description": "Permission label for system info"
+  },
+  "extensionPermissionSystemInfoDesc": "Allows the extension to access system status like themes, language, and snackbars.",
+  "@extensionPermissionSystemInfoDesc": {
+    "description": "Permission description for system info"
+  },
+  "extensionPermissionNavigation": "Navigation",
+  "@extensionPermissionNavigation": {
+    "description": "Permission label for navigation"
+  },
+  "extensionPermissionNavigationDesc": "Allows the extension to navigate to specific pages or filter searches.",
+  "@extensionPermissionNavigationDesc": {
+    "description": "Permission description for navigation"
+  },
+  "extensionPermissionUIInteraction": "UI Interaction",
+  "@extensionPermissionUIInteraction": {
+    "description": "Permission label for UI interaction"
+  },
+  "extensionPermissionUIInteractionDesc": "Allows the extension to show dialogs, snackbars, or custom UI elements.",
+  "@extensionPermissionUIInteractionDesc": {
+    "description": "Permission description for UI interaction"
+  },
+  "extensionCategoryDataReading": "Data Reading",
+  "@extensionCategoryDataReading": {
+    "description": "Label for data reading category"
+  },
+  "extensionCategoryDataWriting": "Data Writing",
+  "@extensionCategoryDataWriting": {
+    "description": "Label for data writing category"
+  },
+  "extensionCategoryFileSystem": "File System",
+  "@extensionCategoryFileSystem": {
+    "description": "Label for file system category"
+  },
+  "extensionCategoryNetwork": "Network Access",
+  "@extensionCategoryNetwork": {
+    "description": "Label for network access category"
+  },
+  "extensionCategorySystemInfo": "System Info",
+  "@extensionCategorySystemInfo": {
+    "description": "Label for system info category"
+  },
+  "extensionCategoryNavigation": "Navigation",
+  "@extensionCategoryNavigation": {
+    "description": "Label for navigation category"
+  },
+  "extensionCategoryUIInteraction": "UI Interaction",
+  "@extensionCategoryUIInteraction": {
+    "description": "Label for UI interaction category"
+  },
+  "extensionCategoryGeneral": "General",
+  "@extensionCategoryGeneral": {
+    "description": "Label for general extension category"
+  },
+  "extensionManagementTitle": "Extensions",
+  "@extensionManagementTitle": {
+    "description": "Title for extension management page"
+  },
+  "extensionSectionInstalled": "Installed",
+  "@extensionSectionInstalled": {
+    "description": "Header for installed extensions section"
+  },
+  "extensionSectionBuiltIn": "Built-in",
+  "@extensionSectionBuiltIn": {
+    "description": "Header for built-in extensions section"
+  },
+  "extensionSectionOnline": "Online Store",
+  "@extensionSectionOnline": {
+    "description": "Header for online extension store section"
+  },
+  "extensionRestrictedAccess": "Restricted Access",
+  "@extensionRestrictedAccess": {
+    "description": "Label for restricted access mode"
+  },
+  "extensionRestrictedAccessDesc": "Requires manual approval for all data access.",
+  "@extensionRestrictedAccessDesc": {
+    "description": "Description for restricted access mode"
+  },
+  "extensionInterceptedTitle": "Access Intercepted",
+  "@extensionInterceptedTitle": {
+    "description": "Title for access interception dialog"
+  },
+  "extensionInterceptedDesc": "Extension {name} {action}:",
+  "@extensionInterceptedDesc": {
+    "description": "Description for access interception",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionInterceptedActionTried": "just tried to",
+  "@extensionInterceptedActionTried": {
+    "description": "Label for tried action in interception"
+  },
+  "extensionInterceptedActionWants": "wants to",
+  "@extensionInterceptedActionWants": {
+    "description": "Label for wanted action in interception"
+  },
+  "extensionDecisionDeny": "Deny Access",
+  "@extensionDecisionDeny": {
+    "description": "Button label to deny access"
+  },
+  "extensionDecisionDenyDesc": "Provides no data, which may cause errors or limited functionality.",
+  "@extensionDecisionDenyDesc": {
+    "description": "Description for denying access"
+  },
+  "extensionDecisionOnce": "Allow Once",
+  "@extensionDecisionOnce": {
+    "description": "Button label to allow access once"
+  },
+  "extensionDecisionOnceDesc": "Provides real data only for this specific request.",
+  "@extensionDecisionOnceDesc": {
+    "description": "Description for allowing access once"
+  },
+  "extensionDecisionNext": "Allow Next Time",
+  "@extensionDecisionNext": {
+    "description": "Button label to allow access next time"
+  },
+  "extensionDecisionNextDesc": "Intercepts now, but automatically allows the next time this access occurs.",
+  "@extensionDecisionNextDesc": {
+    "description": "Description for allowing access next time"
+  },
+  "extensionDecisionSessionCategory": "Allow Category (Session)",
+  "@extensionDecisionSessionCategory": {
+    "description": "Button label to allow category access for session"
+  },
+  "extensionDecisionSessionCategoryDesc": "Allows all access to this category until the app is closed.",
+  "@extensionDecisionSessionCategoryDesc": {
+    "description": "Description for allowing category access for session"
+  },
+  "extensionDecisionSessionAll": "Allow All (Session)",
+  "@extensionDecisionSessionAll": {
+    "description": "Button label to allow all access for session"
+  },
+  "extensionDecisionSessionAllDesc": "Allows all permissions for this extension until the app is closed.",
+  "@extensionDecisionSessionAllDesc": {
+    "description": "Description for allowing all access for session"
+  },
+  "archive": "Archive",
+  "@archive": {
+    "description": "Label for archive section"
+  },
+  "sets": "Sets",
+  "@sets": {
+    "description": "Label for sets section"
+  },
+  "addToArchivePlaceholder": "Add to archive...",
+  "@addToArchivePlaceholder": {
+    "description": "Hint text for adding to archive"
+  },
+  "extensionLogsTitle": "Extension Logs",
+  "@extensionLogsTitle": {
+    "description": "Title for extension logs screen"
+  },
+  "noApiLogs": "No API call records",
+  "@noApiLogs": {
+    "description": "Message shown when there are no API logs"
+  },
+  "noParams": "No parameters",
+  "@noParams": {
+    "description": "Label for no parameters in logs"
+  },
+  "restrictedAccess": "Restricted Access",
+  "@restrictedAccess": {
+    "description": "Label for restricted access mode"
+  },
+  "logDetails": "Call Details",
+  "@logDetails": {
+    "description": "Title for log details dialog"
+  },
+  "extensionNameLabel": "Extension Name",
+  "@extensionNameLabel": {
+    "description": "Label for extension name in logs"
+  },
+  "extensionIdLabel": "Extension ID",
+  "@extensionIdLabel": {
+    "description": "Label for extension ID in logs"
+  },
+  "methodLabel": "Method",
+  "@methodLabel": {
+    "description": "Label for API method in logs"
+  },
+  "timeLabel": "Time",
+  "@timeLabel": {
+    "description": "Label for call time in logs"
+  },
+  "statusLabel": "Status",
+  "@statusLabel": {
+    "description": "Label for call status in logs"
+  },
+  "successLabel": "Success",
+  "@successLabel": {
+    "description": "Label for success status"
+  },
+  "failedLabel": "Failed",
+  "@failedLabel": {
+    "description": "Label for failed status"
+  },
+  "accessModeLabel": "Access Mode",
+  "@accessModeLabel": {
+    "description": "Label for access mode in logs"
+  },
+  "restrictedAccessIntercepted": "Restricted Access (Intercepted)",
+  "@restrictedAccessIntercepted": {
+    "description": "Description for intercepted restricted access"
+  },
+  "trustedModePassthrough": "Trusted Mode (Passthrough)",
+  "@trustedModePassthrough": {
+    "description": "Description for trusted mode passthrough"
+  },
+  "errorMessageLabel": "Error Message",
+  "@errorMessageLabel": {
+    "description": "Label for error message in logs"
+  },
+  "paramsDetails": "Parameter Details",
+  "@paramsDetails": {
+    "description": "Title for parameter details section"
+  },
+  "saveCurrentStepsAsSet": "Save current steps as Template Set",
+  "@saveCurrentStepsAsSet": {
+    "description": "Label for saving steps as a template set"
+  },
+  "addAllToSteps": "Add All to Steps",
+  "@addAllToSteps": {
+    "description": "Button label to add all items to steps"
+  },
+  "addedStepsCount": "{count} steps added",
+  "@addedStepsCount": {
+    "description": "Label showing number of steps added",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepsCount": "{count} steps",
+  "@stepsCount": {
+    "description": "Label showing total number of steps",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dbNameHint": "e.g., project-x, archive-2023",
+  "@dbNameHint": {
+    "description": "Hint text for database name input"
+  },
+  "invalidDbName": "Invalid name. Use letters, numbers, -, _",
+  "@invalidDbName": {
+    "description": "Error message for invalid database name"
+  },
+  "defaultDbName": "Main Archive (Default)",
+  "@defaultDbName": {
+    "description": "Label for the default database"
+  },
+  "currentlyActive": "Currently Active",
+  "@currentlyActive": {
+    "description": "Label for the currently active item"
+  },
+  "inactive": "Inactive",
+  "@inactive": {
+    "description": "Label for inactive items"
+  },
+  "switchDb": "Switch",
+  "@switchDb": {
+    "description": "Button label to switch database"
+  },
+  "switchedToDb": "Switched to {name}",
+  "@switchedToDb": {
+    "description": "Snackbar message after switching database",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDbTitle": "Delete \"{name}\"?",
+  "@deleteDbTitle": {
+    "description": "Title for delete database confirmation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDbWarning": "This action cannot be undone. All data in this database will be lost.",
+  "@deleteDbWarning": {
+    "description": "Warning message for deleting a database"
+  },
+  "saveTemplateSet": "Save Template Set",
+  "@saveTemplateSet": {
+    "description": "Label for saving a template set"
+  },
+  "templateName": "Template Name",
+  "@templateName": {
+    "description": "Label for template name input"
+  },
+  "templateSetSaved": "Template Set Saved",
+  "@templateSetSaved": {
+    "description": "Snackbar message after saving a template set"
+  },
+  "noEventsFound": "No events found",
+  "@noEventsFound": {
+    "description": "Message shown when no events match criteria"
+  },
+  "sort": "Sort",
+  "@sort": {
+    "description": "Label for sorting options"
+  },
+  "welcomeTitle": "Welcome to Essenmelia",
+  "@welcomeTitle": {
+    "description": "Title for welcome screen"
+  },
+  "welcomeMessage": "Manage your events, track steps, and organize your life with tags. Tap the + button to get started.",
+  "@welcomeMessage": {
+    "description": "Message for welcome screen"
+  },
+  "selectedItemsCount": "{count} items selected",
+  "@selectedItemsCount": {
+    "description": "Label showing number of selected items",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "batchArchive": "Batch Archive",
+  "@batchArchive": {
+    "description": "Button label for batch archiving"
+  },
+  "batchAdd": "Batch Add",
+  "@batchAdd": {
+    "description": "Button label for batch adding"
+  },
+  "saveAsSet": "Save as Set",
+  "@saveAsSet": {
+    "description": "Button label for saving items as a set"
+  },
+  "movedToArchive": "Moved {count} items to archive",
+  "@movedToArchive": {
+    "description": "Snackbar message after batch archiving",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noArchiveSteps": "No archived steps",
+  "@noArchiveSteps": {
+    "description": "Message shown when no steps are in archive"
+  },
+  "noStepSets": "No step sets",
+  "@noStepSets": {
+    "description": "Message shown when no step sets exist"
+  },
+  "saveCurrentAsSetHint": "You can save current steps as a set for quick reuse later",
+  "@saveCurrentAsSetHint": {
+    "description": "Hint text for saving steps as a set"
+  },
+  "setName": "Set Name",
+  "@setName": {
+    "description": "Label for set name input"
+  },
+  "setSaved": "Set saved",
+  "@setSaved": {
+    "description": "Snackbar message after saving a set"
+  },
+  "tags": "Tags",
+  "@tags": {
+    "description": "Label for tags section"
+  },
+  "noEventsWithTag": "No events with this tag",
+  "@noEventsWithTag": {
+    "description": "Message shown when no events have the selected tag"
+  },
+  "allEvents": "All Events",
+  "@allEvents": {
+    "description": "Label for showing all events"
+  },
+  "tagsPlaceholder": "Type to search or create...",
+  "@tagsPlaceholder": {
+    "description": "Hint text for tag search/creation"
+  },
   "createTag": "Create \"{tag}\"",
   "@createTag": {
+    "description": "Label for creating a new tag",
     "placeholders": {
       "tag": {
         "type": "String"
@@ -229,6 +1426,7 @@
   },
   "failedToPickImage": "Failed to pick image: {error}",
   "@failedToPickImage": {
+    "description": "Error message when image picking fails",
     "placeholders": {
       "error": {
         "type": "String"
@@ -236,8 +1434,12 @@
     }
   },
   "titleRequired": "Title is required",
+  "@titleRequired": {
+    "description": "Validation error when title is empty"
+  },
   "error": "Error: {error}",
   "@error": {
+    "description": "Generic error message with details",
     "placeholders": {
       "error": {
         "type": "String"
@@ -245,10 +1447,20 @@
     }
   },
   "deleteAllDataTitle": "Delete All Data?",
+  "@deleteAllDataTitle": {
+    "description": "Title for delete all data confirmation"
+  },
   "deleteAllDataMessage": "This cannot be undone.",
+  "@deleteAllDataMessage": {
+    "description": "Warning message for deleting all data"
+  },
   "deleteAllDataSuccess": "All data deleted",
+  "@deleteAllDataSuccess": {
+    "description": "Snackbar message after deleting all data"
+  },
   "importFailedDetailed": "Import failed: {error}",
   "@importFailedDetailed": {
+    "description": "Error message when import fails",
     "placeholders": {
       "error": {
         "type": "String"
@@ -257,6 +1469,7 @@
   },
   "exportFailedDetailed": "Export failed: {error}",
   "@exportFailedDetailed": {
+    "description": "Error message when export fails",
     "placeholders": {
       "error": {
         "type": "String"
@@ -264,15 +1477,40 @@
     }
   },
   "navEvents": "Events",
+  "@navEvents": {
+    "description": "Navigation label for events"
+  },
   "navExtensions": "Extensions",
+  "@navExtensions": {
+    "description": "Navigation label for extensions"
+  },
   "addExtension": "Add Extension",
+  "@addExtension": {
+    "description": "Button label to add an extension"
+  },
   "importFromLocalFile": "Import from local file",
+  "@importFromLocalFile": {
+    "description": "Label for importing extension from local file"
+  },
   "selectJsonExtension": "Select .json or .zip extension package",
+  "@selectJsonExtension": {
+    "description": "Hint text for selecting extension package"
+  },
   "enterUrlOrGithubLink": "Enter URL or GitHub link",
+  "@enterUrlOrGithubLink": {
+    "description": "Hint text for extension URL input"
+  },
   "downloadAndInstallFromLink": "Download and install from link",
+  "@downloadAndInstallFromLink": {
+    "description": "Button label to install extension from link"
+  },
   "confirmUninstall": "Confirm Uninstall",
+  "@confirmUninstall": {
+    "description": "Title for confirm uninstall dialog"
+  },
   "uninstallExtensionWarning": "Are you sure you want to uninstall extension \"{name}\"? All related settings will be cleared.",
   "@uninstallExtensionWarning": {
+    "description": "Warning message for extension uninstallation",
     "placeholders": {
       "name": {
         "type": "String"
@@ -280,46 +1518,1129 @@
     }
   },
   "uninstall": "Uninstall",
+  "@uninstall": {
+    "description": "Label for uninstall button"
+  },
   "extensionUninstalled": "Extension uninstalled",
+  "@extensionUninstalled": {
+    "description": "Snackbar message after extension uninstalled"
+  },
   "extensionRepository": "Extension Repository",
+  "@extensionRepository": {
+    "description": "Title for extension repository page"
+  },
   "browseAndInstallFromGithub": "Browse and install from GitHub",
+  "@browseAndInstallFromGithub": {
+    "description": "Label for browsing extensions on GitHub"
+  },
   "noExtensionsInstalled": "No extensions installed",
+  "@noExtensionsInstalled": {
+    "description": "Message shown when no extensions are installed"
+  },
   "deactivated": "Deactivated",
+  "@deactivated": {
+    "description": "Label for deactivated extensions"
+  },
   "downloadFailedCheckLink": "Download failed, please check the link",
+  "@downloadFailedCheckLink": {
+    "description": "Error message when extension download fails"
+  },
   "manageAndPermissions": "Manage & Permissions",
+  "@manageAndPermissions": {
+    "description": "Label for extension management and permissions"
+  },
   "exportExtensionPackage": "Export Extension Package",
+  "@exportExtensionPackage": {
+    "description": "Label for exporting extension package"
+  },
   "expandTags": "Expand Tags",
+  "@expandTags": {
+    "description": "Label for expanding tags section"
+  },
   "noEventSelected": "No event selected",
+  "@noEventSelected": {
+    "description": "Message shown when no event is selected"
+  },
   "noMatchingEvents": "No matching events found",
+  "@noMatchingEvents": {
+    "description": "Message shown when no events match filters"
+  },
   "noEventsYet": "No events yet",
+  "@noEventsYet": {
+    "description": "Message shown when there are no events in the database"
+  },
   "createFirstEvent": "Click the + button to create your first event",
+  "@createFirstEvent": {
+    "description": "Instruction to create the first event"
+  },
   "tryAdjustingFilters": "Try adjusting your filters or search query",
+  "@tryAdjustingFilters": {
+    "description": "Suggestion when no matching events are found"
+  },
   "batchEditTags": "Batch Edit Tags",
+  "@batchEditTags": {
+    "description": "Label for batch editing tags"
+  },
   "batchEditTagsTitle": "Edit Tags for {count} items",
   "@batchEditTagsTitle": {
+    "description": "Title for batch tag editing dialog",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
+  "addTags": "Add Tags",
+  "@addTags": {
+    "description": "Label for adding tags"
+  },
+  "removeTags": "Remove Tags",
+  "@removeTags": {
+    "description": "Label for removing tags"
+  },
+  "tagsUpdated": "Tags updated for {count} items",
+  "@tagsUpdated": {
+    "description": "Snackbar message after batch tag update",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noTagsSelected": "No tags selected",
+  "@noTagsSelected": {
+    "description": "Message shown when no tags are selected in batch edit"
+  },
+  "apply": "Apply",
+  "@apply": {
+    "description": "Button label to apply changes"
+  },
   "help": "Help",
+  "@help": {
+    "description": "Label for help section"
+  },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Label for welcome section"
+  },
   "welcomeAndHelp": "Welcome & Help",
+  "@welcomeAndHelp": {
+    "description": "Title for welcome and help page"
+  },
   "helpTitle": "Help Center",
+  "@helpTitle": {
+    "description": "Title for help center"
+  },
   "helpMessage": "Learn how to use Essenmelia here. Manage your events, steps, and extensions.",
+  "@helpMessage": {
+    "description": "Description for help center"
+  },
   "backToWelcome": "Back to Welcome",
+  "@backToWelcome": {
+    "description": "Button label to go back to welcome screen"
+  },
   "switchToHelp": "View Help",
+  "@switchToHelp": {
+    "description": "Button label to switch to help view"
+  },
   "getStarted": "Get Started",
+  "@getStarted": {
+    "description": "Button label to get started"
+  },
   "font": "Font",
+  "@font": {
+    "description": "Label for font settings"
+  },
   "systemFont": "System",
+  "@systemFont": {
+    "description": "Label for system font option"
+  },
   "builtInFont": "Built-in",
+  "@builtInFont": {
+    "description": "Label for built-in font option"
+  },
   "dataMaintenance": "Data Maintenance",
+  "@dataMaintenance": {
+    "description": "Title for data maintenance settings"
+  },
   "dangerZone": "Danger Zone",
-  "formatApp": "Format Application",
-  "formatAppWarning": "This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is IRREVERSIBLE!",
-  "formatAppConfirm": "TYPE 'DELETE' TO CONFIRM",
+  "@dangerZone": {
+    "description": "Title for danger zone settings"
+  },
+  "formatApp": "Format App",
+  "@formatApp": {
+    "description": "Label for formatting app"
+  },
+  "formatAppWarning": "This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is irreversible!",
+  "@formatAppWarning": {
+    "description": "Warning message for formatting app"
+  },
+  "formatAppConfirm": "Type 'DELETE' to confirm",
+  "@formatAppConfirm": {
+    "description": "Instruction for app format confirmation"
+  },
   "formatAppPlaceholder": "Type DELETE here",
+  "@formatAppPlaceholder": {
+    "description": "Placeholder for app format confirmation input"
+  },
   "currentDbActions": "Current Database Actions",
+  "@currentDbActions": {
+    "description": "Title for current database actions section"
+  },
+  "extensionAllSystemPermissions": "All System Permissions",
+  "@extensionAllSystemPermissions": {
+    "description": "Label for all system permissions"
+  },
+  "extensionConfirmChoice": "Confirm Choice",
+  "@extensionConfirmChoice": {
+    "description": "Label for confirming choice"
+  },
+  "lastSync": "Last Sync: {time}",
+  "@lastSync": {
+    "description": "Label for last sync time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionRuntimeSection": "Runtime & Security",
+  "@extensionRuntimeSection": {
+    "description": "Title for extension runtime section"
+  },
+  "extensionEnable": "Enable Extension",
+  "@extensionEnable": {
+    "description": "Label for enabling extension"
+  },
+  "extensionRunning": "Running",
+  "@extensionRunning": {
+    "description": "Label for running extension status"
+  },
+  "extensionStopped": "Stopped",
+  "@extensionStopped": {
+    "description": "Label for stopped extension status"
+  },
+  "extensionSandboxIsolation": "Sandbox Isolation",
+  "@extensionSandboxIsolation": {
+    "description": "Label for sandbox isolation settings"
+  },
+  "extensionIsolatedSandbox": "Isolated Sandbox",
+  "@extensionIsolatedSandbox": {
+    "description": "Label for isolated sandbox mode"
+  },
+  "extensionSharedSandbox": "Shared Sandbox: {id}",
+  "@extensionSharedSandbox": {
+    "description": "Label for shared sandbox mode",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionSandboxGroup": "Sandbox Group",
+  "@extensionSandboxGroup": {
+    "description": "Label for sandbox group setting"
+  },
+  "extensionSandboxDesc": "Sandbox group determines data isolation. Enter the same ID to share storage.",
+  "@extensionSandboxDesc": {
+    "description": "Description for sandbox group setting"
+  },
+  "extensionSandboxId": "Sandbox ID",
+  "@extensionSandboxId": {
+    "description": "Label for sandbox ID input"
+  },
+  "extensionSandboxDefaultHint": "Defaults to extension ID",
+  "@extensionSandboxDefaultHint": {
+    "description": "Hint text for default sandbox ID"
+  },
+  "extensionSandboxTip": "Tip: Active extensions often share the same group",
+  "@extensionSandboxTip": {
+    "description": "Tip message for sandbox group"
+  },
+  "extensionRequestedPermissions": "Requested Permissions",
+  "@extensionRequestedPermissions": {
+    "description": "Label for requested permissions section"
+  },
+  "extensionNoPermissions": "No permissions requested",
+  "@extensionNoPermissions": {
+    "description": "Message when no permissions are requested"
+  },
+  "extensionUpdate": "Update Extension",
+  "@extensionUpdate": {
+    "description": "Label for updating extension"
+  },
+  "extensionInstall": "Install Extension",
+  "@extensionInstall": {
+    "description": "Label for installing extension"
+  },
+  "extensionInformation": "Extension Information",
+  "@extensionInformation": {
+    "description": "Title for extension information section"
+  },
+  "extensionVersion": "Version",
+  "@extensionVersion": {
+    "description": "Label for extension version"
+  },
+  "extensionNotInstalled": "Not Installed",
+  "@extensionNotInstalled": {
+    "description": "Label for not installed status"
+  },
+  "extensionCodeSize": "Code Size",
+  "@extensionCodeSize": {
+    "description": "Label for extension code size"
+  },
+  "extensionStorageSize": "Storage Size",
+  "@extensionStorageSize": {
+    "description": "Label for extension storage size"
+  },
+  "extensionFullTrust": "Full Trust",
+  "@extensionFullTrust": {
+    "description": "Label for full trust mode"
+  },
+  "extensionFullTrustDesc": "Direct access to system APIs",
+  "@extensionFullTrustDesc": {
+    "description": "Description for full trust mode"
+  },
+  "extensionPermissionsStatement": "Permissions Statement",
+  "@extensionPermissionsStatement": {
+    "description": "Label for permissions statement"
+  },
+  "extensionNoChanges": "No Changes",
+  "@extensionNoChanges": {
+    "description": "Message when there are no changes"
+  },
+  "extensionNoPermissionsRequired": "No permissions required",
+  "@extensionNoPermissionsRequired": {
+    "description": "Message when no permissions are required"
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Label for update action"
+  },
+  "install": "Install",
+  "@install": {
+    "description": "Label for install action"
+  },
+  "databaseError": "Database error: {error}",
+  "@databaseError": {
+    "description": "Label for database error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "filter": "Filter",
-  "status": "Status"
+  "@filter": {
+    "description": "Label for filter action"
+  },
+  "status": "Status",
+  "@status": {
+    "description": "Label for status filter"
+  },
+  "extensionRequested": "Extension Requested",
+  "@extensionRequested": {
+    "description": "Label for extension request"
+  },
+  "onlyShowReminders": "Only Show Reminders",
+  "@onlyShowReminders": {
+    "description": "Label for reminders-only filter"
+  },
+  "onlyShowRemindersSubtitle": "Filter out tasks without reminders",
+  "@onlyShowRemindersSubtitle": {
+    "description": "Subtitle for reminders-only filter"
+  },
+  "viewAll": "View All",
+  "@viewAll": {
+    "description": "Label for view all action"
+  },
+  "extensionLogs": "Extension Logs",
+  "@extensionLogs": {
+    "description": "Label for extension logs"
+  },
+  "welcomeToExtensions": "Welcome to Extensions",
+  "@welcomeToExtensions": {
+    "description": "Title for extension welcome screen"
+  },
+  "dontShowAgain": "Don't show again",
+  "@dontShowAgain": {
+    "description": "Label for 'don't show again' checkbox"
+  },
+  "longPressToManageExtension": "Long press to manage extension",
+  "@longPressToManageExtension": {
+    "description": "Tip for managing extensions"
+  },
+  "daily": "Daily",
+  "@daily": {
+    "description": "Label for daily recurrence"
+  },
+  "weekly": "Weekly",
+  "@weekly": {
+    "description": "Label for weekly recurrence"
+  },
+  "monthly": "Monthly",
+  "@monthly": {
+    "description": "Label for monthly recurrence"
+  },
+  "recurrenceDaily": " (Daily)",
+  "@recurrenceDaily": {
+    "description": "Suffix for daily recurrence"
+  },
+  "recurrenceWeekly": " (Weekly)",
+  "@recurrenceWeekly": {
+    "description": "Suffix for weekly recurrence"
+  },
+  "recurrenceMonthly": " (Monthly)",
+  "@recurrenceMonthly": {
+    "description": "Suffix for monthly recurrence"
+  },
+  "exploreEssenmelia": "Explore Essenmelia",
+  "@exploreEssenmelia": {
+    "description": "Title for explore section"
+  },
+  "helpAndDocs": "Help & Docs",
+  "@helpAndDocs": {
+    "description": "Label for help and documentation"
+  },
+  "welcomeSubtitle1": "Your Schedule & Inspiration Manager",
+  "@welcomeSubtitle1": {
+    "description": "Subtitle for first welcome step"
+  },
+  "welcomeContent1": "Organize every moment of your life. From daily tasks to big plans, everything finds its place here.",
+  "@welcomeContent1": {
+    "description": "Content for first welcome step"
+  },
+  "privacyFirst": "Privacy First",
+  "@privacyFirst": {
+    "description": "Title for second welcome step"
+  },
+  "welcomeSubtitle2": "Secure, Transparent, Controllable",
+  "@welcomeSubtitle2": {
+    "description": "Subtitle for second welcome step"
+  },
+  "welcomeContent2": "Data stays local. Untrusted plugins only access fake data, keeping your real info safe.",
+  "@welcomeContent2": {
+    "description": "Content for second welcome step"
+  },
+  "highlyCustomizable": "Highly Customizable",
+  "@highlyCustomizable": {
+    "description": "Title for third welcome step"
+  },
+  "welcomeSubtitle3": "Infinite Possibilities",
+  "@welcomeSubtitle3": {
+    "description": "Subtitle for third welcome step"
+  },
+  "welcomeContent3": "Expand functionality with extensions. Customize your management tool with a declarative UI engine.",
+  "@welcomeContent3": {
+    "description": "Content for third welcome step"
+  },
+  "startExperience": "Start Experience",
+  "@startExperience": {
+    "description": "Label for start experience button"
+  },
+  "nextStep": "Next Step",
+  "@nextStep": {
+    "description": "Label for next step button"
+  },
+  "archDesign": "Arch Design",
+  "@archDesign": {
+    "description": "Title for architecture design doc"
+  },
+  "archDesignDesc": "Layers, Privacy Sandbox & Permissions",
+  "@archDesignDesc": {
+    "description": "Description for architecture design doc"
+  },
+  "apiGuide": "API Guide",
+  "@apiGuide": {
+    "description": "Title for API guide doc"
+  },
+  "apiGuideDesc": "Core Methods, Notifications & Integration",
+  "@apiGuideDesc": {
+    "description": "Description for API guide doc"
+  },
+  "extDevSpecs": "Ext Dev Specs",
+  "@extDevSpecs": {
+    "description": "Title for extension development specs doc"
+  },
+  "extDevSpecsDesc": "Metadata, UI Components & Logic Engine",
+  "@extDevSpecsDesc": {
+    "description": "Description for extension development specs doc"
+  },
+  "selectDocToRead": "Select a document to read",
+  "@selectDocToRead": {
+    "description": "Hint text for selecting a document"
+  },
+  "loadFailed": "Load failed: {error}",
+  "@loadFailed": {
+    "description": "Label for load failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "advancedSettingsAndReminders": "Advanced Settings & Reminders",
+  "@advancedSettingsAndReminders": {
+    "description": "Title for advanced settings and reminders section"
+  },
+  "advancedSettingsSubtitle": "Display mode, suffix, and scheduled reminders",
+  "@advancedSettingsSubtitle": {
+    "description": "Subtitle for advanced settings section"
+  },
+  "advancedSettings": "Advanced Settings",
+  "@advancedSettings": {
+    "description": "Title for advanced settings dialog"
+  },
+  "finishSettings": "Finish Settings",
+  "@finishSettings": {
+    "description": "Label for finishing settings"
+  },
+  "displaySettings": "Display Settings",
+  "@displaySettings": {
+    "description": "Title for display settings section"
+  },
+  "stepMarkerMode": "Step Marker Mode",
+  "@stepMarkerMode": {
+    "description": "Label for step marker display mode"
+  },
+  "markerNumber": "Number (1, 2, 3)",
+  "@markerNumber": {
+    "description": "Label for numeric step marker"
+  },
+  "markerFirstChar": "First Char (A, B, C)",
+  "@markerFirstChar": {
+    "description": "Label for character-based step marker"
+  },
+  "customCountSuffix": "Custom Count Suffix",
+  "@customCountSuffix": {
+    "description": "Label for custom quantity suffix"
+  },
+  "suffixHint": "e.g., tasks, steps, items",
+  "@suffixHint": {
+    "description": "Hint text for quantity suffix input"
+  },
+  "suffixDefaultTip": "Leave empty to use default suffix",
+  "@suffixDefaultTip": {
+    "description": "Tip for default suffix"
+  },
+  "scheduledReminders": "Scheduled Reminders",
+  "@scheduledReminders": {
+    "description": "Title for scheduled reminders section"
+  },
+  "noReminderSet": "No reminder set",
+  "@noReminderSet": {
+    "description": "Label when no reminder is configured"
+  },
+  "calendarReminderDesc": "Registers to system calendar, no background task needed",
+  "@calendarReminderDesc": {
+    "description": "Description for calendar-based reminders"
+  },
+  "notificationReminderDesc": "Sends a notification at the specified time",
+  "@notificationReminderDesc": {
+    "description": "Description for notification-based reminders"
+  },
+  "reminderScheme": "Reminder Scheme",
+  "@reminderScheme": {
+    "description": "Label for reminder scheme selection"
+  },
+  "inAppNotification": "In-app Notification",
+  "@inAppNotification": {
+    "description": "Label for in-app notification scheme"
+  },
+  "systemCalendar": "System Calendar",
+  "@systemCalendar": {
+    "description": "Label for system calendar scheme"
+  },
+  "repeatCycle": "Repeat Cycle",
+  "@repeatCycle": {
+    "description": "Label for reminder repeat cycle"
+  },
+  "noRepeat": "No Repeat",
+  "@noRepeat": {
+    "description": "Label for no-repeat option"
+  },
+  "reminderTimeError": "Reminder time cannot be in the past",
+  "@reminderTimeError": {
+    "description": "Error message for invalid reminder time"
+  },
+  "smartAnalysis": "Smart Analysis Selection",
+  "@smartAnalysis": {
+    "description": "Title for smart analysis selection"
+  },
+  "dataMaintenance": "Data Maintenance",
+  "@dataMaintenance": {
+    "description": "Label for data maintenance section"
+  },
+  "dangerZone": "Danger Zone",
+  "@dangerZone": {
+    "description": "Label for danger zone section"
+  },
+  "formatApp": "Format Application",
+  "@formatApp": {
+    "description": "Label for formatting application (clearing all data)"
+  },
+  "formatAppWarning": "This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is IRREVERSIBLE!",
+  "@formatAppWarning": {
+    "description": "Warning message for formatting the application"
+  },
+  "formatAppConfirm": "TYPE 'DELETE' TO CONFIRM",
+  "@formatAppConfirm": {
+    "description": "Instruction for confirmation word"
+  },
+  "formatAppPlaceholder": "Type DELETE here",
+  "@formatAppPlaceholder": {
+    "description": "Hint text for confirmation word input"
+  },
+  "currentDbActions": "Current Database Actions",
+  "@currentDbActions": {
+    "description": "Label for current database actions section"
+  },
+  "extensionAllSystemPermissions": "All System Permissions",
+  "@extensionAllSystemPermissions": {
+    "description": "Label for granting all system permissions to an extension"
+  },
+  "extensionConfirmChoice": "Confirm Choice",
+  "@extensionConfirmChoice": {
+    "description": "Button label to confirm permission choice"
+  },
+  "extensionRuntimeSection": "Runtime & Security",
+  "@extensionRuntimeSection": {
+    "description": "Label for extension runtime and security section"
+  },
+  "extensionEnable": "Enable Extension",
+  "@extensionEnable": {
+    "description": "Label for enabling an extension"
+  },
+  "extensionRunning": "Running",
+  "@extensionRunning": {
+    "description": "Status label for a running extension"
+  },
+  "extensionStopped": "Stopped",
+  "@extensionStopped": {
+    "description": "Status label for a stopped extension"
+  },
+  "extensionSandboxIsolation": "Sandbox Isolation",
+  "@extensionSandboxIsolation": {
+    "description": "Label for extension sandbox isolation settings"
+  },
+  "extensionIsolatedSandbox": "Isolated Sandbox",
+  "@extensionIsolatedSandbox": {
+    "description": "Label for isolated sandbox mode"
+  },
+  "extensionSharedSandbox": "Shared Sandbox: {id}",
+  "@extensionSharedSandbox": {
+    "description": "Label for shared sandbox mode",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionSandboxGroup": "Sandbox Group",
+  "@extensionSandboxGroup": {
+    "description": "Label for extension sandbox group"
+  },
+  "extensionSandboxDesc": "Sandbox groups determine data isolation. Enter the same ID to share storage.",
+  "@extensionSandboxDesc": {
+    "description": "Description for extension sandbox groups"
+  },
+  "extensionSandboxId": "Sandbox ID",
+  "@extensionSandboxId": {
+    "description": "Label for sandbox ID input"
+  },
+  "extensionSandboxDefaultHint": "Default to Extension ID",
+  "@extensionSandboxDefaultHint": {
+    "description": "Hint text for default sandbox ID"
+  },
+  "extensionSandboxTip": "Tip: Active extensions usually share the same group",
+  "@extensionSandboxTip": {
+    "description": "Tip for extension sandbox groups"
+  },
+  "extensionRequestedPermissions": "Requested Permissions",
+  "@extensionRequestedPermissions": {
+    "description": "Label for requested permissions section"
+  },
+  "extensionNoPermissions": "No permissions requested",
+  "@extensionNoPermissions": {
+    "description": "Message shown when no permissions are requested"
+  },
+  "extensionUpdate": "Update Extension",
+  "@extensionUpdate": {
+    "description": "Button label to update an extension"
+  },
+  "extensionInstall": "Install Extension",
+  "@extensionInstall": {
+    "description": "Button label to install an extension"
+  },
+  "extensionInformation": "Information",
+  "@extensionInformation": {
+    "description": "Label for extension information section"
+  },
+  "extensionVersion": "Version",
+  "@extensionVersion": {
+    "description": "Label for extension version"
+  },
+  "extensionNotInstalled": "N/A",
+  "@extensionNotInstalled": {
+    "description": "Label for extension not installed status"
+  },
+  "extensionCodeSize": "Code",
+  "@extensionCodeSize": {
+    "description": "Label for extension code size"
+  },
+  "extensionStorageSize": "Storage",
+  "@extensionStorageSize": {
+    "description": "Label for extension storage size"
+  },
+  "extensionFullTrust": "Full Trust",
+  "@extensionFullTrust": {
+    "description": "Label for full trust mode"
+  },
+  "extensionFullTrustDesc": "Direct access to system APIs",
+  "@extensionFullTrustDesc": {
+    "description": "Description for full trust mode"
+  },
+  "extensionPermissionsStatement": "Permissions",
+  "@extensionPermissionsStatement": {
+    "description": "Label for extension permissions statement"
+  },
+  "extensionNoChanges": "No changes",
+  "@extensionNoChanges": {
+    "description": "Message shown when no changes are detected"
+  },
+  "extensionNoPermissionsRequired": "No permissions required",
+  "@extensionNoPermissionsRequired": {
+    "description": "Message shown when no permissions are required"
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Generic update button label"
+  },
+  "install": "Install",
+  "@install": {
+    "description": "Generic install button label"
+  },
+  "databaseError": "Database Error: {error}",
+  "@databaseError": {
+    "description": "Error message for database operations",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "filter": "Filter",
+  "@filter": {
+    "description": "Generic filter label"
+  },
+  "status": "Status",
+  "@status": {
+    "description": "Generic status label"
+  },
+  "extensionRequested": "Requested",
+  "@extensionRequested": {
+    "description": "Label for requested extensions"
+  },
+  "onlyShowReminders": "Only Show Reminders",
+  "@onlyShowReminders": {
+    "description": "Label for showing only events with reminders"
+  },
+  "onlyShowRemindersSubtitle": "Filter out tasks without reminders",
+  "@onlyShowRemindersSubtitle": {
+    "description": "Subtitle for showing only events with reminders"
+  },
+  "viewAll": "View All",
+  "@viewAll": {
+    "description": "Label for viewing all items"
+  },
+  "extensionLogs": "Extension Logs",
+  "@extensionLogs": {
+    "description": "Tooltip for extension logs button"
+  },
+  "welcomeToExtensions": "Welcome to Extensions",
+  "@welcomeToExtensions": {
+    "description": "Title for extension system guide"
+  },
+  "dontShowAgain": "Don't show again",
+  "@dontShowAgain": {
+    "description": "Tooltip for dismissing guide"
+  },
+  "longPressToManageExtension": "Long press to manage extension",
+  "@longPressToManageExtension": {
+    "description": "Instruction for extension management"
+  },
+  "daily": "Daily",
+  "@daily": {
+    "description": "Recurrence option: Daily"
+  },
+  "weekly": "Weekly",
+  "@weekly": {
+    "description": "Recurrence option: Weekly"
+  },
+  "monthly": "Monthly",
+  "@monthly": {
+    "description": "Recurrence option: Monthly"
+  },
+  "recurrenceDaily": " (Daily)",
+  "@recurrenceDaily": {
+    "description": "Label for daily recurrence"
+  },
+  "recurrenceWeekly": " (Weekly)",
+  "@recurrenceWeekly": {
+    "description": "Label for weekly recurrence"
+  },
+  "recurrenceMonthly": " (Monthly)",
+  "@recurrenceMonthly": {
+    "description": "Label for monthly recurrence"
+  },
+  "exploreEssenmelia": "Explore Essenmelia",
+  "@exploreEssenmelia": {
+    "description": "Title for welcome screen exploration"
+  },
+  "helpAndDocs": "Help & Docs",
+  "@helpAndDocs": {
+    "description": "Title for help and documentation"
+  },
+  "welcomeSubtitle1": "Your personal schedule & inspiration manager",
+  "@welcomeSubtitle1": {
+    "description": "Subtitle for the first welcome slide"
+  },
+  "welcomeContent1": "Efficiently organize every brilliant moment in your life. Whether it's trivial daily tasks or grand plans, they all find a home here.",
+  "@welcomeContent1": {
+    "description": "Content for the first welcome slide"
+  },
+  "privacyFirst": "Privacy First",
+  "@privacyFirst": {
+    "description": "Title for privacy slide"
+  },
+  "welcomeSubtitle2": "Secure, Transparent, Controllable",
+  "@welcomeSubtitle2": {
+    "description": "Subtitle for privacy slide"
+  },
+  "welcomeContent2": "All data is stored locally. Untrusted plugins can only access forged data generated by the system, ensuring your real information never leaks.",
+  "@welcomeContent2": {
+    "description": "Content for privacy slide"
+  },
+  "highlyCustomizable": "Highly Customizable",
+  "@highlyCustomizable": {
+    "description": "Title for customization slide"
+  },
+  "welcomeSubtitle3": "Follow your heart, infinite possibilities",
+  "@welcomeSubtitle3": {
+    "description": "Subtitle for customization slide"
+  },
+  "welcomeContent3": "With a powerful plugin system, you can easily extend app functionality. Use the declarative UI engine to customize your own exclusive management tool.",
+  "@welcomeContent3": {
+    "description": "Content for customization slide"
+  },
+  "startExperience": "Start Experience",
+  "@startExperience": {
+    "description": "Button label to end welcome tour"
+  },
+  "nextStep": "Next Step",
+  "@nextStep": {
+    "description": "Button label for next step in tour"
+  },
+  "archDesign": "Architecture Design",
+  "@archDesign": {
+    "description": "Title for architecture design doc"
+  },
+  "archDesignDesc": "System layering, privacy black box & permission model",
+  "@archDesignDesc": {
+    "description": "Description for architecture design doc"
+  },
+  "apiGuide": "API Usage Guide",
+  "@apiGuide": {
+    "description": "Title for API guide doc"
+  },
+  "apiGuideDesc": "Core methods, notification schemes & external integration",
+  "@apiGuideDesc": {
+    "description": "Description for API guide doc"
+  },
+  "extDevSpecs": "Extension Development Specs",
+  "@extDevSpecs": {
+    "description": "Title for extension development doc"
+  },
+  "extDevSpecsDesc": "Metadata, UI component library & logic engine",
+  "@extDevSpecsDesc": {
+    "description": "Description for extension development doc"
+  },
+  "selectDocToRead": "Please select a document to read",
+  "@selectDocToRead": {
+    "description": "Placeholder when no doc is selected"
+  },
+  "loadFailed": "Load failed: {error}",
+  "@loadFailed": {
+    "description": "Error message when content fails to load",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "advancedSettingsAndReminders": "Advanced Settings & Reminders",
+  "@advancedSettingsAndReminders": {
+    "description": "Title for advanced settings section"
+  },
+  "advancedSettingsSubtitle": "Display mode, count suffix, scheduled reminders",
+  "@advancedSettingsSubtitle": {
+    "description": "Subtitle for advanced settings section"
+  },
+  "advancedSettings": "Advanced Settings",
+  "@advancedSettings": {
+    "description": "Label for advanced settings"
+  },
+  "finishSettings": "Finish Settings",
+  "@finishSettings": {
+    "description": "Button label to finish settings"
+  },
+  "displaySettings": "Display Settings",
+  "@displaySettings": {
+    "description": "Title for display settings"
+  },
+  "stepMarkerMode": "Step Marker Display Mode",
+  "@stepMarkerMode": {
+    "description": "Label for step marker mode setting"
+  },
+  "markerNumber": "Number (1, 2, 3)",
+  "@markerNumber": {
+    "description": "Option for numeric step markers"
+  },
+  "markerFirstChar": "First Char (A, B, C)",
+  "@markerFirstChar": {
+    "description": "Option for first character step markers"
+  },
+  "customCountSuffix": "Custom Count Suffix",
+  "@customCountSuffix": {
+    "description": "Label for custom count suffix setting"
+  },
+  "suffixHint": "e.g., tasks, steps, items",
+  "@suffixHint": {
+    "description": "Hint text for count suffix input"
+  },
+  "suffixDefaultTip": "Leave empty to use default suffix",
+  "@suffixDefaultTip": {
+    "description": "Tip for count suffix setting"
+  },
+  "scheduledReminders": "Scheduled Reminders",
+  "@scheduledReminders": {
+    "description": "Title for scheduled reminders section"
+  },
+  "noReminderSet": "No reminder set",
+  "@noReminderSet": {
+    "description": "Label when no reminder is configured"
+  },
+  "calendarReminderDesc": "Will register to system calendar, no background running required",
+  "@calendarReminderDesc": {
+    "description": "Description for system calendar reminder"
+  },
+  "notificationReminderDesc": "Will send notification at specified time to remind you",
+  "@notificationReminderDesc": {
+    "description": "Description for in-app notification reminder"
+  },
+  "reminderScheme": "Reminder Scheme",
+  "@reminderScheme": {
+    "description": "Label for reminder scheme setting"
+  },
+  "inAppNotification": "In-app Notification",
+  "@inAppNotification": {
+    "description": "Option for in-app notification"
+  },
+  "systemCalendar": "System Calendar",
+  "@systemCalendar": {
+    "description": "Option for system calendar reminder"
+  },
+  "repeatCycle": "Repeat Cycle",
+  "@repeatCycle": {
+    "description": "Label for repeat cycle setting"
+  },
+  "noRepeat": "No Repeat",
+  "@noRepeat": {
+    "description": "Option for no repetition"
+  },
+  "reminderTimeError": "Reminder time cannot be earlier than current time",
+  "@reminderTimeError": {
+    "description": "Error message for invalid reminder time"
+  },
+  "smartAnalysis": "Smart Analysis Selection",
+  "@smartAnalysis": {
+    "description": "Title for smart image analysis dialog"
+  },
+  "brilliantMoments": "Brilliant Moments",
+  "@brilliantMoments": {
+    "description": "Section header for AI-cropped images"
+  },
+  "aiCrop": "AI Crop",
+  "@aiCrop": {
+    "description": "Label for AI cropping feature"
+  },
+  "ocrResults": "OCR Results",
+  "@ocrResults": {
+    "description": "Section header for OCR text results"
+  },
+  "ocrSelectionTip": "Tap to select: 1st tap for title, subsequent taps append to description",
+  "@ocrSelectionTip": {
+    "description": "Instruction for selecting OCR text"
+  },
+  "resetOcrSelection": "Reset Text Selection",
+  "@resetOcrSelection": {
+    "description": "Button label to reset OCR selection"
+  },
+  "appPreview": "App Preview",
+  "@appPreview": {
+    "description": "Section header for application preview"
+  },
+  "confirmApply": "Confirm Apply",
+  "@confirmApply": {
+    "description": "Button label to confirm and apply AI results"
+  },
+  "analyzingContent": "Analyzing content...",
+  "@analyzingContent": {
+    "description": "Loading message during image analysis"
+  },
+  "smartAnalysisTooltip": "Smartly analyze content",
+  "@smartAnalysisTooltip": {
+    "description": "Tooltip for smart analysis button"
+  },
+  "autoFilledByAi": "Auto-filled by AI Assistant",
+  "@autoFilledByAi": {
+    "description": "Message indicating AI auto-fill"
+  },
+  "unsupportedFileFormat": "Unsupported file format",
+  "@unsupportedFileFormat": {
+    "description": "Error message for invalid file types"
+  },
+  "noImageInClipboard": "No image or valid link found in clipboard",
+  "@noImageInClipboard": {
+    "description": "Error message for empty or invalid clipboard"
+  },
+  "failedToGetImageFromLink": "Failed to get image from link: {error}",
+  "@failedToGetImageFromLink": {
+    "description": "Error message when link download fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pickFromGallery": "Pick from Gallery",
+  "@pickFromGallery": {
+    "description": "Option to pick image from gallery"
+  },
+  "pasteFromClipboard": "Paste from Clipboard",
+  "@pasteFromClipboard": {
+    "description": "Option to paste image from clipboard"
+  },
+  "clearImage": "Clear Image",
+  "@clearImage": {
+    "description": "Option to remove the selected image"
+  },
+  "addStoryImage": "Add an image with a story",
+  "@addStoryImage": {
+    "description": "Placeholder for image selection area"
+  },
+  "imageUploadTip": "Drag & drop, paste, or select an image",
+  "@imageUploadTip": {
+    "description": "Instruction for uploading an image"
+  },
+  "exportOriginalImage": "Export Original Image",
+  "@exportOriginalImage": {
+    "description": "Tooltip for exporting original image"
+  },
+  "exportImage": "Export Image",
+  "@exportImage": {
+    "description": "Label for image export action"
+  },
+  "processingImageFailed": "Processing image failed: {error}",
+  "@processingImageFailed": {
+    "description": "Error message when image analysis fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderAt": "Reminder: {time}",
+  "@reminderAt": {
+    "description": "Label showing reminder time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "quickEdit": "Quick Edit (Long press to slide)",
+  "@quickEdit": {
+    "description": "Label for quick edit feature"
+  },
+  "extensionConsole": "Extension Console",
+  "@extensionConsole": {
+    "description": "Title for the extension debug console"
+  },
+  "logs": "Logs",
+  "@logs": {
+    "description": "Label for logs tab"
+  },
+  "stateTree": "State Tree",
+  "@stateTree": {
+    "description": "Label for state tree tab"
+  },
+  "restartEngine": "Restart Engine",
+  "@restartEngine": {
+    "description": "Tooltip for restarting the JS engine"
+  },
+  "noLogs": "No logs",
+  "@noLogs": {
+    "description": "Message shown when there are no logs"
+  },
+  "currentStateVariables": "Current State Variables (State):",
+  "@currentStateVariables": {
+    "description": "Header for state variables list"
+  },
+  "editState": "Edit State: {key}",
+  "@editState": {
+    "description": "Title for state editing dialog",
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "jsonFormatValue": "JSON Format Value",
+  "@jsonFormatValue": {
+    "description": "Label for JSON input field"
+  },
+  "jsonHint": "e.g., \"text\" or 123 or {\"a\": 1}",
+  "@jsonHint": {
+    "description": "Hint for JSON input field"
+  },
+  "invalidJson": "Invalid JSON: {error}",
+  "@invalidJson": {
+    "description": "Error message for invalid JSON input",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fullOriginalImage": "Full Original Image",
+  "@fullOriginalImage": {
+    "description": "Label for the full original image in picker"
+  },
+  "allSystemPermissions": "All System Permissions",
+  "@allSystemPermissions": {
+    "description": "Title for the dialog showing all system permissions"
+  },
+  "extensionError": "Extension runtime error",
+  "@extensionError": {
+    "description": "Error message when an extension fails to run"
+  },
+  "extensionNoUI": "This extension has no UI interface",
+  "@extensionNoUI": {
+    "description": "Message shown when an extension lacks a view definition"
+  },
+  "extensionButton": "Button",
+  "@extensionButton": {
+    "description": "Default label for a button in dynamic UI"
+  }
 }

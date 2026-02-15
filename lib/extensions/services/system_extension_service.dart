@@ -18,49 +18,63 @@ class SystemExtensionApiHandler {
       _httpGet,
       permission: ExtensionPermission.network,
       operation: '访问网络资源',
+      operationEn: 'Access Network Resources',
       category: '网络访问',
+      categoryEn: 'Network Access',
     );
     registry.register(
       'httpPost',
       _httpPost,
       permission: ExtensionPermission.network,
       operation: '发送网络数据',
+      operationEn: 'Send Network Data',
       category: '网络访问',
+      categoryEn: 'Network Access',
     );
     registry.register(
       'httpPut',
       _httpPut,
       permission: ExtensionPermission.network,
       operation: '更新网络数据',
+      operationEn: 'Update Network Data',
       category: '网络访问',
+      categoryEn: 'Network Access',
     );
     registry.register(
       'httpDelete',
       _httpDelete,
       permission: ExtensionPermission.network,
       operation: '删除网络资源',
+      operationEn: 'Delete Network Resources',
       category: '网络访问',
+      categoryEn: 'Network Access',
     );
     registry.register(
       'openUrl',
       _openUrl,
       permission: ExtensionPermission.network,
       operation: '在浏览器中打开链接',
+      operationEn: 'Open Link in Browser',
       category: '网络访问',
+      categoryEn: 'Network Access',
     );
     registry.register(
       'exportFile',
       _exportFile,
       permission: ExtensionPermission.fileSystem,
       operation: '导出文件并调起系统分享',
+      operationEn: 'Export File and Share',
       category: '文件操作',
+      categoryEn: 'File Operations',
     );
     registry.register(
       'pickFile',
       _pickFile,
       permission: ExtensionPermission.fileSystem,
       operation: '从您的设备选择并读取文件',
+      operationEn: 'Select and Read File from Device',
       category: '文件操作',
+      categoryEn: 'File Operations',
     );
     registry.register(
       'getSystemInfo',
@@ -215,7 +229,7 @@ class SystemExtensionApiHandler {
         ?.cast<String>();
 
     if (isUntrusted) {
-      // 返回模拟文件内容
+      // Return mock file content
       return 'id,title,content\n1,Mock Task,Description from sandbox';
     }
 

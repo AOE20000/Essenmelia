@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../main.dart';
 import '../../services/notification_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../l10n/l10n_provider.dart';
 import '../extension_api_registry.dart';
 import '../extension_manager.dart';
 import '../base_extension.dart';
@@ -127,22 +129,25 @@ class UIExtensionApiHandler {
     final payload = params['payload'] as String?;
 
     if (isUntrusted) {
-      // 受限模式下，我们将通知降级为 SnackBar，或者显示一个带 [模拟] 前缀的真实通知
-      // 这里选择显示 SnackBar 以保护用户不被垃圾通知骚扰
+      // In untrusted mode, we downgrade notifications to SnackBar, or show a real notification with a [Mock] prefix
+      // Here we choose SnackBar to protect users from spam notifications
       final context = navigatorKey.currentContext;
       if (context != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('[模拟通知] $title: $body')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('[Mock Notification] $title: $body')),
+        );
       }
       return;
     }
 
+    final l10n = _ref.read(l10nProvider);
     await NotificationService().showNotification(
       id: id,
       title: title,
       body: body,
       payload: payload,
+      channelName: l10n.systemNotification,
+      channelDescription: l10n.systemNotificationChannelDesc,
     );
   }
 
@@ -152,8 +157,9 @@ class UIExtensionApiHandler {
   }) async {
     final title = params['title'] as String;
     final message = params['message'] as String;
-    final confirmLabel = params['confirmLabel'] ?? '确定';
-    final cancelLabel = params['cancelLabel'] ?? '取消';
+    final l10n = _ref.read(l10nProvider);
+    final confirmLabel = params['confirmLabel'] ?? l10n.confirm;
+    final cancelLabel = params['cancelLabel'] ?? l10n.cancel;
 
     if (isUntrusted) {
       // 受限模式下可以返回假的选择，或者直接返回 true 欺骗扩展

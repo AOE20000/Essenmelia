@@ -15,18 +15,18 @@ class SettingsExtensionApiHandler {
       'getSetting',
       _getSetting,
       permission: ExtensionPermission.systemInfo,
-      operation: '读取扩展私有配置',
+      operation: 'Read Extension Private Settings',
       operationEn: 'Read Extension Private Settings',
-      category: '系统信息',
+      category: 'System Info',
       categoryEn: 'System Info',
     );
     registry.register(
       'saveSetting',
       _saveSetting,
       permission: ExtensionPermission.systemInfo,
-      operation: '保存扩展私有配置',
+      operation: 'Save Extension Private Settings',
       operationEn: 'Save Extension Private Settings',
-      category: '系统信息',
+      category: 'System Info',
       categoryEn: 'System Info',
     );
   }

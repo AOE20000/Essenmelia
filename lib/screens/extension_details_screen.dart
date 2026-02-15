@@ -30,7 +30,7 @@ class _ExtensionDetailsScreenState
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(l10n.manageAndPermissions),
+        title: Text(l10n.extensionDetails),
         centerTitle: true,
         scrolledUnderElevation: 0,
         backgroundColor: theme.colorScheme.surface,
@@ -94,7 +94,7 @@ class _ExtensionDetailsScreenState
         ),
         const SizedBox(height: 4),
         Text(
-          'v${metadata.version} • ${metadata.author}',
+          l10n.versionAuthorLabel(metadata.version, metadata.author),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
@@ -152,7 +152,7 @@ class _ExtensionDetailsScreenState
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            l10n.localeName == 'zh' ? '运行与安全' : 'Runtime & Security',
+            l10n.extensionRuntimeSection,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -173,13 +173,9 @@ class _ExtensionDetailsScreenState
               SwitchListTile(
                 value: isRunning,
                 onChanged: (val) => authNotifier.setRunning(metadata.id, val),
-                title: Text(
-                  l10n.localeName == 'zh' ? '启用扩展' : 'Enable Extension',
-                ),
+                title: Text(l10n.extensionEnable),
                 subtitle: Text(
-                  isRunning
-                      ? (l10n.localeName == 'zh' ? '正在运行' : 'Running')
-                      : (l10n.localeName == 'zh' ? '已停止' : 'Stopped'),
+                  isRunning ? l10n.extensionRunning : l10n.extensionStopped,
                 ),
                 secondary: Container(
                   padding: const EdgeInsets.all(8),
@@ -203,14 +199,8 @@ class _ExtensionDetailsScreenState
                 onChanged: isRunning
                     ? (val) => authNotifier.setUntrusted(metadata.id, val)
                     : null,
-                title: Text(
-                  l10n.localeName == 'zh' ? '受限访问' : 'Restricted Access',
-                ),
-                subtitle: Text(
-                  l10n.localeName == 'zh'
-                      ? '开启后每次访问敏感数据需授权'
-                      : 'Grant access for sensitive data each time',
-                ),
+                title: Text(l10n.extensionRestrictedAccess),
+                subtitle: Text(l10n.extensionRestrictedAccessDesc),
                 secondary: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -239,15 +229,11 @@ class _ExtensionDetailsScreenState
                   sandboxId,
                   authNotifier,
                 ),
-                title: Text(
-                  l10n.localeName == 'zh' ? '沙箱隔离' : 'Sandbox Isolation',
-                ),
+                title: Text(l10n.extensionSandboxIsolation),
                 subtitle: Text(
                   isShared
-                      ? (l10n.localeName == 'zh'
-                            ? '共用沙箱: $sandboxId'
-                            : 'Shared Sandbox: $sandboxId')
-                      : (l10n.localeName == 'zh' ? '独立沙箱' : 'Isolated Sandbox'),
+                      ? l10n.extensionSharedSandbox(sandboxId)
+                      : l10n.extensionIsolatedSandbox,
                 ),
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -283,7 +269,6 @@ class _ExtensionDetailsScreenState
     ExtensionAuthNotifier authNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final isEn = l10n.localeName != 'zh';
     final controller = TextEditingController(
       text: currentSandboxId == metadata.id ? '' : currentSandboxId,
     );
@@ -292,31 +277,27 @@ class _ExtensionDetailsScreenState
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.hub_rounded),
-        title: Text(isEn ? 'Sandbox Group' : '配置沙箱组'),
+        title: Text(l10n.extensionSandboxGroup),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isEn
-                  ? 'Sandbox groups determine data isolation. Enter the same ID to share storage.'
-                  : '沙箱组决定了扩展之间的数据隔离。输入相同的组 ID 以共享存储空间。',
+              l10n.extensionSandboxDesc,
               style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: isEn ? 'Sandbox ID' : '沙箱组 ID',
-                hintText: isEn ? 'Default to Extension ID' : '默认为扩展 ID',
+                labelText: l10n.extensionSandboxId,
+                hintText: l10n.extensionSandboxDefaultHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
                 prefixIcon: const Icon(Icons.tag_rounded),
-                helperText: isEn
-                    ? 'Tip: Active extensions usually share the same group'
-                    : '提示：激活类程序通常需要与主扩展处于同一沙箱组',
+                helperText: l10n.extensionSandboxTip,
               ),
             ),
           ],
@@ -324,14 +305,14 @@ class _ExtensionDetailsScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(isEn ? 'Cancel' : '取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               authNotifier.setSandboxId(metadata.id, controller.text.trim());
               Navigator.pop(context);
             },
-            child: Text(isEn ? 'Save' : '保存配置'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -354,7 +335,7 @@ class _ExtensionDetailsScreenState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${l10n.localeName == 'zh' ? '权限申请' : 'Requested Permissions'} (${permissions.length})',
+              '${l10n.extensionRequestedPermissions} (${permissions.length})',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -366,7 +347,7 @@ class _ExtensionDetailsScreenState
                 authState,
                 authNotifier,
               ),
-              child: Text(l10n.localeName == 'zh' ? '查看全部' : 'View All'),
+              child: Text(l10n.viewAll),
             ),
           ],
         ),
@@ -374,13 +355,7 @@ class _ExtensionDetailsScreenState
         if (permissions.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text(
-                l10n.localeName == 'zh'
-                    ? '此扩展未申请任何权限'
-                    : 'No permissions requested',
-              ),
-            ),
+            child: Center(child: Text(l10n.extensionNoPermissions)),
           )
         else
           Card(
@@ -406,16 +381,10 @@ class _ExtensionDetailsScreenState
                   onChanged: (val) =>
                       authNotifier.togglePermission(metadata.id, perm),
                   title: Text(
-                    perm.getLabel(context),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    perm.getLabel(l10n),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(
-                    perm.getDescription(context),
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  subtitle: Text(perm.getDescription(l10n)),
                   secondary: Icon(
                     isGranted
                         ? Icons.check_circle
@@ -466,7 +435,7 @@ class _ExtensionDetailsScreenState
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  l10n.localeName == 'zh' ? '所有系统权限' : 'All System Permissions',
+                  l10n.allSystemPermissions,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -502,7 +471,7 @@ class _ExtensionDetailsScreenState
                                 : theme.colorScheme.outline,
                           ),
                           const SizedBox(width: 12),
-                          Text(perm.getLabel(context)),
+                          Text(perm.getLabel(l10n)),
                           if (isRequested)
                             Container(
                               margin: const EdgeInsets.only(left: 8),
@@ -515,7 +484,7 @@ class _ExtensionDetailsScreenState
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                l10n.localeName == 'zh' ? '已申请' : 'Requested',
+                                l10n.extensionRequested,
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.onPrimaryContainer,
                                 ),
@@ -526,34 +495,29 @@ class _ExtensionDetailsScreenState
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(perm.getDescription(context)),
+                          Text(perm.getDescription(l10n)),
                           if (permApis.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              children: permApis.map((api) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: theme
-                                        .colorScheme
-                                        .surfaceContainerHighest
-                                        .withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    api.getOperation(l10n.localeName == 'en') ??
-                                        api.methodName,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      fontSize: 9,
+                            ...permApis.map(
+                              (api) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '• ',
+                                      style: TextStyle(color: Colors.grey),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
+                                    Expanded(
+                                      child: Text(
+                                        api.getOperation(l10n) ??
+                                            api.methodName,
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ],
@@ -593,7 +557,7 @@ class _ExtensionDetailsScreenState
             },
             icon: const Icon(Icons.launch_rounded),
             label: Text(
-              l10n.localeName == 'zh' ? '打开扩展界面' : 'Open Extension',
+              l10n.extensionOpen,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             style: FilledButton.styleFrom(
@@ -610,9 +574,7 @@ class _ExtensionDetailsScreenState
               child: OutlinedButton.icon(
                 onPressed: () => _showExportMenu(theme, metadata),
                 icon: const Icon(Icons.ios_share_rounded),
-                label: Text(
-                  l10n.localeName == 'zh' ? '导出与转换' : 'Export & Convert',
-                ),
+                label: Text(l10n.extensionExport),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -627,7 +589,7 @@ class _ExtensionDetailsScreenState
                 onPressed: () =>
                     _confirmUninstall(theme, metadata, authNotifier),
                 icon: const Icon(Icons.delete_sweep_rounded),
-                label: const Text('卸载'),
+                label: Text(l10n.extensionUninstall),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
                   side: BorderSide(
@@ -649,7 +611,6 @@ class _ExtensionDetailsScreenState
   void _showExportMenu(ThemeData theme, ExtensionMetadata metadata) {
     final manager = ref.read(extensionManagerProvider);
     final l10n = AppLocalizations.of(context)!;
-    final isZh = l10n.localeName == 'zh';
 
     showModalBottomSheet(
       context: context,
@@ -663,7 +624,7 @@ class _ExtensionDetailsScreenState
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                isZh ? '选择导出格式' : 'Choose Export Format',
+                l10n.extensionExport,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -672,10 +633,8 @@ class _ExtensionDetailsScreenState
               _buildExportOption(
                 theme,
                 icon: Icons.description_outlined,
-                title: isZh ? '标准 JSON 包' : 'Standard JSON Package',
-                subtitle: isZh
-                    ? '单文件，适合分发与分享'
-                    : 'Single file, best for sharing',
+                title: l10n.extensionExportJson,
+                subtitle: l10n.extensionExportJsonSubtitle,
                 onTap: () {
                   Navigator.pop(context);
                   manager.exportExtension(metadata.id);
@@ -685,8 +644,8 @@ class _ExtensionDetailsScreenState
               _buildExportOption(
                 theme,
                 icon: Icons.folder_zip_outlined,
-                title: isZh ? '扩展 ZIP 包' : 'Extension ZIP Package',
-                subtitle: isZh ? '完整仓库包，包含所有资源' : 'Complete repository archive',
+                title: l10n.extensionExportZip,
+                subtitle: l10n.extensionExportZipSubtitle,
                 onTap: () {
                   Navigator.pop(context);
                   manager.exportExtensionAsZip(metadata.id);
@@ -762,16 +721,18 @@ class _ExtensionDetailsScreenState
     ExtensionMetadata metadata,
     ExtensionAuthNotifier authNotifier,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-        title: const Text('卸载确认'),
-        content: Text('确定要卸载扩展 "${metadata.name}" 吗？此操作将删除其所有关联数据且不可撤销。'),
+        title: Text(l10n.extensionUninstallConfirm),
+        content: Text(l10n.extensionUninstallMessage(metadata.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
@@ -779,7 +740,7 @@ class _ExtensionDetailsScreenState
               backgroundColor: theme.colorScheme.error,
               foregroundColor: theme.colorScheme.onError,
             ),
-            child: const Text('确认卸载'),
+            child: Text(l10n.extensionUninstall),
           ),
         ],
       ),

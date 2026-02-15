@@ -1,0 +1,914 @@
+{
+  "@@locale": "en",
+  "appTitle": "Essenmelia",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "searchPlaceholder": "Search events...",
+  "@searchPlaceholder": {
+  "select": "Select",
+  "@select": {
+  "cancel": "Cancel",
+  "@cancel": {
+  "newTag": "New Tag",
+  "@newTag": {
+  "tagNameHint": "e.g., Work, Personal",
+  "@tagNameHint": {
+  "add": "Add",
+  "@add": {
+  "renameTag": "Rename Tag",
+  "@renameTag": {
+  "save": "Save",
+  "@save": {
+  "delete": "Delete",
+  "@delete": {
+  "confirm": "Confirm",
+  "@confirm": {
+  "edit": "Edit",
+  "@edit": {
+  "create": "Create",
+  "@create": {
+  "createRecord": "Create Record",
+  "@createRecord": {
+  "settings": "Settings",
+  "@settings": {
+  "manageTags": "Manage Tags",
+  "@manageTags": {
+  "databaseManager": "Database Manager",
+  "@databaseManager": {
+  "importExport": "Import / Export",
+  "@importExport": {
+  "appearance": "Appearance",
+  "@appearance": {
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+  "light": "Light",
+  "@light": {
+  "dark": "Dark",
+  "@dark": {
+  "useSystemTheme": "Use System Theme",
+  "@useSystemTheme": {
+  "language": "Language",
+  "@language": {
+  "english": "English",
+  "@english": {
+  "chinese": "Chinese",
+  "@chinese": {
+  "systemLanguage": "System",
+  "@systemLanguage": {
+  "cardDensity": "Card Density",
+  "@cardDensity": {
+  "compact": "Compact",
+  "@compact": {
+  "comfortable": "Comfortable",
+  "@comfortable": {
+  "collapseImages": "Collapse Images",
+  "@collapseImages": {
+  "activeDatabase": "Active Database",
+  "@activeDatabase": {
+  "availableDatabases": "Available Databases",
+  "@availableDatabases": {
+  "createNewDatabase": "Create New Database",
+  "@createNewDatabase": {
+  "enterDatabaseName": "Enter database name",
+  "@enterDatabaseName": {
+  "switchDbConfirmation": "Switch Database",
+  "@switchDbConfirmation": {
+  "switchDbMessage": "Are you sure you want to switch to database \"{name}\"?",
+  "@switchDbMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDbConfirmation": "Delete Database",
+  "@deleteDbConfirmation": {
+  "deleteDbMessage": "Are you sure you want to delete database \"{name}\"? This action cannot be undone.",
+  "@deleteDbMessage": {
+  "dbCreated": "Database created",
+  "@dbCreated": {
+  "dbDeleted": "Database deleted",
+  "@dbDeleted": {
+  "dbSwitched": "Switched to database: {name}",
+  "@dbSwitched": {
+  "allTags": "All Tags",
+  "@allTags": {
+  "noTags": "No tags available",
+  "@noTags": {
+  "tagName": "Tag Name",
+  "@tagName": {
+  "tagColor": "Tag Color",
+  "@tagColor": {
+  "deleteTagMessage": "Delete this tag? It will be removed from all events.",
+  "@deleteTagMessage": {
+  "importData": "Import Data",
+  "@importData": {
+  "exportData": "Export Data",
+  "@exportData": {
+  "exportSuccess": "Export successful",
+  "@exportSuccess": {
+  "importSuccess": "Import successful",
+  "@importSuccess": {
+  "importError": "Import failed",
+  "@importError": {
+  "sortNewest": "Newest First",
+  "@sortNewest": {
+  "sortTime": "Time",
+  "@sortTime": {
+  "sortOldest": "Oldest First",
+  "@sortOldest": {
+  "sortTitleAZ": "Title (A-Z)",
+  "@sortTitleAZ": {
+  "sortTitle": "Title",
+  "@sortTitle": {
+  "sortTitleZA": "Title (Z-A)",
+  "@sortTitleZA": {
+  "sortProgressHigh": "Progress (High-Low)",
+  "@sortProgressHigh": {
+  "sortProgress": "Progress",
+  "@sortProgress": {
+  "sortProgressLow": "Progress (Low-High)",
+  "@sortProgressLow": {
+  "sortStepCountHigh": "Steps (More-Less)",
+  "@sortStepCountHigh": {
+  "sortSteps": "Steps",
+  "@sortSteps": {
+  "sortStepCountLow": "Steps (Less-More)",
+  "@sortStepCountLow": {
+  "sortTagCountHigh": "Tags (More-Less)",
+  "@sortTagCountHigh": {
+  "sortTags": "Tags",
+  "@sortTags": {
+  "sortTagCountLow": "Tags (Less-More)",
+  "@sortTagCountLow": {
+  "sortLastUpdated": "Recently Updated",
+  "@sortLastUpdated": {
+  "sortUpdated": "Updated",
+  "@sortUpdated": {
+  "sortLastUpdatedOldest": "Least Recently Updated",
+  "@sortLastUpdatedOldest": {
+  "statusAll": "All",
+  "@statusAll": {
+  "statusNotStarted": "Not Started",
+  "@statusNotStarted": {
+  "statusInProgress": "In Progress",
+  "@statusInProgress": {
+  "statusCompleted": "Completed",
+  "@statusCompleted": {
+  "selected": "Selected",
+  "@selected": {
+  "deleteSelectedConfirmation": "Delete Selected?",
+  "@deleteSelectedConfirmation": {
+  "deleteSelectedMessage": "Delete {count} items?",
+  "@deleteSelectedMessage": {
+      "count": {
+  "editEvent": "Edit Event",
+  "@editEvent": {
+  "newEvent": "New Event",
+  "@newEvent": {
+  "title": "Title",
+  "@title": {
+  "@description": {
+  "imageUrl": "Image URL",
+  "@imageUrl": {
+  "imageUrlPlaceholder": "http://... or data:image...",
+  "@imageUrlPlaceholder": {
+  "pickImage": "Pick Image",
+  "@pickImage": {
+  "saveChanges": "Save Changes",
+  "@saveChanges": {
+  "createEvent": "Create Event",
+  "@createEvent": {
+  "noTagsYet": "No tags yet",
+  "@noTagsYet": {
+  "tagsSelected": "{count} tags selected",
+  "@tagsSelected": {
+  "clearAllTags": "Clear Selection",
+  "@clearAllTags": {
+  "deleteTagConfirmation": "Delete Tag?",
+  "@deleteTagConfirmation": {
+  "deleteTagWarning": "This will remove \"{tag}\" from all events.",
+  "@deleteTagWarning": {
+      "tag": {
+  "eventNotFound": "Event not found",
+  "@eventNotFound": {
+  "eventDetails": "Event Details",
+  "@eventDetails": {
+  "createdOn": "Created on {date}",
+  "@createdOn": {
+      "date": {
+  "steps": "Steps",
+  "@steps": {
+  "manageSteps": "Manage Steps",
+  "@manageSteps": {
+  "noStepsYet": "No steps yet.",
+  "@noStepsYet": {
+  "addStep": "Add Step",
+  "@addStep": {
+  "addNewStepPlaceholder": "Add new step...",
+  "@addNewStepPlaceholder": {
+  "addedToSteps": "Added to steps",
+  "@addedToSteps": {
+  "addedStepsCount": "Added {count} steps",
+  "@addedStepsCount": {
+  "addAllToSteps": "Add all to steps",
+  "@addAllToSteps": {
+  "saveCurrentStepsAsSet": "Save current steps as a set",
+  "@saveCurrentStepsAsSet": {
+  "newStepPlaceholder": "New step...",
+  "@newStepPlaceholder": {
+  "editSteps": "Edit Steps",
+  "@editSteps": {
+  "extensions": "Extensions",
+  "@extensions": {
+  "extensionDetails": "Extension Details",
+  "@extensionDetails": {
+  "extensionOpen": "Open Extension",
+  "@extensionOpen": {
+  "extensionLinkSubtitle": "Supports URL or GitHub links",
+  "@extensionLinkSubtitle": {
+  "installFromClipboard": "Install from Clipboard",
+  "@installFromClipboard": {
+  "installFromClipboardSubtitle": "Read JSON or URL from clipboard",
+  "@installFromClipboardSubtitle": {
+  "install": "Install",
+  "@install": {
+  "extensionUninstalled": "{name} uninstalled",
+  "@extensionUninstalled": {
+  "dbNameHint": "e.g. Project-X, 2023-Archive",
+  "@dbNameHint": {
+  "invalidDbName": "Invalid name. Use letters, numbers, -, _",
+  "@invalidDbName": {
+  "defaultDbName": "Main (Default)",
+  "@defaultDbName": {
+  "currentlyActive": "Currently active",
+  "@currentlyActive": {
+  "inactive": "Inactive",
+  "@inactive": {
+  "switchDb": "Switch",
+  "@switchDb": {
+  "switchedToDb": "Switched to {name}",
+  "@switchedToDb": {
+  "deleteDbTitle": "Delete \"{name}\"?",
+  "@deleteDbTitle": {
+  "deleteDbWarning": "This action cannot be undone. All data in this database will be lost.",
+  "@deleteDbWarning": {
+  "saveTemplateSet": "Save Template Set",
+  "@saveTemplateSet": {
+  "templateName": "Template Name",
+  "@templateName": {
+  "templateSetSaved": "Template set saved",
+  "@templateSetSaved": {
+  "noEventsFound": "No events found",
+  "@noEventsFound": {
+  "sort": "Sort",
+  "@sort": {
+  "welcomeTitle": "Welcome to Essenmelia",
+  "@welcomeTitle": {
+  "welcomeMessage": "Manage your events, track steps, and organize your life with tags. Click the + button to get started.",
+  "@welcomeMessage": {
+  "selectedItemsCount": "{count} items selected",
+  "@selectedItemsCount": {
+  "batchArchive": "Batch Archive",
+  "@batchArchive": {
+  "batchAdd": "Batch Add",
+  "@batchAdd": {
+  "saveAsSet": "Save as Set",
+  "@saveAsSet": {
+  "movedToArchive": "Moved {count} items to archive",
+  "@movedToArchive": {
+  "noArchiveSteps": "No archived steps",
+  "@noArchiveSteps": {
+  "noStepSets": "No step sets",
+  "@noStepSets": {
+  "saveCurrentAsSetHint": "You can save current steps as a set for future reuse",
+  "@saveCurrentAsSetHint": {
+  "setName": "Set Name",
+  "@setName": {
+  "setSaved": "Set saved",
+  "@setSaved": {
+  "tags": "Tags",
+  "@tags": {
+  "noEventsWithTag": "No events with this tag",
+  "@noEventsWithTag": {
+  "allEvents": "All Events",
+  "@allEvents": {
+  "allSystemPermissions": "All System Permissions",
+  "@allSystemPermissions": {
+  "extensionConsole": "Extension Console",
+  "@extensionConsole": {
+  "logs": "Logs",
+  "@logs": {
+  "stateTree": "State Tree",
+  "@stateTree": {
+  "restartEngine": "Restart Engine",
+  "@restartEngine": {
+  "noLogs": "No logs",
+  "@noLogs": {
+  "currentStateVariables": "Current State Variables:",
+  "@currentStateVariables": {
+  "editState": "Edit State: {key}",
+  "@editState": {
+      "key": {
+  "jsonFormatValue": "JSON Formatted Value",
+  "@jsonFormatValue": {
+  "jsonHint": "e.g. \"text\" or 123 or '{'\"a\": 1'}'",
+  "@jsonHint": {
+  "invalidJson": "Invalid JSON: {error}",
+  "@invalidJson": {
+      "error": {
+  "tagsPlaceholder": "Type to search or create...",
+  "@tagsPlaceholder": {
+  "invalidInput": "Invalid input",
+  "@invalidInput": {
+  "importFailedDetailed": "Import failed: {error}",
+  "@importFailedDetailed": {
+  "resetFailedDetailed": "Reset failed: {error}",
+  "@resetFailedDetailed": {
+  "dbStats": "{events} events, {templates} templates",
+  "@dbStats": {
+      "events": {
+      "templates": {
+  "noAvailableExtensions": "No extensions available in the store",
+  "@noAvailableExtensions": {
+  "failedToLoadStore": "Failed to load store",
+  "@failedToLoadStore": {
+  "extensionError": "Extension error",
+  "@extensionError": {
+  "extensionNoUI": "This extension has no UI definition.",
+  "@extensionNoUI": {
+  "extensionPureMode": "Pure Mode (Metadata only)",
+  "@extensionPureMode": {
+  "extensionStorageOccupied": "Storage: {size}",
+  "@extensionStorageOccupied": {
+      "size": {
+  "extensionDeveloperSandbox": "Developer Sandbox",
+  "@extensionDeveloperSandbox": {
+  "extensionSandboxInstruction": "This extension is running as a 'pure shell'. You can test its permissions below.",
+  "@extensionSandboxInstruction": {
+  "extensionGetEvents": "Get Events",
+  "@extensionGetEvents": {
+  "extensionSendNotification": "Send Notification",
+  "@extensionSendNotification": {
+  "extensionGetEventsSuccess": "Successfully fetched {count} events",
+  "@extensionGetEventsSuccess": {
+  "extensionGetEventsFailed": "Fetch failed: {error}",
+  "@extensionGetEventsFailed": {
+  "extensionSandboxNotification": "Test notification from extension sandbox",
+  "@extensionSandboxNotification": {
+  "extensionDefaultButtonLabel": "Button",
+  "@extensionDefaultButtonLabel": {
+  "retry": "Retry",
+  "@retry": {
+  "useCustomStoreLink": "Use custom store link",
+  "@useCustomStoreLink": {
+  "customStore": "Custom Store",
+  "@customStore": {
+  "load": "Load",
+  "@load": {
+  "authorLabel": "Author: {author}",
+  "@authorLabel": {
+      "author": {
+  "versionAuthorLabel": "Version {version} â€?Author {author}",
+  "@versionAuthorLabel": {
+      "version": {
+  "aboutExtension": "About this extension",
+  "@aboutExtension": {
+  "installExtension": "Install Extension",
+  "@installExtension": {
+  "installingExtension": "Downloading and installing {name}...",
+  "@installingExtension": {
+  "installSuccess": "{name} installed successfully",
+  "@installSuccess": {
+  "installFailed": "Installation failed, please check the link or network",
+  "@installFailed": {
+  "installError": "Installation error: {error}",
+  "@installError": {
+  "eventReminder": "Event Reminder",
+  "@eventReminder": {
+  "eventReminderChannelDesc": "Used for scheduled event reminders",
+  "@eventReminderChannelDesc": {
+  "systemNotification": "System Notification",
+  "@systemNotification": {
+  "systemNotificationChannelDesc": "Instant notifications from the app or extensions",
+  "@systemNotificationChannelDesc": {
+  "extensionCategoryNotifications": "Notifications",
+  "@extensionCategoryNotifications": {
+  "extensionUninstall": "Uninstall",
+  "@extensionUninstall": {
+  "extensionUninstallConfirm": "Confirm Uninstall",
+  "@extensionUninstallConfirm": {
+  "extensionUninstallMessage": "Are you sure you want to uninstall \"{name}\"? This will delete all associated data and cannot be undone.",
+  "@extensionUninstallMessage": {
+  "extensionExport": "Export & Convert",
+  "@extensionExport": {
+  "extensionExportJson": "Standard JSON Package",
+  "@extensionExportJson": {
+  "extensionExportJsonSubtitle": "Single file, best for sharing",
+  "@extensionExportJsonSubtitle": {
+  "extensionExportZip": "Extension ZIP Package",
+  "@extensionExportZip": {
+  "extensionExportZipSubtitle": "Complete repository archive",
+  "@extensionExportZipSubtitle": {
+  "extensionPermissionReadEvents": "Read Events",
+  "@extensionPermissionReadEvents": {
+  "extensionPermissionReadEventsDesc": "Allows the extension to view all your events and tasks.",
+  "@extensionPermissionReadEventsDesc": {
+  "extensionPermissionAddEvents": "Add Events",
+  "@extensionPermissionAddEvents": {
+  "extensionPermissionAddEventsDesc": "Allows the extension to create new tasks.",
+  "@extensionPermissionAddEventsDesc": {
+  "extensionPermissionUpdateEvents": "Update Events",
+  "@extensionPermissionUpdateEvents": {
+  "extensionPermissionUpdateEventsDesc": "Allows the extension to modify existing tasks.",
+  "@extensionPermissionUpdateEventsDesc": {
+  "extensionPermissionDeleteEvents": "Delete Events",
+  "@extensionPermissionDeleteEvents": {
+  "extensionPermissionDeleteEventsDesc": "Allows the extension to delete your tasks.",
+  "@extensionPermissionDeleteEventsDesc": {
+  "extensionPermissionReadTags": "Read Tags",
+  "@extensionPermissionReadTags": {
+  "extensionPermissionReadTagsDesc": "Allows the extension to view your tag list.",
+  "@extensionPermissionReadTagsDesc": {
+  "extensionPermissionManageTags": "Manage Tags",
+  "@extensionPermissionManageTags": {
+  "extensionPermissionManageTagsDesc": "Allows the extension to add or remove global tags.",
+  "@extensionPermissionManageTagsDesc": {
+  "extensionPermissionManageDb": "Manage Database",
+  "@extensionPermissionManageDb": {
+  "extensionPermissionManageDbDesc": "Allows the extension to perform database export, backup, or switching.",
+  "@extensionPermissionManageDbDesc": {
+  "extensionPermissionFileSystem": "File System",
+  "@extensionPermissionFileSystem": {
+  "extensionPermissionFileSystemDesc": "Allows the extension to save files to your device or read files.",
+  "@extensionPermissionFileSystemDesc": {
+  "extensionPermissionNotifications": "Notifications",
+  "@extensionPermissionNotifications": {
+  "extensionPermissionNotificationsDesc": "Allows the extension to send you desktop or system notifications.",
+  "@extensionPermissionNotificationsDesc": {
+  "extensionPermissionReadCalendar": "Read Calendar",
+  "@extensionPermissionReadCalendar": {
+  "extensionPermissionReadCalendarDesc": "Allows the extension to read your system calendar events.",
+  "@extensionPermissionReadCalendarDesc": {
+  "extensionPermissionWriteCalendar": "Write Calendar",
+  "@extensionPermissionWriteCalendar": {
+  "extensionPermissionWriteCalendarDesc": "Allows the extension to add or modify events in your system calendar.",
+  "@extensionPermissionWriteCalendarDesc": {
+  "extensionPermissionNetwork": "Network Access",
+  "@extensionPermissionNetwork": {
+  "extensionPermissionNetworkDesc": "Allows the extension to access the network.",
+  "@extensionPermissionNetworkDesc": {
+  "extensionPermissionSystemInfo": "System Info",
+  "@extensionPermissionSystemInfo": {
+  "extensionPermissionSystemInfoDesc": "Allows the extension to access system status like themes, language, and snackbars.",
+  "@extensionPermissionSystemInfoDesc": {
+  "extensionPermissionNavigation": "Navigation",
+  "@extensionPermissionNavigation": {
+  "extensionPermissionNavigationDesc": "Allows the extension to navigate to specific pages or filter searches.",
+  "@extensionPermissionNavigationDesc": {
+  "extensionPermissionUIInteraction": "UI Interaction",
+  "@extensionPermissionUIInteraction": {
+  "extensionPermissionUIInteractionDesc": "Allows the extension to show dialogs, snackbars, or custom UI elements.",
+  "@extensionPermissionUIInteractionDesc": {
+  "extensionCategoryDataReading": "Data Reading",
+  "@extensionCategoryDataReading": {
+  "extensionCategoryDataWriting": "Data Writing",
+  "@extensionCategoryDataWriting": {
+  "extensionCategoryFileSystem": "File System",
+  "@extensionCategoryFileSystem": {
+  "extensionCategoryNetwork": "Network Access",
+  "@extensionCategoryNetwork": {
+  "extensionCategorySystemInfo": "System Info",
+  "@extensionCategorySystemInfo": {
+  "extensionCategoryNavigation": "Navigation",
+  "@extensionCategoryNavigation": {
+  "extensionCategoryUIInteraction": "UI Interaction",
+  "@extensionCategoryUIInteraction": {
+  "extensionCategoryGeneral": "General",
+  "@extensionCategoryGeneral": {
+  "extensionManagementTitle": "Extensions",
+  "@extensionManagementTitle": {
+  "extensionSectionInstalled": "Installed",
+  "@extensionSectionInstalled": {
+  "extensionSectionBuiltIn": "Built-in",
+  "@extensionSectionBuiltIn": {
+  "extensionSectionOnline": "Online Store",
+  "@extensionSectionOnline": {
+  "extensionRestrictedAccess": "Restricted Access",
+  "@extensionRestrictedAccess": {
+  "extensionRestrictedAccessDesc": "Requires manual approval for all data access.",
+  "@extensionRestrictedAccessDesc": {
+  "extensionInterceptedTitle": "Access Intercepted",
+  "@extensionInterceptedTitle": {
+  "extensionInterceptedDesc": "Extension {name} {action}:",
+  "@extensionInterceptedDesc": {
+      "action": {
+  "extensionInterceptedActionTried": "just tried to",
+  "@extensionInterceptedActionTried": {
+  "extensionInterceptedActionWants": "wants to",
+  "@extensionInterceptedActionWants": {
+  "extensionDecisionDeny": "Deny Access",
+  "@extensionDecisionDeny": {
+  "extensionDecisionDenyDesc": "Provides no data, which may cause errors or limited functionality.",
+  "@extensionDecisionDenyDesc": {
+  "extensionDecisionOnce": "Allow Once",
+  "@extensionDecisionOnce": {
+  "extensionDecisionOnceDesc": "Provides real data only for this specific request.",
+  "@extensionDecisionOnceDesc": {
+  "extensionDecisionNext": "Allow Next Time",
+  "@extensionDecisionNext": {
+  "extensionDecisionNextDesc": "Intercepts now, but automatically allows the next time this access occurs.",
+  "@extensionDecisionNextDesc": {
+  "extensionDecisionSessionCategory": "Allow Category (Session)",
+  "@extensionDecisionSessionCategory": {
+  "extensionDecisionSessionCategoryDesc": "Allows all access to this category until the app is closed.",
+  "@extensionDecisionSessionCategoryDesc": {
+  "extensionDecisionSessionAll": "Allow All (Session)",
+  "@extensionDecisionSessionAll": {
+  "extensionDecisionSessionAllDesc": "Allows all permissions for this extension until the app is closed.",
+  "@extensionDecisionSessionAllDesc": {
+  "archive": "Archive",
+  "@archive": {
+  "sets": "Sets",
+  "@sets": {
+  "addToArchivePlaceholder": "Add to archive...",
+  "@addToArchivePlaceholder": {
+  "extensionLogsTitle": "Extension Logs",
+  "@extensionLogsTitle": {
+  "noApiLogs": "No API call records",
+  "@noApiLogs": {
+  "noParams": "No parameters",
+  "@noParams": {
+  "restrictedAccess": "Restricted Access",
+  "@restrictedAccess": {
+  "logDetails": "Call Details",
+  "@logDetails": {
+  "extensionNameLabel": "Extension Name",
+  "@extensionNameLabel": {
+  "extensionIdLabel": "Extension ID",
+  "@extensionIdLabel": {
+  "methodLabel": "Method",
+  "@methodLabel": {
+  "timeLabel": "Time",
+  "@timeLabel": {
+  "statusLabel": "Status",
+  "@statusLabel": {
+  "successLabel": "Success",
+  "@successLabel": {
+  "failedLabel": "Failed",
+  "@failedLabel": {
+  "accessModeLabel": "Access Mode",
+  "@accessModeLabel": {
+  "restrictedAccessIntercepted": "Restricted Access (Intercepted)",
+  "@restrictedAccessIntercepted": {
+  "trustedModePassthrough": "Trusted Mode (Passthrough)",
+  "@trustedModePassthrough": {
+  "errorMessageLabel": "Error Message",
+  "@errorMessageLabel": {
+  "paramsDetails": "Parameter Details",
+  "@paramsDetails": {
+  "stepsCount": "{count} steps",
+  "@stepsCount": {
+  "createTag": "Create \"{tag}\"",
+  "@createTag": {
+  "failedToPickImage": "Failed to pick image: {error}",
+  "@failedToPickImage": {
+  "titleRequired": "Title is required",
+  "@titleRequired": {
+  "@error": {
+  "deleteAllDataTitle": "Delete All Data?",
+  "@deleteAllDataTitle": {
+  "deleteAllDataMessage": "This cannot be undone.",
+  "@deleteAllDataMessage": {
+  "deleteAllDataSuccess": "All data deleted",
+  "@deleteAllDataSuccess": {
+  "exportFailedDetailed": "Export failed: {error}",
+  "@exportFailedDetailed": {
+  "navEvents": "Events",
+  "@navEvents": {
+  "navExtensions": "Extensions",
+  "@navExtensions": {
+  "addExtension": "Add Extension",
+  "@addExtension": {
+  "importFromLocalFile": "Import from local file",
+  "@importFromLocalFile": {
+  "selectJsonExtension": "Select .json or .zip extension package",
+  "@selectJsonExtension": {
+  "enterUrlOrGithubLink": "Enter URL or GitHub link",
+  "@enterUrlOrGithubLink": {
+  "downloadAndInstallFromLink": "Download and install from link",
+  "@downloadAndInstallFromLink": {
+  "confirmUninstall": "Confirm Uninstall",
+  "@confirmUninstall": {
+  "uninstallExtensionWarning": "Are you sure you want to uninstall extension \"{name}\"? All related settings will be cleared.",
+  "@uninstallExtensionWarning": {
+  "uninstall": "Uninstall",
+  "@uninstall": {
+  "extensionRepository": "Extension Repository",
+  "@extensionRepository": {
+  "browseAndInstallFromGithub": "Browse and install from GitHub",
+  "@browseAndInstallFromGithub": {
+  "noExtensionsInstalled": "No extensions installed",
+  "@noExtensionsInstalled": {
+  "deactivated": "Deactivated",
+  "@deactivated": {
+  "downloadFailedCheckLink": "Download failed, please check the link",
+  "@downloadFailedCheckLink": {
+  "manageAndPermissions": "Manage & Permissions",
+  "@manageAndPermissions": {
+  "exportExtensionPackage": "Export Extension Package",
+  "@exportExtensionPackage": {
+  "expandTags": "Expand Tags",
+  "@expandTags": {
+  "noEventSelected": "No event selected",
+  "@noEventSelected": {
+  "noMatchingEvents": "No matching events found",
+  "@noMatchingEvents": {
+  "noEventsYet": "No events yet",
+  "@noEventsYet": {
+  "createFirstEvent": "Click the + button to create your first event",
+  "@createFirstEvent": {
+  "tryAdjustingFilters": "Try adjusting your filters or search query",
+  "@tryAdjustingFilters": {
+  "batchEditTags": "Batch Edit Tags",
+  "@batchEditTags": {
+  "batchEditTagsTitle": "Edit Tags for {count} items",
+  "@batchEditTagsTitle": {
+  "addTags": "Add Tags",
+  "@addTags": {
+  "removeTags": "Remove Tags",
+  "@removeTags": {
+  "tagsUpdated": "Tags updated for {count} items",
+  "@tagsUpdated": {
+  "noTagsSelected": "No tags selected",
+  "@noTagsSelected": {
+  "apply": "Apply",
+  "@apply": {
+  "help": "Help",
+  "@help": {
+  "welcome": "Welcome",
+  "@welcome": {
+  "welcomeAndHelp": "Welcome & Help",
+  "@welcomeAndHelp": {
+  "helpTitle": "Help Center",
+  "@helpTitle": {
+  "helpMessage": "Learn how to use Essenmelia here. Manage your events, steps, and extensions.",
+  "@helpMessage": {
+  "backToWelcome": "Back to Welcome",
+  "@backToWelcome": {
+  "switchToHelp": "View Help",
+  "@switchToHelp": {
+  "getStarted": "Get Started",
+  "@getStarted": {
+  "font": "Font",
+  "@font": {
+  "systemFont": "System",
+  "@systemFont": {
+  "builtInFont": "Built-in",
+  "@builtInFont": {
+  "dataMaintenance": "Data Maintenance",
+  "@dataMaintenance": {
+  "dangerZone": "Danger Zone",
+  "@dangerZone": {
+  "formatApp": "Format App",
+  "@formatApp": {
+  "formatAppWarning": "This will physically delete all databases, clear all extension sandboxes, and reset all app settings. This action is irreversible!",
+  "@formatAppWarning": {
+  "formatAppConfirm": "Type 'DELETE' to confirm",
+  "@formatAppConfirm": {
+  "formatAppPlaceholder": "Type DELETE here",
+  "@formatAppPlaceholder": {
+  "currentDbActions": "Current Database Actions",
+  "@currentDbActions": {
+  "extensionAllSystemPermissions": "All System Permissions",
+  "@extensionAllSystemPermissions": {
+  "extensionConfirmChoice": "Confirm Choice",
+  "@extensionConfirmChoice": {
+  "lastSync": "Last Sync: {time}",
+  "@lastSync": {
+      "time": {
+  "extensionRuntimeSection": "Runtime & Security",
+  "@extensionRuntimeSection": {
+  "extensionEnable": "Enable Extension",
+  "@extensionEnable": {
+  "extensionRunning": "Running",
+  "@extensionRunning": {
+  "extensionStopped": "Stopped",
+  "@extensionStopped": {
+  "extensionSandboxIsolation": "Sandbox Isolation",
+  "@extensionSandboxIsolation": {
+  "extensionIsolatedSandbox": "Isolated Sandbox",
+  "@extensionIsolatedSandbox": {
+  "extensionSharedSandbox": "Shared Sandbox: {id}",
+  "@extensionSharedSandbox": {
+      "id": {
+  "extensionSandboxGroup": "Sandbox Group",
+  "@extensionSandboxGroup": {
+  "extensionSandboxDesc": "Sandbox group determines data isolation. Enter the same ID to share storage.",
+  "@extensionSandboxDesc": {
+  "extensionSandboxId": "Sandbox ID",
+  "@extensionSandboxId": {
+  "extensionSandboxDefaultHint": "Defaults to extension ID",
+  "@extensionSandboxDefaultHint": {
+  "extensionSandboxTip": "Tip: Active extensions often share the same group",
+  "@extensionSandboxTip": {
+  "extensionRequestedPermissions": "Requested Permissions",
+  "@extensionRequestedPermissions": {
+  "extensionNoPermissions": "No permissions requested",
+  "@extensionNoPermissions": {
+  "extensionUpdate": "Update Extension",
+  "@extensionUpdate": {
+  "extensionInstall": "Install Extension",
+  "@extensionInstall": {
+  "extensionInformation": "Extension Information",
+  "@extensionInformation": {
+  "extensionVersion": "Version",
+  "@extensionVersion": {
+  "extensionNotInstalled": "Not Installed",
+  "@extensionNotInstalled": {
+  "extensionCodeSize": "Code Size",
+  "@extensionCodeSize": {
+  "extensionStorageSize": "Storage Size",
+  "@extensionStorageSize": {
+  "extensionFullTrust": "Full Trust",
+  "@extensionFullTrust": {
+  "extensionFullTrustDesc": "Direct access to system APIs",
+  "@extensionFullTrustDesc": {
+  "extensionPermissionsStatement": "Permissions Statement",
+  "@extensionPermissionsStatement": {
+  "extensionNoChanges": "No Changes",
+  "@extensionNoChanges": {
+  "extensionNoPermissionsRequired": "No permissions required",
+  "@extensionNoPermissionsRequired": {
+  "update": "Update",
+  "@update": {
+  "databaseError": "Database error: {error}",
+  "@databaseError": {
+  "filter": "Filter",
+  "@filter": {
+  "status": "Status",
+  "@status": {
+  "extensionRequested": "Extension Requested",
+  "@extensionRequested": {
+  "onlyShowReminders": "Only Show Reminders",
+  "@onlyShowReminders": {
+  "onlyShowRemindersSubtitle": "Filter out tasks without reminders",
+  "@onlyShowRemindersSubtitle": {
+  "viewAll": "View All",
+  "@viewAll": {
+  "extensionLogs": "Extension Logs",
+  "@extensionLogs": {
+  "welcomeToExtensions": "Welcome to Extensions",
+  "@welcomeToExtensions": {
+  "dontShowAgain": "Don't show again",
+  "@dontShowAgain": {
+  "longPressToManageExtension": "Long press to manage extension",
+  "@longPressToManageExtension": {
+  "daily": "Daily",
+  "@daily": {
+  "weekly": "Weekly",
+  "@weekly": {
+  "monthly": "Monthly",
+  "@monthly": {
+  "recurrenceDaily": " (Daily)",
+  "@recurrenceDaily": {
+  "recurrenceWeekly": " (Weekly)",
+  "@recurrenceWeekly": {
+  "recurrenceMonthly": " (Monthly)",
+  "@recurrenceMonthly": {
+  "exploreEssenmelia": "Explore Essenmelia",
+  "@exploreEssenmelia": {
+  "helpAndDocs": "Help & Docs",
+  "@helpAndDocs": {
+  "welcomeSubtitle1": "Your Schedule & Inspiration Manager",
+  "@welcomeSubtitle1": {
+  "welcomeContent1": "Organize every moment of your life. From daily tasks to big plans, everything finds its place here.",
+  "@welcomeContent1": {
+  "privacyFirst": "Privacy First",
+  "@privacyFirst": {
+  "welcomeSubtitle2": "Secure, Transparent, Controllable",
+  "@welcomeSubtitle2": {
+  "welcomeContent2": "Data stays local. Untrusted plugins only access fake data, keeping your real info safe.",
+  "@welcomeContent2": {
+  "highlyCustomizable": "Highly Customizable",
+  "@highlyCustomizable": {
+  "welcomeSubtitle3": "Infinite Possibilities",
+  "@welcomeSubtitle3": {
+  "welcomeContent3": "Expand functionality with extensions. Customize your management tool with a declarative UI engine.",
+  "@welcomeContent3": {
+  "startExperience": "Start Experience",
+  "@startExperience": {
+  "nextStep": "Next Step",
+  "@nextStep": {
+  "archDesign": "Arch Design",
+  "@archDesign": {
+  "archDesignDesc": "Layers, Privacy Sandbox & Permissions",
+  "@archDesignDesc": {
+  "apiGuide": "API Guide",
+  "@apiGuide": {
+  "apiGuideDesc": "Core Methods, Notifications & Integration",
+  "@apiGuideDesc": {
+  "extDevSpecs": "Ext Dev Specs",
+  "@extDevSpecs": {
+  "extDevSpecsDesc": "Metadata, UI Components & Logic Engine",
+  "@extDevSpecsDesc": {
+  "selectDocToRead": "Select a document to read",
+  "@selectDocToRead": {
+  "loadFailed": "Load failed: {error}",
+  "@loadFailed": {
+  "advancedSettingsAndReminders": "Advanced Settings & Reminders",
+  "@advancedSettingsAndReminders": {
+  "advancedSettingsSubtitle": "Display mode, suffix, and scheduled reminders",
+  "@advancedSettingsSubtitle": {
+  "advancedSettings": "Advanced Settings",
+  "@advancedSettings": {
+  "finishSettings": "Finish Settings",
+  "@finishSettings": {
+  "displaySettings": "Display Settings",
+  "@displaySettings": {
+  "stepMarkerMode": "Step Marker Mode",
+  "@stepMarkerMode": {
+  "markerNumber": "Number (1, 2, 3)",
+  "@markerNumber": {
+  "markerFirstChar": "First Char (A, B, C)",
+  "@markerFirstChar": {
+  "customCountSuffix": "Custom Count Suffix",
+  "@customCountSuffix": {
+  "suffixHint": "e.g., tasks, steps, items",
+  "@suffixHint": {
+  "suffixDefaultTip": "Leave empty to use default suffix",
+  "@suffixDefaultTip": {
+  "scheduledReminders": "Scheduled Reminders",
+  "@scheduledReminders": {
+  "noReminderSet": "No reminder set",
+  "@noReminderSet": {
+  "calendarReminderDesc": "Registers to system calendar, no background task needed",
+  "@calendarReminderDesc": {
+  "notificationReminderDesc": "Sends a notification at the specified time",
+  "@notificationReminderDesc": {
+  "reminderScheme": "Reminder Scheme",
+  "@reminderScheme": {
+  "inAppNotification": "In-app Notification",
+  "@inAppNotification": {
+  "systemCalendar": "System Calendar",
+  "@systemCalendar": {
+  "repeatCycle": "Repeat Cycle",
+  "@repeatCycle": {
+  "noRepeat": "No Repeat",
+  "@noRepeat": {
+  "reminderTimeError": "Reminder time cannot be in the past",
+  "@reminderTimeError": {
+  "smartAnalysis": "Smart Analysis Selection",
+  "@smartAnalysis": {
+  "brilliantMoments": "Brilliant Moments",
+  "@brilliantMoments": {
+  "aiCrop": "AI Crop",
+  "@aiCrop": {
+  "ocrResults": "OCR Results",
+  "@ocrResults": {
+  "ocrSelectionTip": "Tap to select: 1st tap for title, subsequent taps append to description",
+  "@ocrSelectionTip": {
+  "resetOcrSelection": "Reset Text Selection",
+  "@resetOcrSelection": {
+  "appPreview": "App Preview",
+  "@appPreview": {
+  "confirmApply": "Confirm Apply",
+  "@confirmApply": {
+  "analyzingContent": "Analyzing content...",
+  "@analyzingContent": {
+  "smartAnalysisTooltip": "Smartly analyze content",
+  "@smartAnalysisTooltip": {
+  "autoFilledByAi": "Auto-filled by AI Assistant",
+  "@autoFilledByAi": {
+  "unsupportedFileFormat": "Unsupported file format",
+  "@unsupportedFileFormat": {
+  "noImageInClipboard": "No image or valid link found in clipboard",
+  "@noImageInClipboard": {
+  "failedToGetImageFromLink": "Failed to get image from link: {error}",
+  "@failedToGetImageFromLink": {
+  "pickFromGallery": "Pick from Gallery",
+  "@pickFromGallery": {
+  "pasteFromClipboard": "Paste from Clipboard",
+  "@pasteFromClipboard": {
+  "clearImage": "Clear Image",
+  "@clearImage": {
+  "addStoryImage": "Add an image with a story",
+  "@addStoryImage": {
+  "imageUploadTip": "Drag & drop, paste, or select an image",
+  "@imageUploadTip": {
+  "exportOriginalImage": "Export Original Image",
+  "@exportOriginalImage": {
+  "exportImage": "Export Image",
+  "@exportImage": {
+  "processingImageFailed": "Processing image failed: {error}",
+  "@processingImageFailed": {
+  "reminderAt": "Reminder: {time}",
+  "@reminderAt": {
+  "quickEdit": "Quick Edit (Long press to slide)",
+  "@quickEdit": {
+  "fullOriginalImage": "Full Original Image",
+  "@fullOriginalImage": {
+  "extensionButton": "Button",
+  "@extensionButton": {
+}

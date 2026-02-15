@@ -118,8 +118,8 @@ class FilterBottomSheet extends ConsumerWidget {
                     color: theme.colorScheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(16),
                     child: SwitchListTile(
-                      title: const Text('仅显示带提醒的事件'),
-                      subtitle: const Text('过滤掉没有设置定时提醒的任务'),
+                      title: Text(l10n.onlyShowReminders),
+                      subtitle: Text(l10n.onlyShowRemindersSubtitle),
                       secondary: Icon(
                         searchState.onlyShowReminders
                             ? Icons.notifications_active_rounded
@@ -243,7 +243,7 @@ class FilterBottomSheet extends ConsumerWidget {
           runSpacing: 8,
           children: [
             _SortCategoryChip(
-              label: l10n.sortNewest,
+              label: l10n.sortTime,
               selected: category == _SortCategory.time,
               onSelected: (val) {
                 if (val) {
@@ -258,7 +258,7 @@ class FilterBottomSheet extends ConsumerWidget {
               },
             ),
             _SortCategoryChip(
-              label: l10n.sortTitleAZ.split(' ')[0], // "标题"
+              label: l10n.sortTitle,
               selected: category == _SortCategory.title,
               onSelected: (val) {
                 if (val) {
@@ -271,7 +271,7 @@ class FilterBottomSheet extends ConsumerWidget {
               },
             ),
             _SortCategoryChip(
-              label: l10n.sortProgressHigh.split(' ')[0], // "进度"
+              label: l10n.sortProgress,
               selected: category == _SortCategory.progress,
               onSelected: (val) {
                 if (val) {
@@ -284,7 +284,7 @@ class FilterBottomSheet extends ConsumerWidget {
               },
             ),
             _SortCategoryChip(
-              label: l10n.sortLastUpdated.split(' ')[0], // "更新"
+              label: l10n.sortUpdated,
               selected: category == _SortCategory.lastUpdated,
               onSelected: (val) {
                 if (val) {
@@ -299,7 +299,7 @@ class FilterBottomSheet extends ConsumerWidget {
               },
             ),
             _SortCategoryChip(
-              label: l10n.sortStepCountHigh.split(' ')[0], // "步骤数"
+              label: l10n.sortSteps,
               selected: category == _SortCategory.stepCount,
               onSelected: (val) {
                 if (val) {
@@ -314,7 +314,7 @@ class FilterBottomSheet extends ConsumerWidget {
               },
             ),
             _SortCategoryChip(
-              label: l10n.sortTagCountHigh.split(' ')[0], // "标签数"
+              label: l10n.sortTags,
               selected: category == _SortCategory.tagCount,
               onSelected: (val) {
                 if (val) {
