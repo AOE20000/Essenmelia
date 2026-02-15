@@ -1,6 +1,5 @@
-# 埃森梅莉亚 (Essenmelia)
-
 ![Logo](docs/assets/Essenmelia.svg)
+# 埃森梅莉亚 (Essenmelia)
 
 **埃森梅莉亚 (Essenmelia)** 是一个高度可定制、隐私安全且跨平台的个人记录与追踪工具。它不仅能帮助你记录追过的番剧、小说、电影和电视剧，更通过强大的插件化架构，允许开发者自由扩展功能与界面。
 
