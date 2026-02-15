@@ -113,12 +113,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             ListTile(
               leading: const Icon(Icons.ios_share),
-              title: Text(l10n.exportExtensionPackage),
+              title: Text(l10n.extensionExport),
               onTap: () {
                 Navigator.pop(context);
                 ref
                     .read(extensionManagerProvider)
-                    .exportExtension(ext.metadata.id);
+                    .exportExtensionAsZip(ext.metadata.id);
               },
             ),
             const Divider(),

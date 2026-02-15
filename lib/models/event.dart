@@ -168,6 +168,21 @@ class StepTemplate extends HiveObject {
   StepTemplate() {
     id = const Uuid().v4();
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'description': description,
+      'order': order,
+    };
+  }
+
+  factory StepTemplate.fromJson(Map<String, dynamic> json) {
+    return StepTemplate()
+      ..id = json['id'] ?? const Uuid().v4()
+      ..description = json['description'] ?? ''
+      ..order = json['order'] ?? 0;
+  }
 }
 
 @HiveType(typeId: 3)
@@ -184,10 +199,43 @@ class StepSetTemplate extends HiveObject {
   StepSetTemplate() {
     id = const Uuid().v4();
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'steps': steps.map((s) => s.toJson()).toList(),
+    };
+  }
+
+  factory StepSetTemplate.fromJson(Map<String, dynamic> json) {
+    final template = StepSetTemplate()
+      ..id = json['id'] ?? const Uuid().v4()
+      ..name = json['name'] ?? '';
+
+    if (json['steps'] != null) {
+      template.steps = (json['steps'] as List)
+          .map((s) => StepSetTemplateStep.fromJson(s as Map<String, dynamic>))
+          .toList();
+    }
+    return template;
+  }
 }
 
 @HiveType(typeId: 4)
 class StepSetTemplateStep extends HiveObject {
   @HiveField(0)
   late String description;
+
+  StepSetTemplateStep();
+
+  Map<String, dynamic> toJson() {
+    return {
+      'description': description,
+    };
+  }
+
+  factory StepSetTemplateStep.fromJson(Map<String, dynamic> json) {
+    return StepSetTemplateStep()..description = json['description'] ?? '';
+  }
 }

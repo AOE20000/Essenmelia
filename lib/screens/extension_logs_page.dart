@@ -119,11 +119,14 @@ class ExtensionLogsPage extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            log.extensionName,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              log.extensionName,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),

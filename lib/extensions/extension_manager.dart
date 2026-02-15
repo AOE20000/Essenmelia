@@ -483,7 +483,16 @@ class ExtensionApiImpl implements ExtensionApi {
 
     // --- 核心变更：不再等待弹窗，而是立即“暂停”扩展并返回假数据 ---
 
-    // 1. 标记暂停，防止事件干扰
+    // 1. 检查对话框冷却时间 (防止 DoS 攻击)
+    final cooldownKey = '${extId}_${permission?.name ?? "general"}';
+    final lastShow = _manager._dialogCooldowns[cooldownKey];
+    if (lastShow != null && DateTime.now().difference(lastShow).inMinutes < 5) {
+      // 5 分钟内不重复弹窗，直接返回假数据
+      return false;
+    }
+    _manager._dialogCooldowns[cooldownKey] = DateTime.now();
+
+    // 2. 标记暂停，防止事件干扰
     notifier.setPaused(extId, true);
 
     // 2. 异步弹出对话框（不 await）
@@ -883,11 +892,17 @@ class ProxyExtension extends BaseExtension {
 
   @override
   Widget build(BuildContext context, ExtensionApi api) {
+    // 调试日志：检查 view 字段是否加载
+    debugPrint(
+      'Building extension UI for: ${metadata.id}, view is null: ${metadata.view == null}',
+    );
+
     // 如果定义了动态界面，使用动态引擎
-    if (metadata.view != null) {
+    if (metadata.view != null && metadata.view!.isNotEmpty) {
       return DynamicEngine(engine: _engine!);
     }
 
+    // 如果没有界面定义，显示调试沙箱
     return FutureBuilder<List<dynamic>>(
       future: Future.wait([
         Future.delayed(const Duration(milliseconds: 100)),
@@ -1082,13 +1097,6 @@ class ProxyExtension extends BaseExtension {
     );
   }
 
-  String _formatSize(int bytes) {
-    if (bytes <= 0) return '0 B';
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
   Widget _buildInfoSection(ThemeData theme, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -1110,11 +1118,85 @@ class ProxyExtension extends BaseExtension {
       ),
     );
   }
+
+  String _formatSize(int bytes) {
+    if (bytes <= 0) return '0 B';
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
 }
 
 /// 扩展管理器类
 class ExtensionManager extends ChangeNotifier {
   final Ref _ref;
+
+  /// 处理从 README 提取的元数据以检查更新
+  void processReadmeUpdate(String content, String repoFullName) {
+    try {
+      final metadataRegex = RegExp(
+        r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*(\{[\s\S]*?\})\s*-->',
+      );
+      final match = metadataRegex.firstMatch(content);
+
+      if (match != null) {
+        final jsonStr = match.group(1);
+        if (jsonStr != null) {
+          final data = jsonDecode(jsonStr);
+          final id = data['id'] as String?;
+          final remoteVersion = data['version'] as String?;
+
+          if (id != null && remoteVersion != null) {
+            final installedExt = _installedExtensions[id];
+            if (installedExt != null) {
+              // 1. 检查是否需要更新仓库名称 (处理更名逻辑)
+              if (installedExt.metadata.repoFullName != repoFullName) {
+                _updateExtensionRepoFullName(id, repoFullName);
+              }
+
+              // 2. 检查版本更新
+              if (remoteVersion != installedExt.metadata.version) {
+                if (_availableUpdates[id] != remoteVersion) {
+                  _availableUpdates[id] = remoteVersion;
+                  notifyListeners();
+                }
+              } else {
+                if (_availableUpdates.containsKey(id)) {
+                  _availableUpdates.remove(id);
+                  notifyListeners();
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error processing README update: $e');
+    }
+  }
+
+  Future<void> _updateExtensionRepoFullName(
+    String id,
+    String repoFullName,
+  ) async {
+    final content = _ref
+        .read(extensionStoreServiceProvider.notifier)
+        .getExtensionContent(id);
+    if (content != null) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(content);
+        data['repo_full_name'] = repoFullName;
+        await _ref
+            .read(extensionStoreServiceProvider.notifier)
+            .saveExtension(id, jsonEncode(data));
+
+        // 刷新状态以更新内存中的 metadata
+        refresh();
+      } catch (e) {
+        debugPrint('Failed to update repo full name for $id: $e');
+      }
+    }
+  }
 
   /// 正在显示的隐私对话框，防止短时间内弹出多个
   final Set<String> _activePrivacyRequests = {};
@@ -1130,6 +1212,14 @@ class ExtensionManager extends ChangeNotifier {
 
   /// 扩展暂停时的事件缓冲区
   final Map<String, List<Event>> _eventBuffers = {};
+
+  /// 记录每个扩展可用的更新版本 (extensionId -> newVersion)
+  final Map<String, String> _availableUpdates = {};
+
+  /// 权限对话框冷却记录 (extensionId_permissionName -> lastShowTime)
+  final Map<String, DateTime> _dialogCooldowns = {};
+
+  Map<String, String> get availableUpdates => _availableUpdates;
 
   /// 安全限制：扩展文件最大建议大小 (1MB)
   static const _maxSafeSize = 1024 * 1024;
@@ -1340,20 +1430,8 @@ class ExtensionManager extends ChangeNotifier {
           continue;
         }
 
-        // 2. 完整性校验：检查清单内容是否被非法篡改
-        final auth = _ref.read(extensionAuthStateProvider.notifier);
-        final storedHash = auth.getManifestHash(extId);
-        if (storedHash != null) {
-          final currentHash = sha256.convert(utf8.encode(json)).toString();
-          if (currentHash != storedHash) {
-            debugPrint(
-              'Security Alert: Extension $extId manifest integrity check failed! Hash mismatch.',
-            );
-            // 发现篡改时，默认将其标记为不受信任且停止运行，保护用户隐私
-            await auth.setUntrusted(extId, true);
-            await auth.setRunning(extId, false);
-          }
-        }
+        // 2. 完整性校验：改为异步处理，防止冷启动时阻塞
+        _verifyIntegrityAsync(extId, json);
 
         // 所有扩展初始都作为 Proxy 加载元数据
         _installedExtensions[extId] = ProxyExtension(metadata, manager: this);
@@ -1361,8 +1439,62 @@ class ExtensionManager extends ChangeNotifier {
         debugPrint('Failed to load extension ${entry.key}: $e');
       }
     }
-    // 加载完后刷新一次状态，根据运行状态和逻辑提供者激活真实实例
+    // 加载完后刷新一次状态
     refresh();
+  }
+
+  /// 异步校验扩展完整性，防止冷启动时大量哈希计算阻塞主线程
+  Future<void> _verifyIntegrityAsync(String extId, String json) async {
+    try {
+      final auth = _ref.read(extensionAuthStateProvider.notifier);
+      final storedHash = auth.getManifestHash(extId);
+      if (storedHash == null) return;
+
+      // 在计算前让出主线程
+      await Future.delayed(Duration.zero);
+      final currentHash = sha256.convert(utf8.encode(json)).toString();
+
+      if (currentHash != storedHash) {
+        debugPrint(
+          'Security Alert: Extension $extId manifest integrity check failed! Hash mismatch.',
+        );
+        await auth.setUntrusted(extId, true);
+        await auth.setRunning(extId, false);
+        refresh();
+      }
+    } catch (e) {
+      debugPrint('Integrity verification error for $extId: $e');
+    }
+  }
+
+  /// 检查所有已安装扩展的更新
+  Future<void> checkForUpdates() async {
+    final extensions = _installedExtensions.values
+        .where((ext) => ext.metadata.repoFullName != null)
+        .toList();
+    if (extensions.isEmpty) return;
+
+    for (var ext in extensions) {
+      final repoFullName = ext.metadata.repoFullName!;
+      try {
+        final url = 'https://api.github.com/repos/$repoFullName/readme';
+        final response = await http
+            .get(
+              Uri.parse(url),
+              headers: {
+                'Accept': 'application/vnd.github.raw',
+                'User-Agent': 'Essenmelia-App',
+              },
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode == 200) {
+          processReadmeUpdate(response.body, repoFullName);
+        }
+      } catch (e) {
+        debugPrint('Failed to check update for $repoFullName: $e');
+      }
+    }
   }
 
   String _formatSize(int bytes) {
@@ -1372,7 +1504,7 @@ class ExtensionManager extends ChangeNotifier {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  /// 从剪贴板安装扩展（支持 JSON、URL 或 GitHub 链接）
+  /// 从剪贴板安装扩展（支持 ZIP、EZIP、URL 或 GitHub 链接）
   Future<void> importFromClipboard() async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
@@ -1390,19 +1522,23 @@ class ExtensionManager extends ChangeNotifier {
         return;
       }
 
-      // 1. 尝试识别是否为 URL
+      // 1. 尝试识别是否为 URL (支持 ZIP, EZIP, GitHub)
       if (Uri.tryParse(text)?.hasAbsolutePath ?? false) {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('检测到 URL，正在下载...')));
+          ).showSnackBar(const SnackBar(content: Text('检测到链接，正在下载...')));
         }
         await importFromUrl(text);
         return;
       }
 
-      // 2. 尝试作为内容安装 (JSON)
-      await importFromContent(text);
+      // 2. 如果不是 URL，提示用户需要提供下载链接
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('未检测到有效的扩展下载链接（支持 ZIP/EZIP/GitHub）')),
+        );
+      }
     } catch (e) {
       debugPrint('Import from clipboard failed: $e');
       if (context.mounted) {
@@ -1443,11 +1579,11 @@ class ExtensionManager extends ChangeNotifier {
           try {
             String? content;
             final extName = file.extension?.toLowerCase();
-            if (extName == 'zip' || extName == 'ezip') {
+            if (extName == 'zip') {
               final bytes = await File(file.path!).readAsBytes();
               content = ExtensionConverter.extractContentFromZip(bytes);
             } else {
-              // 支持 JSON 和 YAML
+              // 支持 YAML/JSON 文本
               final raw = await File(file.path!).readAsString();
               if (extName == 'yaml' ||
                   extName == 'yml' ||
@@ -1458,7 +1594,7 @@ class ExtensionManager extends ChangeNotifier {
                     ExtensionMetadata.fromYaml(raw).toJson(),
                   );
                 } catch (e) {
-                  content = raw; // 可能是 JSON 但后缀写错了
+                  content = raw;
                 }
               } else {
                 content = raw;
@@ -1539,6 +1675,18 @@ class ExtensionManager extends ChangeNotifier {
 
   /// 导入扩展（从链接/GitHub，支持 ZIP/JSON）
   Future<BaseExtension?> importFromUrl(String url) async {
+    // ... 原有逻辑保持
+    return await _importFromUrlInternal(url);
+  }
+
+  /// 导入扩展（从 ZIP 字节流）
+  Future<BaseExtension?> importFromZip(Uint8List zipBytes) async {
+    final content = ExtensionConverter.extractContentFromZip(zipBytes);
+    if (content == null) return null;
+    return await importFromContent(content);
+  }
+
+  Future<BaseExtension?> _importFromUrlInternal(String url) async {
     try {
       // 1. 处理内置扩展
       if (url.startsWith('builtin://')) {
@@ -1548,40 +1696,61 @@ class ExtensionManager extends ChangeNotifier {
 
       // 2. 特殊处理 GitHub 链接
       var finalUrl = url;
-      if (url.contains('github.com') &&
-          !url.contains('raw.githubusercontent.com') &&
-          !url.endsWith('.zip')) {
+      String? repoFullName;
+      if (url.contains('github.com')) {
         final uri = Uri.parse(url);
         final segments = uri.pathSegments;
-        if (segments.length == 2) {
-          // 这是一个仓库主页，如 https://github.com/user/repo
-          finalUrl =
-              'https://github.com/${segments[0]}/${segments[1]}/archive/refs/heads/main.zip';
-        } else if (url.contains('/blob/')) {
-          // 这是一个具体文件的 blob 链接，转换为 raw
-          finalUrl = url
-              .replaceFirst('github.com', 'raw.githubusercontent.com')
-              .replaceFirst('/blob/', '/');
+
+        if (url.contains('raw.githubusercontent.com')) {
+          // https://raw.githubusercontent.com/owner/repo/branch/path
+          if (segments.length >= 2) {
+            repoFullName = '${segments[0]}/${segments[1]}';
+          }
+        } else if (url.endsWith('.zip')) {
+          // https://github.com/owner/repo/archive/refs/heads/main.zip
+          if (segments.length >= 2) {
+            repoFullName = '${segments[0]}/${segments[1]}';
+          }
+        } else {
+          if (segments.length >= 2) {
+            repoFullName = '${segments[0]}/${segments[1]}';
+            if (segments.length == 2) {
+              // 这是一个仓库主页，如 https://github.com/user/repo
+              finalUrl =
+                  'https://github.com/${segments[0]}/${segments[1]}/archive/refs/heads/main.zip';
+            } else if (url.contains('/blob/')) {
+              // 这是一个具体文件的 blob 链接，转换为 raw
+              finalUrl = url
+                  .replaceFirst('github.com', 'raw.githubusercontent.com')
+                  .replaceFirst('/blob/', '/');
+            }
+          }
         }
       }
 
-      debugPrint('Downloading extension from: $finalUrl');
-      final response = await http.get(Uri.parse(finalUrl));
-      if (response.statusCode == 200) {
-        // 如果响应头指示是 ZIP，或者 URL 以 .zip 结尾，尝试按字节处理
-        final isZip =
-            response.headers['content-type']?.contains('zip') == true ||
-            finalUrl.toLowerCase().contains('.zip');
+      debugPrint(
+        'Downloading extension from: $finalUrl (Repo: ${repoFullName ?? 'Unknown'})',
+      );
 
-        if (isZip) {
-          return await importFromBytes(
-            response.bodyBytes,
-            fileName: finalUrl.split('/').last,
-          );
-        } else {
-          // 否则尝试作为 JSON 处理
-          return await importFromContent(response.body);
-        }
+      final context = navigatorKey.currentContext;
+      if (context == null) return null;
+
+      // 使用带进度的下载
+      final bytes = await _downloadWithProgress(context, finalUrl);
+      if (bytes == null || !context.mounted) return null;
+
+      final isZip = finalUrl.toLowerCase().contains('.zip');
+
+      if (isZip) {
+        return await importFromBytes(
+          bytes,
+          fileName: finalUrl.split('/').last,
+          repoFullName: repoFullName,
+        );
+      } else {
+        // 尝试解析文本内容（YAML/JSON）
+        final content = utf8.decode(bytes);
+        return await importFromContent(content, repoFullName: repoFullName);
       }
     } catch (e) {
       debugPrint('Import from URL failed: $e');
@@ -1589,14 +1758,109 @@ class ExtensionManager extends ChangeNotifier {
     return null;
   }
 
+  /// 带进度的下载实现
+  Future<Uint8List?> _downloadWithProgress(
+    BuildContext context,
+    String url,
+  ) async {
+    final client = http.Client();
+    final request = http.Request('GET', Uri.parse(url));
+    request.headers['User-Agent'] = 'Essenmelia-App';
+
+    try {
+      final response = await client.send(request);
+      if (response.statusCode != 200 || !context.mounted) {
+        client.close();
+        return null;
+      }
+
+      final contentLength = response.contentLength;
+      final List<int> bytes = [];
+      final progressNotifier = ValueNotifier<double>(0);
+
+      if (!context.mounted) {
+        client.close();
+        return null;
+      }
+
+      // 显示进度对话框
+      BuildContext? dialogContext;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          dialogContext = ctx;
+          return AlertDialog(
+            title: const Text('正在下载扩展'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ValueListenableBuilder<double>(
+                  valueListenable: progressNotifier,
+                  builder: (context, progress, child) {
+                    return Column(
+                      children: [
+                        LinearProgressIndicator(
+                          value: contentLength != null ? progress : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          contentLength != null
+                              ? '${(progress * 100).toStringAsFixed(0)}%'
+                              : '正在接收数据...',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      try {
+        await for (final chunk in response.stream) {
+          bytes.addAll(chunk);
+          if (contentLength != null && contentLength > 0) {
+            progressNotifier.value = bytes.length / contentLength;
+          }
+        }
+
+        // 如果下载太快，稍微等一下让用户看到进度条完成
+        if (bytes.length < 1024 * 100) {
+          // 小于 100KB
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      } finally {
+        // 关闭对话框
+        if (dialogContext != null && dialogContext!.mounted) {
+          Navigator.of(dialogContext!).pop();
+        } else if (context.mounted) {
+          // 备选方案
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        client.close();
+        progressNotifier.dispose();
+      }
+
+      return Uint8List.fromList(bytes);
+    } catch (e) {
+      debugPrint('Download error: $e');
+      client.close();
+      return null;
+    }
+  }
+
   /// 处理导入的二进制内容（主要用于 ZIP）
   Future<BaseExtension?> importFromBytes(
     Uint8List bytes, {
     String? fileName,
+    String? repoFullName,
   }) async {
     final content = ExtensionConverter.extractContentFromZip(bytes);
     if (content != null) {
-      return await importFromContent(content);
+      return await importFromContent(content, repoFullName: repoFullName);
     }
     debugPrint('Failed to extract content from ZIP bytes');
     return null;
@@ -1607,6 +1871,7 @@ class ExtensionManager extends ChangeNotifier {
     String content, {
     String? logicJs,
     Map<String, dynamic>? viewYaml,
+    String? repoFullName,
   }) async {
     debugPrint('Processing imported content, length: ${content.length}');
     final context = navigatorKey.currentContext;
@@ -1631,6 +1896,11 @@ class ExtensionManager extends ChangeNotifier {
       // 如果传入了独立的逻辑或视图，则注入到元数据中
       if (logicJs != null) data['logic'] = logicJs;
       if (viewYaml != null) data['view'] = viewYaml;
+
+      // 注入 repoFullName 如果提供了
+      if (repoFullName != null) {
+        data['repo_full_name'] = repoFullName;
+      }
 
       final metadata = ExtensionMetadata.fromJson(data);
       debugPrint('Parsed metadata for extension: ${metadata.id}');
@@ -1659,17 +1929,24 @@ class ExtensionManager extends ChangeNotifier {
       }
 
       final isUntrustedFromDialog = installResult['isUntrusted'] == true;
+      final finalContent = jsonEncode(data);
 
       // 使用存储服务保存扩展
       await _ref
           .read(extensionStoreServiceProvider.notifier)
-          .saveExtension(metadata.id, jsonEncode(data));
+          .saveExtension(metadata.id, finalContent);
 
       if (!context.mounted) return null;
 
       // 注册为占位符
       final newExt = ProxyExtension(metadata, manager: this);
       _installedExtensions[metadata.id] = newExt;
+
+      // 清除该扩展的待更新状态
+      if (_availableUpdates.containsKey(metadata.id)) {
+        _availableUpdates.remove(metadata.id);
+        notifyListeners();
+      }
 
       // 确保新导入的扩展默认是运行状态
       final auth = _ref.read(extensionAuthStateProvider.notifier);
@@ -1679,9 +1956,7 @@ class ExtensionManager extends ChangeNotifier {
       await auth.setUntrusted(metadata.id, isUntrustedFromDialog);
 
       // 保存清单哈希，用于完整性校验
-      final manifestHash = sha256
-          .convert(utf8.encode(jsonEncode(data)))
-          .toString();
+      final manifestHash = sha256.convert(utf8.encode(finalContent)).toString();
       await auth.setManifestHash(metadata.id, manifestHash);
 
       // 刷新管理器状态（会触发 _loadExtension）
@@ -2458,7 +2733,7 @@ class ExtensionManager extends ChangeNotifier {
     final zipBytes = ExtensionConverter.createZipPackage(ext.metadata);
 
     final tempDir = await getTemporaryDirectory();
-    final fileName = '${ext.metadata.id}_v${ext.metadata.version}.ezip';
+    final fileName = '${ext.metadata.id}_v${ext.metadata.version}.zip';
     final file = File('${tempDir.path}/$fileName');
     await file.writeAsBytes(zipBytes);
 
@@ -2467,36 +2742,24 @@ class ExtensionManager extends ChangeNotifier {
     ], subject: '导出扩展包 (ZIP): ${ext.metadata.name}');
   }
 
-  Future<void> exportExtension(String extensionId) async {
+  /// 复制 GitHub 链接
+  Future<void> copyGitHubLink(String extensionId) async {
     final ext =
         _installedExtensions[extensionId] ?? _activeExtensions[extensionId];
-    if (ext == null) return;
+    if (ext == null || ext.metadata.repoFullName == null) return;
 
-    // 统一将其序列化为标准的 JSON 格式进行分发
-    final data = ext.metadata.toJson();
-    final exportContent = const JsonEncoder.withIndent('  ').convert(data);
-    final fileName = '${ext.metadata.id}.json';
-
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/$fileName');
-    await file.writeAsString(exportContent);
-
-    await Share.shareXFiles([
-      XFile(file.path),
-    ], subject: '导出扩展包: ${ext.metadata.name}');
+    final url = 'https://github.com/${ext.metadata.repoFullName}';
+    await Clipboard.setData(ClipboardData(text: url));
   }
 
-  void _loadExtension(BaseExtension extension) {
-    final extId = extension.metadata.id;
-    // _activeExtensions 记录实例，但不在这里应用“下次允许”权限，
-    // 改为在 API 调用时由 _shieldIntercept 实时消费。
-
-    _activeExtensions[extId] = extension;
-    final api = getApiFor(extension);
-    extension.onInit(api);
+  /// 移除旧的 JSON 导出方法，因为用户要求移除 JSON 支持
+  @Deprecated('Use exportExtensionAsZip or copyGitHubLink instead')
+  Future<void> exportExtension(String extensionId) async {
+    await exportExtensionAsZip(extensionId);
   }
 
-  void _unloadExtension(String extensionId) {
+  /// 卸载扩展
+  void uninstallExtension(String extensionId) {
     final extension = _activeExtensions.remove(extensionId);
     if (extension != null) {
       extension.onDispose();
@@ -2510,8 +2773,12 @@ class ExtensionManager extends ChangeNotifier {
   }
 
   /// 供 UI 调用：刷新扩展列表（根据运行状态加载/卸载实例）
-  void refresh() {
+  void refresh() async {
     final auth = _ref.read(extensionAuthStateProvider.notifier);
+    bool changed = false;
+
+    // 记录需要加载的扩展
+    final toLoad = <BaseExtension>[];
 
     for (var entry in _installedExtensions.entries) {
       final id = entry.key;
@@ -2524,23 +2791,38 @@ class ExtensionManager extends ChangeNotifier {
         if (id == 'system.external_call') {
           _externalCallExtension = realExt;
         }
-        _loadExtension(realExt);
+        _activeExtensions[id] = realExt;
+        toLoad.add(realExt);
+        changed = true;
       } else if (!isRunning && isLoaded) {
         // 需要停止
-        _unloadExtension(id);
+        uninstallExtension(id);
+        changed = true;
       }
     }
 
-    // 无论运行状态是否改变，只要调用了 refresh，就通知 UI 刷新一次，
-    // 以确保初始化加载的扩展能显示出来。
-    notifyListeners();
+    if (changed) {
+      notifyListeners();
+    }
+
+    // 分批启动扩展初始化，避免冷启动时多个 JS 引擎同时抢占 CPU
+    if (toLoad.isNotEmpty) {
+      for (var ext in toLoad) {
+        // 每个扩展启动间隔 50ms，平滑 CPU 负载
+        await Future.delayed(const Duration(milliseconds: 50));
+        final api = getApiFor(ext);
+        ext.onInit(api).catchError((e) {
+          debugPrint('Staggered init failed for ${ext.metadata.id}: $e');
+        });
+      }
+    }
   }
 
   /// 重置所有扩展相关数据（格式化）
   Future<void> resetAll() async {
     // 1. 停止所有正在运行的扩展
     for (var id in _activeExtensions.keys.toList()) {
-      _unloadExtension(id);
+      uninstallExtension(id);
     }
     _activeExtensions.clear();
     _externalCallExtension = null;
@@ -2672,7 +2954,7 @@ class ExtensionManager extends ChangeNotifier {
         .uninstallExtension(extensionId);
 
     // 2. 卸载实例
-    _unloadExtension(extensionId);
+    uninstallExtension(extensionId);
     _installedExtensions.remove(extensionId);
 
     // 3. 从持久化存储中移除

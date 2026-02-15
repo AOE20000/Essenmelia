@@ -3,15 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:animations/animations.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:uuid/uuid.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 import '../providers/db_provider.dart';
-import '../providers/ui_state_provider.dart';
 import '../services/file_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -75,41 +74,9 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
 
       final data = {
         'tags': tagBox.values.toList(),
-        'events': eventBox.values
-            .map(
-              (e) => {
-                'id': e.id,
-                'title': e.title,
-                'description': e.description,
-                'createdAt': e.createdAt.toIso8601String(),
-                'imageUrl': e.imageUrl,
-                'tags': e.tags,
-                'steps': e.steps
-                    .map(
-                      (s) => {
-                        'description': s.description,
-                        'timestamp': s.timestamp.toIso8601String(),
-                        'completed': s.completed,
-                      },
-                    )
-                    .toList(),
-              },
-            )
-            .toList(),
-        'templates': templateBox.values
-            .map((t) => {'id': t.id, 'description': t.description})
-            .toList(),
-        'set_templates': setTemplateBox.values
-            .map(
-              (t) => {
-                'id': t.id,
-                'name': t.name,
-                'steps': t.steps
-                    .map((s) => {'description': s.description})
-                    .toList(),
-              },
-            )
-            .toList(),
+        'events': eventBox.values.map((e) => e.toJson()).toList(),
+        'templates': templateBox.values.map((t) => t.toJson()).toList(),
+        'set_templates': setTemplateBox.values.map((t) => t.toJson()).toList(),
         'version': 1,
       };
 
@@ -245,58 +212,29 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 }
               }
 
-              final event = Event()
-                ..id = e['id'] ?? const Uuid().v4()
-                ..title = e['title']
-                ..description = e['description']
-                ..createdAt =
-                    DateTime.tryParse(e['createdAt'] ?? '') ?? DateTime.now()
-                ..imageUrl = finalImageUrl
-                ..tags = (e['tags'] as List?)?.cast<String>()
-                ..steps =
-                    (e['steps'] as List?)
-                        ?.map(
-                          (s) => EventStep()
-                            ..description = s['description']
-                            ..timestamp =
-                                DateTime.tryParse(s['timestamp'] ?? '') ??
-                                DateTime.now()
-                            ..completed = s['completed'] ?? false,
-                        )
-                        .toList() ??
-                    [];
+              final event = Event.fromJson(e as Map<String, dynamic>)
+                ..imageUrl = finalImageUrl;
               await eventBox.put(event.id, event);
             }
           }
 
           // Import Templates
-          if (data['templates'] is List) {
-            for (var t in data['templates']) {
-              final template = StepTemplate()
-                ..id = t['id'] ?? const Uuid().v4()
-                ..description = t['description'];
-              await templateBox.put(template.id, template);
-            }
-          }
+           if (data['templates'] is List) {
+             for (var t in data['templates']) {
+               final template =
+                   StepTemplate.fromJson(t as Map<String, dynamic>);
+               await templateBox.put(template.id, template);
+             }
+           }
 
-          // Import Sets
-          if (data['set_templates'] is List) {
-            for (var t in data['set_templates']) {
-              final template = StepSetTemplate()
-                ..id = t['id'] ?? const Uuid().v4()
-                ..name = t['name']
-                ..steps =
-                    (t['steps'] as List?)
-                        ?.map(
-                          (s) =>
-                              StepSetTemplateStep()
-                                ..description = s['description'],
-                        )
-                        .toList() ??
-                    [];
-              await setTemplateBox.put(template.id, template);
-            }
-          }
+           // Import Sets
+           if (data['set_templates'] is List) {
+             for (var t in data['set_templates']) {
+               final template =
+                   StepSetTemplate.fromJson(t as Map<String, dynamic>);
+               await setTemplateBox.put(template.id, template);
+             }
+           }
 
           if (mounted) {
             _loadAllStats();
@@ -322,6 +260,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
   }
 
   Future<void> _deleteAllData() async {
+    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final confirmController = TextEditingController();
     bool canDelete = false;
@@ -336,22 +275,42 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.formatAppWarning),
+              Text(l10n.formatAppWarning, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 24),
               Text(
                 l10n.formatAppConfirm,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.error,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               TextField(
                 controller: confirmController,
                 autofocus: true,
                 decoration: InputDecoration(
                   hintText: l10n.formatAppPlaceholder,
-                  border: const OutlineInputBorder(),
+                  filled: true,
+                  fillColor: theme.colorScheme.errorContainer.withValues(
+                    alpha: 0.1,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: theme.colorScheme.error),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.error,
+                      width: 2,
+                    ),
+                  ),
                   errorText:
                       confirmController.text.isNotEmpty &&
                           confirmController.text != 'DELETE'
@@ -372,8 +331,8 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
             FilledButton(
               onPressed: canDelete ? () => Navigator.pop(context, true) : null,
               style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
               ),
               child: Text(l10n.formatApp),
             ),
@@ -420,6 +379,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.add_to_photos_rounded),
         title: Text(l10n.createNewDatabase),
         content: TextField(
           controller: controller,
@@ -427,11 +387,14 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
           decoration: InputDecoration(
             hintText: l10n.dbNameHint,
             filled: true,
-            fillColor: colorScheme.surfaceContainerHighest,
+            fillColor: colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.5,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
+            prefixIcon: const Icon(Icons.drive_file_rename_outline_rounded),
           ),
           onSubmitted: (val) => Navigator.pop(context, val),
         ),
@@ -459,62 +422,116 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    final body = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
+    final body = PageTransitionSwitcher(
+      duration: const Duration(milliseconds: 400),
+      reverse: false,
+      transitionBuilder: (child, animation, secondaryAnimation) {
+        return FadeThroughTransition(
+          animation: animation,
+          secondaryAnimation: secondaryAnimation,
+          fillColor: theme.colorScheme.surface,
+          child: child,
+        );
+      },
       child: dbStateAsync.when(
         data: (state) {
-          return ListView(
-            key: const ValueKey('db_list_data'),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-            children: [
-              _buildSectionHeader(theme, l10n.availableDatabases),
-              ...state.availableDbs.map((dbName) {
-                final isActive = dbName == state.activeDbPrefix;
-                return _buildDatabaseCard(context, dbName, isActive, state);
-              }),
-              const SizedBox(height: 8),
-              _buildSectionHeader(theme, l10n.dataMaintenance),
-              _buildMaintenanceCard(context, theme, l10n),
+          return CustomScrollView(
+            key: const ValueKey('db_content_scroll_view'),
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              if (!widget.isSidePanel)
+                SliverAppBar.large(
+                  title: Text(l10n.databaseManager),
+                  centerTitle: true,
+                ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildSectionHeader(theme, l10n.availableDatabases),
+                    ...state.availableDbs.map((dbName) {
+                      final isActive = dbName == state.activeDbPrefix;
+                      return _buildDatabaseCard(
+                        context,
+                        dbName,
+                        isActive,
+                        state,
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                    _buildSectionHeader(theme, l10n.dataMaintenance),
+                    _buildMaintenanceCard(context, theme, l10n),
+                  ]),
+                ),
+              ),
             ],
           );
         },
-        loading: () => const Center(
-          key: ValueKey('db_list_loading'),
-          child: CircularProgressIndicator(),
+        loading: () => Center(
+          key: const ValueKey('db_loading'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(l10n.loading),
+            ],
+          ),
         ),
         error: (err, _) => Center(
-          key: ValueKey('db_list_error'),
-          child: Text(l10n.error(err.toString())),
+          key: const ValueKey('db_error'),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.error(err.toString()),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
 
     if (widget.isSidePanel) {
-      return Column(
+      return Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  onPressed: () =>
-                      ref.read(leftPanelContentProvider.notifier).state =
-                          LeftPanelContent.none,
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      l10n.databaseManager,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.databaseManager,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Expanded(child: body),
+            ],
           ),
-          Expanded(child: body),
-          Padding(
-            padding: const EdgeInsets.all(16),
+          Positioned(
+            right: 16,
+            bottom: 16,
             child: FloatingActionButton.extended(
               onPressed: _showCreateDialog,
               icon: const Icon(Icons.add),
@@ -526,7 +543,6 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.databaseManager), centerTitle: true),
       body: body,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateDialog,
@@ -538,12 +554,13 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
 
   Widget _buildSectionHeader(ThemeData theme, String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 24, 4, 12),
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
       child: Text(
         title,
-        style: theme.textTheme.titleSmall?.copyWith(
+        style: theme.textTheme.labelLarge?.copyWith(
           color: theme.colorScheme.primary,
           fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -565,139 +582,142 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
       clipBehavior: Clip.antiAlias,
-      elevation: isActive ? 2 : 0,
       color: isActive
-          ? colorScheme.primaryContainer
-          : colorScheme.surfaceContainer,
+          ? colorScheme.primaryContainer.withValues(alpha: 0.7)
+          : colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isActive
-              ? colorScheme.primary.withValues(alpha: 0.5)
-              : Colors.transparent,
-          width: 2,
+          color: isActive ? colorScheme.primary : Colors.transparent,
+          width: 1.5,
         ),
       ),
-      child: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            leading: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? colorScheme.primary
-                    : colorScheme.secondaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isActive ? Icons.dns_rounded : Icons.storage_rounded,
-                color: isActive
-                    ? colorScheme.onPrimary
-                    : colorScheme.onSecondaryContainer,
-              ),
-            ),
-            title: Text(
-              dbName == kDefaultDbName ? l10n.defaultDbName : dbName,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isActive ? colorScheme.onPrimaryContainer : null,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  l10n.dbStats(events, templates),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isActive
-                        ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                        : null,
-                  ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        splashColor: colorScheme.primary.withValues(alpha: 0.1),
+        onTap: isActive
+            ? null
+            : () async {
+                await ref.read(dbControllerProvider.notifier).switchDb(dbName);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      content: Text(l10n.switchedToDb(dbName)),
+                    ),
+                  );
+                }
+              },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? colorScheme.primary
+                      : colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 4),
+                child: Icon(
+                  isActive ? Icons.dns_rounded : Icons.storage_rounded,
+                  color: isActive
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dbName == kDefaultDbName ? l10n.defaultDbName : dbName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? colorScheme.onPrimaryContainer : null,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.dbStats(events, templates),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isActive
+                            ? colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.7,
+                              )
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: isActive
-                        ? colorScheme.primary.withValues(alpha: 0.2)
-                        : colorScheme.outline.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    isActive ? l10n.currentlyActive : l10n.inactive,
+                    l10n.currentlyActive,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: isActive
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                      color: colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                )
+              else if (dbName != kDefaultDbName)
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: colorScheme.error,
+                  ),
+                  onPressed: () => _showDeleteConfirm(context, dbName),
                 ),
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!isActive)
-                  FilledButton.tonal(
-                    onPressed: () async {
-                      await ref
-                          .read(dbControllerProvider.notifier)
-                          .switchDb(dbName);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.switchedToDb(dbName))),
-                        );
-                      }
-                    },
-                    child: Text(l10n.switchDb),
-                  ),
-                if (dbName != kDefaultDbName)
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: colorScheme.error,
-                    ),
-                    onPressed: () => _showDeleteConfirm(context, dbName),
-                  ),
-              ],
-            ),
           ),
-        ],
-      ),
-    );
+        ),
+      );
   }
 
   void _showDeleteConfirm(BuildContext context, String dbName) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        icon: Icon(Icons.delete_sweep_rounded, color: colorScheme.error),
         title: Text(l10n.deleteDbTitle(dbName)),
-        content: Text(l10n.deleteDbWarning),
+        content: Text(
+          l10n.deleteDbWarning,
+          style: theme.textTheme.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(l10n.cancel),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () {
               ref.read(dbControllerProvider.notifier).deleteDb(dbName);
               Navigator.pop(context);
             },
-            child: Text(
-              l10n.delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -713,13 +733,9 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Current Database Actions
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
+        Material(
           color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(24),
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
@@ -729,11 +745,14 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                 title: l10n.exportData,
                 onTap: _exportData,
               ),
-              Divider(
-                height: 1,
-                indent: 56,
-                endIndent: 16,
-                color: theme.colorScheme.outlineVariant,
+              Padding(
+                padding: const EdgeInsets.only(left: 64, right: 16),
+                child: Divider(
+                  height: 1,
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
               ),
               _buildMaintenanceTile(
                 context,
@@ -746,13 +765,14 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
         ),
         const SizedBox(height: 24),
         _buildSectionHeader(theme, l10n.dangerZone),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.colorScheme.errorContainer),
-          ),
+        Material(
           color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
+            ),
+          ),
           clipBehavior: Clip.antiAlias,
           child: _buildMaintenanceTile(
             context,
@@ -774,29 +794,42 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
     bool isDestructive = false,
   }) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Icon(
-        icon,
-        color: isDestructive
-            ? theme.colorScheme.error
-            : theme.colorScheme.onSurfaceVariant,
+      onTap: onTap,
+      splashColor: isDestructive 
+          ? colorScheme.error.withValues(alpha: 0.1)
+          : colorScheme.primary.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isDestructive
+              ? colorScheme.errorContainer.withValues(alpha: 0.2)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: isDestructive ? colorScheme.error : colorScheme.primary,
+        ),
       ),
       title: Text(
         title,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: isDestructive
-              ? theme.colorScheme.error
-              : theme.colorScheme.onSurface,
+        style: theme.textTheme.titleMedium?.copyWith(
+          color: isDestructive ? colorScheme.error : colorScheme.onSurface,
           fontWeight: isDestructive ? FontWeight.bold : FontWeight.w500,
+          fontSize: 15,
         ),
       ),
       trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 14,
-        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        Icons.chevron_right_rounded,
+        size: 20,
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
       ),
-      onTap: onTap,
     );
   }
 }

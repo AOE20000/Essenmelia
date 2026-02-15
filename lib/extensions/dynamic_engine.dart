@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animations/animations.dart';
 import '../l10n/app_localizations.dart';
 import 'logic_engine.dart';
 import 'extension_console.dart';
@@ -33,8 +34,39 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      floatingActionButton: FloatingActionButton.small(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (_) => SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: ExtensionConsole(engine: widget.engine),
+            ),
+          );
+        },
+        child: const Icon(Icons.bug_report),
+      ),
+      body: PageTransitionSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, animation, secondaryAnimation) {
+          return FadeThroughTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            child: child,
+          );
+        },
+        child: _buildMainContent(theme, l10n),
+      ),
+    );
+  }
+
+  Widget _buildMainContent(ThemeData theme, AppLocalizations l10n) {
     if (widget.engine.error != null) {
       return Center(
+        key: const ValueKey('error'),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -61,51 +93,43 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
     }
 
     if (!widget.engine.isInitialized) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        key: ValueKey('loading'),
+        child: CircularProgressIndicator(),
+      );
     }
 
     final viewDef = widget.engine.metadata.view;
     if (viewDef == null) {
-      return Center(child: Text(l10n.extensionNoUI));
+      return Center(
+        key: const ValueKey('no_ui'),
+        child: Text(l10n.extensionNoUI),
+      );
     }
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (_) => SizedBox(
-              height: MediaQuery.of(context).size.height * 0.7,
-              child: ExtensionConsole(engine: widget.engine),
+    return NestedScrollView(
+      key: const ValueKey('content'),
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        return [
+          SliverAppBar.large(
+            title: Text(widget.engine.metadata.name),
+            centerTitle: false,
+            pinned: true,
+            backgroundColor: theme.colorScheme.surface,
+            surfaceTintColor: theme.colorScheme.surfaceTint,
+          ),
+        ];
+      },
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: _buildWidget(viewDef),
             ),
           );
         },
-        child: const Icon(Icons.bug_report),
-      ),
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar.large(
-              title: Text(widget.engine.metadata.name),
-              centerTitle: false,
-              pinned: true,
-              backgroundColor: theme.colorScheme.surface,
-              surfaceTintColor: theme.colorScheme.surfaceTint,
-            ),
-          ];
-        },
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: _buildWidget(viewDef),
-              ),
-            );
-          },
-        ),
       ),
     );
   }
@@ -119,18 +143,29 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
     }
 
     // 如果组件引用了状态，则使用 ValueListenableBuilder 包装
-    // 注意：这里简单起见，如果引用多个状态，目前仅绑定第一个发现的状态，或者绑定整体变化
-    // 为了极致性能，后续可以改为监听多个 ValueNotifier
     return ValueListenableBuilder(
       valueListenable: widget.engine.getStateNotifier(stateKeys.first),
       builder: (context, value, child) {
-        return _buildWidgetInternal(def);
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          switchInCurve: Easing.emphasizedDecelerate,
+          switchOutCurve: Easing.emphasizedAccelerate,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeThroughTransition(
+              animation: animation,
+              secondaryAnimation: ReverseAnimation(animation),
+              fillColor: Colors.transparent,
+              child: child,
+            );
+          },
+          child: _buildWidgetInternal(def, key: ValueKey(value)),
+        );
       },
     );
   }
 
   /// 内部构建逻辑，不包含状态绑定
-  Widget _buildWidgetInternal(Map<String, dynamic> def) {
+  Widget _buildWidgetInternal(Map<String, dynamic> def, {Key? key}) {
     final type = def['type'] as String? ?? 'container';
     final children = def['children'] as List?;
     final props = def['props'] as Map<String, dynamic>? ?? {};
@@ -166,6 +201,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           return childType == 'expanded' || childType == 'spacer';
         });
         current = Column(
+          key: key,
           mainAxisSize: props['mainAxisSize'] == 'max' || hasFlex
               ? MainAxisSize.max
               : MainAxisSize.min,
@@ -186,6 +222,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           return childType == 'expanded' || childType == 'spacer';
         });
         current = Row(
+          key: key,
           mainAxisSize: props['mainAxisSize'] == 'max' || hasFlexRow
               ? MainAxisSize.max
               : MainAxisSize.min,
@@ -211,6 +248,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
         current = Text(
           _resolveValue(props['text'] ?? ''),
+          key: key,
           textAlign: _parseTextAlign(props['textAlign']),
           style: style.copyWith(
             fontSize: (props['fontSize'] as num?)?.toDouble(),
@@ -231,39 +269,48 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         if (variant == 'filled') {
           current = iconData != null
               ? FilledButton.icon(
+                  key: key,
                   onPressed: onTap,
                   icon: iconData,
                   label: label,
                 )
-              : FilledButton(onPressed: onTap, child: label);
+              : FilledButton(key: key, onPressed: onTap, child: label);
         } else if (variant == 'tonal') {
           current = iconData != null
               ? FilledButton.tonalIcon(
+                  key: key,
                   onPressed: onTap,
                   icon: iconData,
                   label: label,
                 )
-              : FilledButton.tonal(onPressed: onTap, child: label);
+              : FilledButton.tonal(key: key, onPressed: onTap, child: label);
         } else if (variant == 'outlined') {
           current = iconData != null
               ? OutlinedButton.icon(
+                  key: key,
                   onPressed: onTap,
                   icon: iconData,
                   label: label,
                 )
-              : OutlinedButton(onPressed: onTap, child: label);
+              : OutlinedButton(key: key, onPressed: onTap, child: label);
         } else if (variant == 'text') {
           current = iconData != null
-              ? TextButton.icon(onPressed: onTap, icon: iconData, label: label)
-              : TextButton(onPressed: onTap, child: label);
+              ? TextButton.icon(
+                  key: key,
+                  onPressed: onTap,
+                  icon: iconData,
+                  label: label,
+                )
+              : TextButton(key: key, onPressed: onTap, child: label);
         } else {
           current = iconData != null
               ? ElevatedButton.icon(
+                  key: key,
                   onPressed: onTap,
                   icon: iconData,
                   label: label,
                 )
-              : ElevatedButton(onPressed: onTap, child: label);
+              : ElevatedButton(key: key, onPressed: onTap, child: label);
         }
         break;
       case 'card':
@@ -277,6 +324,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
         if (variant == 'outlined') {
           current = Card.outlined(
+            key: key,
             elevation: elevation ?? 0,
             color: color,
             margin: EdgeInsets.zero,
@@ -287,6 +335,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           );
         } else if (variant == 'filled') {
           current = Card.filled(
+            key: key,
             elevation: elevation ?? 0,
             color: color,
             margin: EdgeInsets.zero,
@@ -297,6 +346,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           );
         } else {
           current = Card(
+            key: key,
             elevation: elevation,
             color: color,
             margin: EdgeInsets.zero,
@@ -312,6 +362,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         final title = props['title']?.toString();
 
         current = Column(
+          key: key,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (title != null)
@@ -361,6 +412,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
       case 'list_tile':
         current = ListTile(
+          key: key,
           title: Text(
             _resolveValue(props['title'] ?? ''),
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -427,12 +479,14 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
       case 'icon':
         current = Icon(
           IconData(props['icon'] ?? 0xe3af, fontFamily: 'MaterialIcons'),
+          key: key,
           size: (props['size'] as num?)?.toDouble(),
           color: _parseColor(props['color'], context),
         );
         break;
       case 'divider':
         current = Divider(
+          key: key,
           height: (props['height'] as num?)?.toDouble(),
           thickness: (props['thickness'] as num?)?.toDouble(),
           color: _parseColor(props['color'], context),
@@ -444,6 +498,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             ? (widget.engine.state[stateKey] == true)
             : (props['value'] == true);
         current = Switch(
+          key: key,
           value: value,
           onChanged: (val) {
             if (stateKey != null) {
@@ -459,6 +514,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             ? (widget.engine.state[stateKey] == true)
             : (props['value'] == true);
         current = Checkbox(
+          key: key,
           value: value,
           onChanged: (val) {
             if (stateKey != null) {
@@ -491,6 +547,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             ? (widget.engine.state[stateKey] as num?)?.toDouble() ?? 0.0
             : (props['value'] as num?)?.toDouble() ?? 0.0;
         current = Slider(
+          key: key,
           value: value,
           min: (props['min'] as num?)?.toDouble() ?? 0.0,
           max: (props['max'] as num?)?.toDouble() ?? 1.0,
@@ -640,16 +697,15 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         );
         break;
       case 'spacer':
-        current = const Spacer();
-        break;
+        return const Spacer();
       case 'expanded':
-        current = Expanded(
+        return Expanded(
+          key: key,
           flex: props['flex'] as int? ?? 1,
           child: children != null && children.isNotEmpty
               ? _buildWidget(children.first as Map<String, dynamic>)
               : const SizedBox.shrink(),
         );
-        break;
       case 'circular_progress':
         current = CircularProgressIndicator(
           value: (props['value'] as num?)?.toDouble(),
@@ -691,7 +747,8 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         );
         break;
       case 'positioned':
-        current = Positioned(
+        return Positioned(
+          key: key,
           left: (props['left'] as num?)?.toDouble(),
           top: (props['top'] as num?)?.toDouble(),
           right: (props['right'] as num?)?.toDouble(),
@@ -700,7 +757,6 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
               ? _buildWidget(children.first as Map<String, dynamic>)
               : const SizedBox.shrink(),
         );
-        break;
       case 'list_view':
         current = ListView(
           shrinkWrap: true,
@@ -720,38 +776,39 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         current = const SizedBox.shrink();
     }
 
-    // 应用通用的 Container 属性
-    if (type != 'spacer' && type != 'expanded' && type != 'positioned') {
-      if (onTap != null &&
-          type != 'button' &&
-          type != 'list_tile' &&
-          type != 'switch') {
-        current = GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: current,
-        );
-      }
-
-      current = Container(
-        padding: padding,
-        margin: margin,
-        width: width,
-        height: height,
-        alignment: _parseAlignment(props['alignment']),
-        decoration: color != null
-            ? BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(
-                  (props['borderRadius'] as num?)?.toDouble() ?? 0,
-                ),
-              )
-            : null,
+    // 应用通用的点击和布局包装
+    if (onTap != null &&
+        type != 'button' &&
+        type != 'list_tile' &&
+        type != 'switch' &&
+        type != 'checkbox' &&
+        type != 'slider' &&
+        type != 'chip' &&
+        type != 'segmented_button') {
+      current = GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: current,
       );
     }
 
-    return current;
+    return Container(
+      key: key,
+      padding: padding,
+      margin: margin,
+      width: width,
+      height: height,
+      alignment: _parseAlignment(props['alignment']),
+      decoration: color != null
+          ? BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(
+                (props['borderRadius'] as num?)?.toDouble() ?? 0,
+              ),
+            )
+          : null,
+      child: current,
+    );
   }
 
   /// 提取组件中引用的状态键
@@ -848,6 +905,16 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         case 'onsurface':
           return colorScheme.onSurface;
         case 'surfacevariant':
+          return colorScheme.surfaceContainerHighest;
+        case 'surfacecontainerlowest':
+          return colorScheme.surfaceContainerLowest;
+        case 'surfacecontainerlow':
+          return colorScheme.surfaceContainerLow;
+        case 'surfacecontainer':
+          return colorScheme.surfaceContainer;
+        case 'surfacecontainerhigh':
+          return colorScheme.surfaceContainerHigh;
+        case 'surfacecontainerhighest':
           return colorScheme.surfaceContainerHighest;
         case 'onsurfacevariant':
           return colorScheme.onSurfaceVariant;

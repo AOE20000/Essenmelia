@@ -47,8 +47,10 @@ class ExtensionJsEngine {
       _addLog('State Updated: $key = $value');
 
       // 通知 JS 引擎状态已同步
+      // 漏洞修复：使用 jsonEncode 对 key 进行转义，防止 JS 注入
+      final safeKey = jsonEncode(key);
       _jsRuntime.evaluate(
-        'if (typeof state !== "undefined") { state["$key"] = ${jsonEncode(value)}; }',
+        'if (typeof state !== "undefined") { state[$safeKey] = ${jsonEncode(value)}; }',
       );
     }
   }
@@ -235,15 +237,52 @@ class ExtensionJsEngine {
   }
 
   Future<dynamic> callFunction(String name, [dynamic params]) async {
+    if (!_isInitialized) {
+      debugPrint('JS Engine not initialized, skipping $name');
+      return null;
+    }
     try {
       final paramsJson = jsonEncode(params ?? {});
-      final code = 'if (typeof $name === "function") { $name($paramsJson); }';
+      // 使用 try-catch 包裹 JS 调用，并显式返回 JSON 字符串或 null
+      // 漏洞修复：使用 globalThis[name] 形式调用，并验证 name 是否为安全字符串，防止注入
+      final safeName = jsonEncode(name);
+      final code =
+          '''
+        (function() {
+          var funcName = $safeName;
+          var func = globalThis[funcName];
+          if (typeof func === "function") {
+            try {
+              var result = func($paramsJson);
+              if (result instanceof Promise) {
+                return result.then(r => JSON.stringify(r)).catch(e => JSON.stringify({error: e.toString()}));
+              }
+              return JSON.stringify(result);
+            } catch (e) {
+              return JSON.stringify({error: e.toString()});
+            }
+          }
+          return null;
+        })()
+      ''';
+
       final result = await _jsRuntime.evaluateAsync(code);
       if (result.isError) {
         debugPrint('JS Execution Error ($name): ${result.toString()}');
         return null;
       }
-      return result.stringResult;
+
+      final rawResult = result.stringResult;
+      if (rawResult == 'null' || rawResult == 'undefined') {
+        return null;
+      }
+
+      try {
+        return jsonDecode(rawResult);
+      } catch (e) {
+        // 如果不是 JSON 格式，直接返回原始字符串
+        return rawResult;
+      }
     } catch (e) {
       debugPrint('JS Execution Exception ($name): $e');
       return null;

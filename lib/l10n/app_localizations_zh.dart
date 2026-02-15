@@ -78,6 +78,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get databaseManager => '数据库管理';
 
   @override
+  String get loading => '加载中...';
+
+  @override
   String get importExport => '导入 / 导出';
 
   @override
@@ -362,10 +365,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionLinkSubtitle => '支持 URL 或 GitHub 链接';
 
   @override
-  String get installFromClipboard => '从剪贴板安装';
+  String get installFromClipboard => '从剪贴板安装链接';
 
   @override
-  String get installFromClipboardSubtitle => '读取剪贴板中的 JSON 或 URL';
+  String get installFromClipboardSubtitle => '支持 ZIP / EZIP / GitHub 链接';
 
   @override
   String get invalidInput => '输入无效';
@@ -496,19 +499,34 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get extensionExport => '导出与转换';
+  String get extensionExport => '导出扩展';
 
   @override
-  String get extensionExportJson => '标准 JSON 包';
+  String get extensionCopyGitHubLink => '复制 GitHub 链接';
 
   @override
-  String get extensionExportJsonSubtitle => '单文件，适合分享';
+  String get extensionCopyGitHubLinkSubtitle => '便于在其他设备分享';
 
   @override
-  String get extensionExportZip => '扩展 ZIP 源码包';
+  String get extensionExportZip => '导出 ZIP 源码包';
 
   @override
-  String get extensionExportZipSubtitle => '包含完整仓库的存档';
+  String get extensionExportZipSubtitle => '包含完整扩展源码的压缩包';
+
+  @override
+  String get manualImport => '手动导入';
+
+  @override
+  String get manualImportTitle => '手动导入扩展';
+
+  @override
+  String get manualImportUrlHint => '输入 GitHub 仓库 URL 或 ZIP 链接';
+
+  @override
+  String get manualImportDescription => '支持从 GitHub 仓库、Raw 链接或直接 ZIP 下载地址导入。';
+
+  @override
+  String get import => '导入';
 
   @override
   String get extensionPermissionReadEvents => '读取事件';
@@ -634,7 +652,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionSectionBuiltIn => '内置';
 
   @override
-  String get extensionSectionOnline => '在线商店';
+  String get extensionSectionOnline => 'GITHUB_ESSENMELIA_EXTEND';
+
+  @override
+  String updateAvailable(String version) {
+    return '发现新版本 v$version';
+  }
 
   @override
   String get extensionRestrictedAccess => '受限访问';
@@ -910,7 +933,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFromLocalFile => '从本地文件导入';
 
   @override
-  String get selectJsonExtension => '选择 .json 或 .zip 扩展包';
+  String get selectJsonExtension => '选择 .zip 扩展包';
 
   @override
   String get enterUrlOrGithubLink => '输入 URL 或 GitHub 链接';
@@ -1141,7 +1164,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionNoChanges => '无变更';
 
   @override
-  String get extensionNoPermissionsRequired => '无需权限';
+  String get extensionNoPermissionsRequired => '无需任何权限';
 
   @override
   String get update => '更新';
@@ -1256,6 +1279,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extDevSpecsDesc => '元数据、UI 组件库与逻辑引擎';
+
+  @override
+  String get createRepoGuide => '扩展仓库创建指南';
+
+  @override
+  String get createRepoGuideDesc => '清单文件、结构与 GitHub 发现机制';
 
   @override
   String get selectDocToRead => '请选择一个文档进行阅读';

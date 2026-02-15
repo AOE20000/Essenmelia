@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'Database Manager'**
   String get databaseManager;
 
+  /// Generic loading message
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+
   /// Label for import/export feature
   ///
   /// In en, this message translates to:
@@ -767,13 +773,13 @@ abstract class AppLocalizations {
   /// Label for clipboard-based extension installation
   ///
   /// In en, this message translates to:
-  /// **'Install from Clipboard'**
+  /// **'Install Link from Clipboard'**
   String get installFromClipboard;
 
   /// Subtitle for clipboard-based extension installation
   ///
   /// In en, this message translates to:
-  /// **'Read JSON or URL from clipboard'**
+  /// **'Supports ZIP / EZIP / GitHub links'**
   String get installFromClipboardSubtitle;
 
   /// Generic error message for invalid input
@@ -989,32 +995,62 @@ abstract class AppLocalizations {
   /// Label for exporting an extension
   ///
   /// In en, this message translates to:
-  /// **'Export & Convert'**
+  /// **'Export Extension'**
   String get extensionExport;
 
-  /// Label for JSON export format
+  /// Label for copying GitHub link
   ///
   /// In en, this message translates to:
-  /// **'Standard JSON Package'**
-  String get extensionExportJson;
+  /// **'Copy GitHub Link'**
+  String get extensionCopyGitHubLink;
 
-  /// Subtitle for JSON export format
+  /// Subtitle for copying GitHub link
   ///
   /// In en, this message translates to:
-  /// **'Single file, best for sharing'**
-  String get extensionExportJsonSubtitle;
+  /// **'Easy to share with others'**
+  String get extensionCopyGitHubLinkSubtitle;
 
   /// Label for ZIP export format
   ///
   /// In en, this message translates to:
-  /// **'Extension ZIP Package'**
+  /// **'Export ZIP Source'**
   String get extensionExportZip;
 
   /// Subtitle for ZIP export format
   ///
   /// In en, this message translates to:
-  /// **'Complete repository archive'**
+  /// **'Complete source code archive'**
   String get extensionExportZipSubtitle;
+
+  /// Label for manual import
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Import'**
+  String get manualImport;
+
+  /// Title for manual import dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Import Extension'**
+  String get manualImportTitle;
+
+  /// Hint text for manual import URL
+  ///
+  /// In en, this message translates to:
+  /// **'Enter GitHub URL or ZIP link'**
+  String get manualImportUrlHint;
+
+  /// Description for manual import
+  ///
+  /// In en, this message translates to:
+  /// **'Supports GitHub repositories, Raw links, or direct ZIP URLs.'**
+  String get manualImportDescription;
+
+  /// Generic import button label
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get import;
 
   /// Permission label for reading events
   ///
@@ -1265,8 +1301,14 @@ abstract class AppLocalizations {
   /// Header for online extension store section
   ///
   /// In en, this message translates to:
-  /// **'Online Store'**
+  /// **'GITHUB_ESSENMELIA_EXTEND'**
   String get extensionSectionOnline;
+
+  /// Label indicating an update is available for an extension
+  ///
+  /// In en, this message translates to:
+  /// **'New version available: {version}'**
+  String updateAvailable(String version);
 
   /// Label for restricted access mode
   ///
@@ -1769,7 +1811,7 @@ abstract class AppLocalizations {
   /// Hint text for selecting extension package
   ///
   /// In en, this message translates to:
-  /// **'Select .json or .zip extension package'**
+  /// **'Select .zip extension package'**
   String get selectJsonExtension;
 
   /// Hint text for extension URL input
@@ -2431,6 +2473,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Metadata, UI component library & logic engine'**
   String get extDevSpecsDesc;
+
+  /// Title for extension repository creation guide doc
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Repository Guide'**
+  String get createRepoGuide;
+
+  /// Description for extension repository creation guide doc
+  ///
+  /// In en, this message translates to:
+  /// **'Manifest, structure & GitHub discovery'**
+  String get createRepoGuideDesc;
 
   /// Placeholder when no doc is selected
   ///

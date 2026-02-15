@@ -26,9 +26,6 @@ children:
             trailing:
               type: badge
               props: { label: "RUNNING", backgroundColor: "primaryContainer", textColor: "primary" }
-              children:
-                - type: text
-                  props: { text: " " } # 占位
         - type: list_tile
           props:
             title: "请求统计"
@@ -36,7 +33,7 @@ children:
             icon: 0xe85d # assessment
             iconBgColor: "secondaryContainer"
             showChevron: true
-            action: "showStatsDetail"
+          onTap: showStatsDetail
 
   # 控制面板
   - type: settings_group
@@ -74,7 +71,7 @@ children:
             icon: 0xe88e # info
             iconBgColor: "tertiaryContainer"
             showChevron: true
-            action: "viewLogs"
+          onTap: viewLogs
         - type: list_tile
           props:
             title: "清空历史数据"
@@ -82,9 +79,9 @@ children:
             icon: 0xe872 # delete
             iconBgColor: "errorContainer"
             iconColor: "error"
-            action: "clearLogs"
+          onTap: clearLogs
 
-  # 日志显示区域 (如果是展开状态)
+  # 日志显示区域
   - type: card
     props:
       margin: { top: 16, left: 16, right: 16 }

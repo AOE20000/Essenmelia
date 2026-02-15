@@ -187,8 +187,8 @@
   "extensionDetails": "扩展详情",
   "extensionOpen": "打开扩展",
   "extensionLinkSubtitle": "支持 URL 或 GitHub 链接",
-  "installFromClipboard": "从剪贴板安装",
-  "installFromClipboardSubtitle": "读取剪贴板中的 JSON 或 URL",
+  "installFromClipboard": "从剪贴板安装链接",
+  "installFromClipboardSubtitle": "支持 ZIP / EZIP / GitHub 链接",
   "install": "安装",
   "noAvailableExtensions": "商店中暂无可用扩展",
   "failedToLoadStore": "无法加载商店",
@@ -301,11 +301,16 @@
       }
     }
   },
-  "extensionExport": "导出与转换",
-  "extensionExportJson": "标准 JSON 包",
-  "extensionExportJsonSubtitle": "单文件，适合分享",
-  "extensionExportZip": "扩展 ZIP 源码包",
-  "extensionExportZipSubtitle": "包含完整仓库的存档",
+  "extensionExport": "导出扩展",
+  "extensionCopyGitHubLink": "复制 GitHub 链接",
+  "extensionCopyGitHubLinkSubtitle": "便于在其他设备分享",
+  "extensionExportZip": "导出 ZIP 源码包",
+  "extensionExportZipSubtitle": "包含完整扩展源码的压缩包",
+  "manualImport": "手动导入",
+  "manualImportTitle": "手动导入扩展",
+  "manualImportUrlHint": "输入 GitHub 仓库 URL 或 ZIP 链接",
+  "manualImportDescription": "支持从 GitHub 仓库、Raw 链接或直接 ZIP 下载地址导入。",
+  "import": "导入",
   "extensionPermissionReadEvents": "读取事件",
   "extensionPermissionReadEventsDesc": "允许扩展查看您的所有事件和任务。",
   "extensionPermissionAddEvents": "添加事件",
@@ -347,7 +352,15 @@
   "extensionManagementTitle": "扩展程序",
   "extensionSectionInstalled": "已安装",
   "extensionSectionBuiltIn": "内置",
-  "extensionSectionOnline": "在线商店",
+  "extensionSectionOnline": "GITHUB_ESSENMELIA_EXTEND",
+  "updateAvailable": "发现新版本 v{version}",
+  "@updateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "extensionRestrictedAccess": "受限访问",
   "extensionRestrictedAccessDesc": "所有数据访问均需手动授权。",
   "extensionInterceptedTitle": "访问被拦截",
@@ -505,6 +518,7 @@
   "appPreview": "应用预览",
   "confirmApply": "确认应用",
   "analyzingContent": "正在分析内容...",
+  "loading": "加载中...",
   "smartAnalysisTooltip": "智能分析内容",
   "autoFilledByAi": "AI 助手已自动填充",
   "unsupportedFileFormat": "不支持的文件格式",
@@ -565,7 +579,7 @@
   "navExtensions": "扩展",
   "addExtension": "添加扩展",
   "importFromLocalFile": "从本地文件导入",
-  "selectJsonExtension": "选择 .json 或 .zip 扩展包",
+  "selectJsonExtension": "选择 .zip 扩展包",
   "enterUrlOrGithubLink": "输入 URL 或 GitHub 链接",
   "downloadAndInstallFromLink": "从链接下载并安装",
   "confirmUninstall": "确认卸载",
@@ -682,7 +696,7 @@
   "extensionFullTrustDesc": "直接访问系统 API",
   "extensionPermissionsStatement": "权限声明",
   "extensionNoChanges": "无变更",
-  "extensionNoPermissionsRequired": "无需权限",
+  "extensionNoPermissionsRequired": "无需任何权限",
   "update": "更新",
   "databaseError": "数据库错误: {error}",
   "@databaseError": {
@@ -726,6 +740,8 @@
   "apiGuideDesc": "核心方法、通知方案与外部集成",
   "extDevSpecs": "扩展开发规范",
   "extDevSpecsDesc": "元数据、UI 组件库与逻辑引擎",
+  "createRepoGuide": "扩展仓库创建指南",
+  "createRepoGuideDesc": "清单文件、结构与 GitHub 发现机制",
   "selectDocToRead": "请选择一个文档进行阅读",
   "loadFailed": "加载失败: {error}",
   "@loadFailed": {

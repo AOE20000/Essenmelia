@@ -22,6 +22,9 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 - **核心职责**：
   - 初始化 `flutter_js` 运行时并注入 `essenmelia` 全局 API 对象。
   - 维护扩展的内部 `state`，并同步给 UI 渲染引擎。
+  - **JS 桥接安全 (Injection Prevention)**：
+    - 状态同步时，对所有键名执行 `jsonEncode` 转义，防止通过恶意键名进行 JS 注入。
+    - 函数调用采用 `globalThis[jsonEncode(name)]` 模式，确保执行路径受控。
   - **性能优化 (Fine-grained Binding)**：为每个状态键维护独立的 `ValueNotifier`。UI 组件仅监听其引用的特定状态，避免全量重绘。
   - **日志追踪**：劫持 `console.log`，通过桥接转发至 Dart 侧的“扩展控制台”。
   - 监听主程序的系统事件并触发 `onEvent` 回调。
@@ -45,12 +48,18 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 ### 2.3 框架层：`ExtensionManager` (核心中枢)
 `ExtensionManager` 是整个系统的中枢，负责扩展的生命周期与安全性。
 
-- **职责**：
-  - **多文件架构支持**：支持从 Assets 或 ZIP 中加载分离的 `manifest.yaml`, `view.yaml`, `logic.yaml/main.js` 文件。系统会自动在 `assets/extensions/<id>/` 目录下查找这些文件。
-  - **权限别名映射 (Permission Aliasing)**：为了兼容旧版扩展，系统会自动将 `write_events` 等旧权限名映射到新版细分权限（如 `addEvents`），并统一处理 `snake_case` 到 `camelCase` 的转换。
-  - **安全性校验**：所有扩展在加载时均会进行 SHA-256 完整性校验。内置扩展通过静态哈希比对，外部扩展则通过安装时的哈希锁定来防止篡改。
+- **框架层 (`ExtensionManager`)** (核心中枢)
+  - **多文件架构支持**：支持从 Assets 或 ZIP 中加载分离的 `manifest.yaml`, `view.yaml`, `logic.yaml/main.js` 文件。
+  - **安装流程与格式支持**：
+    - **多种安装源**：支持从本地 ZIP/EZIP 文件、远程下载链接、以及 GitHub 仓库（通过自动解析仓库 ZIP 存档）进行安装。
+    - **标准格式支持**：原生支持 `.zip` 和 `.ezip` 格式。系统会自动解压并寻找 `manifest.yaml` 以完成验证。
+    - **链接安装逻辑**：从剪贴板或 URL 安装时，系统会自动探测链接类型并触发对应的下载器/解压器。
+  - **严格权限校验**：所有权限申请必须使用标准 `camelCase` 格式。系统不再支持旧版的权限别名映射。
+  - **安全性校验 (Integrity Hardening)**：所有扩展在安装时均会进行 SHA-256 完整性校验。哈希校验范围覆盖了 `manifest.yaml`, `view.yaml` 以及 `main.js` 的**完整合并内容**。一旦安装，任何对本地文件的物理篡改都会导致扩展无法加载。
   - **外部调用路由**：拦截 ADB/Intent 请求，并将其转发给 `system.external_call` 扩展处理。
-  - **权限网关**：在 JS API 调用进入业务 Service 前执行权限校验。
+  - **权限网关与 DoS 防护**：
+    - 在 JS API 调用进入业务 Service 前执行权限校验。
+    - **弹窗冷却机制**：针对非信任扩展频繁触发的敏感操作，系统设置了 5 分钟的对话框冷却期。冷却期间的重复请求将被自动拒绝并返回模拟数据，防止恶意扩展通过无限弹窗实施 DoS 攻击。
 - **稳定性保护**：
   - **执行超时**：所有扩展触发的网络请求强制 15 秒超时，防止恶意逻辑挂起主线程。
   - **递归深度限制**：逻辑引擎（Path B）与渲染引擎（Path C）均设置了 50 层的最大递归深度，防止死循环导致应用崩溃。
@@ -75,6 +84,7 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 这是黑盒欺骗方案的核心实现。
 
 - **职责**：根据数据模型（如 `Event`, `EventStep`）生成随机但结构正确的伪造数据。
+- **隐私增强 (Anti Side-Channel)**：对于受限 (Untrusted) 扩展，系统强制关闭真实数据的混合逻辑 (`mixReal: false`)。扩展无法获取到任何关于真实数据库的统计特征，防止通过返回数量、时间分布等元数据泄露用户隐私。
 - **意义**：确保即使是恶意扩展，在未授权情况下也只能在沙箱中“自嗨”，无法触及用户真实数据。
 - **代码参考**：[mock_data_generator.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/utils/mock_data_generator.dart)
 
@@ -123,4 +133,4 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
   - `DynamicEngine` 负责将 JSON 转换为 Flutter Widget。更新组件支持时，需同时更新 `Path C` 的解析逻辑。
 
 ---
-*最后更新：2026-02-14*
+*最后更新：2026-02-15 (安全增强版本)*

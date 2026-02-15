@@ -1,6 +1,7 @@
 ---
 alwaysApply: true
 ---
+
 # 项目构建与环境维护注意事项
 
 本项目运行在 Flutter 3.38.9 环境下，由于涉及 Gradle 8.x 的 Lazy Property 特性以及 Windows 中文路径兼容性，构建环境相对敏感。后续维护请务必参考以下说明。
@@ -63,6 +64,17 @@ alwaysApply: true
 - 在 `pubspec.yaml` 中，`monochrome_android` 指向 PNG 以通过构建。
 - **手动补全**：如果需要修复动态图标，需将 SVG 转换为 Android 兼容的 Vector XML，放置在 `res/drawable/ic_launcher_monochrome.xml`，并手动创建 `res/mipmap-anydpi-v33/launcher_icon.xml` 引用它。
 - 当前状态：由于环境工具链限制，动态图标需手动维护，插件仅处理标准/自适应 PNG 图标。
+
+### G. 扩展安全性维护 (Security Hardening)
+**状态**：已实施完整性校验、隐私盾强化及 JS 注入防护。
+
+**对策**：
+- **完整性哈希**：修改 `ExtensionManager` 导入逻辑时，务必确保 `manifestHash` 覆盖 `logicJs` 和 `viewYaml`。严禁改回仅校验 Manifest 的模式。
+- **隐私拦截**：在任何涉及用户数据的 API Handler 中，若 `isUntrusted` 为 `true`，**严禁**调用真实 Provider 的数据。必须使用 `MockDataGenerator` 且设置 `mixReal: false`。
+- **JS 桥接安全**：
+    - 向 JS 注入变量或调用函数时，必须使用 `jsonEncode` 处理参数和标识符。
+    - 禁止在 `ExtensionJsEngine` 中使用字符串插值拼接 JS 代码，除非内容是硬编码的。
+- **DoS 防护**：权限弹窗已设置 5 分钟冷却时间。若需调整 UI 交互流，请检查 `ExtensionManager._dialogCooldowns`。
 
 ---
 

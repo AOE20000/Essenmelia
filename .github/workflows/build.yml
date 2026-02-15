@@ -42,8 +42,10 @@ jobs:
           cache: 'gradle'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-      - name: Install NDK
-        run: sdkmanager "ndk;28.2.13676358"
+      - name: Update Android SDK
+        run: |
+          sdkmanager --update
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:

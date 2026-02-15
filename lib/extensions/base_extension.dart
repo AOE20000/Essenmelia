@@ -103,6 +103,7 @@ class ExtensionMetadata {
   final String description;
   final String author;
   final String version;
+  final String? repoFullName;
   final IconData icon;
   final List<ExtensionPermission> requiredPermissions;
   final Map<String, dynamic>? view;
@@ -116,6 +117,7 @@ class ExtensionMetadata {
     required this.icon,
     this.author = 'Unknown',
     this.version = '1.0.0',
+    this.repoFullName,
     this.requiredPermissions = const [],
     this.view,
     this.logic,
@@ -129,6 +131,7 @@ class ExtensionMetadata {
       'description': description,
       'author': author,
       'version': version,
+      'repo_full_name': repoFullName,
       'icon_code': icon.codePoint,
       'icon_font': icon.fontFamily,
       'permissions': requiredPermissions.map((e) => e.name).toList(),
@@ -145,6 +148,7 @@ class ExtensionMetadata {
       description: json['description'] ?? 'No description',
       author: json['author'] ?? 'Unknown',
       version: json['version'] ?? '1.0.0',
+      repoFullName: json['repo_full_name'],
       icon: IconData(
         json['icon_code'] ?? 0xe3af, // Default to 'extension' icon
         fontFamily: json['icon_font'] ?? 'MaterialIcons',
@@ -157,22 +161,13 @@ class ExtensionMetadata {
               ?.map((e) {
                 if (e is! String) return null;
 
-                // Try direct match
                 try {
                   return ExtensionPermission.values.firstWhere(
                     (p) => p.name == e,
                   );
                 } catch (_) {
-                  // Try mapping common variations (snake_case to camelCase)
-                  final mappedName = _mapPermissionName(e);
-                  try {
-                    return ExtensionPermission.values.firstWhere(
-                      (p) => p.name == mappedName,
-                    );
-                  } catch (_) {
-                    debugPrint('Unknown permission in JSON: $e');
-                    return null;
-                  }
+                  debugPrint('Unknown permission in JSON: $e');
+                  return null;
                 }
               })
               .whereType<ExtensionPermission>()
@@ -215,46 +210,6 @@ class ExtensionMetadata {
   factory ExtensionMetadata.fromYaml(String yamlStr) {
     final map = yamlToMap(yamlStr);
     return ExtensionMetadata.fromJson(map);
-  }
-
-  static String _mapPermissionName(String name) {
-    // Basic snake_case to camelCase conversion
-    // e.g., read_events -> readEvents
-    final parts = name.split('_');
-    String camelCase = name;
-    if (parts.length > 1) {
-      camelCase =
-          parts[0] +
-          parts
-              .skip(1)
-              .map((p) => p.isEmpty ? '' : p[0].toUpperCase() + p.substring(1))
-              .join();
-    }
-
-    // Special manual mappings
-    final manualMap = {
-      'showNotification': 'notifications',
-      'show_notification': 'notifications',
-      'write_events': 'addEvents',
-      'writeEvents': 'addEvents',
-      'editEvents': 'updateEvents',
-      'edit_events': 'updateEvents',
-      'removeEvents': 'deleteEvents',
-      'remove_events': 'deleteEvents',
-      'database': 'manageDb',
-      'storage': 'fileSystem',
-      'calendar': 'readCalendar',
-      'calendar_read': 'readCalendar',
-      'calendar_write': 'writeCalendar',
-      'internet': 'network',
-      'theme': 'systemInfo',
-      'ui': 'systemInfo',
-      'info': 'systemInfo',
-      'jump': 'navigation',
-      'search': 'navigation',
-    };
-
-    return manualMap[camelCase] ?? manualMap[name] ?? camelCase;
   }
 }
 

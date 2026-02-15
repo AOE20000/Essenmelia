@@ -540,8 +540,37 @@ class _ExtensionDetailsScreenState
     ExtensionAuthNotifier authNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    final manager = ref.watch(extensionManagerProvider);
+    final newVersion = manager.availableUpdates[metadata.id];
+    final hasUpdate = newVersion != null;
+
     return Column(
       children: [
+        if (hasUpdate) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: FilledButton.icon(
+              onPressed: () => _handleUpdate(context, ref, metadata),
+              icon: const Icon(Icons.system_update_alt_rounded),
+              label: Text(
+                l10n.updateAvailable(newVersion),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.tertiary,
+                foregroundColor: theme.colorScheme.onTertiary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         SizedBox(
           width: double.infinity,
           height: 56,
@@ -609,6 +638,27 @@ class _ExtensionDetailsScreenState
     );
   }
 
+  Future<void> _handleUpdate(
+    BuildContext context,
+    WidgetRef ref,
+    ExtensionMetadata metadata,
+  ) async {
+    final repoFullName = metadata.repoFullName;
+    if (repoFullName == null) return;
+
+    final url = 'https://github.com/$repoFullName/archive/refs/heads/main.zip';
+    final manager = ref.read(extensionManagerProvider);
+    final result = await manager.importFromUrl(url);
+    if (result != null && context.mounted) {
+      // 更新成功后，由于 ExtensionDetailsScreen 依赖的 extension 实例已过期（Metadata 已变），
+      // 最好关闭当前页面或刷新
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('扩展更新成功')));
+    }
+  }
+
   void _showExportMenu(ThemeData theme, ExtensionMetadata metadata) {
     final manager = ref.read(extensionManagerProvider);
     final l10n = AppLocalizations.of(context)!;
@@ -633,12 +683,18 @@ class _ExtensionDetailsScreenState
               const SizedBox(height: 20),
               _buildExportOption(
                 theme,
-                icon: Icons.description_outlined,
-                title: l10n.extensionExportJson,
-                subtitle: l10n.extensionExportJsonSubtitle,
+                icon: Icons.link_rounded,
+                title: l10n.extensionCopyGitHubLink,
+                subtitle: l10n.extensionCopyGitHubLinkSubtitle,
                 onTap: () {
                   Navigator.pop(context);
-                  manager.exportExtension(metadata.id);
+                  manager.copyGitHubLink(metadata.id).then((_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('已复制 GitHub 链接')),
+                      );
+                    }
+                  });
                 },
               ),
               const SizedBox(height: 12),

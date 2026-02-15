@@ -33,9 +33,9 @@ Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使�
 
 ### 2.2 权限系统 (Dynamic Permissions)
 
-Essenmelia 采用**动态权限绑定机制**。开发者声明的权限会自动关联到框架内注册的 API。
+Essenmelia 采用**动态权限绑定机制**。开发者必须在 `manifest.yaml` 中使用标准 `camelCase` 格式声明权限。
 
-- **自动别名映射**：系统会自动将旧版名称（如 `write_events`）或 `snake_case` 名称映射到标准权限。
+- **严格格式**：系统不再支持 `snake_case` 或旧版权限别名。
 - **透明展示**：在安装界面，系统会根据 `ExtensionApiRegistry` 动态列出该权限下允许扩展执行的具体操作（如“添加新任务”、“读取日历”等）。
 
 **常用权限：**

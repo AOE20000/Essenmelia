@@ -21,7 +21,7 @@ Essenmelia 采用高度解耦的分层设计：
 
 - **逻辑层 (`ExtensionJsEngine`)**：在沙箱环境中运行 JS 脚本，处理业务逻辑并同步状态。
 - **渲染层 (`DynamicEngine`)**：将 YAML 定义转换为响应式的 Flutter Widget 树，支持局部刷新。
-- **框架层 (`ExtensionManager`)**：管理扩展生命周期、权限校验与安全网关。
+- **框架层 (`ExtensionManager`)**：管理扩展生命周期、严格的权限校验与安全网关。
 - **隐私层 (`MockDataGenerator`)**：负责生成结构正确的伪造数据以欺骗未授权访问。
 
 > 📖 更多架构细节请参阅：[架构设计文档](assets/docs/architecture.md)
@@ -34,7 +34,7 @@ Essenmelia 采用高度解耦的分层设计：
 
 ### 快速开始
 一个标准的扩展通常包含：
-- `manifest.yaml`: 定义元数据与权限。
+- `manifest.yaml`: 定义元数据与权限（必须使用标准 camelCase 格式）。
 - `view.yaml`: 描述 MD3 界面布局。
 - `main.js`: 处理逻辑与 API 调用。
 

@@ -44,7 +44,9 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
           leading: IconButton(
             icon: const Icon(Icons.close_rounded),
             onPressed: () {
-              if (Navigator.canPop(context)) Navigator.of(context).pop();
+              if (Navigator.canPop(context)) {
+                Navigator.of(context).pop();
+              }
             },
           ),
           title: Text(
@@ -79,7 +81,7 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
           },
           child: isWelcomeMode
               ? _buildOnboarding(context, theme, l10n)
-              : _buildMarkdownReader(context, theme, l10n),
+              : _buildMarkdownReader(context, l10n, theme, colorScheme),
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: uiState.mode.index,
@@ -122,12 +124,14 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
         content: l10n.welcomeContent1,
         icon: Icons.auto_awesome_rounded,
         color: colorScheme.primary,
+        image:
+            'assets/images/welcome_1.png', // Optional: could use illustration
       ),
       _GuideStep(
         title: l10n.privacyFirst,
         subtitle: l10n.welcomeSubtitle2,
         content: l10n.welcomeContent2,
-        icon: Icons.shield_rounded,
+        icon: Icons.security_rounded,
         color: colorScheme.secondary,
       ),
       _GuideStep(
@@ -148,57 +152,93 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
             onPageChanged: (index) => setState(() => _currentStep = index),
             itemBuilder: (context, index) {
               final step = steps[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Spacer(),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 800),
-                      curve: Curves.elasticOut,
-                      builder: (context, value, child) {
-                        return Transform.scale(scale: value, child: child);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(32),
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 48,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 1000),
+                        curve: Curves.elasticOut,
+                        builder: (context, value, child) {
+                          return Transform.scale(
+                            scale: value,
+                            child: Transform.rotate(
+                              angle: (1.0 - value) * 0.2,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                step.color.withValues(alpha: 0.2),
+                                step.color.withValues(alpha: 0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(48),
+                            boxShadow: [
+                              BoxShadow(
+                                color: step.color.withValues(alpha: 0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Icon(step.icon, color: step.color, size: 80),
+                        ),
+                      ),
+                      const SizedBox(height: 64),
+                      Text(
+                        step.title,
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: theme.colorScheme.onSurface,
+                          letterSpacing: -1,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: step.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(28),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Icon(step.icon, color: step.color, size: 80),
+                        child: Text(
+                          step.subtitle,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: step.color,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 48),
-                    Text(
-                      step.title,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+                      const SizedBox(height: 32),
+                      Text(
+                        step.content,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          height: 1.6,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 17,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      step.subtitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: step.color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      step.content,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        height: 1.5,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const Spacer(),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -214,66 +254,101 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     ColorScheme colorScheme,
     AppLocalizations l10n,
   ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              totalSteps,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: _currentStep == index ? 32 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _currentStep == index
-                      ? colorScheme.primary
-                      : colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(4),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                totalSteps,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutCubic,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentStep == index ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _currentStep == index
+                        ? colorScheme.primary
+                        : colorScheme.primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () {
-                if (_currentStep < totalSteps - 1) {
-                  _pageController.nextPage(
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeInOut,
-                  );
-                } else {
-                  if (Navigator.canPop(context)) Navigator.of(context).pop();
-                }
-              },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                if (_currentStep > 0)
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeOutCubic,
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                      ),
+                      child: Text(
+                        l10n.cancel, // Use cancel or similar
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton(
+                    onPressed: () {
+                      if (_currentStep < totalSteps - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeOutCubic,
+                        );
+                      } else {
+                        if (Navigator.canPop(context)) {
+                          Navigator.of(context).pop();
+                        }
+                      }
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        _currentStep == totalSteps - 1
+                            ? l10n.startExperience
+                            : l10n.nextStep,
+                        key: ValueKey(_currentStep == totalSteps - 1),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: Text(
-                _currentStep == totalSteps - 1
-                    ? l10n.startExperience
-                    : l10n.nextStep,
-              ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMarkdownReader(
-    BuildContext context,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
-    final docs = [
+  List<_DocItem> _getDocs(AppLocalizations l10n) {
+    return [
       _DocItem(
         title: l10n.archDesign,
         description: l10n.archDesignDesc,
@@ -292,218 +367,337 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
         icon: Icons.extension_rounded,
         assetPath: 'assets/docs/extensions.md',
       ),
+      _DocItem(
+        title: l10n.createRepoGuide,
+        description: l10n.createRepoGuideDesc,
+        icon: Icons.terminal_rounded,
+        assetPath: 'assets/docs/create_repository_guide.md',
+      ),
     ];
+  }
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth >= 1024;
+  Widget _buildMarkdownReader(
+    BuildContext context,
+    AppLocalizations l10n,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final docs = _getDocs(l10n);
+    final isLargeScreen = MediaQuery.of(context).size.width > 900;
 
-    if (isLargeScreen) {
-      return Row(
-        children: [
-          SizedBox(
+    return Row(
+      children: [
+        if (isLargeScreen)
+          Container(
             width: 320,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final doc = docs[index];
-                final isSelected = _selectedDocTitle == doc.title;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 2,
-                  ),
-                  child: ListTile(
-                    selected: isSelected,
-                    selectedTileColor: theme.colorScheme.secondaryContainer,
-                    selectedColor: theme.colorScheme.onSecondaryContainer,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    leading: Icon(
-                      isSelected
-                          ? doc.icon
-                          : doc.icon, // Could use outlined vs filled if available
-                      color: isSelected
-                          ? theme.colorScheme.onSecondaryContainer
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(
-                      doc.title,
-                      style: TextStyle(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    subtitle: Text(
-                      doc.description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: isSelected
-                            ? theme.colorScheme.onSecondaryContainer.withValues(
-                                alpha: 0.7,
-                              )
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () => setState(() => _selectedDocTitle = doc.title),
-                  ),
-                );
-              },
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
             ),
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: _selectedDocTitle == null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.description_outlined,
-                          size: 64,
-                          color: theme.colorScheme.outlineVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.selectDocToRead,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : _buildMarkdownContent(
-                    docs.firstWhere((d) => d.title == _selectedDocTitle),
-                    theme,
-                    l10n,
-                  ),
-          ),
-        ],
-      );
-    }
-
-    // Mobile Layout with AnimatedSwitcher for List/Detail
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: _selectedDocTitle == null
-          ? ListView.builder(
-              key: const ValueKey('doc_list'),
-              padding: const EdgeInsets.all(16),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final doc = docs[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    tileColor: theme.colorScheme.surfaceContainerLow,
-                    leading: Icon(doc.icon, color: theme.colorScheme.primary),
-                    title: Text(
-                      doc.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(doc.description),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => setState(() => _selectedDocTitle = doc.title),
-                  ),
-                );
-              },
-            )
-          : Column(
-              key: const ValueKey('doc_detail'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    onPressed: () => setState(() => _selectedDocTitle = null),
-                  ),
-                  title: Text(
-                    _selectedDocTitle!,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  child: Text(
+                    l10n.helpAndDocs,
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),
                 Expanded(
-                  child: _buildMarkdownContent(
-                    docs.firstWhere((d) => d.title == _selectedDocTitle),
-                    theme,
-                    l10n,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: docs.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 4),
+                    itemBuilder: (context, index) {
+                      final doc = docs[index];
+                      final isSelected = _selectedDocTitle == doc.title;
+                      return Material(
+                        color: isSelected
+                            ? colorScheme.primaryContainer
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () =>
+                              setState(() => _selectedDocTitle = doc.title),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  doc.icon,
+                                  size: 20,
+                                  color: isSelected
+                                      ? colorScheme.onPrimaryContainer
+                                      : colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        doc.title,
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                              color: isSelected
+                                                  ? colorScheme
+                                                        .onPrimaryContainer
+                                                  : colorScheme.onSurface,
+                                            ),
+                                      ),
+                                      Text(
+                                        doc.description,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: isSelected
+                                                  ? colorScheme
+                                                        .onPrimaryContainer
+                                                        .withValues(alpha: 0.7)
+                                                  : colorScheme
+                                                        .onSurfaceVariant,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
+          ),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _selectedDocTitle == null
+                ? _buildDocPlaceholder(
+                    isLargeScreen,
+                    docs,
+                    l10n,
+                    theme,
+                    colorScheme,
+                  )
+                : _MarkdownContentViewer(
+                    key: ValueKey(_selectedDocTitle),
+                    doc: docs.firstWhere((d) => d.title == _selectedDocTitle),
+                    onBack: isLargeScreen
+                        ? null
+                        : () => setState(() => _selectedDocTitle = null),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildMarkdownContent(
-    _DocItem doc,
-    ThemeData theme,
+  Widget _buildDocPlaceholder(
+    bool isLargeScreen,
+    List<_DocItem> docs,
     AppLocalizations l10n,
+    ThemeData theme,
+    ColorScheme colorScheme,
   ) {
-    return FutureBuilder<String>(
-      future: rootBundle.loadString(doc.assetPath),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(l10n.loadFailed(snapshot.error.toString())),
-          );
-        }
-
-        return Markdown(
-          data: snapshot.data ?? '',
-          selectable: true,
-          padding: const EdgeInsets.all(24),
-          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-            h1: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-              height: 2.0,
-            ),
-            h2: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.secondary,
-              height: 1.8,
-            ),
-            h3: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.tertiary,
-            ),
-            p: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-            listBullet: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-            blockquote: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic,
-            ),
-            blockquoteDecoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh,
-              border: Border(
-                left: BorderSide(color: theme.colorScheme.primary, width: 4),
+    if (!isLargeScreen) {
+      return ListView.separated(
+        padding: const EdgeInsets.all(24),
+        itemCount: docs.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final doc = docs[index];
+          return Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
-            code: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSecondaryContainer,
-              backgroundColor: theme.colorScheme.secondaryContainer,
-              fontFamily: 'monospace',
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => setState(() => _selectedDocTitle = doc.title),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(doc.icon, color: colorScheme.primary),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            doc.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            doc.description,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            codeblockDecoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
+          );
+        },
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.auto_stories_rounded,
+            size: 80,
+            color: colorScheme.primary.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            l10n.selectDocToRead,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+}
+
+class _MarkdownContentViewer extends StatelessWidget {
+  final _DocItem doc;
+  final VoidCallback? onBack;
+
+  const _MarkdownContentViewer({required this.doc, this.onBack, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: onBack != null
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: onBack,
+              ),
+            )
+          : null,
+      body: FutureBuilder<String>(
+        future: rootBundle.loadString(doc.assetPath),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(l10n.loadFailed(snapshot.error.toString())),
+            );
+          }
+
+          return Markdown(
+            data: snapshot.data ?? '',
+            padding: const EdgeInsets.all(32),
+            selectable: true,
+            styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+              h1: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: colorScheme.primary,
+                letterSpacing: -0.5,
+              ),
+              h2: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.secondary,
+                letterSpacing: -0.3,
+              ),
+              h3: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.tertiary,
+              ),
+              p: theme.textTheme.bodyLarge?.copyWith(
+                height: 1.6,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              code: theme.textTheme.bodyMedium?.copyWith(
+                fontFamily: 'monospace',
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              codeblockDecoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              blockquote: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+              blockquoteDecoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: colorScheme.primary, width: 4),
+                ),
+                color: colorScheme.primary.withValues(alpha: 0.05),
+              ),
+              listBullet: theme.textTheme.bodyLarge?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -514,6 +708,7 @@ class _GuideStep {
   final String content;
   final IconData icon;
   final Color color;
+  final String? image;
 
   _GuideStep({
     required this.title,
@@ -521,6 +716,7 @@ class _GuideStep {
     required this.content,
     required this.icon,
     required this.color,
+    this.image,
   });
 }
 

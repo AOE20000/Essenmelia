@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../extensions/services/extension_repository_service.dart';
 import '../extensions/models/repository_extension.dart';
 import '../extensions/extension_manager.dart';
@@ -9,24 +11,152 @@ import '../widgets/universal_image.dart';
 import '../l10n/app_localizations.dart';
 import 'extension_details_screen.dart';
 
-class ExtensionManagementScreen extends ConsumerWidget {
+final extensionSearchQueryProvider = StateProvider<String>((ref) => '');
+
+class ExtensionManagementScreen extends ConsumerStatefulWidget {
   const ExtensionManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExtensionManagementScreen> createState() =>
+      _ExtensionManagementScreenState();
+}
+
+class _ExtensionManagementScreenState
+    extends ConsumerState<ExtensionManagementScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 在 initState 中直接触发状态更新，确保首次 build 就能读取到正确的刷新意图
+    _autoRefreshIfNeeded();
+  }
+
+  void _autoRefreshIfNeeded() {
+    // 使用 read 获取当前状态
+    final hasRefreshed = ref.read(hasInitialRefreshedProvider);
+    if (!hasRefreshed) {
+      // 标记为已刷新，并开启 GitHub 搜索
+      // 注意：在 initState 中修改 provider 是允许的，它会影响接下来的首次 build
+      Future.microtask(() {
+        ref.read(hasInitialRefreshedProvider.notifier).state = true;
+        ref.read(includeGitHubSearchProvider.notifier).state = true;
+      });
+    }
+  }
+
+  void _showManualImportDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final manager = ref.read(extensionManagerProvider);
+    final urlController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.manualImportTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.manualImportDescription,
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: urlController,
+              decoration: InputDecoration(
+                hintText: l10n.manualImportUrlHint,
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.link),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () async {
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['zip'],
+                );
+                if (result != null && result.files.single.path != null) {
+                  final file = File(result.files.single.path!);
+                  final bytes = await file.readAsBytes();
+                  final success = await manager.importFromZip(bytes);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(success != null ? '导入成功' : '导入失败'),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.file_present),
+              label: const Text('从本地 ZIP 文件导入'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              if (url.isEmpty) return;
+
+              final success = await manager.importFromUrl(url);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(success != null ? '导入成功' : '导入失败')),
+                );
+              }
+            },
+            child: Text(l10n.import),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final manifestAsync = ref.watch(extensionRepositoryManifestProvider);
     final theme = Theme.of(context);
     final manager = ref.watch(extensionManagerProvider);
     final l10n = AppLocalizations.of(context)!;
+    final searchQuery = ref.watch(extensionSearchQueryProvider).toLowerCase();
 
     // 获取内置扩展元数据
     final builtInExtensions = manager.getBuiltInExtensions();
     // 获取已安装扩展的 ID
     final installedIds = manager.extensions.map((e) => e.metadata.id).toSet();
 
+    // 筛选逻辑
+    bool matchesSearch(String? name, String? description, String? repo) {
+      if (searchQuery.isEmpty) return true;
+      return (name?.toLowerCase().contains(searchQuery) ?? false) ||
+          (description?.toLowerCase().contains(searchQuery) ?? false) ||
+          (repo?.toLowerCase().contains(searchQuery) ?? false);
+    }
+
+    // 筛选出已安装的扩展
+    final filteredInstalled = manager.extensions
+        .where(
+          (e) => matchesSearch(
+            e.metadata.name,
+            e.metadata.description,
+            e.metadata.repoFullName,
+          ),
+        )
+        .toList();
+
     // 筛选出未安装的内置扩展
     final uninstalledBuiltIn = builtInExtensions
         .where((e) => !installedIds.contains(e.id))
+        .where((e) => matchesSearch(e.name, e.description, null))
         .toList();
 
     return Scaffold(
@@ -39,239 +169,251 @@ class ExtensionManagementScreen extends ConsumerWidget {
             surfaceTintColor: theme.colorScheme.surfaceTint,
             actions: [
               IconButton(
+                icon: const Icon(Icons.add_link_rounded),
+                tooltip: l10n.manualImport,
+                onPressed: () => _showManualImportDialog(context, ref),
+              ),
+              IconButton(
+                icon: const Icon(Icons.update_rounded),
+                tooltip: '检查更新',
+                onPressed: () => manager.checkForUpdates(),
+              ),
+              IconButton(
                 icon: const Icon(Icons.refresh),
-                onPressed: () =>
-                    ref.refresh(extensionRepositoryManifestProvider),
+                onPressed: () {
+                  // 同时刷新基础清单和深度 GitHub 发现
+                  ref.read(includeGitHubSearchProvider.notifier).state = true;
+                  final _ = ref.refresh(extensionRepositoryManifestProvider);
+                },
               ),
             ],
           ),
 
-          // --- 已安装扩展 ---
-          if (installedIds.isNotEmpty) ...[
-            _buildSectionHeader(
-              context,
-              l10n.extensionSectionInstalled,
-              Icons.check_circle_outline,
+          // 搜索栏
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SearchBar(
+                hintText: '搜索名称、描述或仓库...',
+                leading: const Icon(Icons.search),
+                elevation: WidgetStateProperty.all(0),
+                backgroundColor: WidgetStateProperty.all(
+                  theme.colorScheme.surfaceContainerHigh,
+                ),
+                onChanged: (value) {
+                  ref.read(extensionSearchQueryProvider.notifier).state = value;
+                },
+                trailing: [
+                  if (searchQuery.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        ref.read(extensionSearchQueryProvider.notifier).state =
+                            '';
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // 使用 SliverMainAxisGroup 替代 SliverToBoxAdapter + Column 以支持真正的懒加载
+          if (filteredInstalled.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: _buildSectionHeader(
+                context,
+                l10n.extensionSectionInstalled,
+              ),
             ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final ext = manager.extensions[index];
-                  return _buildInstalledCard(context, ref, ext)
-                      .animate()
-                      .fadeIn(duration: 300.ms, delay: (index * 50).ms)
-                      .slideX(begin: 0.1, end: 0);
-                }, childCount: manager.extensions.length),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildGroupedItem(
+                    index: index,
+                    total: filteredInstalled.length,
+                    theme: theme,
+                    child: _buildInstalledItem(
+                      context,
+                      ref,
+                      filteredInstalled[index],
+                    ),
+                  ),
+                  childCount: filteredInstalled.length,
+                ),
               ),
             ),
           ],
 
           // --- 内置扩展 (未安装) ---
           if (uninstalledBuiltIn.isNotEmpty) ...[
-            _buildSectionHeader(
-              context,
-              l10n.extensionSectionBuiltIn,
-              Icons.extension_rounded,
+            SliverToBoxAdapter(
+              child: _buildSectionHeader(context, l10n.extensionSectionBuiltIn),
             ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final ext = uninstalledBuiltIn[index];
-                  return _buildExtensionCard(context, ref, ext)
-                      .animate()
-                      .fadeIn(duration: 300.ms, delay: (index * 50).ms)
-                      .slideX(begin: 0.1, end: 0);
-                }, childCount: uninstalledBuiltIn.length),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildGroupedItem(
+                    index: index,
+                    total: uninstalledBuiltIn.length,
+                    theme: theme,
+                    child: _buildStoreItem(
+                      context,
+                      ref,
+                      uninstalledBuiltIn[index],
+                    ),
+                  ),
+                  childCount: uninstalledBuiltIn.length,
+                ),
               ),
             ),
           ],
 
-          // --- 在线扩展 ---
-          _buildSectionHeader(
-            context,
-            l10n.extensionSectionOnline,
-            Icons.cloud_queue_rounded,
+          // --- 在线商店 (GitHub) ---
+          SliverToBoxAdapter(
+            child: _buildSectionHeader(context, l10n.extensionSectionOnline),
           ),
+
           manifestAsync.when(
             data: (extensions) {
               final uninstalledOnline = extensions
-                  .where((e) => !installedIds.contains(e.id))
+                  .where((e) {
+                    // 优先通过 repoFullName 匹配，因为 e.id 是 GitHub 仓库 ID
+                    final installed = manager.extensions
+                        .cast<BaseExtension?>()
+                        .firstWhere(
+                          (ie) =>
+                              ie?.metadata.repoFullName != null &&
+                              ie?.metadata.repoFullName == e.repoFullName,
+                          orElse: () => null,
+                        );
+
+                    // 如果没找到已安装的对应仓库，则显示
+                    if (installed == null) return true;
+
+                    // 如果已安装，但版本不同或未知，也显示在“在线商店”中供用户查看/更新
+                    return e.version == 'unknown' ||
+                        e.version != installed.metadata.version;
+                  })
+                  .where(
+                    (e) => matchesSearch(e.name, e.description, e.repoFullName),
+                  )
                   .toList();
 
-              return uninstalledOnline.isEmpty
-                  ? _buildEmptyState(context, theme)
-                  : SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final ext = uninstalledOnline[index];
-                          return _buildExtensionCard(context, ref, ext)
-                              .animate()
-                              .fadeIn(duration: 300.ms, delay: (index * 50).ms)
-                              .slideX(begin: 0.1, end: 0);
-                        }, childCount: uninstalledOnline.length),
+              if (uninstalledOnline.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: _buildEmptyStateWidget(context, theme),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildGroupedItem(
+                      index: index,
+                      total: uninstalledOnline.length,
+                      theme: theme,
+                      child: _buildStoreItem(
+                        context,
+                        ref,
+                        uninstalledOnline[index],
                       ),
-                    );
+                    ),
+                    childCount: uninstalledOnline.length,
+                  ),
+                ),
+              );
             },
-            loading: () => const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
+            loading: () => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Center(child: CircularProgressIndicator()),
+              ),
             ),
-            error: (err, stack) => SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildErrorState(context, theme, err.toString(), ref),
+            error: (err, stack) => SliverToBoxAdapter(
+              child: _buildErrorStateWidget(
+                context,
+                theme,
+                err.toString(),
+                ref,
+              ),
             ),
           ),
+
+          // 底部留白
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton:
-          FloatingActionButton.extended(
-            onPressed: () => _showAddOptions(context, ref),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addExtension),
-          ).animate().scale(
-            delay: 400.ms,
-            duration: 400.ms,
-            curve: Curves.easeOutBack,
-          ),
     );
   }
 
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    IconData icon,
-  ) {
-    final theme = Theme.of(context);
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-      sliver: SliverToBoxAdapter(
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ).animate().fadeIn(duration: 400.ms),
-      ),
-    );
-  }
-
-  void _showAddOptions(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.file_open_rounded),
-              title: Text(l10n.importFromLocalFile),
-              subtitle: Text(l10n.selectJsonExtension),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(extensionManagerProvider).importFromFile();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_download_rounded),
-              title: Text(l10n.downloadAndInstallFromLink),
-              subtitle: Text(l10n.extensionLinkSubtitle),
-              onTap: () {
-                Navigator.pop(context);
-                _showUrlImportDialog(context, ref);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.content_paste_rounded),
-              title: Text(l10n.installFromClipboard),
-              subtitle: Text(l10n.installFromClipboardSubtitle),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(extensionManagerProvider).importFromClipboard();
-              },
-            ),
-          ],
+  Widget _buildGroupedItem({
+    required Widget child,
+    required int index,
+    required int total,
+    required ThemeData theme,
+  }) {
+    final isFirst = index == 0;
+    final isLast = index == total - 1;
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(24) : Radius.zero,
+          bottom: isLast ? const Radius.circular(24) : Radius.zero,
         ),
       ),
-    );
-  }
-
-  void _showUrlImportDialog(BuildContext context, WidgetRef ref) {
-    final urlController = TextEditingController();
-    final l10n = AppLocalizations.of(context)!;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.downloadAndInstallFromLink),
-        content: TextField(
-          controller: urlController,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: l10n.enterUrlOrGithubLink,
-            hintText: 'https://...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final url = urlController.text.trim();
-              if (url.isNotEmpty) {
-                Navigator.pop(context);
-                await ref.read(extensionManagerProvider).importFromUrl(url);
-              }
-            },
-            child: Text(l10n.install),
-          ),
+      child: Column(
+        children: [
+          child,
+          if (!isLast)
+            Divider(
+              height: 1,
+              indent: 72,
+              endIndent: 16,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildInstalledCard(
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 16, 8),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstalledItem(
     BuildContext context,
     WidgetRef ref,
     BaseExtension ext,
   ) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      color: theme.colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Hero(
-          tag: 'ext_icon_${ext.metadata.id}',
+    final manager = ref.watch(extensionManagerProvider);
+    final newVersion = manager.availableUpdates[ext.metadata.id];
+    final hasUpdate = newVersion != null;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Hero(
+        tag: 'ext_icon_${ext.metadata.id}',
+        child: Badge(
+          isLabelVisible: hasUpdate,
+          label: const Text('NEW'),
           child: Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
@@ -279,51 +421,151 @@ class ExtensionManagementScreen extends ConsumerWidget {
             child: Icon(ext.metadata.icon, color: theme.colorScheme.primary),
           ),
         ),
-        title: Text(
-          ext.metadata.name,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Text(
-              ext.metadata.description,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.versionAuthorLabel(
-                ext.metadata.version,
-                ext.metadata.author,
-              ),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.delete_outline_rounded,
-            color: theme.colorScheme.error,
-          ),
-          onPressed: () => _confirmUninstall(context, ref, ext),
-        ),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => ExtensionDetailsScreen(extension: ext),
-            ),
-          );
-        },
       ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              ext.metadata.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (hasUpdate)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.updateAvailable(newVersion),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onTertiaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+      subtitle: Text(
+        hasUpdate ? '点击更新到最新版本' : ext.metadata.description,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: hasUpdate
+              ? theme.colorScheme.tertiary
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasUpdate)
+            IconButton(
+              icon: Icon(
+                Icons.download_rounded,
+                color: theme.colorScheme.primary,
+              ),
+              onPressed: () => _updateExtension(context, ref, ext),
+            ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: theme.colorScheme.error,
+            ),
+            onPressed: () => _confirmUninstall(context, ref, ext),
+          ),
+        ],
+      ),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ExtensionDetailsScreen(extension: ext),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _updateExtension(
+    BuildContext context,
+    WidgetRef ref,
+    BaseExtension ext,
+  ) async {
+    final repoFullName = ext.metadata.repoFullName;
+    if (repoFullName == null) return;
+
+    final url = 'https://github.com/$repoFullName/archive/refs/heads/main.zip';
+    await ref.read(extensionManagerProvider).importFromUrl(url);
+  }
+
+  Widget _buildStoreItem(
+    BuildContext context,
+    WidgetRef ref,
+    RepositoryExtension ext,
+  ) {
+    final theme = Theme.of(context);
+    final manager = ref.watch(extensionManagerProvider);
+    final l10n = AppLocalizations.of(context)!;
+
+    // 检查是否已安装（通过仓库全名匹配，因为 ext.id 是 GitHub 内部 ID）
+    final installed = manager.extensions.cast<BaseExtension?>().firstWhere(
+      (ie) =>
+          ie?.metadata.repoFullName != null &&
+          ie?.metadata.repoFullName == ext.repoFullName,
+      orElse: () => null,
+    );
+
+    // 如果已安装但版本不同或未知，则视为可更新
+    final isUpdate =
+        installed != null &&
+        ext.version != 'unknown' &&
+        ext.version != installed.metadata.version;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ext.iconUrl != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: UniversalImage(imageUrl: ext.iconUrl!),
+              )
+            : Icon(Icons.extension, color: theme.colorScheme.primary),
+      ),
+      title: Text(
+        ext.name,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: Text(
+        isUpdate ? l10n.updateAvailable(ext.version) : ext.description,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: isUpdate
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: IconButton.filledTonal(
+        icon: Icon(
+          isUpdate ? Icons.system_update_alt_rounded : Icons.download,
+          size: 20,
+        ),
+        tooltip: isUpdate ? l10n.update : l10n.install,
+        onPressed: () =>
+            ref.read(extensionManagerProvider).importFromUrl(ext.downloadUrl),
+      ),
+      onTap: () => _showExtensionDetails(context, ref, ext),
     );
   }
 
@@ -365,206 +607,59 @@ class ExtensionManagementScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
+  Widget _buildEmptyStateWidget(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
-    return SliverFillRemaining(
-      hasScrollBody: false,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.store_mall_directory_outlined,
-                size: 64,
-                color: theme.colorScheme.outline,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.noAvailableExtensions,
-                style: theme.textTheme.bodyLarge,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(
-    BuildContext context,
-    ThemeData theme,
-    String error,
-    WidgetRef ref,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+            Icon(
+              Icons.store_mall_directory_outlined,
+              size: 48,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(height: 16),
-            Text(l10n.failedToLoadStore, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => ref.refresh(extensionRepositoryManifestProvider),
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.retry),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: () => _showCustomUrlDialog(context, ref),
-              icon: const Icon(Icons.link),
-              label: Text(l10n.useCustomStoreLink),
-            ),
+            Text(l10n.noAvailableExtensions, style: theme.textTheme.bodyLarge),
           ],
         ),
       ),
     );
   }
 
-  void _showCustomUrlDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
+  Widget _buildErrorStateWidget(
+    BuildContext context,
+    ThemeData theme,
+    String error,
+    WidgetRef ref,
+  ) {
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.customStore),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Manifest JSON URL',
-            hintText: 'https://example.com/manifest.json',
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+          const SizedBox(height: 16),
+          Text(l10n.failedToLoadStore, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final url = controller.text.trim();
-              if (url.isNotEmpty) {
-                Navigator.pop(context);
-                _loadCustomManifest(context, ref, url);
-              }
-            },
-            child: Text(l10n.load),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => ref.refresh(extensionRepositoryManifestProvider),
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.retry),
           ),
         ],
-      ),
-    );
-  }
-
-  Future<void> _loadCustomManifest(
-    BuildContext context,
-    WidgetRef ref,
-    String url,
-  ) async {
-    ref.read(repositoryUrlProvider.notifier).state = url;
-  }
-
-  Widget _buildExtensionCard(
-    BuildContext context,
-    WidgetRef ref,
-    RepositoryExtension ext,
-  ) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      color: theme.colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: InkWell(
-        onTap: () => _showExtensionDetails(context, ref, ext),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ext.iconUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: UniversalImage(imageUrl: ext.iconUrl!),
-                      )
-                    : Icon(Icons.extension, color: theme.colorScheme.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            ext.name,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'v${ext.version}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.authorLabel(ext.author),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      ext.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                icon: const Icon(Icons.download),
-                onPressed: () => _installExtension(context, ref, ext),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -584,7 +679,7 @@ class ExtensionManagementScreen extends ConsumerWidget {
         height: MediaQuery.of(context).size.height * 0.75,
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           children: [
@@ -647,8 +742,10 @@ class ExtensionManagementScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    l10n.aboutExtension,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    l10n.aboutExtension.toUpperCase(),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      letterSpacing: 1.2,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -660,6 +757,80 @@ class ExtensionManagementScreen extends ConsumerWidget {
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
+                  const SizedBox(height: 24),
+
+                  // README Section
+                  if (ext.repoFullName != null)
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final readmeAsync = ref.watch(
+                          extensionReadmeProvider(ext.repoFullName!),
+                        );
+                        return readmeAsync.when(
+                          data: (readme) {
+                            if (readme == null || readme.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            // 触发更新检查逻辑：对比版本并处理改名
+                            // 这一步是静默执行的，由 ExtensionManager 处理状态更新
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              ref
+                                  .read(extensionManagerProvider)
+                                  .processReadmeUpdate(
+                                    readme,
+                                    ext.repoFullName!,
+                                  );
+                            });
+
+                            // 过滤掉元数据块以保持整洁
+                            final cleanReadme = readme
+                                .replaceAll(
+                                  RegExp(
+                                    r'<!--\s*ESSENMELIA_EXTEND[\s\S]*?-->',
+                                    multiLine: true,
+                                  ),
+                                  '',
+                                )
+                                .trim();
+
+                            if (cleanReadme.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Divider(
+                                  height: 48,
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                                MarkdownBody(
+                                  data: cleanReadme,
+                                  selectable: true,
+                                  styleSheet:
+                                      MarkdownStyleSheet.fromTheme(
+                                        theme,
+                                      ).copyWith(
+                                        p: theme.textTheme.bodyMedium?.copyWith(
+                                          height: 1.6,
+                                        ),
+                                      ),
+                                ),
+                              ],
+                            );
+                          },
+                          loading: () => const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(24.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          error: (error, stack) => const SizedBox.shrink(),
+                        );
+                      },
+                    ),
+
                   if (ext.tags.isNotEmpty) ...[
                     const SizedBox(height: 24),
                     Wrap(
@@ -697,10 +868,17 @@ class ExtensionManagementScreen extends ConsumerWidget {
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
-                    _installExtension(context, ref, ext);
+                    ref
+                        .read(extensionManagerProvider)
+                        .importFromUrl(ext.downloadUrl);
                   },
                   icon: const Icon(Icons.download),
                   label: Text(l10n.installExtension),
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -708,38 +886,5 @@ class ExtensionManagementScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _installExtension(
-    BuildContext context,
-    WidgetRef ref,
-    RepositoryExtension ext,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(content: Text(l10n.installingExtension(ext.name))),
-    );
-
-    try {
-      final success = await ref
-          .read(extensionManagerProvider)
-          .importFromUrl(ext.downloadUrl);
-
-      if (success != null) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text(l10n.installSuccess(ext.name))),
-        );
-      } else {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text(l10n.installFailed)),
-        );
-      }
-    } catch (e) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text(l10n.installError(e.toString()))),
-      );
-    }
   }
 }

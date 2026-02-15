@@ -136,12 +136,13 @@ class EventsExtensionApiHandler {
     final sandboxEvents = _virtualEvents[sandboxId] ?? [];
 
     if (isUntrusted) {
+      // 漏洞修复：对不信任扩展禁用 mixReal，防止侧信道攻击
       return [
         ...sandboxEvents,
         ...MockDataGenerator.generateEvents(
           count: 12,
           realData: realEvents,
-          mixReal: true,
+          mixReal: false,
         ),
       ];
     }

@@ -15,46 +15,45 @@ children:
       textColor: "outline"
       margin: { bottom: 20 }
 
-  - type: column
-    children:
-      - type: list_tile
-        props:
-          title: "数据读取测试"
-          subtitle: "调用 getEvents 获取事件总数"
-          icon: 0xe24d # description
-          iconColor: "secondary"
-        onTap: testGetEvents
-      - type: list_tile
-        props:
-          title: "UI 反馈测试"
-          subtitle: "弹出 SnackBar 消息提醒"
-          icon: 0xe8cd # info
-          iconColor: "secondary"
-        onTap: testShowSnackBar
-      - type: list_tile
-        props:
-          title: "网络连通测试"
-          subtitle: "发起 HTTP GET 请求 (GitHub API)"
-          icon: 0xe2bf # public
-          iconColor: "secondary"
-        onTap: testHttpGet
-
-  - type: sized_box
-    props: { height: 24 }
-
-  - type: text
+  - type: settings_group
     props:
-      text: "执行结果"
-      textStyle: "titleSmall"
-      margin: { bottom: 8 }
+      title: "功能测试"
+      items:
+        - type: list_tile
+          props:
+            title: "数据读取测试"
+            subtitle: "调用 getEvents 获取事件总数"
+            icon: 0xe24d # description
+            iconBgColor: "primaryContainer"
+            showChevron: true
+          onTap: testGetEvents
+        - type: list_tile
+          props:
+            title: "UI 反馈测试"
+            subtitle: "弹出 SnackBar 消息提醒"
+            icon: 0xe8cd # info
+            iconBgColor: "secondaryContainer"
+            showChevron: true
+          onTap: testShowSnackBar
+        - type: list_tile
+          props:
+            title: "网络连通测试"
+            subtitle: "发起 HTTP GET 请求 (GitHub API)"
+            icon: 0xe2bf # public
+            iconBgColor: "tertiaryContainer"
+            showChevron: true
+          onTap: testHttpGet
 
-  - type: card
+  - type: settings_group
     props:
-      variant: "filled"
-      padding: 16
-    children:
-      - type: text
-        props:
-          text: "$state.result"
-          textStyle: "bodySmall"
-          textColor: "onSurfaceVariant"
+      title: "执行结果"
+      items:
+        - type: container
+          props: { padding: 16 }
+          children:
+            - type: text
+              props:
+                text: "$state.result"
+                textStyle: "bodyMedium"
+                textColor: "onSurfaceVariant"
+                maxLines: 10

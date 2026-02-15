@@ -19,40 +19,42 @@ children:
           icon: 0xe5d5 # refresh
         onTap: refreshEvents
 
-  - type: card
+  - type: settings_group
     props:
-      variant: "outlined"
-      margin: { bottom: 20 }
-    children:
-      - type: column
-        props:
-          padding: 12
-        children:
-          - type: text
-            props:
-              text: "快速操作"
-              textStyle: "titleSmall"
-              margin: { bottom: 8 }
-          - type: button
-            props:
-              label: "创建 10 个测试事件"
-              variant: "filled"
-              width: "max"
-            onTap: createTestEvent
+      title: "快速操作"
+      items:
+        - type: container
+          props: { padding: 16 }
+          children:
+            - type: column
+              children:
+                - type: button
+                  props:
+                    label: "创建模拟事件"
+                    variant: "filled"
+                    width: "max"
+                    icon: 0xe145 # add
+                  onTap: createTestEvent
+                - type: sized_box { height: 12 }
+                - type: button
+                  props:
+                    label: "清空所有事件"
+                    variant: "outlined"
+                    textColor: "error"
+                    width: "max"
+                    icon: 0xe872 # delete
+                  onTap: clearAllEvents
 
-  - type: text
+  - type: settings_group
     props:
-      text: "最近捕获的事件数据"
-      textStyle: "titleSmall"
-      margin: { bottom: 8 }
-
-  - type: card
-    props:
-      variant: "filled"
-      padding: 12
-    children:
-      - type: text
-        props:
-          text: "$state.eventList"
-          textStyle: "bodySmall"
-          textColor: "onSurfaceVariant"
+      title: "事件列表 ($state.count)"
+      items:
+        - type: container
+          props: { padding: 16 }
+          children:
+            - type: text
+              props:
+                text: "$state.eventList"
+                textStyle: "bodyMedium"
+                textColor: "onSurfaceVariant"
+                maxLines: 20

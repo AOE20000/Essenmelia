@@ -99,6 +99,10 @@
   "@databaseManager": {
     "description": "Title for database management"
   },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Generic loading message"
+  },
   "importExport": "Import / Export",
   "@importExport": {
     "description": "Label for import/export feature"
@@ -494,11 +498,11 @@
   "@extensionLinkSubtitle": {
     "description": "Subtitle for link-based extension installation"
   },
-  "installFromClipboard": "Install from Clipboard",
+  "installFromClipboard": "Install Link from Clipboard",
   "@installFromClipboard": {
     "description": "Label for clipboard-based extension installation"
   },
-  "installFromClipboardSubtitle": "Read JSON or URL from clipboard",
+  "installFromClipboardSubtitle": "Supports ZIP / EZIP / GitHub links",
   "@installFromClipboardSubtitle": {
     "description": "Subtitle for clipboard-based extension installation"
   },
@@ -703,25 +707,45 @@
       }
     }
   },
-  "extensionExport": "Export & Convert",
+  "extensionExport": "Export Extension",
   "@extensionExport": {
     "description": "Label for exporting an extension"
   },
-  "extensionExportJson": "Standard JSON Package",
-  "@extensionExportJson": {
-    "description": "Label for JSON export format"
+  "extensionCopyGitHubLink": "Copy GitHub Link",
+  "@extensionCopyGitHubLink": {
+    "description": "Label for copying GitHub link"
   },
-  "extensionExportJsonSubtitle": "Single file, best for sharing",
-  "@extensionExportJsonSubtitle": {
-    "description": "Subtitle for JSON export format"
+  "extensionCopyGitHubLinkSubtitle": "Easy to share with others",
+  "@extensionCopyGitHubLinkSubtitle": {
+    "description": "Subtitle for copying GitHub link"
   },
-  "extensionExportZip": "Extension ZIP Package",
+  "extensionExportZip": "Export ZIP Source",
   "@extensionExportZip": {
     "description": "Label for ZIP export format"
   },
-  "extensionExportZipSubtitle": "Complete repository archive",
+  "extensionExportZipSubtitle": "Complete source code archive",
   "@extensionExportZipSubtitle": {
     "description": "Subtitle for ZIP export format"
+  },
+  "manualImport": "Manual Import",
+  "@manualImport": {
+    "description": "Label for manual import"
+  },
+  "manualImportTitle": "Import Extension",
+  "@manualImportTitle": {
+    "description": "Title for manual import dialog"
+  },
+  "manualImportUrlHint": "Enter GitHub URL or ZIP link",
+  "@manualImportUrlHint": {
+    "description": "Hint text for manual import URL"
+  },
+  "manualImportDescription": "Supports GitHub repositories, Raw links, or direct ZIP URLs.",
+  "@manualImportDescription": {
+    "description": "Description for manual import"
+  },
+  "import": "Import",
+  "@import": {
+    "description": "Generic import button label"
   },
   "extensionPermissionReadEvents": "Read Events",
   "@extensionPermissionReadEvents": {
@@ -887,9 +911,18 @@
   "@extensionSectionBuiltIn": {
     "description": "Header for built-in extensions section"
   },
-  "extensionSectionOnline": "Online Store",
+  "extensionSectionOnline": "GITHUB_ESSENMELIA_EXTEND",
   "@extensionSectionOnline": {
     "description": "Header for online extension store section"
+  },
+  "updateAvailable": "New version available: {version}",
+  "@updateAvailable": {
+    "description": "Label indicating an update is available for an extension",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
   },
   "extensionRestrictedAccess": "Restricted Access",
   "@extensionRestrictedAccess": {
@@ -1286,7 +1319,7 @@
   "@importFromLocalFile": {
     "description": "Label for importing extension from local file"
   },
-  "selectJsonExtension": "Select .json or .zip extension package",
+  "selectJsonExtension": "Select .zip extension package",
   "@selectJsonExtension": {
     "description": "Hint text for selecting extension package"
   },
@@ -1764,6 +1797,14 @@
   "extDevSpecsDesc": "Metadata, UI component library & logic engine",
   "@extDevSpecsDesc": {
     "description": "Description for extension development doc"
+  },
+  "createRepoGuide": "Extension Repository Guide",
+  "@createRepoGuide": {
+    "description": "Title for extension repository creation guide doc"
+  },
+  "createRepoGuideDesc": "Manifest, structure & GitHub discovery",
+  "@createRepoGuideDesc": {
+    "description": "Description for extension repository creation guide doc"
   },
   "selectDocToRead": "Please select a document to read",
   "@selectDocToRead": {

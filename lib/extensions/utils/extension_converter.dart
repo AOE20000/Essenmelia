@@ -10,7 +10,7 @@ class ExtensionConverter {
   /// 从 ZIP 字节流中解析扩展内容（返回 JSON 字符串）
   /// 支持两种模式：
   /// 1. 根目录下包含 manifest.json
-  /// 2. README.md 中包含 <!-- ESSENMELIA_METADATA { ... } --> HTML 注释
+  /// 2. README.md 中包含 <!-- ESSENMELIA_EXTEND { ... } --> HTML 注释
   static String? extractContentFromZip(Uint8List zipBytes) {
     try {
       final archive = ZipDecoder().decodeBytes(zipBytes);
@@ -44,9 +44,9 @@ class ExtensionConverter {
           );
           final readmeContent = utf8.decode(readmeFile.content as List<int>);
 
-          // 使用正则提取 <!-- ESSENMELIA_METADATA { ... } -->
+          // 使用正则提取 <!-- ESSENMELIA_EXTEND { ... } -->
           final regExp = RegExp(
-            r'<!--\s*ESSENMELIA_METADATA\s*([\s\S]*?)\s*-->',
+            r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*([\s\S]*?)\s*-->',
           );
           final match = regExp.firstMatch(readmeContent);
           if (match != null) {
@@ -119,6 +119,24 @@ class ExtensionConverter {
           manifest['view'] = jsonDecode(content);
         }
       } catch (_) {}
+    } else if (viewVal == null) {
+      // 自动发现 view.yaml 或 view.json
+      final candidates = ['view.yaml', 'view.yml', 'view.json'];
+      for (final name in candidates) {
+        try {
+          final fullPath = getFullPath(name);
+          final viewFile = archive.firstWhere(
+            (f) => f.name == fullPath || f.name.endsWith(fullPath),
+          );
+          final content = utf8.decode(viewFile.content as List<int>);
+          if (name.endsWith('.yaml') || name.endsWith('.yml')) {
+            manifest['view'] = ExtensionMetadata.yamlToMap(content);
+          } else {
+            manifest['view'] = jsonDecode(content);
+          }
+          break;
+        } catch (_) {}
+      }
     }
 
     // 2. 解析 Logic (支持 .json, .yaml, .yml)
@@ -136,6 +154,24 @@ class ExtensionConverter {
           manifest['logic'] = jsonDecode(content);
         }
       } catch (_) {}
+    } else if (logicVal == null) {
+      // 自动发现 logic.yaml 或 logic.json
+      final candidates = ['logic.yaml', 'logic.yml', 'logic.json'];
+      for (final name in candidates) {
+        try {
+          final fullPath = getFullPath(name);
+          final logicFile = archive.firstWhere(
+            (f) => f.name == fullPath || f.name.endsWith(fullPath),
+          );
+          final content = utf8.decode(logicFile.content as List<int>);
+          if (name.endsWith('.yaml') || name.endsWith('.yml')) {
+            manifest['logic'] = ExtensionMetadata.yamlToMap(content);
+          } else {
+            manifest['logic'] = jsonDecode(content);
+          }
+          break;
+        } catch (_) {}
+      }
     }
 
     // 3. 解析 Script (支持 .js)

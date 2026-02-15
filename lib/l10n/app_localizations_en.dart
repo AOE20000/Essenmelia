@@ -78,6 +78,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get databaseManager => 'Database Manager';
 
   @override
+  String get loading => 'Loading...';
+
+  @override
   String get importExport => 'Import / Export';
 
   @override
@@ -363,10 +366,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extensionLinkSubtitle => 'Supports URL or GitHub links';
 
   @override
-  String get installFromClipboard => 'Install from Clipboard';
+  String get installFromClipboard => 'Install Link from Clipboard';
 
   @override
-  String get installFromClipboardSubtitle => 'Read JSON or URL from clipboard';
+  String get installFromClipboardSubtitle =>
+      'Supports ZIP / EZIP / GitHub links';
 
   @override
   String get invalidInput => 'Invalid input';
@@ -500,19 +504,35 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get extensionExport => 'Export & Convert';
+  String get extensionExport => 'Export Extension';
 
   @override
-  String get extensionExportJson => 'Standard JSON Package';
+  String get extensionCopyGitHubLink => 'Copy GitHub Link';
 
   @override
-  String get extensionExportJsonSubtitle => 'Single file, best for sharing';
+  String get extensionCopyGitHubLinkSubtitle => 'Easy to share with others';
 
   @override
-  String get extensionExportZip => 'Extension ZIP Package';
+  String get extensionExportZip => 'Export ZIP Source';
 
   @override
-  String get extensionExportZipSubtitle => 'Complete repository archive';
+  String get extensionExportZipSubtitle => 'Complete source code archive';
+
+  @override
+  String get manualImport => 'Manual Import';
+
+  @override
+  String get manualImportTitle => 'Import Extension';
+
+  @override
+  String get manualImportUrlHint => 'Enter GitHub URL or ZIP link';
+
+  @override
+  String get manualImportDescription =>
+      'Supports GitHub repositories, Raw links, or direct ZIP URLs.';
+
+  @override
+  String get import => 'Import';
 
   @override
   String get extensionPermissionReadEvents => 'Read Events';
@@ -653,7 +673,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extensionSectionBuiltIn => 'Built-in';
 
   @override
-  String get extensionSectionOnline => 'Online Store';
+  String get extensionSectionOnline => 'GITHUB_ESSENMELIA_EXTEND';
+
+  @override
+  String updateAvailable(String version) {
+    return 'New version available: $version';
+  }
 
   @override
   String get extensionRestrictedAccess => 'Restricted Access';
@@ -938,7 +963,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFromLocalFile => 'Import from local file';
 
   @override
-  String get selectJsonExtension => 'Select .json or .zip extension package';
+  String get selectJsonExtension => 'Select .zip extension package';
 
   @override
   String get enterUrlOrGithubLink => 'Enter URL or GitHub link';
@@ -1295,6 +1320,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extDevSpecsDesc => 'Metadata, UI component library & logic engine';
+
+  @override
+  String get createRepoGuide => 'Extension Repository Guide';
+
+  @override
+  String get createRepoGuideDesc => 'Manifest, structure & GitHub discovery';
 
   @override
   String get selectDocToRead => 'Please select a document to read';

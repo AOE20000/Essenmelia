@@ -1,0 +1,165 @@
+这份文档旨在指导开发者如何通过 GitHub REST API 实现“搜索仓库”并“获取该仓库详细信息（README 或简介）”的完整流程。
+
+---
+
+# GitHub 仓库搜索与信息获取接口文档
+
+本指南介绍了如何通过访客身份（或认证身份）搜索特定 GitHub 仓库，并进一步提取其 README 内容或项目简介。
+
+## 1. 流程概览
+
+获取一个仓库的完整信息通常分为两个步骤：
+
+1. **搜索 (Search)**：通过关键词找到匹配的仓库列表，获取仓库的 `full_name`（如 `owner/repo`）。
+2. **提取内容 (Content)**：通过 `full_name` 请求特定仓库的 README 或简介数据。
+
+---
+
+## 2. 步骤一：搜索目标仓库
+
+使用 `/search/repositories` 接口，根据名称或关键词筛选。
+
+* **Endpoint:** `GET https://api.github.com/search/repositories`
+* **常用参数:**
+* `q`: 搜索关键词。支持 `name:repo-name` 精确匹配名称。
+* `per_page`: 限制返回结果数量（建议设为 1-5，以减少带宽）。
+
+
+
+**请求示例 (cURL):**
+
+```bash
+curl -G "https://api.github.com/search/repositories" \
+    --data-urlencode "q=tetris language:assembly" \
+    --data-urlencode "sort=stars" \
+    --data-urlencode "per_page=1"
+
+```
+
+**关键返回字段:**
+
+```json
+{
+  "items": [
+    {
+      "full_name": "chvin/react-tetris",
+      "description": "Use React, Redux, Immutable to play Tetris.",
+      "html_url": "https://github.com/chvin/react-tetris",
+      "stargazers_count": 7500
+    }
+  ]
+}
+
+```
+
+---
+
+## 3. 步骤二：获取 README 或简介
+
+### A. 获取 README 内容 (推荐)
+
+GitHub 提供了一个专门的端点来自动定位并获取仓库根目录下的 README 文件。
+
+* **Endpoint:** `GET https://api.github.com/repos/{owner}/{repo}/readme`
+* **请求示例:**
+`GET https://api.github.com/repos/chvin/react-tetris/readme`
+
+> **注意：** 默认返回的是 Base64 编码的 JSON。
+> * 如果你需要 **HTML 格式**（直接显示）：请设置 Header `Accept: application/vnd.github.html`。
+> * 如果你需要 **原始 Markdown**: 请设置 Header `Accept: application/vnd.github.raw`。
+
+## 4. 访客请求限制 (Rate Limiting)
+
+作为“访客”（未认证请求），GitHub 对 API 的调用有严格限制：
+
+| 接口类型 | 限制次数 (未认证) | 限制次数 (已认证 Token) |
+| --- | --- | --- |
+| **搜索接口** | 10 次 / 分钟 | 30 次 / 分钟 |
+| **内容/详情接口** | 60 次 / 小时 | 5,000 次 / 小时 |
+
+**建议：** 在请求 Header 中添加 `User-Agent`（可以是你的应用名），否则 GitHub 可能会拒绝请求。
+
+---
+
+## 5. 代码示例 (Python)
+
+```python
+import requests
+
+def get_repo_info(repo_name):
+    headers = {'Accept': 'application/vnd.github.v3+json'}
+    
+    # 1. 搜索仓库
+    search_url = f"https://api.github.com/search/repositories?q={repo_name}&per_page=1"
+    search_res = requests.get(search_url, headers=headers).json()
+    
+    if not search_res.get('items'):
+        return "未找到仓库"
+    
+    repo = search_res['items'][0]
+    full_name = repo['full_name']
+    description = repo['description']
+    
+    # 2. 获取 README (请求原始 Markdown 格式)
+    readme_headers = headers.copy()
+    readme_headers['Accept'] = 'application/vnd.github.raw'
+    readme_url = f"https://api.github.com/repos/{full_name}/readme"
+    readme_content = requests.get(readme_url, headers=readme_headers).text
+    
+    return {
+        "name": full_name,
+        "intro": description,
+        "readme_preview": readme_content[:200] + "..." # 截取前200字
+    }
+
+# 使用示例
+print(get_repo_info("react-tetris"))
+
+### 2. 通过 API 自动下载 (适合开发者)
+
+如果你在编写程序或文档，需要通过链接直接触发下载，可以使用 GitHub 提供的存档接口。
+
+#### 基础 URL 格式：
+
+`https://github.com/{owner}/{repo}/archive/refs/heads/{branch}.zip`
+
+* **{owner}**: 用户名或组织名（如 `tensorflow`）
+* **{repo}**: 仓库名（如 `tensorflow`）
+* **{branch}**: 分支名（如 `main` 或 `master`）
+
+**示例：**
+下载 TensorFlow 仓库 `master` 分支的 ZIP：
+`https://github.com/tensorflow/tensorflow/archive/refs/heads/master.zip`
+
+---
+
+### 3. 使用 REST API 获取下载链接
+
+如果你正在调用之前提到的搜索 API，想从程序中动态获取下载地址，可以利用以下端点：
+
+* **端点**: `GET /repos/{owner}/{repo}/zipball/{ref}`
+* **说明**: `{ref}` 可以是分支名、Tag 名或具体的 Commit SHA。
+
+**cURL 示例：**
+
+```bash
+curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -o repository.zip \
+  https://api.api.github.com/repos/OWNER/REPO/zipball/REF
+
+```
+
+> **注意：** `-L` 参数非常重要，因为 GitHub 会返回一个 302 重定向到实际的文件服务器（通常是 https://www.google.com/search?q=codeload.github.com）。
+
+---
+
+### 4. 常见问题 (FAQ)
+
+* **ZIP 包含 `.git` 文件夹吗？**
+不包含。下载 ZIP 只会获取当前代码的“快照”，不包含历史提交记录（即没有 `.git` 目录）。如果你需要版本记录，请使用 `git clone`。
+* **可以下载私有仓库吗？**
+可以，但必须在请求头中携带有效的 `Personal Access Token`。
+* **下载速度慢怎么办？**
+如果在国内访问较慢，建议使用加速镜像（如 `kgithub.com`）或者使用代理。
