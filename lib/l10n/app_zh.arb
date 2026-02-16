@@ -1,5 +1,6 @@
 {
   "@@locale": "zh",
+  "extensionError": "扩展错误",
   "uninstallExtension": "卸载扩展",
   "uninstallConfirmation": "确定要卸载“{name}”吗？",
   "@uninstallConfirmation": {
@@ -188,7 +189,7 @@
   "extensionOpen": "打开扩展",
   "extensionLinkSubtitle": "支持 URL 或 GitHub 链接",
   "installFromClipboard": "从剪贴板安装链接",
-  "installFromClipboardSubtitle": "支持 ZIP / EZIP / GitHub 链接",
+  "installFromClipboardSubtitle": "支持 ZIP / GitHub 链接",
   "install": "安装",
   "noAvailableExtensions": "商店中暂无可用扩展",
   "failedToLoadStore": "无法加载商店",
@@ -647,6 +648,8 @@
   "builtInFont": "内置字体",
   "dataMaintenance": "数据维护",
   "dangerZone": "危险区域",
+
+
   "formatApp": "格式化应用",
   "formatAppWarning": "这将物理删除所有数据库，清空所有扩展沙盒，并重置所有应用设置。此操作不可逆！",
   "formatAppConfirm": "输入 'DELETE' 以确认",
@@ -682,7 +685,6 @@
   "extensionSandboxDefaultHint": "默认为扩展 ID",
   "extensionSandboxTip": "提示：活跃扩展通常共享同一分组",
   "extensionRequestedPermissions": "申请的权限",
-  "extensionError": "扩展脚本运行错误",
   "extensionButton": "按钮",
   "extensionNoPermissions": "未申请权限",
   "extensionUpdate": "更新扩展",

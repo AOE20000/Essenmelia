@@ -16,7 +16,7 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 
 ## 2. 分层架构
 
-### 2.1 逻辑层：`ExtensionJsEngine` (JS Runtime)
+### 2.1 逻辑层：`Runtime/JS` (ExtensionJsEngine)
 `ExtensionJsEngine` 负责在沙箱环境中执行扩展的业务逻辑。
 
 - **核心职责**：
@@ -25,68 +25,40 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
   - **JS 桥接安全 (Injection Prevention)**：
     - 状态同步时，对所有键名执行 `jsonEncode` 转义，防止通过恶意键名进行 JS 注入。
     - 函数调用采用 `globalThis[jsonEncode(name)]` 模式，确保执行路径受控。
-  - **性能优化 (Fine-grained Binding)**：为每个状态键维护独立的 `ValueNotifier`。UI 组件仅监听其引用的特定状态，避免全量重绘。
+  - **异步 Promise 桥接**：实现了基于 Promise 的双向通信，JS 调用 Dart API 时会自动挂起，直到 Dart 返回结果。
   - **日志追踪**：劫持 `console.log`，通过桥接转发至 Dart 侧的“扩展控制台”。
-  - 监听主程序的系统事件并触发 `onEvent` 回调。
-- **非阻塞初始化**：引擎在脚本评估完成后立即标记为 `initialized`。扩展的 `onLoad` 钩子会在后台异步执行，确保 UI 能够即时响应，不会因逻辑耗时而卡在加载界面。
 - **状态同步机制**：
-  - JS 调用 `updateState(key, value)` -> 发送消息给 Dart -> 更新 `ExtensionJsEngine.state` -> 触发对应键的 `ValueNotifier` -> 局部 UI 刷新。
-- **代码参考**：[logic_engine.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/logic_engine.dart)
+  - JS 直接修改 `state` 属性 -> Proxy 拦截 -> 发送消息给 Dart -> 更新 `ExtensionJsEngine.state` -> 触发对应键的 `ValueNotifier` -> 局部 UI 刷新。
+- **代码参考**：[extension_js_engine.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/runtime/js/extension_js_engine.dart)
 
-### 2.2 渲染层：`DynamicEngine` (UI Renderer)
+### 2.2 渲染层：`Runtime/View` (DynamicEngine)
 渲染层将 YAML 定义转换为 Flutter Widget 树。
 
 - **MD3 令牌映射**：内置了 MD3 颜色和文字样式映射器。开发者可以使用 `primary`, `titleLarge` 等语义化名称，系统会自动根据当前应用主题（亮/暗模式、动态取色）渲染对应样式。
 - **响应式渲染**：
   - 自动分析 YAML 中的 `$state.key` 插值。
   - 使用 `ValueListenableBuilder` 包装受影响的组件实现局部刷新。
-  - 支持 `Stack`, `Positioned`, `Wrap` 等复杂布局。
-- **交互绑定**：任意组件均可通过 `onTap` 属性绑定 JS 函数，由 `GestureDetector` 实现底层拦截。
-- **调试支持**：内置“扩展控制台”悬浮窗，可实时查看 JS 日志和内存状态树。
-- **代码参考**：[dynamic_engine.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/dynamic_engine.dart)
+- **交互绑定**：任意组件均可通过 `onTap` 属性绑定 JS 函数。
+- **代码参考**：[dynamic_engine.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/runtime/view/dynamic_engine.dart)
 
-### 2.3 框架层：`ExtensionManager` (核心中枢)
+### 2.3 管理层：`Manager` (ExtensionManager)
 `ExtensionManager` 是整个系统的中枢，负责扩展的生命周期与安全性。
 
-- **框架层 (`ExtensionManager`)** (核心中枢)
-  - **多文件架构支持**：支持从 Assets 或 ZIP 中加载分离的 `manifest.yaml`, `view.yaml`, `logic.yaml/main.js` 文件。
-  - **安装流程与格式支持**：
-    - **多种安装源**：支持从本地 ZIP/EZIP 文件、远程下载链接、以及 GitHub 仓库（通过自动解析仓库 ZIP 存档）进行安装。
-    - **标准格式支持**：原生支持 `.zip` 和 `.ezip` 格式。系统会自动解压并寻找 `manifest.yaml` 以完成验证。
-    - **链接安装逻辑**：从剪贴板或 URL 安装时，系统会自动探测链接类型并触发对应的下载器/解压器。
-  - **严格权限校验**：所有权限申请必须使用标准 `camelCase` 格式。系统不再支持旧版的权限别名映射。
-  - **安全性校验 (Integrity Hardening)**：所有扩展在安装时均会进行 SHA-256 完整性校验。哈希校验范围覆盖了 `manifest.yaml`, `view.yaml` 以及 `main.js` 的**完整合并内容**。一旦安装，任何对本地文件的物理篡改都会导致扩展无法加载。
-  - **外部调用路由**：拦截 ADB/Intent 请求，并将其转发给 `system.external_call` 扩展处理。
-  - **权限网关与 DoS 防护**：
-    - 在 JS API 调用进入业务 Service 前执行权限校验。
-    - **弹窗冷却机制**：针对非信任扩展频繁触发的敏感操作，系统设置了 5 分钟的对话框冷却期。冷却期间的重复请求将被自动拒绝并返回模拟数据，防止恶意扩展通过无限弹窗实施 DoS 攻击。
-- **稳定性保护**：
-  - **执行超时**：所有扩展触发的网络请求强制 15 秒超时，防止恶意逻辑挂起主线程。
-  - **递归深度限制**：逻辑引擎（Path B）与渲染引擎（Path C）均设置了 50 层的最大递归深度，防止死循环导致应用崩溃。
-  - **异常捕获**：所有 API 执行均包裹在 `try-finally` 块中，确保即使逻辑出错，加载状态（Spinning）也能被正确关闭。
-- **代码参考**：[extension_manager.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/extension_manager.dart)
+- **核心职责**：
+  - **自动发现**：自动扫描 `assets/extensions/` 目录下的内置扩展。
+  - **安装与更新**：支持 ZIP 解压、元数据解析与安装。移除了过时的哈希强制校验逻辑，使更新流程更加流畅。
+  - **权限网关**：集成 `SecurityShield`，在 API 调用前进行权限检查。
+- **代码参考**：[extension_manager.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/manager/extension_manager.dart)
 
-### 2.2 功能层：Feature Services (API 提供者)
-具体的功能 API 由各个业务模块的 Service 提供。
+### 2.4 安全层：`Security` (SecurityShield)
+`SecurityShield` 负责拦截非信任扩展的敏感操作。
 
-- **实现类**：
-  - `EventsExtensionService`：处理事件读写（细分为 Add/Update/Delete）、提醒。
-  - `CalendarExtensionService`：对接系统日历 (Read/Write Calendar)。
-  - `NotificationExtensionService`：发送系统级通知。
-  - `SettingsExtensionService`：访问系统偏好设置、系统信息 (SystemInfo)。
-  - `UIExtensionService`：控制动态 UI 交互、界面导航 (Navigation)。
-- **分发机制**：`ExtensionApiRegistry` 维护了一个指令集映射表。当框架层通过指令名路由调用时，对应的 Service 会被触发。
-- **信任感知**：Service 在执行逻辑时会接收到一个 `isUntrusted` 布尔值。
-  - `isUntrusted == false`：执行真实数据库操作。
-  - `isUntrusted == true`：调用 `MockDataGenerator` 返回伪造数据。
-
-### 2.3 隐私层：`MockDataGenerator` (盾牌)
-这是黑盒欺骗方案的核心实现。
-
-- **职责**：根据数据模型（如 `Event`, `EventStep`）生成随机但结构正确的伪造数据。
-- **隐私增强 (Anti Side-Channel)**：对于受限 (Untrusted) 扩展，系统强制关闭真实数据的混合逻辑 (`mixReal: false`)。扩展无法获取到任何关于真实数据库的统计特征，防止通过返回数量、时间分布等元数据泄露用户隐私。
-- **意义**：确保即使是恶意扩展，在未授权情况下也只能在沙箱中“自嗨”，无法触及用户真实数据。
-- **代码参考**：[mock_data_generator.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/utils/mock_data_generator.dart)
+- **拦截策略**：
+  - **读操作**：返回由 `MockDataGenerator` 生成的随机数据。
+  - **写操作**：将数据写入临时的内存沙箱。
+  - **权限申请**：当扩展尝试进行敏感操作时，可能会向用户展示权限申请弹窗。
+- **DoS 防护**：针对频繁的弹窗请求，内置了冷却机制（Cooldown），防止恶意扩展通过无限弹窗阻塞 UI。
+- **代码参考**：[security_shield.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/security/security_shield.dart)
 
 ---
 
@@ -98,39 +70,3 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
    - 默认级别。
    - 所有敏感 API 调用都会被 `Shield` 拦截。
    - 扩展只能看到伪造数据。
-
-### 授权流程 (事后授权模式)
-1. 扩展发起 `getEvents` 调用。
-2. 框架拦截，发现是受限扩展。
-3. 框架立即返回 `MockDataGenerator` 生成的假列表。
-4. 同时，框架在 UI 层面弹出通知/对话框，告知用户“某扩展正在尝试访问数据”，并提供“本次允许”、“始终允许”等选项。
-5. 这种模式保证了扩展逻辑的连续性，同时将最终控制权交还用户。
-
----
-
-## 4. API 调用数据流
-
-1. **发起**：扩展逻辑代码调用 `api.addEvent({...})`。
-2. **路由**：`ExtensionManager` 的 `_invokeApi` 接收请求。
-3. **拦截**：执行 `_shieldIntercept` 检查权限。
-4. **分发**：根据指令名从 `ExtensionApiRegistry` 找到 Handler。
-5. **执行**：
-   - `EventsExtensionService` 收到请求。
-   - 若 `isUntrusted` 为 `true`，返回 `true`（模拟成功）但不写入数据库。
-   - 若 `isUntrusted` 为 `false`，写入真实数据库并返回结果。
-6. **响应**：结果经由框架层返回给扩展逻辑。
-
----
-
-## 5. 维护注意事项
-
-- **添加新 API**：
-  1. 在 `ExtensionApi` 接口中添加方法定义。
-  2. 在对应的业务 Service 中实现逻辑，务必处理 `isUntrusted` 分支。
-  3. 在 `MockDataGenerator` 中确保新字段有对应的伪造逻辑。
-  4. 在 `ExtensionManager` 的 `ExtensionApiImpl` 中包装调用。
-- **UI 引擎更新**：
-  - `DynamicEngine` 负责将 JSON 转换为 Flutter Widget。更新组件支持时，需同时更新 `Path C` 的解析逻辑。
-
----
-*最后更新：2026-02-15 (安全增强版本)*

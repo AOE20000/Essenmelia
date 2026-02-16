@@ -134,34 +134,72 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
     );
   }
 
-  Widget _buildWidget(Map<String, dynamic> def) {
-    // 提取该组件引用的所有状态键
-    final stateKeys = _extractStateKeys(def);
-
-    if (stateKeys.isEmpty) {
-      return _buildWidgetInternal(def);
-    }
-
-    // 如果组件引用了状态，则使用 ValueListenableBuilder 包装
-    return ValueListenableBuilder(
-      valueListenable: widget.engine.getStateNotifier(stateKeys.first),
-      builder: (context, value, child) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 350),
-          switchInCurve: Easing.emphasizedDecelerate,
-          switchOutCurve: Easing.emphasizedAccelerate,
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeThroughTransition(
-              animation: animation,
-              secondaryAnimation: ReverseAnimation(animation),
-              fillColor: Colors.transparent,
-              child: child,
-            );
-          },
-          child: _buildWidgetInternal(def, key: ValueKey(value)),
-        );
-      },
+  Widget _buildErrorWidget(dynamic e) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.broken_image_outlined, color: Colors.red, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Render Error: $e',
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildWidget(Map<String, dynamic> def) {
+    try {
+      // 提取该组件引用的所有状态键
+      final stateKeys = _extractStateKeys(def);
+
+      if (stateKeys.isEmpty) {
+        try {
+          return _buildWidgetInternal(def);
+        } catch (e) {
+          return _buildErrorWidget(e);
+        }
+      }
+
+      // 如果组件引用了状态，则使用 ValueListenableBuilder 包装
+      return ValueListenableBuilder(
+        valueListenable: widget.engine.getStateNotifier(stateKeys.first),
+        builder: (context, value, child) {
+          try {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              switchInCurve: Easing.emphasizedDecelerate,
+              switchOutCurve: Easing.emphasizedAccelerate,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeThroughTransition(
+                  animation: animation,
+                  secondaryAnimation: ReverseAnimation(animation),
+                  fillColor: Colors.transparent,
+                  child: child,
+                );
+              },
+              child: _buildWidgetInternal(def, key: ValueKey(value)),
+            );
+          } catch (e) {
+            return _buildErrorWidget(e);
+          }
+        },
+      );
+    } catch (e) {
+      return _buildErrorWidget(e);
+    }
   }
 
   /// 内部构建逻辑，不包含状态绑定

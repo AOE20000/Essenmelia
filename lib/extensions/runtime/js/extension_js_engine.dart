@@ -1,10 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_js/flutter_js.dart';
-import 'core/extension_metadata.dart';
-import 'core/extension_api.dart';
+import '../../core/extension_api.dart';
+import '../../core/extension_metadata.dart';
 
-/// 扩展 JS 逻辑引擎
+/// Extension JS Logic Engine
+///
+/// This engine provides a robust bridge between Dart and JS, supporting:
+/// 1. Async function calls from JS to Dart (with Promise support)
+/// 2. Async function calls from Dart to JS
+/// 3. State synchronization (Reactive)
+/// 4. Event handling
 class ExtensionJsEngine {
   final ExtensionMetadata metadata;
   final ExtensionApi api;
@@ -34,12 +40,12 @@ class ExtensionJsEngine {
     logsNotifier.value = List.from(logs);
   }
 
-  /// 获取特定状态的监听器
+  /// Get listener for specific state
   ValueNotifier<dynamic> getStateNotifier(String key) {
     return stateNotifiers.putIfAbsent(key, () => ValueNotifier(state[key]));
   }
 
-  /// 手动更新状态（用于调试或 API 回调）
+  /// Manually update state (for debugging or API callbacks)
   void updateState(String? key, dynamic value) {
     if (key != null) {
       state[key] = value;
@@ -47,8 +53,8 @@ class ExtensionJsEngine {
       _onStateChanged?.call();
       _addLog('State Updated: $key = $value');
 
-      // 通知 JS 引擎状态已同步
-      // 漏洞修复：使用 jsonEncode 对 key 进行转义，防止 JS 注入
+      // Notify JS engine state synced
+      // Security Fix: Escape key with jsonEncode to prevent JS injection
       final safeKey = jsonEncode(key);
       _jsRuntime.evaluate(
         'if (typeof _state !== "undefined") { _state[$safeKey] = ${jsonEncode(value)}; }',
@@ -62,10 +68,10 @@ class ExtensionJsEngine {
     try {
       _jsRuntime = getJavascriptRuntime();
 
-      // 1. 注入 API 桥接
+      // 1. Inject API bridges
       _setupApiBridges();
 
-      // 2. 注入日志监听
+      // 2. Inject log listener
       _jsRuntime.onMessage('console_log', (dynamic message) {
         _addLog('JS: $message');
         debugPrint('JS Log: $message');
@@ -90,9 +96,9 @@ class ExtensionJsEngine {
 
       _addLog('Initializing Engine...');
 
-      // 3. 加载扩展脚本
+      // 3. Load extension script
       if (metadata.script != null) {
-        // 使用 evaluate 替代 evaluateAsync 以避免 Promise 挂起导致的初始化阻塞
+        // Use evaluate instead of evaluateAsync to avoid Promise hang blocking initialization
         final result = _jsRuntime.evaluate(metadata.script!);
         if (result.isError) {
           _error = result.toString();
@@ -101,8 +107,8 @@ class ExtensionJsEngine {
         }
       }
 
-      // 4. 执行 onLoad (如果存在)
-      // onLoad 通常包含异步逻辑，我们在后台执行它，不阻塞 isInitialized 的标记
+      // 4. Execute onLoad (if exists)
+      // onLoad usually contains async logic, we run it in background, not blocking isInitialized flag
       _isInitialized = true;
       _addLog('Engine Logic Loaded');
 
@@ -121,7 +127,9 @@ class ExtensionJsEngine {
   }
 
   void dispose() {
-    _jsRuntime.dispose();
+    try {
+      _jsRuntime.dispose();
+    } catch (_) {}
     logsNotifier.dispose();
     for (var v in stateNotifiers.values) {
       v.dispose();
@@ -129,47 +137,56 @@ class ExtensionJsEngine {
   }
 
   void _setupApiBridges() {
-    _jsRuntime.onMessage('essenmelia_api', (dynamic args) async {
-      // 如果 args 是 JSON 字符串，则解析它
+    // Robust Async Bridge: JS -> Dart
+    // JS calls `sendMessage('essenmelia_api_call', {id, method, params})`
+    // Dart processes and calls `_resolveRequest(id, result)` or `_rejectRequest(id, error)`
+    _jsRuntime.onMessage('essenmelia_api_call', (dynamic args) async {
       Map<String, dynamic> data;
       if (args is String) {
         try {
           data = jsonDecode(args);
         } catch (e) {
-          debugPrint('essenmelia_api JSON parse error: $e');
-          return null;
+          debugPrint('essenmelia_api_call JSON parse error: $e');
+          return;
         }
       } else if (args is Map) {
         data = Map<String, dynamic>.from(args);
       } else {
-        return null;
+        return;
       }
 
+      final String id = data['id'];
       final String method = data['method'];
       final Map<String, dynamic> params = data['params'] ?? {};
 
-      _addLog('API Call: $method');
+      _addLog('API Call ($id): $method');
 
       try {
+        dynamic result;
         switch (method) {
           case 'getEvents':
             final events = await api.getEvents();
-            return events.map((e) => e.toJson()).toList();
+            result = events.map((e) => e.toJson()).toList();
+            break;
           case 'getTags':
-            return await api.getTags();
+            result = await api.getTags();
+            break;
           case 'showSnackBar':
             api.showSnackBar(params['message']?.toString() ?? '');
-            return null;
+            result = null;
+            break;
           case 'showConfirmDialog':
-            return await api.showConfirmDialog(
+            result = await api.showConfirmDialog(
               title: params['title']?.toString() ?? '',
               message: params['message']?.toString() ?? '',
               confirmLabel: params['confirmLabel']?.toString() ?? '确定',
               cancelLabel: params['cancelLabel']?.toString() ?? '取消',
             );
+            break;
           case 'navigateTo':
             api.navigateTo(params['route']?.toString() ?? '');
-            return null;
+            result = null;
+            break;
           case 'addEvent':
             await api.addEvent(
               title: params['title']?.toString() ?? '未命名任务',
@@ -178,18 +195,28 @@ class ExtensionJsEngine {
                   ? List<String>.from(params['tags'])
                   : null,
             );
-            return null;
+            result = null;
+            break;
           default:
-            return await api.call(method, params);
+            result = await api.call(method, params);
         }
+
+        // Send success response to JS
+        final safeId = jsonEncode(id);
+        final safeResult = jsonEncode(result);
+        _jsRuntime.evaluate('_resolveRequest($safeId, $safeResult);');
       } catch (e) {
         _addLog('API Error ($method): $e');
         debugPrint('JS Bridge Error ($method): $e');
-        throw e.toString();
+
+        // Send error response to JS
+        final safeId = jsonEncode(id);
+        final safeError = jsonEncode(e.toString());
+        _jsRuntime.evaluate('_rejectRequest($safeId, $safeError);');
       }
     });
 
-    // 状态更新桥接：essenmelia.updateState(key, value)
+    // State update bridge: essenmelia.updateState(key, value)
     _jsRuntime.onMessage('essenmelia_state', (dynamic args) {
       Map<String, dynamic> data;
       if (args is String) {
@@ -210,9 +237,27 @@ class ExtensionJsEngine {
       updateState(key, value);
     });
 
-    // 注入全局对象和助手函数
+    // Inject global object and helpers
     _jsRuntime.evaluate('''
+      var _pendingRequests = {};
       var _state = {};
+      
+      // Global helpers for Dart to call back
+      function _resolveRequest(id, result) {
+        if (_pendingRequests[id]) {
+          _pendingRequests[id].resolve(result);
+          delete _pendingRequests[id];
+        }
+      }
+      
+      function _rejectRequest(id, error) {
+        if (_pendingRequests[id]) {
+          _pendingRequests[id].reject(error);
+          delete _pendingRequests[id];
+        }
+      }
+
+      // State Proxy
       var state = new Proxy(_state, {
         set: function(target, prop, value) {
           target[prop] = value;
@@ -220,18 +265,36 @@ class ExtensionJsEngine {
           return true;
         }
       });
+
+      // API Object
       var essenmelia = {
-        call: async function(method, params) {
-          var result = await sendMessage('essenmelia_api', JSON.stringify({ method: method, params: params || {} }));
-          if (typeof result === 'string') {
-            try { return JSON.parse(result); } catch(e) { return result; }
-          }
-          return result;
+        call: function(method, params) {
+          return new Promise((resolve, reject) => {
+            var id = 'req_' + Math.random().toString(36).substr(2, 9);
+            _pendingRequests[id] = { resolve: resolve, reject: reject };
+            
+            sendMessage('essenmelia_api_call', JSON.stringify({
+              id: id,
+              method: method,
+              params: params || {}
+            }));
+            
+            // Timeout safety (30s)
+            setTimeout(() => {
+              if (_pendingRequests[id]) {
+                _pendingRequests[id].reject('Timeout');
+                delete _pendingRequests[id];
+              }
+            }, 30000);
+          });
         },
+        
         updateState: function(key, value) {
           _state[key] = value;
           sendMessage('essenmelia_state', JSON.stringify({ key: key, value: value }));
         },
+        
+        // Convenience wrappers
         getEvents: () => essenmelia.call('getEvents'),
         showSnackBar: (msg) => essenmelia.call('showSnackBar', { message: msg }),
         showConfirmDialog: function(args) {
@@ -251,8 +314,8 @@ class ExtensionJsEngine {
     }
     try {
       final paramsJson = jsonEncode(params ?? {});
-      // 使用 try-catch 包裹 JS 调用，并显式返回 JSON 字符串或 null
-      // 漏洞修复：使用 globalThis[name] 形式调用，并验证 name 是否为安全字符串，防止注入
+      // Use try-catch wrap JS call, and explicitly return JSON string or null
+      // Security Fix: Use globalThis[name] form call, and verify name is safe string, prevent injection
       final safeName = jsonEncode(name);
       final code =
           '''
@@ -288,7 +351,7 @@ class ExtensionJsEngine {
       try {
         return jsonDecode(rawResult);
       } catch (e) {
-        // 如果不是 JSON 格式，直接返回原始字符串
+        // If not JSON format, return raw string
         return rawResult;
       }
     } catch (e) {

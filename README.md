@@ -7,22 +7,24 @@
 
 ## ✨ 核心特性
 
-- **🚀 强大的扩展系统**：采用 JavaScript 逻辑引擎与 YAML 声明式 UI 的混合架构，支持动态加载与双向数据绑定。
-- **🛡️ 隐私保护 (Shield)**：内置“黑盒欺骗”机制。非信任扩展在未获得授权时只能访问系统伪造的 Mock 数据，确保用户真实数据绝对安全。
+- **🚀 强大的扩展系统**：采用 JavaScript 逻辑引擎与 YAML 声明式 UI 的混合架构，支持动态加载、双向数据绑定以及 `async/await` 异步编程。
+- **🛡️ 隐私保护 (Security Shield)**：内置安全盾牌。非信任扩展在未获得授权时，所有敏感操作（如读取数据）都会被自动拦截或返回伪造数据，确保用户隐私绝对安全。
 - **🎨 现代化 UI (Material 3)**：深度适配 MD3 规范，支持动态取色、语义化颜色令牌与文字样式。
 - **📅 多维记录管理**：支持自定义步骤追踪、系统日历同步、本地通知提醒以及自动化的标签管理。
-- **📦 灵活的分发**：支持 `.ezip` 格式扩展包，支持从本地文件、URL 或 GitHub 链接安装扩展。
+- **📦 灵活的分发**：支持 `.zip` 格式扩展包，支持从本地文件、URL 或 GitHub 链接安装扩展。内置扩展开箱即用。
 
 ---
 
 ## 🏗️ 系统架构
 
-Essenmelia 采用高度解耦的分层设计：
+Essenmelia 采用模块化分层设计：
 
-- **逻辑层 (`ExtensionJsEngine`)**：在沙箱环境中运行 JS 脚本，处理业务逻辑并同步状态。
-- **渲染层 (`DynamicEngine`)**：将 YAML 定义转换为响应式的 Flutter Widget 树，支持局部刷新。
-- **框架层 (`ExtensionManager`)**：管理扩展生命周期、严格的权限校验与安全网关。
-- **隐私层 (`MockDataGenerator`)**：负责生成结构正确的伪造数据以欺骗未授权访问。
+- **Core (核心层)**：定义扩展元数据 (`ExtensionMetadata`) 与权限模型。
+- **Runtime (运行时)**：
+  - `ExtensionJsEngine`: 基于 Promise 的异步 JS 桥接引擎，支持现代 JS 语法。
+  - `DynamicEngine`: 将 YAML 定义渲染为原生 Flutter 组件的 UI 引擎。
+- **Manager (管理层)**：负责扩展的自动发现、安装、生命周期管理与更新。
+- **Security (安全层)**：`SecurityShield` 负责实时拦截权限请求，提供非阻塞的隐私保护。
 
 > 📖 更多架构细节请参阅：[架构设计文档](assets/docs/architecture.md)
 
@@ -36,7 +38,7 @@ Essenmelia 采用高度解耦的分层设计：
 一个标准的扩展通常包含：
 - `manifest.yaml`: 定义元数据与权限（必须使用标准 camelCase 格式）。
 - `view.yaml`: 描述 MD3 界面布局。
-- `main.js`: 处理逻辑与 API 调用。
+- `main.js`: 处理逻辑与 API 调用（支持 `async/await`）。
 
 ### 开发资源
 - 📝 [扩展开发指南](assets/docs/extensions.md) - 完整技术规范与组件库。
@@ -45,4 +47,4 @@ Essenmelia 采用高度解耦的分层设计：
 - 📂 [代码示例](assets/docs/samples/) - 浏览官方提供的扩展示例。
 
 ---
-*最后更新：2026-02-15*
+*最后更新：2026-02-16*

@@ -6,7 +6,7 @@ import '../../providers/locale_provider.dart';
 import '../../l10n/l10n_provider.dart';
 import '../extension_api_registry.dart';
 import '../extension_manager.dart';
-import '../base_extension.dart';
+import '../core/extension_permission.dart';
 
 /// UI 相关的扩展 API 实现 (SnackBar, Dialog, Navigation, Theme, Locale)
 class UIExtensionApiHandler {

@@ -15,7 +15,10 @@ import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 import 'dynamic_engine.dart';
 import 'utils/extension_converter.dart';
-import 'base_extension.dart';
+import 'core/base_extension.dart';
+import 'core/extension_metadata.dart';
+import 'core/extension_permission.dart';
+import 'core/extension_api.dart';
 import '../models/event.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
@@ -42,8 +45,10 @@ final extensionAuthStateProvider =
 
 class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   final Ref _ref;
+  late final Future<void> ready;
+
   ExtensionAuthNotifier(this._ref) : super({}) {
-    _load();
+    ready = _load();
   }
 
   static const _boxName = 'extension_auth_v2';
@@ -79,6 +84,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
 
   /// 设置沙箱 ID
   Future<void> setSandboxId(String extensionId, String sandboxId) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final key = '$_sandboxPrefix$extensionId';
     // 如果设置为空或等于 extensionId，则恢复默认
@@ -118,6 +124,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     String extensionId,
     ExtensionPermission permission,
   ) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final currentPerms = List<String>.from(state[extensionId] ?? []);
     final permName = permission.name;
@@ -137,12 +144,14 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     String extensionId,
     ExtensionPermission permission,
   ) async {
+    await ready;
     if (!hasPermission(extensionId, permission)) {
       await togglePermission(extensionId, permission);
     }
   }
 
   Future<void> setUntrusted(String extensionId, bool untrusted) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final key = '$_untrustedPrefix$extensionId';
     await box.put(key, [untrusted.toString()]);
@@ -153,6 +162,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   }
 
   Future<void> setRunning(String extensionId, bool running) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final key = '$_runningPrefix$extensionId';
     await box.put(key, [running.toString()]);
@@ -192,6 +202,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   }
 
   Future<void> setNextRunPermission(String extensionId, String category) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final key = '$_nextRunPrefix$extensionId';
     final current = List<String>.from(state[key] ?? []);
@@ -208,6 +219,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   }
 
   Future<void> clearNextRunPermissions(String extensionId) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final key = '$_nextRunPrefix$extensionId';
     await box.delete(key);
@@ -215,6 +227,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   }
 
   Future<void> setManifestHash(String extensionId, String hash) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
     final key = '$_manifestHashPrefix$extensionId';
     await box.put(key, [hash]);
@@ -233,6 +246,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
     String extensionId,
     String category,
   ) async {
+    await ready;
     final key = '$_nextRunPrefix$extensionId';
     final current = List<String>.from(state[key] ?? []);
     if (current.contains(category)) {
@@ -251,6 +265,7 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
   }
 
   Future<void> uninstallExtension(String extensionId) async {
+    await ready;
     final box = await Hive.openBox(_boxName);
 
     // 1. 清除权限设置
@@ -356,6 +371,7 @@ class ExtensionApiImpl implements ExtensionApi {
     String? category,
   }) async {
     final notifier = _ref.read(extensionAuthStateProvider.notifier);
+    await notifier.ready;
     final extId = _metadata.id;
     final registry = _ref.read(extensionApiRegistryProvider);
 
@@ -376,7 +392,7 @@ class ExtensionApiImpl implements ExtensionApi {
     // 3. 隐私 Shield 拦截逻辑 (针对受限访问模式)
     if (effectiveOperation != null) {
       final context = navigatorKey.currentContext;
-      if (context != null) {
+      if (context != null && context.mounted) {
         final l10n = AppLocalizations.of(context)!;
         final operation = metadata?.getOperation(l10n) ?? effectiveOperation;
         final category =
@@ -468,16 +484,20 @@ class ExtensionApiImpl implements ExtensionApi {
     // 如果未开启“受限访问”模式，直接通过
     if (!notifier.isUntrusted(extId)) return true;
 
+    // 检查持久化授权 (Persistent Permissions)
+    if (permission != null && notifier.hasPermission(extId, permission)) {
+      return true;
+    }
+
     // 检查是否有“仅下次允许”的权限，如果有则直接消费并放行
-    if (permission != null &&
-        await notifier.consumeNextRunPermission(extId, permission.name)) {
+    final permKey = permission?.name ?? category;
+    if (await notifier.consumeNextRunPermission(extId, permKey)) {
       return true;
     }
 
     // 检查本次会话是否已允许
     final sessionPerms = _ref.read(sessionPermissionsProvider)[extId] ?? {};
-    if (sessionPerms.contains('all') ||
-        (permission != null && sessionPerms.contains(permission.name))) {
+    if (sessionPerms.contains('all') || sessionPerms.contains(permKey)) {
       return true;
     }
 
@@ -1131,8 +1151,8 @@ class ProxyExtension extends BaseExtension {
 class ExtensionManager extends ChangeNotifier {
   final Ref _ref;
 
-  /// 处理从 README 提取的元数据以检查更新
-  void processReadmeUpdate(String content, String repoFullName) {
+  /// 解析 README 内容中的元数据
+  static Map<String, dynamic>? parseReadmeMetadata(String content) {
     try {
       final metadataRegex = RegExp(
         r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*(\{[\s\S]*?\})\s*-->',
@@ -1142,36 +1162,58 @@ class ExtensionManager extends ChangeNotifier {
       if (match != null) {
         final jsonStr = match.group(1);
         if (jsonStr != null) {
-          final data = jsonDecode(jsonStr);
-          final id = data['id'] as String?;
-          final remoteVersion = data['version'] as String?;
-
-          if (id != null && remoteVersion != null) {
-            final installedExt = _installedExtensions[id];
-            if (installedExt != null) {
-              // 1. 检查是否需要更新仓库名称 (处理更名逻辑)
-              if (installedExt.metadata.repoFullName != repoFullName) {
-                _updateExtensionRepoFullName(id, repoFullName);
-              }
-
-              // 2. 检查版本更新
-              if (remoteVersion != installedExt.metadata.version) {
-                if (_availableUpdates[id] != remoteVersion) {
-                  _availableUpdates[id] = remoteVersion;
-                  notifyListeners();
-                }
-              } else {
-                if (_availableUpdates.containsKey(id)) {
-                  _availableUpdates.remove(id);
-                  notifyListeners();
-                }
-              }
+          try {
+            return jsonDecode(jsonStr);
+          } catch (e) {
+            // 尝试修复常见的 JSON 格式错误（如尾随逗号）
+            try {
+              final fixedJson = jsonStr.replaceAllMapped(
+                RegExp(r',\s*([\]}])'),
+                (m) => m.group(1)!,
+              );
+              return jsonDecode(fixedJson);
+            } catch (_) {
+              debugPrint('Failed to parse README metadata JSON: $e');
             }
           }
         }
       }
     } catch (e) {
-      debugPrint('Error processing README update: $e');
+      debugPrint('Error parsing README metadata: $e');
+    }
+    return null;
+  }
+
+  /// 处理从 README 提取的元数据以检查更新
+  void processReadmeUpdate(String content, String repoFullName) {
+    final data = parseReadmeMetadata(content);
+
+    if (data != null) {
+      final id = data['id'] as String?;
+      final remoteVersion = data['version'] as String?;
+
+      if (id != null && remoteVersion != null) {
+        final installedExt = _installedExtensions[id];
+        if (installedExt != null) {
+          // 1. 检查是否需要更新仓库名称 (处理更名逻辑)
+          if (installedExt.metadata.repoFullName != repoFullName) {
+            _updateExtensionRepoFullName(id, repoFullName);
+          }
+
+          // 2. 检查版本更新
+          if (remoteVersion != installedExt.metadata.version) {
+            if (_availableUpdates[id] != remoteVersion) {
+              _availableUpdates[id] = remoteVersion;
+              notifyListeners();
+            }
+          } else {
+            if (_availableUpdates.containsKey(id)) {
+              _availableUpdates.remove(id);
+              notifyListeners();
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1218,6 +1260,9 @@ class ExtensionManager extends ChangeNotifier {
 
   /// 权限对话框冷却记录 (extensionId_permissionName -> lastShowTime)
   final Map<String, DateTime> _dialogCooldowns = {};
+
+  /// 内置扩展列表缓存
+  List<RepositoryExtension> _builtInExtensions = [];
 
   Map<String, String> get availableUpdates => _availableUpdates;
 
@@ -1341,6 +1386,9 @@ class ExtensionManager extends ChangeNotifier {
   }
 
   Future<void> _init() async {
+    // 异步加载内置扩展列表
+    _loadBuiltInExtensions();
+
     // 初始化存储服务
     await _ref.read(extensionStoreServiceProvider.notifier).init();
 
@@ -1445,6 +1493,7 @@ class ExtensionManager extends ChangeNotifier {
 
   /// 异步校验扩展完整性，防止冷启动时大量哈希计算阻塞主线程
   Future<void> _verifyIntegrityAsync(String extId, String json) async {
+    if (kDebugMode) return;
     try {
       final auth = _ref.read(extensionAuthStateProvider.notifier);
       final storedHash = auth.getManifestHash(extId);
@@ -1468,11 +1517,12 @@ class ExtensionManager extends ChangeNotifier {
   }
 
   /// 检查所有已安装扩展的更新
-  Future<void> checkForUpdates() async {
+  /// 返回当前可用的更新总数
+  Future<int> checkForUpdates() async {
     final extensions = _installedExtensions.values
         .where((ext) => ext.metadata.repoFullName != null)
         .toList();
-    if (extensions.isEmpty) return;
+    if (extensions.isEmpty) return 0;
 
     for (var ext in extensions) {
       final repoFullName = ext.metadata.repoFullName!;
@@ -1495,6 +1545,8 @@ class ExtensionManager extends ChangeNotifier {
         debugPrint('Failed to check update for $repoFullName: $e');
       }
     }
+
+    return _availableUpdates.length;
   }
 
   String _formatSize(int bytes) {
@@ -1504,7 +1556,7 @@ class ExtensionManager extends ChangeNotifier {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  /// 从剪贴板安装扩展（支持 ZIP、EZIP、URL 或 GitHub 链接）
+  /// 从剪贴板安装扩展（支持 ZIP、URL 或 GitHub 链接）
   Future<void> importFromClipboard() async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
@@ -1522,7 +1574,7 @@ class ExtensionManager extends ChangeNotifier {
         return;
       }
 
-      // 1. 尝试识别是否为 URL (支持 ZIP, EZIP, GitHub)
+      // 1. 尝试识别是否为 URL (支持 ZIP,GitHub)
       if (Uri.tryParse(text)?.hasAbsolutePath ?? false) {
         if (context.mounted) {
           ScaffoldMessenger.of(
@@ -1536,7 +1588,7 @@ class ExtensionManager extends ChangeNotifier {
       // 2. 如果不是 URL，提示用户需要提供下载链接
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('未检测到有效的扩展下载链接（支持 ZIP/EZIP/GitHub）')),
+          const SnackBar(content: Text('未检测到有效的扩展下载链接（支持 ZIP/GitHub）')),
         );
       }
     } catch (e) {
@@ -2621,46 +2673,66 @@ class ExtensionManager extends ChangeNotifier {
     );
   }
 
+  /// 加载内置扩展列表（从 Assets 自动解析）
+  Future<void> _loadBuiltInExtensions() async {
+    try {
+      // 兼容新版 Flutter 的 AssetManifest 加载方式
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final assets = manifest.listAssets();
+
+      final extensionFiles = assets.where(
+        (key) =>
+            key.startsWith('assets/extensions/') &&
+            key.endsWith('/manifest.yaml'),
+      );
+
+      final List<RepositoryExtension> loaded = [];
+
+      for (final path in extensionFiles) {
+        try {
+          final content = await rootBundle.loadString(path);
+          final map = ExtensionMetadata.yamlToMap(content);
+
+          if (map['id'] == null || map['name'] == null) continue;
+
+          List<String> tags = [];
+          if (map['tags'] is List) {
+            tags = (map['tags'] as List).map((e) => e.toString()).toList();
+          } else {
+            final idParts = (map['id'] as String).split('.');
+            if (idParts.length > 2) tags.add(idParts.last);
+            tags.add('Built-in');
+          }
+
+          loaded.add(
+            RepositoryExtension(
+              id: map['id'],
+              name: map['name'],
+              description: map['description'] ?? '',
+              author: map['author'] ?? 'Unknown',
+              version: map['version'] ?? '1.0.0',
+              downloadUrl: 'builtin://${map['id']}',
+              tags: tags,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error loading built-in extension from $path: $e');
+        }
+      }
+
+      // Sort by ID to keep consistent order
+      loaded.sort((a, b) => a.id.compareTo(b.id));
+
+      _builtInExtensions = loaded;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load built-in extensions: $e');
+    }
+  }
+
   /// 获取可用的内置扩展列表（以仓库扩展格式返回，统一 UI 处理）
   List<RepositoryExtension> getBuiltInExtensions() {
-    return [
-      RepositoryExtension(
-        id: 'system.external_call',
-        name: '指令网关',
-        description: '系统级外部请求监控中心。负责拦截、验证并处理来自 ADB、Intent 或第三方应用的 API 调用。',
-        author: 'System',
-        version: '2.1.0',
-        downloadUrl: 'builtin://system.external_call',
-        tags: ['System', 'Gateway', 'API'],
-      ),
-      RepositoryExtension(
-        id: 'com.essenmelia.kitchen_sink',
-        name: '全能演示 (Kitchen Sink)',
-        description: '展示所有可用组件、API 指令与 JS 逻辑的参考扩展 (JS/YAML)',
-        author: 'Essenmelia Team',
-        version: '2.0.0',
-        downloadUrl: 'builtin://com.essenmelia.kitchen_sink',
-        tags: ['Demo', 'Reference', 'Kitchen Sink'],
-      ),
-      RepositoryExtension(
-        id: 'com.essenmelia.api_tester',
-        name: 'API 测试工具',
-        description: '测试扩展 API 的功能与响应 (JS/YAML)',
-        author: 'Essenmelia',
-        version: '2.0.0',
-        downloadUrl: 'builtin://com.essenmelia.api_tester',
-        tags: ['Tool', 'Debug', 'API'],
-      ),
-      RepositoryExtension(
-        id: 'com.essenmelia.event_test',
-        name: '事件列表测试',
-        description: '展示并操作系统中的事件 (JS/YAML)',
-        author: 'Essenmelia Team',
-        version: '2.0.0',
-        downloadUrl: 'builtin://com.essenmelia.event_test',
-        tags: ['Test', 'Events'],
-      ),
-    ];
+    return _builtInExtensions;
   }
 
   /// 根据 ID 安装内置扩展

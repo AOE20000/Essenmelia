@@ -74,6 +74,13 @@ children:
           onTap: viewLogs
         - type: list_tile
           props:
+            title: "模拟外部调用"
+            subtitle: "触发一次模拟的 API 请求"
+            icon: 0xe897 # smart_toy
+            iconBgColor: "tertiaryContainer"
+          onTap: simulateCall
+        - type: list_tile
+          props:
             title: "清空历史数据"
             subtitle: "此操作不可撤销"
             icon: 0xe872 # delete

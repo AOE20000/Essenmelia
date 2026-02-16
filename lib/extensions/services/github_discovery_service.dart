@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/repository_extension.dart';
+import '../extension_manager.dart';
 
 class GitHubDiscoveryService {
   static const String searchTopic = 'essenmelia-extend';
@@ -28,44 +29,75 @@ class GitHubDiscoveryService {
         final data = jsonDecode(response.body);
         final List items = data['items'] ?? [];
 
-        final List<RepositoryExtension> results = [];
+        final List<Future<RepositoryExtension?>> futures = [];
+
         for (var item in items) {
-          // 严格校验：确保返回结果中确实包含指定的 topic
-          final List topics = item['topics'] ?? [];
-          if (!topics.contains(searchTopic)) {
-            continue;
-          }
-
-          final fullName = item['full_name'];
-          final defaultBranch = item['default_branch'] ?? 'main';
-          final downloadUrl =
-              'https://github.com/$fullName/archive/refs/heads/$defaultBranch.zip';
-
-          // 步骤 1: 立即创建基础扩展对象 (基于仓库名称和描述)
-          final basicExt = RepositoryExtension(
-            id: 'github:${item['id']}',
-            name: item['name'].toString().replaceAll(
-              'essenmelia-extension-',
-              '',
-            ),
-            description: item['description'] ?? 'No description provided',
-            author: item['owner']['login'],
-            version: 'unknown',
-            downloadUrl: downloadUrl,
-            repoFullName: fullName,
-            readmeUrl:
-                'https://github.com/$fullName/blob/$defaultBranch/README.md',
-          );
-          results.add(basicExt);
+          futures.add(_processRepositoryItem(item));
         }
 
-        return results;
+        final results = await Future.wait(futures);
+        return results.whereType<RepositoryExtension>().toList();
       } else {
         throw 'GitHub API 错误: ${response.statusCode}';
       }
     } catch (e) {
       debugPrint('GitHub Discovery Error: $e');
       rethrow;
+    }
+  }
+
+  Future<RepositoryExtension?> _processRepositoryItem(dynamic item) async {
+    try {
+      // 严格校验：确保返回结果中确实包含指定的 topic
+      final List topics = item['topics'] ?? [];
+      if (!topics.contains(searchTopic)) {
+        return null;
+      }
+
+      final fullName = item['full_name'];
+      final defaultBranch = item['default_branch'] ?? 'main';
+      final downloadUrl =
+          'https://github.com/$fullName/archive/refs/heads/$defaultBranch.zip';
+
+      String version = 'unknown';
+      String author = item['owner']['login'];
+
+      try {
+        // 使用 raw.githubusercontent.com 避免 API 速率限制
+        final rawReadmeUrl =
+            'https://raw.githubusercontent.com/$fullName/$defaultBranch/README.md';
+        final resp = await http
+            .get(Uri.parse(rawReadmeUrl))
+            .timeout(const Duration(seconds: 5));
+        if (resp.statusCode == 200) {
+          final meta = ExtensionManager.parseReadmeMetadata(resp.body);
+          if (meta != null) {
+            if (meta['version'] != null) {
+              version = meta['version'];
+            }
+            if (meta['author'] != null) {
+              author = meta['author'];
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to fetch/parse README for $fullName: $e');
+      }
+
+      // 步骤 1: 立即创建基础扩展对象 (基于仓库名称和描述)
+      return RepositoryExtension(
+        id: 'github:${item['id']}',
+        name: item['name'].toString().replaceAll('essenmelia-extension-', ''),
+        description: item['description'] ?? 'No description provided',
+        author: author,
+        version: version,
+        downloadUrl: downloadUrl,
+        repoFullName: fullName,
+        readmeUrl: 'https://github.com/$fullName/blob/$defaultBranch/README.md',
+      );
+    } catch (e) {
+      debugPrint('Error processing item $item: $e');
+      return null;
     }
   }
 }

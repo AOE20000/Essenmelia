@@ -1,0 +1,92 @@
+type: column
+props:
+  crossAxisAlignment: "start"
+children:
+  # 顶部标题栏
+  - type: container
+    props:
+      padding: { left: 24, top: 32, right: 24, bottom: 16 }
+    children:
+      - type: column
+        props:
+          crossAxisAlignment: "start"
+        children:
+          - type: text
+            props:
+              text: "Hello, Developer!"
+              textStyle: "headlineSmall"
+              textColor: "primary"
+          - type: text
+            props:
+              text: "这是一个演示扩展，展示了如何绑定状态和调用 API。"
+              textStyle: "bodyMedium"
+              textColor: "outline"
+
+  # 计数器卡片
+  - type: padding
+    props:
+      padding: { left: 24, right: 24, top: 16, bottom: 16 }
+    children:
+      - type: card
+        children:
+          - type: container
+            props:
+              padding: { left: 32, top: 48, right: 32, bottom: 48 }
+              width: "infinity"
+            children:
+              - type: column
+                props:
+                  crossAxisAlignment: "center"
+                children:
+                  - type: icon
+                    props:
+                      icon: 0xe056 # exposure_plus_1
+                      size: 48
+                      color: "primary"
+                  - type: sized_box
+                    props: { height: 24 }
+                  - type: text
+                    props:
+                      text: "当前计数"
+                      textStyle: "labelLarge"
+                      textColor: "outline"
+                  - type: text
+                    props:
+                      # 使用 $state.key 语法绑定 JS 中的状态
+                      text: "$state.count"
+                      textStyle: "displayLarge"
+                      textColor: "onSurface"
+                  - type: sized_box
+                    props: { height: 32 }
+                  - type: row
+                    props:
+                      mainAxisAlignment: "center"
+                    children:
+                      - type: button
+                        props:
+                          label: "减少"
+                          icon: 0xe15b # remove
+                          variant: "tonal"
+                        # 绑定 JS 函数
+                        onTap: decrement
+                      - type: sized_box
+                        props: { width: 16 }
+                      - type: button
+                        props:
+                          label: "增加"
+                          icon: 0xe145 # add
+                          variant: "filled"
+                        onTap: increment
+
+  # 通知测试按钮
+  - type: padding
+    props:
+      padding: { left: 24, right: 24 }
+    children:
+      - type: button
+        props:
+          label: "触发系统通知 (需权限)"
+          icon: 0xe7f4 # notifications
+          variant: "outlined"
+          width: "max"
+        onTap: showNotification

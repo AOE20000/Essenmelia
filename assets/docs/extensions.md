@@ -6,14 +6,14 @@
 
 ## 1. 核心架构
 
-Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使用 **多文件目录结构** 进行开发，并打包为 `.ezip` 格式进行分发。
+Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使用 **多文件目录结构** 进行开发，并打包为 `.zip` 格式进行分发。
 
 ### 1.1 目录结构
-一个标准的扩展目录（或 `.ezip` 包）包含以下核心文件：
+一个标准的扩展目录（或 `.zip` 包）包含以下核心文件：
 
 - `manifest.yaml`: **扩展元数据**。定义 ID、名称、版本、作者以及**权限申请**。
 - `view.yaml`: **声明式 UI 定义**。使用 YAML 语法描述界面布局。
-- `logic.yaml` (可选): 声明式逻辑流定义。
+- `logic.yaml` (可选): 声明式逻辑流定义（已废弃，推荐使用 main.js）。
 - `main.js`: **业务逻辑脚本**。处理事件、状态更新及 API 调用。
 
 ---
@@ -29,7 +29,7 @@ Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使�
 | `version` | String | 版本号 | `1.0.0` |
 | `permissions`| List | 申请的系统权限列表 | `["readEvents", "network"]` |
 | `view` | String | 可选。自定义视图文件路径，默认为 `view.yaml` | `ui/main.yaml` |
-| `logic` | String | 可选。自定义 JS 脚本路径，默认为 `main.js` | `src/index.js` |
+| `script` | String | 可选。自定义 JS 脚本路径，默认为 `main.js` | `src/index.js` |
 
 ### 2.2 权限系统 (Dynamic Permissions)
 
@@ -98,85 +98,5 @@ Essenmelia 采用**动态权限绑定机制**。开发者必须在 `manifest.yam
 ### 3.3 交互组件
 - `button`: 按钮。支持 `variant` (`filled`, `tonal`, `outlined`), `label`, `icon`, `onTap`。
 - `segmented_button`: 分段按钮。支持 `stateKey` (双向绑定), `segments` (包含 `value`, `label`, `icon` 的列表)。
-- `chip`: 纸片组件。支持 `variant` (`assist`, `filter`, `choice`), `label`, `icon`, `selected`, `stateKey` (双向绑定)。
-- `slider`: 滑动条。支持 `stateKey` (双向绑定), `min`, `max`, `divisions`, `label`。
-- `textfield`: 输入框。支持 `label`, `hint`, `stateKey` (双向绑定), `noBorder` (隐藏边框)。
-- `switch` / `checkbox` / `radio`: 基础选框。支持 `stateKey` (双向绑定)。
-- `list_tile`: 标准列表项。支持 `title`, `subtitle`, `icon`, `iconBgColor`, `iconColor`, `showChevron`, `trailing` (自定义尾部组件), `onTap`。
-- `any`: 事实上，**所有组件**现在都支持 `onTap` 属性。
-
----
-
-## 4. JavaScript API (essenmelia 对象)
-
-逻辑引擎在全局注入了 `essenmelia` 对象，用于与主程序交互。
-
-### 4.1 核心方法
-- `essenmelia.updateState(key, value)`: 更新状态。系统会自动触发引用该状态的组件进行**局部重绘**。
-- `essenmelia.call(method, params)`: 调用主程序底层 API。
-- `essenmelia.showSnackBar(message)`: 显示底部提示条。
-- `essenmelia.showConfirmDialog(title, message)`: 弹出确认对话框（返回 Promise）。
-
-### 4.2 数据 API
-- `essenmelia.getEvents()`: 获取当前事件列表。
-- `essenmelia.getTags()`: 获取所有标签。
-- `essenmelia.addEvent({title, description, tags})`: 添加新事件。
-
-### 4.3 生命周期与事件
-- `onLoad()`: 扩展启动时自动调用。
-- `onEvent(name, data)`: 接收主程序分发的系统事件。
-
----
-
-## 5. 调试与性能
-
-### 5.1 扩展控制台 (Extension Console)
-在开发模式下，扩展界面右下角会出现“虫子”图标。点击可打开控制台：
-- **日志**: 查看 `console.log` 输出及 API 调用轨迹。
-- **状态树**: 实时观察 `state` 变量的数值变化。
-
-### 5.2 性能最佳实践
-- **局部重绘**: 系统已实现细粒度绑定。只有在 YAML 中显式引用 `$state.key` 的组件才会在该状态更新时重写渲染。
-- **避免大列表全量更新**: 尽量拆分状态键，减少单个 `updateState` 引起的连锁反应。
-
----
-
-## 6. 示例代码
-
-**manifest.yaml**
-```yaml
-id: com.example.hello
-name: Hello World
-version: 1.0.0
-```
-
-**view.yaml**
-```yaml
-type: column
-props:
-  padding: 16
-children:
-  - type: text
-    props:
-      text: "你好, $state.user_name!"
-      fontSize: 20
-  - type: textfield
-    props:
-      label: "请输入名字"
-      stateKey: "user_name"
-  - type: button
-    props:
-      label: "点击打招呼"
-    onTap: sayHello
-```
-
-**main.js**
-```javascript
-var state = {
-    user_name: "访客"
-};
-
-function sayHello() {
-    essenmelia.showSnackBar("Hello " + state.user_name + "!");
-}
-```
+- `switch`: 开关。支持 `value` (绑定 `$state.key`), `onChanged` (绑定 JS 函数)。
+- `list_tile`: 列表项。支持 `title`, `subtitle`, `leading` (icon), `trailing` (widget), `onTap`。

@@ -112,21 +112,29 @@ children:
                         height: 120
                         fit: "cover"
                         borderRadius: 12
-                - type: sized_box { height: 16 }
+                - type: sized_box
+                  props:
+                    height: 16
                 - type: row
                   children:
                     - type: badge
                       props: { label: "NEW", backgroundColor: "tertiaryContainer", textColor: "tertiary" }
-                    - type: sized_box { width: 8 }
+                    - type: sized_box
+                      props:
+                        width: 8
                     - type: text
                       props: { text: "同步进度", textStyle: "labelLarge" }
-                - type: sized_box { height: 8 }
+                - type: sized_box
+                  props:
+                    height: 8
                 - type: linear_progress
                   props:
                     value: 0.6
                     color: "primary"
 
-  - type: sized_box { height: 24 }
+  - type: sized_box
+    props:
+      height: 24
   - type: button
     props:
       label: "清除所有数据"

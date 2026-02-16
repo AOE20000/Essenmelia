@@ -6,7 +6,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../extensions/services/extension_repository_service.dart';
 import '../extensions/models/repository_extension.dart';
 import '../extensions/extension_manager.dart';
-import '../extensions/base_extension.dart';
+import '../extensions/core/base_extension.dart';
 import '../widgets/universal_image.dart';
 import '../l10n/app_localizations.dart';
 import 'extension_details_screen.dart';
@@ -176,7 +176,38 @@ class _ExtensionManagementScreenState
               IconButton(
                 icon: const Icon(Icons.update_rounded),
                 tooltip: '检查更新',
-                onPressed: () => manager.checkForUpdates(),
+                onPressed: () async {
+                  final scaffold = ScaffoldMessenger.of(context);
+                  scaffold.showSnackBar(
+                    const SnackBar(
+                      content: Text('正在检查更新...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+
+                  final count = await manager.checkForUpdates();
+
+                  if (context.mounted) {
+                    scaffold.hideCurrentSnackBar();
+                    if (count > 0) {
+                      scaffold.showSnackBar(
+                        SnackBar(
+                          content: Text('发现 $count 个可用更新'),
+                          action: SnackBarAction(
+                            label: '查看',
+                            onPressed: () {
+                              // 滚动到顶部或不做任何操作，因为列表会自动刷新
+                            },
+                          ),
+                        ),
+                      );
+                    } else {
+                      scaffold.showSnackBar(
+                        const SnackBar(content: Text('暂无可用更新')),
+                      );
+                    }
+                  }
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.refresh),

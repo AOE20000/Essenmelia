@@ -90,6 +90,7 @@ flutter:
     - assets/extensions/com.essenmelia.api_tester/
     - assets/extensions/com.essenmelia.event_test/
     - assets/extensions/com.essenmelia.kitchen_sink/
+    - assets/extensions/demo.counter/
     - assets/extensions/system.external_call/
     - assets/docs/
   generate: true

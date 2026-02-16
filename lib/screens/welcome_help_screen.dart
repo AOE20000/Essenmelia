@@ -16,6 +16,13 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
   String? _selectedDocTitle;
+  Future<List<_DocItem>>? _docsFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _docsFuture ??= _loadDocs(AppLocalizations.of(context)!);
+  }
 
   @override
   void dispose() {
@@ -347,33 +354,112 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     );
   }
 
-  List<_DocItem> _getDocs(AppLocalizations l10n) {
-    return [
-      _DocItem(
-        title: l10n.archDesign,
-        description: l10n.archDesignDesc,
-        icon: Icons.account_tree_rounded,
-        assetPath: 'assets/docs/architecture.md',
-      ),
-      _DocItem(
-        title: l10n.apiGuide,
-        description: l10n.apiGuideDesc,
-        icon: Icons.api_rounded,
-        assetPath: 'assets/docs/api_usage.md',
-      ),
-      _DocItem(
-        title: l10n.extDevSpecs,
-        description: l10n.extDevSpecsDesc,
-        icon: Icons.extension_rounded,
-        assetPath: 'assets/docs/extensions.md',
-      ),
-      _DocItem(
-        title: l10n.createRepoGuide,
-        description: l10n.createRepoGuideDesc,
-        icon: Icons.terminal_rounded,
-        assetPath: 'assets/docs/create_repository_guide.md',
-      ),
-    ];
+  Future<List<_DocItem>> _loadDocs(AppLocalizations l10n) async {
+    // 仅保留图标映射和排序，标题/描述全部从Markdown解析
+    final docIcons = {
+      'assets/docs/architecture.md': Icons.account_tree_rounded,
+      'assets/docs/api_usage.md': Icons.api_rounded,
+      'assets/docs/extensions.md': Icons.extension_rounded,
+      'assets/docs/create_repository_guide.md': Icons.terminal_rounded,
+    };
+
+    try {
+      // 尝试加载新的二进制格式 Manifest (Flutter 3.19+)
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final assets = manifest.listAssets();
+
+      final docPaths = assets
+          .where((key) => key.startsWith('assets/docs/') && key.endsWith('.md'))
+          .toList();
+
+      final docs = await Future.wait(
+        docPaths.map((path) async {
+          String title;
+          String description;
+
+          try {
+            // Read first few lines for metadata
+            final content = await rootBundle.loadString(path);
+            final lines = content.split('\n');
+
+            // 1. Extract Title (first line starting with #)
+            final titleLine = lines.firstWhere(
+              (line) => line.trim().startsWith('# '),
+              orElse: () => '',
+            );
+
+            if (titleLine.isNotEmpty) {
+              title = titleLine.trim().substring(2).trim();
+            } else {
+              // Fallback to filename title case
+              final filename = path.split('/').last.replaceAll('.md', '');
+              title = filename
+                  .split('_')
+                  .map(
+                    (word) => word.isNotEmpty
+                        ? '${word[0].toUpperCase()}${word.substring(1)}'
+                        : '',
+                  )
+                  .join(' ');
+            }
+
+            // 2. Extract Description (first non-empty, non-header line)
+            final descLine = lines.firstWhere((line) {
+              final trimmed = line.trim();
+              return trimmed.isNotEmpty && !trimmed.startsWith('#');
+            }, orElse: () => '');
+
+            description = descLine.isNotEmpty
+                ? descLine.trim()
+                : path.split('/').last;
+          } catch (e) {
+            debugPrint('Error parsing doc metadata for $path: $e');
+            // Fallback
+            final filename = path.split('/').last.replaceAll('.md', '');
+            title = filename
+                .split('_')
+                .map(
+                  (word) => word.isNotEmpty
+                      ? '${word[0].toUpperCase()}${word.substring(1)}'
+                      : '',
+                )
+                .join(' ');
+            description = path.split('/').last;
+          }
+
+          return _DocItem(
+            title: title,
+            description: description,
+            icon: docIcons[path] ?? Icons.article_rounded,
+            assetPath: path,
+          );
+        }),
+      );
+
+      // Sort: Known ones first, then alphabetical
+      final orderedKnownKeys = [
+        'assets/docs/architecture.md',
+        'assets/docs/api_usage.md',
+        'assets/docs/extensions.md',
+        'assets/docs/create_repository_guide.md',
+      ];
+
+      docs.sort((a, b) {
+        final indexA = orderedKnownKeys.indexOf(a.assetPath);
+        final indexB = orderedKnownKeys.indexOf(b.assetPath);
+
+        if (indexA != -1 && indexB != -1) return indexA.compareTo(indexB);
+        if (indexA != -1) return -1;
+        if (indexB != -1) return 1;
+
+        return a.title.compareTo(b.title);
+      });
+
+      return docs;
+    } catch (e) {
+      debugPrint('Error loading docs: $e');
+      return [];
+    }
   }
 
   Widget _buildMarkdownReader(
@@ -382,134 +468,154 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    final docs = _getDocs(l10n);
     final isLargeScreen = MediaQuery.of(context).size.width > 900;
 
-    return Row(
-      children: [
-        if (isLargeScreen)
-          Container(
-            width: 320,
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                  child: Text(
-                    l10n.helpAndDocs,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
+    return FutureBuilder<List<_DocItem>>(
+      future: _docsFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data!;
+
+        return Row(
+          children: [
+            if (isLargeScreen)
+              Container(
+                width: 320,
+                decoration: BoxDecoration(
+                  border: Border(
+                    right: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: docs.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 4),
-                    itemBuilder: (context, index) {
-                      final doc = docs[index];
-                      final isSelected = _selectedDocTitle == doc.title;
-                      return Material(
-                        color: isSelected
-                            ? colorScheme.primaryContainer
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () =>
-                              setState(() => _selectedDocTitle = doc.title),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  doc.icon,
-                                  size: 20,
-                                  color: isSelected
-                                      ? colorScheme.onPrimaryContainer
-                                      : colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        doc.title,
-                                        style: theme.textTheme.labelLarge
-                                            ?.copyWith(
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: isSelected
-                                                  ? colorScheme
-                                                        .onPrimaryContainer
-                                                  : colorScheme.onSurface,
-                                            ),
-                                      ),
-                                      Text(
-                                        doc.description,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: isSelected
-                                                  ? colorScheme
-                                                        .onPrimaryContainer
-                                                        .withValues(alpha: 0.7)
-                                                  : colorScheme
-                                                        .onSurfaceVariant,
-                                            ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      child: Text(
+                        l10n.helpAndDocs,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: docs.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 4),
+                        itemBuilder: (context, index) {
+                          final doc = docs[index];
+                          final isSelected = _selectedDocTitle == doc.title;
+                          return Material(
+                            color: isSelected
+                                ? colorScheme.primaryContainer
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () =>
+                                  setState(() => _selectedDocTitle = doc.title),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      doc.icon,
+                                      size: 20,
+                                      color: isSelected
+                                          ? colorScheme.onPrimaryContainer
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            doc.title,
+                                            style: theme.textTheme.labelLarge
+                                                ?.copyWith(
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                  color: isSelected
+                                                      ? colorScheme
+                                                            .onPrimaryContainer
+                                                      : colorScheme.onSurface,
+                                                ),
+                                          ),
+                                          Text(
+                                            doc.description,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: isSelected
+                                                      ? colorScheme
+                                                            .onPrimaryContainer
+                                                            .withValues(
+                                                              alpha: 0.7,
+                                                            )
+                                                      : colorScheme
+                                                            .onSurfaceVariant,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _selectedDocTitle == null
-                ? _buildDocPlaceholder(
-                    isLargeScreen,
-                    docs,
-                    l10n,
-                    theme,
-                    colorScheme,
-                  )
-                : _MarkdownContentViewer(
+              ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: () {
+                  final selectedDoc = docs
+                      .where((d) => d.title == _selectedDocTitle)
+                      .firstOrNull;
+
+                  if (selectedDoc == null) {
+                    return _buildDocPlaceholder(
+                      isLargeScreen,
+                      docs,
+                      l10n,
+                      theme,
+                      colorScheme,
+                    );
+                  }
+
+                  return _MarkdownContentViewer(
                     key: ValueKey(_selectedDocTitle),
-                    doc: docs.firstWhere((d) => d.title == _selectedDocTitle),
+                    doc: selectedDoc,
                     onBack: isLargeScreen
                         ? null
                         : () => setState(() => _selectedDocTitle = null),
-                  ),
-          ),
-        ),
-      ],
+                  );
+                }(),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

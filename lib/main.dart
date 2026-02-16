@@ -20,8 +20,10 @@ import 'services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化通知服务
-  await NotificationService().init();
+  // 初始化通知服务（非阻塞）
+  NotificationService().init().catchError((e) {
+    debugPrint('Notification Service Init Error: $e');
+  });
 
   // 启用 Edge-to-Edge 沉浸式体验
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -183,12 +185,14 @@ class _MyAppState extends ConsumerState<MyApp> {
               centerTitle: true,
               systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness:
-                    isDark ? Brightness.light : Brightness.dark,
+                statusBarIconBrightness: isDark
+                    ? Brightness.light
+                    : Brightness.dark,
                 systemNavigationBarColor: Colors.transparent,
                 systemNavigationBarDividerColor: Colors.transparent,
-                systemNavigationBarIconBrightness:
-                    isDark ? Brightness.light : Brightness.dark,
+                systemNavigationBarIconBrightness: isDark
+                    ? Brightness.light
+                    : Brightness.dark,
               ),
             ),
           );

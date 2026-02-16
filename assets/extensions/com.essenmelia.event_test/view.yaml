@@ -35,7 +35,9 @@ children:
                     width: "max"
                     icon: 0xe145 # add
                   onTap: createTestEvent
-                - type: sized_box { height: 12 }
+                - type: sized_box
+                  props:
+                    height: 12
                 - type: button
                   props:
                     label: "清空所有事件"

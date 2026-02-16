@@ -11,7 +11,7 @@
 ## 开发者说明
 本扩展采用 **JS/YAML** 动态 UI 引擎构建，是 Essenmelia 动态化架构的参考实现。
 
-### 权限需求
+## 权限说明
 - `readEvents`: 读取系统事件
 - `systemInfo`: 获取设备基本信息
 - `notifications`: 发送网关状态通知
@@ -23,6 +23,22 @@
   "description": "系统级外部请求监控中心。负责拦截、验证并处理来自 ADB、Intent 或第三方应用的 API 调用。",
   "author": "System",
   "version": "2.1.0",
-  "tags": ["System", "Gateway", "API"]
+  "icon_code": 984613,
+  "tags": ["System", "Gateway", "API"],
+  "permissions": [
+    "readEvents",
+    "addEvents",
+    "updateEvents",
+    "deleteEvents",
+    "readTags",
+    "manageTags",
+    "notifications",
+    "systemInfo",
+    "navigation",
+    "network",
+    "fileSystem",
+    "readCalendar",
+    "writeCalendar"
+  ]
 } -->
 *Built-in System Extension v2.1.0*

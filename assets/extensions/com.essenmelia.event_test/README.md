@@ -1,25 +1,13 @@
-# 事件列表测试 (Event Test)
+# 事件列表测试 (Event Sandbox)
 
 展示并操作系统中的事件，用于测试列表渲染、数据同步及权限管理。
 
 ## 功能
-- **实时刷新**: 获取并显示最新的系统事件。
-- **批量创建**: 一键生成模拟事件。
-- **数据清理**: 确认后清空所有事件。
+- **查看事件**: 列出系统中的最近事件。
+- **创建事件**: 快速生成带有时间戳的测试事件。
+- **清空事件**: 批量删除所有事件（需谨慎操作）。
 
-## 权限说明
-- `readEvents`: 读取系统事件。
-- `addEvents`: 添加新事件。
+## 权限需求
+- `readEvents`: 读取事件列表。
+- `addEvents`: 创建新事件。
 - `deleteEvents`: 删除事件。
-- `systemInfo`: 获取系统信息。
-
----
-<!-- ESSENMELIA_EXTEND {
-  "id": "com.essenmelia.event_test",
-  "name": "事件列表测试",
-  "description": "展示并操作系统中的事件 (JS/YAML)",
-  "author": "Essenmelia Team",
-  "version": "2.0.0",
-  "tags": ["Test", "Events"]
-} -->
-*Built-in Extension v2.0.0*

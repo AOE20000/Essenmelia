@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../base_extension.dart';
+import '../core/extension_metadata.dart';
 
-/// 扩展存储服务，负责已安装扩展的持久化管理（CRUD）
+/// Extension Store Service (Persistence Management)
 class ExtensionStoreService extends StateNotifier<Map<String, String>> {
   static const String _boxName =
-      'dynamic_extensions_metadata'; // 保持与 ExtensionManager 一致
+      'dynamic_extensions_metadata'; // Keep consistent with legacy
 
   ExtensionStoreService() : super({});
 
@@ -23,13 +23,12 @@ class ExtensionStoreService extends StateNotifier<Map<String, String>> {
     state = installed;
   }
 
-  /// 获取所有已安装扩展的元数据
+  /// Get all installed extensions metadata
   List<ExtensionMetadata> getInstalledMetadata() {
     return state.values
         .map((content) {
           try {
             final data = jsonDecode(content);
-            // 确保能解析新版的包格式
             return ExtensionMetadata.fromJson(data);
           } catch (e) {
             debugPrint('Failed to parse extension metadata: $e');
@@ -40,24 +39,24 @@ class ExtensionStoreService extends StateNotifier<Map<String, String>> {
         .toList();
   }
 
-  /// 获取指定扩展的内容
+  /// Get specific extension content
   String? getExtensionContent(String id) => state[id];
 
-  /// 保存/更新扩展
+  /// Save/Update extension
   Future<void> saveExtension(String id, String content) async {
     final box = await Hive.openBox<String>(_boxName);
     await box.put(id, content);
     state = {...state, id: content};
   }
 
-  /// 移除扩展
+  /// Remove extension
   Future<void> removeExtension(String id) async {
     final box = await Hive.openBox<String>(_boxName);
     await box.delete(id);
     state = {...state}..remove(id);
   }
 
-  /// 清空所有扩展
+  /// Clear all extensions
   Future<void> clearAll() async {
     final box = await Hive.openBox<String>(_boxName);
     await box.clear();
@@ -65,7 +64,7 @@ class ExtensionStoreService extends StateNotifier<Map<String, String>> {
   }
 }
 
-/// 扩展存储服务 Provider
+/// Extension Store Service Provider
 final extensionStoreServiceProvider =
     StateNotifierProvider<ExtensionStoreService, Map<String, String>>((ref) {
       return ExtensionStoreService();

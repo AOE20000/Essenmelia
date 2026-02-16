@@ -2,20 +2,20 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
-import '../base_extension.dart';
+import '../core/extension_metadata.dart';
 
-/// 扩展转换工具类
-/// 负责处理 ExtensionMetadata 与物理包格式（ZIP）之间的相互转换
+/// Extension conversion utility
+/// Handles conversion between ExtensionMetadata and package formats (ZIP)
 class ExtensionConverter {
-  /// 从 ZIP 字节流中解析扩展内容（返回 JSON 字符串）
-  /// 支持两种模式：
-  /// 1. 根目录下包含 manifest.json
-  /// 2. README.md 中包含 <!-- ESSENMELIA_EXTEND { ... } --> HTML 注释
+  /// Extract extension content from ZIP bytes (returns JSON string)
+  /// Supports two modes:
+  /// 1. Root contains manifest.json/yaml
+  /// 2. README.md contains <!-- ESSENMELIA_EXTEND { ... } --> HTML comment
   static String? extractContentFromZip(Uint8List zipBytes) {
     try {
       final archive = ZipDecoder().decodeBytes(zipBytes);
 
-      // 1. 优先查找 manifest.yaml 或 manifest.json
+      // 1. Prioritize manifest.yaml or manifest.json
       ArchiveFile? manifestFile;
       bool isYaml = false;
 
@@ -36,7 +36,7 @@ class ExtensionConverter {
 
       Map<String, dynamic> manifest;
 
-      // 2. 如果没有 manifest，尝试查找 README.md 中的内嵌元数据
+      // 2. If no manifest, try to find embedded metadata in README.md
       if (manifestFile == null) {
         try {
           final readmeFile = archive.firstWhere(
@@ -44,7 +44,7 @@ class ExtensionConverter {
           );
           final readmeContent = utf8.decode(readmeFile.content as List<int>);
 
-          // 使用正则提取 <!-- ESSENMELIA_EXTEND { ... } -->
+          // Use regex to extract <!-- ESSENMELIA_EXTEND { ... } -->
           final regExp = RegExp(
             r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*([\s\S]*?)\s*-->',
           );
@@ -52,7 +52,7 @@ class ExtensionConverter {
           if (match != null) {
             final contentStr = match.group(1)?.trim();
             if (contentStr != null) {
-              // 自动检测是 JSON 还是 YAML
+              // Auto-detect JSON or YAML
               if (contentStr.startsWith('{')) {
                 manifest = jsonDecode(contentStr);
               } else {
@@ -85,7 +85,7 @@ class ExtensionConverter {
     Map<String, dynamic> manifest,
     Archive archive,
   ) {
-    // 获取 manifest 所在目录
+    // Get directory of manifest
     String? baseDir;
     try {
       final manifestFile = archive.firstWhere(
@@ -104,7 +104,7 @@ class ExtensionConverter {
       return '$baseDir$path';
     }
 
-    // 1. 解析 View (支持 .json, .yaml, .yml)
+    // 1. Resolve View (supports .json, .yaml, .yml)
     final viewVal = manifest['view'];
     if (viewVal is String) {
       final viewPath = getFullPath(viewVal);
@@ -120,7 +120,7 @@ class ExtensionConverter {
         }
       } catch (_) {}
     } else if (viewVal == null) {
-      // 自动发现 view.yaml 或 view.json
+      // Auto-discover view.yaml or view.json
       final candidates = ['view.yaml', 'view.yml', 'view.json'];
       for (final name in candidates) {
         try {
@@ -139,7 +139,7 @@ class ExtensionConverter {
       }
     }
 
-    // 2. 解析 Logic (支持 .json, .yaml, .yml)
+    // 2. Resolve Logic (supports .json, .yaml, .yml)
     final logicVal = manifest['logic'];
     if (logicVal is String) {
       final logicPath = getFullPath(logicVal);
@@ -155,7 +155,7 @@ class ExtensionConverter {
         }
       } catch (_) {}
     } else if (logicVal == null) {
-      // 自动发现 logic.yaml 或 logic.json
+      // Auto-discover logic.yaml or logic.json
       final candidates = ['logic.yaml', 'logic.yml', 'logic.json'];
       for (final name in candidates) {
         try {
@@ -174,10 +174,10 @@ class ExtensionConverter {
       }
     }
 
-    // 3. 解析 Script (支持 .js)
+    // 3. Resolve Script (supports .js)
     final scriptVal = manifest['script'];
     if (scriptVal == null) {
-      // 如果没有指定 script，尝试查找目录下的 main.js 或 index.js
+      // If no script specified, try finding main.js or index.js
       final candidates = ['main.js', 'index.js', 'script.js'];
       for (final name in candidates) {
         try {
@@ -202,14 +202,14 @@ class ExtensionConverter {
     return jsonEncode(manifest);
   }
 
-  /// 创建 ZIP 扩展包字节流 (用于导出)
+  /// Create ZIP package bytes (for export)
   static Uint8List createZipPackage(ExtensionMetadata metadata) {
     final archive = Archive();
 
-    // 1. 生成元数据 (manifest.yaml)
+    // 1. Generate manifest (manifest.yaml)
     final manifest = metadata.toJson();
 
-    // 如果 view/logic 是复杂的 Map，我们将其分离为 YAML 文件
+    // If view/logic are complex Maps, separate them into YAML files
     if (manifest['view'] is Map) {
       final viewYaml = _mapToYaml(manifest['view'] as Map<String, dynamic>);
       final viewBytes = utf8.encode(viewYaml);
@@ -224,7 +224,7 @@ class ExtensionConverter {
       manifest['logic'] = 'logic.yaml';
     }
 
-    // 处理脚本
+    // Handle script
     if (manifest['script'] is String &&
         (manifest['script'] as String).isNotEmpty) {
       final scriptContent = manifest['script'] as String;
@@ -233,7 +233,7 @@ class ExtensionConverter {
       manifest['script'] = 'main.js';
     }
 
-    // 移除 null 值和内部字段
+    // Remove nulls and internal fields
     manifest.removeWhere((key, value) => value == null);
 
     final manifestYaml = _mapToYaml(manifest);
@@ -246,7 +246,7 @@ class ExtensionConverter {
     return Uint8List.fromList(zipEncoder.encode(archive));
   }
 
-  /// Simple Map to YAML helper method (no external generator library for lightweightness)
+  /// Simple Map to YAML helper method
   static String _mapToYaml(Map<String, dynamic> map, [int indent = 0]) {
     final sb = StringBuffer();
     final spaces = '  ' * indent;

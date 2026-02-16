@@ -9,6 +9,9 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get extensionError => 'Extension Error';
+
+  @override
   String get uninstallExtension => 'Uninstall Extension';
 
   @override
@@ -369,8 +372,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get installFromClipboard => 'Install Link from Clipboard';
 
   @override
-  String get installFromClipboardSubtitle =>
-      'Supports ZIP / EZIP / GitHub links';
+  String get installFromClipboardSubtitle => 'Supports ZIP / GitHub links';
 
   @override
   String get invalidInput => 'Invalid input';
@@ -1520,9 +1522,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allSystemPermissions => 'All System Permissions';
-
-  @override
-  String get extensionError => 'Extension runtime error';
 
   @override
   String get extensionNoUI => 'This extension has no UI interface';

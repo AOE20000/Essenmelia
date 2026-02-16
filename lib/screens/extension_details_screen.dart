@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
-import '../extensions/base_extension.dart';
+import '../extensions/core/base_extension.dart';
+import '../extensions/core/extension_metadata.dart';
+import '../extensions/core/extension_permission.dart';
 import '../extensions/extension_manager.dart';
 import '../extensions/extension_api_registry.dart';
 

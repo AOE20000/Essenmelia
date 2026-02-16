@@ -1,5 +1,6 @@
 {
   "@@locale": "en",
+  "extensionError": "Extension Error",
   "uninstallExtension": "Uninstall Extension",
   "@uninstallExtension": {
     "description": "Title for uninstall confirmation dialog"
@@ -502,7 +503,7 @@
   "@installFromClipboard": {
     "description": "Label for clipboard-based extension installation"
   },
-  "installFromClipboardSubtitle": "Supports ZIP / EZIP / GitHub links",
+  "installFromClipboardSubtitle": "Supports ZIP / GitHub links",
   "@installFromClipboardSubtitle": {
     "description": "Subtitle for clipboard-based extension installation"
   },
@@ -2071,10 +2072,6 @@
   "allSystemPermissions": "All System Permissions",
   "@allSystemPermissions": {
     "description": "Title for the dialog showing all system permissions"
-  },
-  "extensionError": "Extension runtime error",
-  "@extensionError": {
-    "description": "Error message when an extension fails to run"
   },
   "extensionNoUI": "This extension has no UI interface",
   "@extensionNoUI": {

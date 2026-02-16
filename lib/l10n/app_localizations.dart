@@ -98,6 +98,12 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
+  /// No description provided for @extensionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Error'**
+  String get extensionError;
+
   /// Title for uninstall confirmation dialog
   ///
   /// In en, this message translates to:
@@ -779,7 +785,7 @@ abstract class AppLocalizations {
   /// Subtitle for clipboard-based extension installation
   ///
   /// In en, this message translates to:
-  /// **'Supports ZIP / EZIP / GitHub links'**
+  /// **'Supports ZIP / GitHub links'**
   String get installFromClipboardSubtitle;
 
   /// Generic error message for invalid input
@@ -2839,12 +2845,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All System Permissions'**
   String get allSystemPermissions;
-
-  /// Error message when an extension fails to run
-  ///
-  /// In en, this message translates to:
-  /// **'Extension runtime error'**
-  String get extensionError;
 
   /// Message shown when an extension lacks a view definition
   ///

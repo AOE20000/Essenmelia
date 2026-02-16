@@ -6,7 +6,7 @@ import '../../providers/events_provider.dart';
 import '../../providers/filtered_events_provider.dart';
 import '../extension_api_registry.dart';
 import '../extension_manager.dart';
-import '../base_extension.dart';
+import '../core/extension_permission.dart';
 import '../utils/mock_data_generator.dart';
 
 /// 事件相关的扩展 API 实现

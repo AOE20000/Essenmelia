@@ -9,6 +9,7 @@ class RepositoryExtension {
   final List<String> tags;
   final String? readmeUrl; // 新增：README 链接
   final String? repoFullName; // 新增：GitHub 仓库全名
+  final String? sha256; // 新增：完整性校验哈希
 
   RepositoryExtension({
     required this.id,
@@ -21,6 +22,7 @@ class RepositoryExtension {
     this.tags = const [],
     this.readmeUrl,
     this.repoFullName,
+    this.sha256,
   });
 
   factory RepositoryExtension.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class RepositoryExtension {
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
       readmeUrl: json['readmeUrl'],
       repoFullName: json['repoFullName'],
+      sha256: json['sha256'],
     );
   }
 }

@@ -9,6 +9,9 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get extensionError => '扩展错误';
+
+  @override
   String get uninstallExtension => '卸载扩展';
 
   @override
@@ -368,7 +371,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get installFromClipboard => '从剪贴板安装链接';
 
   @override
-  String get installFromClipboardSubtitle => '支持 ZIP / EZIP / GitHub 链接';
+  String get installFromClipboardSubtitle => '支持 ZIP / GitHub 链接';
 
   @override
   String get invalidInput => '输入无效';
@@ -1474,9 +1477,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get allSystemPermissions => '所有系统权限';
-
-  @override
-  String get extensionError => '扩展脚本运行错误';
 
   @override
   String get extensionNoUI => '此扩展未定义界面。';

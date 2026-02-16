@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/tags_provider.dart';
 import '../extension_api_registry.dart';
-import '../base_extension.dart';
+import '../core/extension_permission.dart';
 
 /// 标签相关的扩展 API 实现
 class TagsExtensionApiHandler {

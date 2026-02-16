@@ -80,3 +80,10 @@ function clearLogs() {
     syncState();
     essenmelia.showSnackBar("历史数据已清空");
 }
+
+function simulateCall() {
+    handleExternalRequest({
+        method: 'showSnackBar',
+        params: { message: '来自外部调用的模拟测试' }
+    });
+}
