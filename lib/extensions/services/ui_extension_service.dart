@@ -4,9 +4,9 @@ import '../../services/notification_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/l10n_provider.dart';
-import '../extension_api_registry.dart';
-import '../extension_manager.dart';
-import '../base_extension.dart';
+import '../runtime/api/extension_api_registry.dart';
+import '../core/extension_permission.dart';
+import '../core/globals.dart';
 
 /// UI 相关的扩展 API 实现 (SnackBar, Dialog, Navigation, Theme, Locale)
 class UIExtensionApiHandler {

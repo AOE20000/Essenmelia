@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/repository_extension.dart';
-import '../extension_manager.dart';
+import '../manager/extension_manager.dart';
 
 class GitHubDiscoveryService {
   static const String searchTopic = 'essenmelia-extend';

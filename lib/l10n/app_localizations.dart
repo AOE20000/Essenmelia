@@ -98,10 +98,10 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
-  /// No description provided for @extensionError.
+  /// Error message when an extension fails to run
   ///
   /// In en, this message translates to:
-  /// **'Extension Error'**
+  /// **'Extension runtime error'**
   String get extensionError;
 
   /// Title for uninstall confirmation dialog

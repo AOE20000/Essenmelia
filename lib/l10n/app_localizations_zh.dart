@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get extensionError => '扩展错误';
+  String get extensionError => '扩展脚本运行错误';
 
   @override
   String get uninstallExtension => '卸载扩展';

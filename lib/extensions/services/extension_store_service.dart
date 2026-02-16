@@ -49,11 +49,13 @@ class ExtensionStoreService extends StateNotifier<Map<String, String>> {
     state = {...state, id: content};
   }
 
-  /// Remove extension
-  Future<void> removeExtension(String id) async {
+  /// Delete extension
+  Future<void> deleteExtension(String id) async {
     final box = await Hive.openBox<String>(_boxName);
     await box.delete(id);
-    state = {...state}..remove(id);
+    final newState = Map<String, String>.from(state);
+    newState.remove(id);
+    state = newState;
   }
 
   /// Clear all extensions

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../l10n/app_localizations.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../core/extension_permission.dart';
 
 /// Extension API handler definition

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../l10n/app_localizations.dart';
 import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
 import '../core/globals.dart';

@@ -8,14 +8,13 @@ final extensionAuthStateProvider =
     StateNotifierProvider<ExtensionAuthNotifier, Map<String, List<String>>>((
       ref,
     ) {
-      return ExtensionAuthNotifier(ref);
+      return ExtensionAuthNotifier();
     });
 
 class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
-  final Ref _ref;
   late final Future<void> ready;
 
-  ExtensionAuthNotifier(this._ref) : super({}) {
+  ExtensionAuthNotifier() : super({}) {
     ready = _load();
   }
 
@@ -138,12 +137,12 @@ class ExtensionAuthNotifier extends StateNotifier<Map<String, List<String>>> {
       ...state,
       key: [running.toString()],
     };
-    
+
     // Note: Session permission clearing should be handled by the caller or a separate provider listener
     // to avoid circular dependency if we import sessionPermissionsProvider here.
     if (!running) {
-       final nextRunKey = '$_nextRunPrefix$extensionId';
-       await box.delete(nextRunKey);
+      final nextRunKey = '$_nextRunPrefix$extensionId';
+      await box.delete(nextRunKey);
     }
   }
 

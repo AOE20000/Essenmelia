@@ -13,10 +13,11 @@ import 'package:http/http.dart' as http;
 import '../core/base_extension.dart';
 import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
+import '../core/extension_api.dart';
 import '../core/globals.dart';
 import '../models/repository_extension.dart';
+import '../../models/event.dart';
 import '../runtime/api/extension_api_impl.dart';
-import '../runtime/api/extension_api_registry.dart';
 import '../runtime/proxy_extension.dart';
 import '../security/extension_auth_notifier.dart';
 import '../security/security_shield.dart';
@@ -35,7 +36,8 @@ final extensionManagerProvider = ChangeNotifierProvider<ExtensionManager>((
   return ExtensionManager(ref);
 });
 
-class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate {
+class ExtensionManager extends ChangeNotifier
+    implements SecurityShieldDelegate {
   final Ref _ref;
   late final SecurityShield _securityShield;
 
@@ -43,7 +45,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
   final Map<String, BaseExtension> _activeExtensions = {};
 
   /// External call entry point extension
-  ProxyExtension? _externalCallExtension;
+  // ProxyExtension? _externalCallExtension;
 
   /// Installed extensions blueprints (extensionId -> Instance/Proxy for metadata)
   final Map<String, BaseExtension> _installedExtensions = {};
@@ -157,10 +159,10 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
         }
 
         if (runningChanged) {
-          Future.microtask(() => refresh());
+          Future.microtask(() => notifyListeners());
         }
       } else {
-        Future.microtask(() => refresh());
+        Future.microtask(() => notifyListeners());
       }
     });
 
@@ -171,19 +173,16 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
 
   Future<void> _loadBuiltInExtensions() async {
     try {
-      final manifestContent = await rootBundle.loadString(
-        'AssetManifest.json',
-      );
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
       final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
-      final extensionFiles =
-          manifestMap.keys
-              .where(
-                (String key) =>
-                    key.startsWith('assets/extensions/') &&
-                    key.endsWith('/manifest.yaml'),
-              )
-              .toList();
+      final extensionFiles = manifestMap.keys
+          .where(
+            (String key) =>
+                key.startsWith('assets/extensions/') &&
+                key.endsWith('/manifest.yaml'),
+          )
+          .toList();
 
       _builtInExtensions = [];
 
@@ -198,7 +197,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
               description: metadata.description,
               author: metadata.author,
               version: metadata.version,
-              icon: metadata.icon,
+              // icon: metadata.icon, // RepositoryExtension uses iconUrl
               downloadUrl: 'builtin://${metadata.id}',
               repoFullName: metadata.repoFullName,
             ),
@@ -207,11 +206,11 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
           debugPrint('Error loading built-in extension $file: $e');
         }
       }
-      
+
       // Ensure "demo.counter" is loaded if not found (fallback)
-       if (!_builtInExtensions.any((e) => e.id == 'demo.counter')) {
-          // Fallback logic handled by auto-parsing now
-       }
+      if (!_builtInExtensions.any((e) => e.id == 'demo.counter')) {
+        // Fallback logic handled by auto-parsing now
+      }
 
       notifyListeners();
     } catch (e) {
@@ -227,32 +226,34 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       final manifestPath = 'assets/extensions/$id/manifest.yaml';
       final manifestContent = await rootBundle.loadString(manifestPath);
       final metadata = ExtensionMetadata.fromYaml(manifestContent);
-      
+
       // Load view and logic if referenced
       Map<String, dynamic>? view;
       if (metadata.view != null) {
-          view = metadata.view;
+        view = metadata.view;
       } else {
-         try {
-             final viewContent = await rootBundle.loadString('assets/extensions/$id/view.yaml');
-             view = ExtensionMetadata.yamlToMap(viewContent);
-         } catch (_) {}
+        try {
+          final viewContent = await rootBundle.loadString(
+            'assets/extensions/$id/view.yaml',
+          );
+          view = ExtensionMetadata.yamlToMap(viewContent);
+        } catch (_) {}
       }
-      
+
       String? logic;
       try {
-          // Try logic.js first then main.js
-          logic = await rootBundle.loadString('assets/extensions/$id/logic.js');
+        // Try logic.js first then main.js
+        logic = await rootBundle.loadString('assets/extensions/$id/logic.js');
       } catch (_) {
-          try {
-              logic = await rootBundle.loadString('assets/extensions/$id/main.js');
-          } catch (_) {}
+        try {
+          logic = await rootBundle.loadString('assets/extensions/$id/main.js');
+        } catch (_) {}
       }
 
       // Construct JSON for import
       final Map<String, dynamic> data = metadata.toJson();
       if (view != null) data['view'] = view;
-      if (logic != null) data['script'] = logic; 
+      if (logic != null) data['script'] = logic;
 
       return await importFromContent(jsonEncode(data));
     } catch (e) {
@@ -288,7 +289,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
         debugPrint('Failed to load extension ${entry.key}: $e');
       }
     }
-    refresh();
+    notifyListeners();
   }
 
   Future<void> _verifyIntegrityAsync(String extId, String json) async {
@@ -307,7 +308,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
         );
         await auth.setUntrusted(extId, true);
         await auth.setRunning(extId, false);
-        refresh();
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Integrity verification error for $extId: $e');
@@ -336,7 +337,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
 
       // Initialize extension (ProxyExtension will create JS engine)
       await blueprint.onInit(api);
-      
+
       _activeExtensions[id] = blueprint;
       return blueprint;
     } catch (e) {
@@ -345,29 +346,119 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       return blueprint;
     }
   }
-  
+
   /// Get extension for UI (ensures it is loaded)
   BaseExtension? getExtension(String id) {
-     if (_activeExtensions.containsKey(id)) {
-         return _activeExtensions[id];
-     }
-     // Trigger load if needed (async)
-     if (_installedExtensions.containsKey(id)) {
-         _loadExtension(id); // Fire and forget load, UI will rebuild when notified?
-         // Actually DynamicEngine calls engine.init() which is async.
-         // ProxyExtension.build creates UI immediately.
-         return _installedExtensions[id];
-     }
-     return null;
+    if (_activeExtensions.containsKey(id)) {
+      return _activeExtensions[id];
+    }
+    // Trigger load if needed (async)
+    if (_installedExtensions.containsKey(id)) {
+      _loadExtension(
+        id,
+      ); // Fire and forget load, UI will rebuild when notified?
+      // Actually DynamicEngine calls engine.init() which is async.
+      // ProxyExtension.build creates UI immediately.
+      return _installedExtensions[id];
+    }
+    return null;
   }
-  
+
   Map<String, BaseExtension> get installedExtensions => _installedExtensions;
 
+  // --- Extension Management Methods ---
+
+  /// Get all installed extensions
+  List<BaseExtension> get extensions => _installedExtensions.values.toList();
+
+  /// Remove an extension
+  Future<void> removeExtension(String id) async {
+    _activeExtensions.remove(id);
+    _installedExtensions.remove(id);
+    _eventBuffers.remove(id);
+    _availableUpdates.remove(id);
+
+    await _ref.read(extensionStoreServiceProvider.notifier).deleteExtension(id);
+    // Optionally clear permissions/auth state if desired,
+    // but sometimes keeping them is better for re-installation.
+    // For now, let's keep auth state to avoid data loss on accidental removal.
+
+    notifyListeners();
+  }
+
+  /// Export extension as ZIP
+  Future<void> exportExtensionAsZip(String id) async {
+    // Implementation TBD - requires zipping logic
+    // For now, show not implemented message
+    final context = navigatorKey.currentContext;
+    if (context != null && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('导出功能暂未实现')));
+    }
+  }
+
+  /// Copy GitHub Link
+  Future<void> copyGitHubLink(String id) async {
+    String? repoFullName;
+
+    // Check installed extensions
+    final installed = _installedExtensions[id];
+    if (installed != null) {
+      repoFullName = installed.metadata.repoFullName;
+    }
+
+    // Check active extensions if not found
+    if (repoFullName == null) {
+      final active = _activeExtensions[id];
+      if (active != null) {
+        repoFullName = active.metadata.repoFullName;
+      }
+    }
+
+    // Check built-in extensions if not found
+    if (repoFullName == null) {
+      try {
+        final builtIn = _builtInExtensions.firstWhere((e) => e.id == id);
+        repoFullName = builtIn.repoFullName;
+      } catch (_) {}
+    }
+
+    if (repoFullName != null && repoFullName.isNotEmpty) {
+      await Clipboard.setData(
+        ClipboardData(text: 'https://github.com/$repoFullName'),
+      );
+    } else {
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('未找到 GitHub 仓库链接')));
+      }
+    }
+  }
+
+  /// Get API instance for an extension (used by UI to render extension widgets)
+  ExtensionApi getApiFor(BaseExtension extension) {
+    // Create a new API instance on the fly if needed, or reuse existing if active
+    // Since UI might need an API to pass to build(), we construct one.
+    // Ideally, we should reuse the one from _activeExtensions if available.
+
+    if (_activeExtensions.containsKey(extension.metadata.id)) {
+      // We don't store the API instance in BaseExtension, so we might need to recreate it
+      // or change BaseExtension to hold it.
+      // For now, let's create a new one as it's lightweight.
+      return ExtensionApiImpl(_ref, extension.metadata, _securityShield);
+    }
+
+    // If not active, create one anyway (e.g. for preview)
+    return ExtensionApiImpl(_ref, extension.metadata, _securityShield);
+  }
 
   // --- Import / Export ---
-  
+
   Future<void> importFromClipboard() async {
-       final context = navigatorKey.currentContext;
+    final context = navigatorKey.currentContext;
     if (context == null) return;
 
     try {
@@ -407,9 +498,9 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       }
     }
   }
-  
+
   Future<void> importFromFile() async {
-      final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: true,
     );
@@ -527,7 +618,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       }
     }
   }
-  
+
   Future<BaseExtension?> importFromUrl(String url) async {
     return await _importFromUrlInternal(url);
   }
@@ -537,9 +628,9 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
     if (content == null) return null;
     return await importFromContent(content);
   }
-  
+
   Future<BaseExtension?> _importFromUrlInternal(String url) async {
-       try {
+    try {
       if (url.startsWith('builtin://')) {
         final id = url.replaceFirst('builtin://', '');
         return await installBuiltInExtensionById(id);
@@ -601,7 +692,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
     }
     return null;
   }
-  
+
   Future<BaseExtension?> importFromBytes(
     Uint8List bytes, {
     String? fileName,
@@ -621,7 +712,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
     Map<String, dynamic>? viewYaml,
     String? repoFullName,
   }) async {
-       debugPrint('Processing imported content, length: ${content.length}');
+    debugPrint('Processing imported content, length: ${content.length}');
     final context = navigatorKey.currentContext;
     if (context == null) {
       debugPrint('Error: navigatorKey.currentContext is null');
@@ -696,24 +787,27 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       final manifestHash = sha256.convert(utf8.encode(finalContent)).toString();
       await auth.setManifestHash(metadata.id, manifestHash);
 
-      refresh();
+      notifyListeners();
 
-      return _activeExtensions[metadata.id] ?? newExt;
+      return _activeExtensions[metadata.id];
     } catch (e) {
       debugPrint('Invalid extension format: $e');
       if (!context.mounted) return null;
       final retry = await _showErrorHandlingDialog(context, e.toString());
       if (retry) {
-         // Retry logic
+        // Retry logic
       }
       return null;
     }
   }
-  
+
   // Helpers
-  
-  Future<Uint8List?> _downloadWithProgress(BuildContext context, String url) async {
-     final client = http.Client();
+
+  Future<Uint8List?> _downloadWithProgress(
+    BuildContext context,
+    String url,
+  ) async {
+    final client = http.Client();
     final request = http.Request('GET', Uri.parse(url));
     request.headers['User-Agent'] = 'Essenmelia-App';
 
@@ -797,8 +891,12 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
     }
   }
 
-  Future<bool?> _showSecurityWarningDialog(BuildContext context, String title, String content) {
-      return showDialog<bool>(
+  Future<bool?> _showSecurityWarningDialog(
+    BuildContext context,
+    String title,
+    String content,
+  ) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
@@ -823,25 +921,29 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       ),
     );
   }
-  
-  Future<bool> _showErrorHandlingDialog(BuildContext context, String error) async {
-       return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('导入失败'),
-        content: SingleChildScrollView(
-            child: Text('无法解析该扩展文件。\n错误信息: $error'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+
+  Future<bool> _showErrorHandlingDialog(
+    BuildContext context,
+    String error,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('导入失败'),
+            content: SingleChildScrollView(
+              child: Text('无法解析该扩展文件。\n错误信息: $error'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
-  
+
   Future<Map<String, dynamic>?> _showInstallationConfirmDialog(
     BuildContext context,
     ExtensionMetadata metadata,
@@ -849,7 +951,7 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
     ExtensionMetadata? oldMetadata,
     String? oldContent,
   ) async {
-     return await showDialog<Map<String, dynamic>>(
+    return await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
       builder: (context) => _InstallationDialog(
@@ -860,25 +962,25 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       ),
     );
   }
-  
+
   void _registerDebugServiceExtensions() {
-        developer.registerExtension('ext.essenmelia.invokeApi', (
+    developer.registerExtension('ext.essenmelia.invokeApi', (
       method,
       parameters,
     ) async {
-        return developer.ServiceExtensionResponse.error(
-            developer.ServiceExtensionResponse.extensionError,
-            'Debug API not fully migrated in refactor',
-        );
+      return developer.ServiceExtensionResponse.error(
+        developer.ServiceExtensionResponse.extensionError,
+        'Debug API not fully migrated in refactor',
+      );
     });
   }
-  
+
   void _initDebugChannel() {
-      // ...
+    // ...
   }
-  
+
   Future<int> checkForUpdates() async {
-      final extensions = _installedExtensions.values
+    final extensions = _installedExtensions.values
         .where((ext) => ext.metadata.repoFullName != null)
         .toList();
     if (extensions.isEmpty) return 0;
@@ -907,9 +1009,9 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
 
     return _availableUpdates.length;
   }
-  
+
   void processReadmeUpdate(String content, String repoFullName) {
-       final data = ExtensionManager.parseReadmeMetadata(content);
+    final data = ExtensionManager.parseReadmeMetadata(content);
 
     if (data != null) {
       final id = data['id'] as String?;
@@ -937,9 +1039,12 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
       }
     }
   }
-  
-  Future<void> _updateExtensionRepoFullName(String id, String repoFullName) async {
-      final content = _ref
+
+  Future<void> _updateExtensionRepoFullName(
+    String id,
+    String repoFullName,
+  ) async {
+    final content = _ref
         .read(extensionStoreServiceProvider.notifier)
         .getExtensionContent(id);
     if (content != null) {
@@ -950,15 +1055,15 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
             .read(extensionStoreServiceProvider.notifier)
             .saveExtension(id, jsonEncode(data));
 
-        refresh();
+        notifyListeners();
       } catch (e) {
         debugPrint('Failed to update repo full name for $id: $e');
       }
     }
   }
-  
+
   static Map<String, dynamic>? parseReadmeMetadata(String content) {
-      try {
+    try {
       final metadataRegex = RegExp(
         r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*(\{[\s\S]*?\})\s*-->',
       );
@@ -987,56 +1092,116 @@ class ExtensionManager extends ChangeNotifier implements SecurityShieldDelegate 
     }
     return null;
   }
+
+  // --- Event Handling & Maintenance ---
+
+  /// Broadcast event to all extensions
+  void broadcastEvent(
+    String name,
+    Map<String, dynamic> data, {
+    String? senderId,
+  }) {
+    for (var ext in _activeExtensions.values) {
+      if (ext.metadata.id != senderId) {
+        try {
+          ext.onExtensionEvent(name, data);
+        } catch (e) {
+          debugPrint('Error broadcasting event to ${ext.metadata.id}: $e');
+        }
+      }
+    }
+  }
+
+  /// Notify extensions about a new event
+  void notifyEventAdded(Event event) {
+    for (var ext in _activeExtensions.values) {
+      try {
+        ext.onEventAdded(event);
+      } catch (e) {
+        debugPrint(
+          'Error notifying extension ${ext.metadata.id} about event: $e',
+        );
+      }
+    }
+  }
+
+  /// Reset all extension data
+  Future<void> resetAll() async {
+    // 1. Stop all extensions
+    _activeExtensions.clear();
+    _installedExtensions.clear();
+    _eventBuffers.clear();
+    _availableUpdates.clear();
+
+    // 2. Clear persistence
+    await _ref.read(extensionStoreServiceProvider.notifier).clearAll();
+
+    // 3. Clear auth state
+    await _ref.read(extensionAuthStateProvider.notifier).resetAll();
+
+    // 4. Reload built-in extensions
+    await _loadBuiltInExtensions();
+
+    notifyListeners();
+  }
 }
 
 class _InstallationDialog extends StatefulWidget {
-    final ExtensionMetadata metadata;
-    final String newContent;
-    final ExtensionMetadata? oldMetadata;
-    final String? oldContent;
-    
-    const _InstallationDialog({required this.metadata, required this.newContent, this.oldMetadata, this.oldContent});
-    
-    @override
-    State<_InstallationDialog> createState() => _InstallationDialogState();
+  final ExtensionMetadata metadata;
+  final String newContent;
+  final ExtensionMetadata? oldMetadata;
+  final String? oldContent;
+
+  const _InstallationDialog({
+    required this.metadata,
+    required this.newContent,
+    this.oldMetadata,
+    this.oldContent,
+  });
+
+  @override
+  State<_InstallationDialog> createState() => _InstallationDialogState();
 }
 
 class _InstallationDialogState extends State<_InstallationDialog> {
-    bool _isUntrusted = false;
+  bool _isUntrusted = false;
 
-    @override
-    Widget build(BuildContext context) {
-        final isUpdate = widget.oldMetadata != null;
-        
-        return AlertDialog(
-            title: Text(isUpdate ? '更新扩展' : '安装扩展'),
-            content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                    Text('是否${isUpdate ? '更新' : '安装'} "${widget.metadata.name}"?'),
-                    const SizedBox(height: 16),
-                    Text('版本: ${widget.metadata.version}'),
-                    Text('作者: ${widget.metadata.author}'),
-                    const SizedBox(height: 16),
-                    CheckboxListTile(
-                        value: _isUntrusted,
-                        onChanged: (v) => setState(() => _isUntrusted = v ?? false),
-                        title: const Text('启用受限访问模式'),
-                        subtitle: const Text('限制扩展只能访问经授权的数据'),
-                    ),
-                ],
-            ),
-            actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('取消'),
-                ),
-                FilledButton(
-                    onPressed: () => Navigator.pop(context, {'confirmed': true, 'isUntrusted': _isUntrusted}),
-                    child: Text(isUpdate ? '更新' : '安装'),
-                ),
-            ],
-        );
-    }
+  @override
+  Widget build(BuildContext context) {
+    final isUpdate = widget.oldMetadata != null;
+
+    return AlertDialog(
+      title: Text(isUpdate ? '更新扩展' : '安装扩展'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('是否${isUpdate ? '更新' : '安装'} "${widget.metadata.name}"?'),
+          const SizedBox(height: 16),
+          Text('版本: ${widget.metadata.version}'),
+          Text('作者: ${widget.metadata.author}'),
+          const SizedBox(height: 16),
+          CheckboxListTile(
+            value: _isUntrusted,
+            onChanged: (v) => setState(() => _isUntrusted = v ?? false),
+            title: const Text('启用受限访问模式'),
+            subtitle: const Text('限制扩展只能访问经授权的数据'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, {
+            'confirmed': true,
+            'isUntrusted': _isUntrusted,
+          }),
+          child: Text(isUpdate ? '更新' : '安装'),
+        ),
+      ],
+    );
+  }
 }

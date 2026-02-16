@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/base_extension.dart';
 import '../core/extension_api.dart';
-import '../core/extension_metadata.dart';
-import '../core/globals.dart';
 import 'js/extension_js_engine.dart';
 import 'view/dynamic_engine.dart';
 

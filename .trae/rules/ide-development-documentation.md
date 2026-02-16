@@ -5,7 +5,8 @@ alwaysApply: true
 # 项目构建与环境维护注意事项
 
 本项目运行在 Flutter 3.38.9 环境下，由于涉及 Gradle 8.x 的 Lazy Property 特性以及 Windows 中文路径兼容性，构建环境相对敏感。后续维护请务必参考以下说明。
-
+扩展架构文档：assets\docs\architecture.md
+其他文档：assets\docs\
 ---
 
 ## 1. 核心构建环境

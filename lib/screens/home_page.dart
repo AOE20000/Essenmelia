@@ -14,6 +14,7 @@ import '../providers/settings_provider.dart';
 import '../providers/tags_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../extensions/manager/extension_manager.dart';
+import '../extensions/security/extension_auth_notifier.dart';
 import '../screens/extension_details_screen.dart';
 import '../screens/extension_logs_page.dart';
 import '../widgets/universal_image.dart';

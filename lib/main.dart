@@ -10,7 +10,7 @@ import 'providers/locale_provider.dart';
 import 'screens/home_page.dart';
 import 'screens/event_detail_screen.dart';
 import 'screens/edit_event_sheet.dart';
-import 'extensions/extension_manager.dart' show navigatorKey;
+import 'extensions/core/globals.dart' show navigatorKey;
 import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
