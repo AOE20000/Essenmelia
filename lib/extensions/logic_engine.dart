@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_js/flutter_js.dart';
-import 'core/extension_metadata.dart';
-import 'core/extension_api.dart';
+import 'base_extension.dart';
 
 /// 扩展 JS 逻辑引擎
 class ExtensionJsEngine {

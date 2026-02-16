@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_localizations.dart';
 import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
+import '../core/globals.dart';
+import 'extension_auth_notifier.dart';
 import 'permission_dialog.dart';
-import '../extension_manager.dart';
 import 'security_providers.dart';
 
 abstract class SecurityShieldDelegate {

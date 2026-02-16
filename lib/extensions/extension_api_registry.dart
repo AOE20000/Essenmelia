@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/extension_permission.dart';
+import 'base_extension.dart'; // Import ExtensionPermission
 
 import '../l10n/app_localizations.dart';
 

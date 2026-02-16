@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/event.dart';
 import 'db_provider.dart';
-import '../extensions/extension_manager.dart';
+import '../extensions/manager/extension_manager.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/calendar_service.dart';

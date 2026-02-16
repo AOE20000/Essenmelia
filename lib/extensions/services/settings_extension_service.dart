@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import '../extension_api_registry.dart';
-import '../core/extension_permission.dart';
+import '../base_extension.dart';
 
 /// 扩展私有设置相关的 API 实现
 class SettingsExtensionApiHandler {

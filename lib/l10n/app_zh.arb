@@ -685,6 +685,7 @@
   "extensionSandboxDefaultHint": "默认为扩展 ID",
   "extensionSandboxTip": "提示：活跃扩展通常共享同一分组",
   "extensionRequestedPermissions": "申请的权限",
+  "extensionError": "扩展脚本运行错误",
   "extensionButton": "按钮",
   "extensionNoPermissions": "未申请权限",
   "extensionUpdate": "更新扩展",

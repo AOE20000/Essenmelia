@@ -5,6 +5,8 @@
   "@uninstallExtension": {
     "description": "Title for uninstall confirmation dialog"
   },
+
+
   "uninstallConfirmation": "Are you sure you want to uninstall \"{name}\"?",
   "@uninstallConfirmation": {
     "description": "Message for uninstall confirmation dialog",
@@ -2072,6 +2074,10 @@
   "allSystemPermissions": "All System Permissions",
   "@allSystemPermissions": {
     "description": "Title for the dialog showing all system permissions"
+  },
+  "extensionError": "Extension runtime error",
+  "@extensionError": {
+    "description": "Error message when an extension fails to run"
   },
   "extensionNoUI": "This extension has no UI interface",
   "@extensionNoUI": {

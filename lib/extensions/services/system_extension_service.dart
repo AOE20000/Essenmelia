@@ -6,7 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../extension_api_registry.dart';
-import '../core/extension_permission.dart';
+import '../base_extension.dart';
 
 /// 系统/基础功能相关的扩展 API 实现 (网络、文件、分享)
 class SystemExtensionApiHandler {

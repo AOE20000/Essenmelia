@@ -5,7 +5,7 @@ import '../providers/ui_state_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/settings_provider.dart';
-import '../extensions/extension_manager.dart';
+import '../extensions/manager/extension_manager.dart';
 import '../models/event.dart';
 
 // Meta box to store app-wide settings like list of DBs and active DB
