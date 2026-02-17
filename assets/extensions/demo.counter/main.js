@@ -41,7 +41,7 @@ function decrement() {
 
 /**
  * 触发系统通知
- * 需要在 manifest.yaml 中声明 'notifications' 权限
+ * 需要在 README.md 中声明 'notifications' 权限
  */
 async function showNotification() {
     console.log("Sending notification request...");

@@ -29,7 +29,7 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
   - **日志追踪**：劫持 `console.log`，通过桥接转发至 Dart 侧的“扩展控制台”。
 - **状态同步机制**：
   - JS 直接修改 `state` 属性 -> Proxy 拦截 -> 发送消息给 Dart -> 更新 `ExtensionJsEngine.state` -> 触发对应键的 `ValueNotifier` -> 局部 UI 刷新。
-- **代码参考**：[extension_js_engine.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/runtime/js/extension_js_engine.dart)
+- **代码参考**：[extension_js_engine.dart](Flutter-New/lib/extensions/runtime/js/extension_js_engine.dart)
 
 ### 2.2 渲染层：`Runtime/View` (DynamicEngine)
 渲染层将 YAML 定义转换为 Flutter Widget 树。
@@ -39,16 +39,16 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
   - 自动分析 YAML 中的 `$state.key` 插值。
   - 使用 `ValueListenableBuilder` 包装受影响的组件实现局部刷新。
 - **交互绑定**：任意组件均可通过 `onTap` 属性绑定 JS 函数。
-- **代码参考**：[dynamic_engine.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/runtime/view/dynamic_engine.dart)
+- **代码参考**：[dynamic_engine.dart](Flutter-New/lib/extensions/runtime/view/dynamic_engine.dart)
 
 ### 2.3 管理层：`Manager` (ExtensionManager)
 `ExtensionManager` 是整个系统的中枢，负责扩展的生命周期与安全性。
 
 - **核心职责**：
   - **自动发现**：自动扫描 `assets/extensions/` 目录下的内置扩展。
-  - **安装与更新**：支持 ZIP 解压、元数据解析与安装。移除了过时的哈希强制校验逻辑，使更新流程更加流畅。
+  - **安装与更新**：支持 ZIP 安装包与基于GitHub README的检测更新
   - **权限网关**：集成 `SecurityShield`，在 API 调用前进行权限检查。
-- **代码参考**：[extension_manager.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/manager/extension_manager.dart)
+- **代码参考**：[extension_manager.dart](Flutter-New/lib/extensions/manager/extension_manager.dart)
 
 ### 2.4 安全层：`Security` (SecurityShield)
 `SecurityShield` 负责拦截非信任扩展的敏感操作。
@@ -58,7 +58,7 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
   - **写操作**：将数据写入临时的内存沙箱。
   - **权限申请**：当扩展尝试进行敏感操作时，可能会向用户展示权限申请弹窗。
 - **DoS 防护**：针对频繁的弹窗请求，内置了冷却机制（Cooldown），防止恶意扩展通过无限弹窗阻塞 UI。
-- **代码参考**：[security_shield.dart](file:///d:/untitled/Essenmelia/Flutter-New/lib/extensions/security/security_shield.dart)
+- **代码参考**：[security_shield.dart](Flutter-New/lib/extensions/security/security_shield.dart)
 
 ---
 

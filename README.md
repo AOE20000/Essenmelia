@@ -17,9 +17,9 @@
 
 ## 🏗️ 系统架构
 
-Essenmelia 采用模块化分层设计：
+Essenmelia 扩展采用模块化分层设计：
 
-- **Core (核心层)**：定义扩展元数据 (`ExtensionMetadata`) 与权限模型。
+- **Core (核心层)**：定义扩展信息 (`ExtensionMetadata`) 与权限模型。
 - **Runtime (运行时)**：
   - `ExtensionJsEngine`: 基于 Promise 的异步 JS 桥接引擎，支持现代 JS 语法。
   - `DynamicEngine`: 将 YAML 定义渲染为原生 Flutter 组件的 UI 引擎。
@@ -29,17 +29,6 @@ Essenmelia 采用模块化分层设计：
 > 📖 更多架构细节请参阅：[架构设计文档](assets/docs/architecture.md)
 
 ---
-
-## 🛠️ 扩展开发
-
-你可以轻松编写自己的扩展来增强 Essenmelia 的功能。
-
-### 快速开始
-一个标准的扩展通常包含：
-- `manifest.yaml`: 定义元数据与权限（必须使用标准 camelCase 格式）。
-- `view.yaml`: 描述 MD3 界面布局。
-- `main.js`: 处理逻辑与 API 调用（支持 `async/await`）。
-
 ### 开发资源
 - 📝 [扩展开发指南](assets/docs/extensions.md) - 完整技术规范与组件库。
 - 🔌 [API 使用文档](assets/docs/api_usage.md) - 详细的 API 调用示例与沙箱说明。

@@ -7,6 +7,9 @@ import '../extensions/core/extension_metadata.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../extensions/security/extension_auth_notifier.dart';
 import '../extensions/runtime/api/extension_api_registry.dart';
+import '../widgets/extension_action_sheet.dart';
+import '../extensions/models/repository_extension.dart';
+import '../extensions/services/extension_repository_service.dart';
 
 class ExtensionDetailsScreen extends ConsumerStatefulWidget {
   final BaseExtension extension;
@@ -646,20 +649,56 @@ class _ExtensionDetailsScreenState
     WidgetRef ref,
     ExtensionMetadata metadata,
   ) async {
-    final repoFullName = metadata.repoFullName;
-    if (repoFullName == null) return;
+    final repoManifest = ref.read(extensionRepositoryManifestProvider).value;
+    final repoExt = repoManifest?.firstWhere(
+      (e) => e.id == metadata.id,
+      orElse: () => RepositoryExtension(
+        id: metadata.id,
+        name: metadata.name,
+        description: metadata.description,
+        author: metadata.author,
+        version: metadata.version,
+        iconUrl: null,
+        downloadUrl:
+            'https://github.com/${metadata.repoFullName}/archive/refs/heads/main.zip',
+        repoFullName: metadata.repoFullName,
+        tags: metadata.tags,
+      ),
+    );
 
-    final url = 'https://github.com/$repoFullName/archive/refs/heads/main.zip';
-    final manager = ref.read(extensionManagerProvider);
-    final result = await manager.importFromUrl(url);
-    if (result != null && context.mounted) {
-      // 更新成功后，由于 ExtensionDetailsScreen 依赖的 extension 实例已过期（Metadata 已变），
-      // 最好关闭当前页面或刷新
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('扩展更新成功')));
-    }
+    if (repoExt == null && metadata.repoFullName == null) return;
+
+    // Use constructed repoExt if not found in manifest but we have repoFullName
+    final targetExt =
+        repoExt ??
+        RepositoryExtension(
+          id: metadata.id,
+          name: metadata.name,
+          description: metadata.description,
+          author: metadata.author,
+          version: metadata.version,
+          iconUrl: null,
+          downloadUrl:
+              'https://github.com/${metadata.repoFullName}/archive/refs/heads/main.zip',
+          repoFullName: metadata.repoFullName,
+          tags: metadata.tags,
+        );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => ExtensionActionSheet(
+        installedExtension: widget.extension,
+        repositoryExtension: targetExt,
+        actionType: ExtensionActionType.update,
+        onActionCompleted: () {
+          if (context.mounted) {
+            Navigator.of(context).pop(); // Close details screen
+          }
+        },
+      ),
+    );
   }
 
   void _showExportMenu(ThemeData theme, ExtensionMetadata metadata) {
@@ -780,35 +819,20 @@ class _ExtensionDetailsScreenState
     ThemeData theme,
     ExtensionMetadata metadata,
     ExtensionAuthNotifier authNotifier,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-
-    final confirmed = await showDialog<bool>(
+  ) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-        title: Text(l10n.extensionUninstallConfirm),
-        content: Text(l10n.extensionUninstallMessage(metadata.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
-            ),
-            child: Text(l10n.extensionUninstall),
-          ),
-        ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => ExtensionActionSheet(
+        installedExtension: widget.extension,
+        actionType: ExtensionActionType.uninstall,
+        onActionCompleted: () {
+          if (context.mounted) {
+            Navigator.of(context).pop(); // Close details screen
+          }
+        },
       ),
     );
-
-    if (confirmed == true) {
-      await ref.read(extensionManagerProvider).removeExtension(metadata.id);
-      if (mounted) Navigator.pop(context);
-    }
   }
 }

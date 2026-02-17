@@ -1,3 +1,15 @@
+<!-- ESSENMELIA_EXTEND {
+  "id": "demo.counter",
+  "name": "计数器演示",
+  "description": "一个展示如何使用状态绑定和 API 的基础演示扩展。包含点击计数和通知触发功能。",
+  "author": "Essenmelia Team",
+  "version": "1.0.0",
+  "icon_code": 57430,
+  "permissions": ["notifications"],
+  "view": "view.yaml",
+  "script": "main.js"
+} -->
+
 # 计数器演示 (Counter Demo)
 
 一个展示如何使用状态绑定和 API 的基础演示扩展。
@@ -10,7 +22,7 @@
 ## 学习要点
 - `view.yaml`: 学习如何构建响应式 UI。
 - `main.js`: 学习如何处理交互逻辑和调用 API。
-- `manifest.yaml`: 学习扩展元数据定义。
+- `README.md`: 学习扩展信息定义与权限声明。
 
 ## 新特性 (v2 架构)
 - **自动状态同步**: 现在可以直接使用 `state.count = 10` 来更新状态，无需手动调用 `essenmelia.updateState`。

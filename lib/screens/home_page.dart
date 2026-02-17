@@ -15,6 +15,8 @@ import '../providers/tags_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../extensions/security/extension_auth_notifier.dart';
+import '../extensions/core/base_extension.dart';
+import '../widgets/extension_action_sheet.dart';
 import '../screens/extension_details_screen.dart';
 import '../screens/extension_logs_page.dart';
 import '../widgets/universal_image.dart';
@@ -141,38 +143,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _confirmUninstall(BuildContext context, dynamic ext) {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    if (ext is! BaseExtension) return;
+    
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.confirmUninstall),
-        content: Text(l10n.uninstallExtensionWarning(ext.metadata.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              final messenger = ScaffoldMessenger.of(context);
-              Navigator.pop(context);
-              ref
-                  .read(extensionManagerProvider)
-                  .removeExtension(ext.metadata.id);
-
-              if (!mounted) return;
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(l10n.extensionUninstalled(ext.metadata.name)),
-                ),
-              );
-            },
-            child: Text(
-              l10n.uninstall,
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => ExtensionActionSheet(
+        installedExtension: ext,
+        actionType: ExtensionActionType.uninstall,
+        onActionCompleted: () {
+          // Additional logic if needed
+        },
       ),
     );
   }

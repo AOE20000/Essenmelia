@@ -1,3 +1,15 @@
+<!-- ESSENMELIA_EXTEND {
+  "id": "com.essenmelia.event_test",
+  "name": "事件列表测试",
+  "description": "展示并操作系统中的事件，用于测试列表渲染、数据同步及权限管理。",
+  "author": "Essenmelia Team",
+  "version": "2.0.0",
+  "icon_code": 57933,
+  "permissions": ["readEvents", "addEvents", "deleteEvents", "systemInfo"],
+  "view": "view.yaml",
+  "script": "main.js"
+} -->
+
 # 事件列表测试 (Event Sandbox)
 
 展示并操作系统中的事件，用于测试列表渲染、数据同步及权限管理。

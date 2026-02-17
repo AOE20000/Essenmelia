@@ -92,7 +92,7 @@ class ProxyExtension extends BaseExtension {
                   children: [
                     _buildTag(
                       theme,
-                      '纯净模式 (仅元数据)',
+                      '扩展信息',
                       color: theme.colorScheme.tertiaryContainer,
                       textColor: theme.colorScheme.onTertiaryContainer,
                     ),

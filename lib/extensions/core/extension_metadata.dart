@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:yaml/yaml.dart';
 import 'extension_permission.dart';
@@ -15,6 +16,7 @@ class ExtensionMetadata {
   final Map<String, dynamic>? view;
   final Map<String, dynamic>? logic;
   final String? script;
+  final List<String> tags;
 
   const ExtensionMetadata({
     required this.id,
@@ -28,6 +30,7 @@ class ExtensionMetadata {
     this.view,
     this.logic,
     this.script,
+    this.tags = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -44,6 +47,7 @@ class ExtensionMetadata {
       'view': view,
       'logic': logic,
       'script': script,
+      'tags': tags,
     };
   }
 
@@ -62,6 +66,7 @@ class ExtensionMetadata {
       view: json['view'] is Map ? _convertYamlNode(json['view']) : null,
       logic: json['logic'] is Map ? _convertYamlNode(json['logic']) : null,
       script: json['script'] as String?,
+      tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
       requiredPermissions:
           (json['permissions'] as List?)
               ?.map((e) {
@@ -112,9 +117,26 @@ class ExtensionMetadata {
     }
   }
 
-  /// Create metadata from YAML string
-  factory ExtensionMetadata.fromYaml(String yamlStr) {
-    final map = yamlToMap(yamlStr);
-    return ExtensionMetadata.fromJson(map);
+  /// Create metadata from README markdown content
+  /// Expects a JSON block: <!-- ESSENMELIA_EXTEND { ... } -->
+  static ExtensionMetadata? fromReadme(String readmeContent) {
+    final regex = RegExp(
+      r'<!--\s*ESSENMELIA_EXTEND\s*(\{[\s\S]*?\})\s*-->',
+      multiLine: true,
+    );
+    final match = regex.firstMatch(readmeContent);
+    if (match == null) return null;
+
+    try {
+      final jsonStr = match.group(1);
+      if (jsonStr == null) return null;
+
+      // Parse JSON strictly as per architecture spec
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      return ExtensionMetadata.fromJson(map);
+    } catch (e) {
+      debugPrint('Error parsing metadata from README: $e');
+      return null;
+    }
   }
 }

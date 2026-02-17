@@ -1,3 +1,15 @@
+<!-- ESSENMELIA_EXTEND {
+  "id": "com.essenmelia.api_tester",
+  "name": "API 测试工具",
+  "description": "测试扩展 API 的功能与响应",
+  "author": "Essenmelia",
+  "version": "2.0.0",
+  "icon_code": 57522,
+  "permissions": ["readEvents", "network", "systemInfo"],
+  "view": "view.yaml",
+  "script": "main.js"
+} -->
+
 # API 测试工具 (API Tester)
 
 测试扩展 API 的功能与响应。

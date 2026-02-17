@@ -9,33 +9,63 @@
 Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使用 **多文件目录结构** 进行开发，并打包为 `.zip` 格式进行分发。
 
 ### 1.1 目录结构
-一个标准的扩展目录（或 `.zip` 包）包含以下核心文件：
+一个常规的扩展目录（或 `.zip` 包）包含以下文件：
 
-- `manifest.yaml`: **扩展元数据**。定义 ID、名称、版本、作者以及**权限申请**。
-- `view.yaml`: **声明式 UI 定义**。使用 YAML 语法描述界面布局。
-- `logic.yaml` (可选): 声明式逻辑流定义（已废弃，推荐使用 main.js）。
-- `main.js`: **业务逻辑脚本**。处理事件、状态更新及 API 调用。
+- `view.yaml`: **UI 布局**。定义扩展的交互界面。
+- `main.js`: **逻辑脚本**。处理交互行为与 API 调用。
+- `README.md`: **信息**。包含包名、扩展名、描述、作者、版本、标签、权限申请。
 
 ---
 
 ## 2. 开发规范
 
-### 2.1 扩展元数据 (manifest.yaml)
+### 2.1 扩展信息 (README.md)
+
+开发者需在 `README.md` 的**第一行**插入一个包含 JSON 配置的 HTML 注释块：
+---
+<!-- ESSENMELIA_EXTEND {
+  "id": "system.external_call",
+  "name": "指令网关",
+  "description": "系统级外部请求监控中心。负责拦截、验证并处理来自 ADB、Intent 或第三方应用的 API 调用。",
+  "author": "System",
+  "version": "2.1.0",
+  "icon_code": 984613,
+  "tags": ["System", "Gateway", "API"],
+  "permissions": [
+    "readEvents",
+    "addEvents",
+    "updateEvents",
+    "deleteEvents",
+    "readTags",
+    "manageTags",
+    "notifications",
+    "systemInfo",
+    "navigation",
+    "network",
+    "fileSystem",
+    "readCalendar",
+    "writeCalendar"
+  ]
+} -->
+
+# 我的扩展标题
+这里是扩展的详细说明文档...
+```
 
 | 字段 | 类型 | 说明 | 示例 |
 | :--- | :--- | :--- | :--- |
 | `id` | String | 唯一标识符，建议反向域名格式 | `com.example.app` |
 | `name` | String | 扩展显示的名称 | `我的扩展` |
 | `version` | String | 版本号 | `1.0.0` |
+| `author` | String | 作者名称 | `Alice` |
 | `permissions`| List | 申请的系统权限列表 | `["readEvents", "network"]` |
 | `view` | String | 可选。自定义视图文件路径，默认为 `view.yaml` | `ui/main.yaml` |
 | `script` | String | 可选。自定义 JS 脚本路径，默认为 `main.js` | `src/index.js` |
 
 ### 2.2 权限系统 (Dynamic Permissions)
 
-Essenmelia 采用**动态权限绑定机制**。开发者必须在 `manifest.yaml` 中使用标准 `camelCase` 格式声明权限。
+Essenmelia 采用**动态权限绑定机制**。开发者必须在 `README.md` 中声明权限。
 
-- **严格格式**：系统不再支持 `snake_case` 或旧版权限别名。
 - **透明展示**：在安装界面，系统会根据 `ExtensionApiRegistry` 动态列出该权限下允许扩展执行的具体操作（如“添加新任务”、“读取日历”等）。
 
 **常用权限：**

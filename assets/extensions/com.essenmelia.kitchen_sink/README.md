@@ -15,13 +15,4 @@
 - `navigation`: 界面跳转。
 
 ---
-<!-- ESSENMELIA_EXTEND {
-  "id": "com.essenmelia.kitchen_sink",
-  "name": "全能演示 (Kitchen Sink)",
-  "description": "展示所有可用组件、API 指令与 JS 逻辑的参考扩展 (JS/YAML)",
-  "author": "Essenmelia Team",
-  "version": "2.0.0",
-  "icon_code": 58265,
-  "tags": ["Demo", "Reference", "Kitchen Sink"]
-} -->
 *Built-in Extension v2.0.0*

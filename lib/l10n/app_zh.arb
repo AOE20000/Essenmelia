@@ -195,7 +195,7 @@
   "failedToLoadStore": "无法加载商店",
   "retry": "重试",
   "extensionNoUI": "此扩展未定义界面。",
-  "extensionPureMode": "纯净模式 (仅元数据)",
+  "extensionPureMode": "扩展信息",
   "extensionStorageOccupied": "存储占用: {size}",
   "@extensionStorageOccupied": {
     "placeholders": {
@@ -742,7 +742,7 @@
   "apiGuide": "API 使用指南",
   "apiGuideDesc": "核心方法、通知方案与外部集成",
   "extDevSpecs": "扩展开发规范",
-  "extDevSpecsDesc": "元数据、UI 组件库与逻辑引擎",
+  "extDevSpecsDesc": "信息、UI 组件库与逻辑引擎",
   "createRepoGuide": "扩展仓库创建指南",
   "createRepoGuideDesc": "清单文件、结构与 GitHub 发现机制",
   "selectDocToRead": "请选择一个文档进行阅读",

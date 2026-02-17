@@ -8,72 +8,46 @@ import '../core/extension_metadata.dart';
 /// Handles conversion between ExtensionMetadata and package formats (ZIP)
 class ExtensionConverter {
   /// Extract extension content from ZIP bytes (returns JSON string)
-  /// Supports two modes:
-  /// 1. Root contains manifest.json/yaml
-  /// 2. README.md contains <!-- ESSENMELIA_EXTEND { ... } --> HTML comment
+  /// Only supports README.md with embedded JSON metadata block
   static String? extractContentFromZip(Uint8List zipBytes) {
     try {
       final archive = ZipDecoder().decodeBytes(zipBytes);
 
-      // 1. Prioritize manifest.yaml or manifest.json
-      ArchiveFile? manifestFile;
-      bool isYaml = false;
-
+      // Prioritize embedded metadata in README.md
       try {
-        manifestFile = archive.firstWhere(
-          (f) =>
-              f.name.endsWith('manifest.yaml') ||
-              f.name.endsWith('manifest.yml'),
+        final readmeFile = archive.firstWhere(
+          (f) => f.name.endsWith('README.md'),
         );
-        isYaml = true;
-      } catch (_) {
-        try {
-          manifestFile = archive.firstWhere(
-            (f) => f.name.endsWith('manifest.json'),
-          );
-        } catch (_) {}
-      }
+        final readmeContent = utf8.decode(readmeFile.content as List<int>);
 
-      Map<String, dynamic> manifest;
-
-      // 2. If no manifest, try to find embedded metadata in README.md
-      if (manifestFile == null) {
-        try {
-          final readmeFile = archive.firstWhere(
-            (f) => f.name.endsWith('README.md'),
-          );
-          final readmeContent = utf8.decode(readmeFile.content as List<int>);
-
-          // Use regex to extract <!-- ESSENMELIA_EXTEND { ... } -->
-          final regExp = RegExp(
-            r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*([\s\S]*?)\s*-->',
-          );
-          final match = regExp.firstMatch(readmeContent);
-          if (match != null) {
-            final contentStr = match.group(1)?.trim();
-            if (contentStr != null) {
-              // Auto-detect JSON or YAML
-              if (contentStr.startsWith('{')) {
-                manifest = jsonDecode(contentStr);
+        // Use regex to extract <!-- ESSENMELIA_EXTEND { ... } -->
+        final regExp = RegExp(
+          r'<!--\s*ESSENMELIA_EXTEND[^\s]*\s*([\s\S]*?)\s*-->',
+        );
+        final match = regExp.firstMatch(readmeContent);
+        if (match != null) {
+          final contentStr = match.group(1)?.trim();
+          if (contentStr != null) {
+            // Only support JSON format as per architecture spec
+            Map<String, dynamic> parsedManifest;
+            try {
+              if (contentStr.trim().startsWith('{')) {
+                parsedManifest = jsonDecode(contentStr);
               } else {
-                final metadata = ExtensionMetadata.fromYaml(contentStr);
-                manifest = metadata.toJson();
+                // Legacy YAML support removed
+                return null;
               }
-              return _resolveSeparateFiles(manifest, archive);
+              return _resolveSeparateFiles(parsedManifest, archive);
+            } catch (e) {
+              debugPrint('Failed to parse extension metadata: $e');
+              return null;
             }
           }
-        } catch (_) {}
-        return null;
-      }
+        }
+      } catch (_) {}
 
-      final contentStr = utf8.decode(manifestFile.content as List<int>);
-      if (isYaml) {
-        manifest = ExtensionMetadata.fromYaml(contentStr).toJson();
-      } else {
-        manifest = jsonDecode(contentStr);
-      }
-
-      return _resolveSeparateFiles(manifest, archive);
+      // Legacy manifest.yaml/json support removed
+      return null;
     } catch (e) {
       debugPrint('Failed to extract extension from ZIP: $e');
       return null;
@@ -85,15 +59,17 @@ class ExtensionConverter {
     Map<String, dynamic> manifest,
     Archive archive,
   ) {
-    // Get directory of manifest
+    // Get directory of README
     String? baseDir;
     try {
-      final manifestFile = archive.firstWhere(
+      final sourceFile = archive.firstWhere(
         (f) =>
-            f.name.endsWith('manifest.yaml') ||
-            f.name.endsWith('manifest.json'),
+            f.name.endsWith('README.md') &&
+            utf8.decode(f.content as List<int>).contains('ESSENMELIA_EXTEND'),
+        orElse: () => archive.firstWhere((f) => f.name.endsWith('README.md')),
       );
-      final parts = manifestFile.name.split('/');
+
+      final parts = sourceFile.name.split('/');
       if (parts.length > 1) {
         baseDir = '${parts.sublist(0, parts.length - 1).join('/')}/';
       }
@@ -104,7 +80,7 @@ class ExtensionConverter {
       return '$baseDir$path';
     }
 
-    // 1. Resolve View (supports .json, .yaml, .yml)
+    // 1. Resolve View (supports .yaml, .yml)
     final viewVal = manifest['view'];
     if (viewVal is String) {
       final viewPath = getFullPath(viewVal);
@@ -115,13 +91,11 @@ class ExtensionConverter {
         final content = utf8.decode(viewFile.content as List<int>);
         if (viewPath.endsWith('.yaml') || viewPath.endsWith('.yml')) {
           manifest['view'] = ExtensionMetadata.yamlToMap(content);
-        } else {
-          manifest['view'] = jsonDecode(content);
         }
       } catch (_) {}
     } else if (viewVal == null) {
-      // Auto-discover view.yaml or view.json
-      final candidates = ['view.yaml', 'view.yml', 'view.json'];
+      // Auto-discover view.yaml
+      final candidates = ['view.yaml', 'view.yml'];
       for (final name in candidates) {
         try {
           final fullPath = getFullPath(name);
@@ -129,17 +103,13 @@ class ExtensionConverter {
             (f) => f.name == fullPath || f.name.endsWith(fullPath),
           );
           final content = utf8.decode(viewFile.content as List<int>);
-          if (name.endsWith('.yaml') || name.endsWith('.yml')) {
-            manifest['view'] = ExtensionMetadata.yamlToMap(content);
-          } else {
-            manifest['view'] = jsonDecode(content);
-          }
+          manifest['view'] = ExtensionMetadata.yamlToMap(content);
           break;
         } catch (_) {}
       }
     }
 
-    // 2. Resolve Logic (supports .json, .yaml, .yml)
+    // 2. Resolve Logic (supports .yaml, .yml)
     final logicVal = manifest['logic'];
     if (logicVal is String) {
       final logicPath = getFullPath(logicVal);
@@ -150,13 +120,11 @@ class ExtensionConverter {
         final content = utf8.decode(logicFile.content as List<int>);
         if (logicPath.endsWith('.yaml') || logicPath.endsWith('.yml')) {
           manifest['logic'] = ExtensionMetadata.yamlToMap(content);
-        } else {
-          manifest['logic'] = jsonDecode(content);
         }
       } catch (_) {}
     } else if (logicVal == null) {
-      // Auto-discover logic.yaml or logic.json
-      final candidates = ['logic.yaml', 'logic.yml', 'logic.json'];
+      // Auto-discover logic.yaml
+      final candidates = ['logic.yaml', 'logic.yml'];
       for (final name in candidates) {
         try {
           final fullPath = getFullPath(name);
@@ -164,11 +132,7 @@ class ExtensionConverter {
             (f) => f.name == fullPath || f.name.endsWith(fullPath),
           );
           final content = utf8.decode(logicFile.content as List<int>);
-          if (name.endsWith('.yaml') || name.endsWith('.yml')) {
-            manifest['logic'] = ExtensionMetadata.yamlToMap(content);
-          } else {
-            manifest['logic'] = jsonDecode(content);
-          }
+          manifest['logic'] = ExtensionMetadata.yamlToMap(content);
           break;
         } catch (_) {}
       }
@@ -206,7 +170,7 @@ class ExtensionConverter {
   static Uint8List createZipPackage(ExtensionMetadata metadata) {
     final archive = Archive();
 
-    // 1. Generate manifest (manifest.yaml)
+    // 1. Prepare manifest data
     final manifest = metadata.toJson();
 
     // If view/logic are complex Maps, separate them into YAML files
@@ -236,11 +200,22 @@ class ExtensionConverter {
     // Remove nulls and internal fields
     manifest.removeWhere((key, value) => value == null);
 
-    final manifestYaml = _mapToYaml(manifest);
-    final manifestBytes = utf8.encode(manifestYaml);
-    archive.addFile(
-      ArchiveFile('manifest.yaml', manifestBytes.length, manifestBytes),
-    );
+    // Generate README.md with metadata block
+    final jsonEncoder = const JsonEncoder.withIndent('  ');
+    final metadataJson = jsonEncoder.convert(manifest);
+    final readmeContent =
+        '''
+<!-- ESSENMELIA_EXTEND $metadataJson -->
+
+# ${manifest['name'] ?? 'Untitled Extension'}
+
+${manifest['description'] ?? ''}
+
+*Generated by Essenmelia*
+''';
+
+    final readmeBytes = utf8.encode(readmeContent);
+    archive.addFile(ArchiveFile('README.md', readmeBytes.length, readmeBytes));
 
     final zipEncoder = ZipEncoder();
     return Uint8List.fromList(zipEncoder.encode(archive));

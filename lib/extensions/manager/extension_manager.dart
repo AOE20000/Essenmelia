@@ -173,43 +173,49 @@ class ExtensionManager extends ChangeNotifier
 
   Future<void> _loadBuiltInExtensions() async {
     try {
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      List<String> extensionFiles = [];
+      try {
+        // Use AssetManifest API for better compatibility
+        final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+        extensionFiles = manifest
+            .listAssets()
+            .where(
+              (String key) =>
+                  key.startsWith('assets/extensions/') &&
+                  key.endsWith('/README.md'),
+            )
+            .toList();
+      } catch (e) {
+        debugPrint('AssetManifest API failed: $e');
+      }
 
-      final extensionFiles = manifestMap.keys
-          .where(
-            (String key) =>
-                key.startsWith('assets/extensions/') &&
-                key.endsWith('/manifest.yaml'),
-          )
-          .toList();
+      debugPrint(
+        'Found built-in extension manifests: ${extensionFiles.length}',
+      );
 
       _builtInExtensions = [];
 
       for (final file in extensionFiles) {
         try {
           final content = await rootBundle.loadString(file);
-          final metadata = ExtensionMetadata.fromYaml(content);
-          _builtInExtensions.add(
-            RepositoryExtension(
-              id: metadata.id,
-              name: metadata.name,
-              description: metadata.description,
-              author: metadata.author,
-              version: metadata.version,
-              // icon: metadata.icon, // RepositoryExtension uses iconUrl
-              downloadUrl: 'builtin://${metadata.id}',
-              repoFullName: metadata.repoFullName,
-            ),
-          );
+          final metadata = ExtensionMetadata.fromReadme(content);
+          if (metadata != null) {
+            _builtInExtensions.add(
+              RepositoryExtension(
+                id: metadata.id,
+                name: metadata.name,
+                description: metadata.description,
+                author: metadata.author,
+                version: metadata.version,
+                // icon: metadata.icon, // RepositoryExtension uses iconUrl
+                downloadUrl: 'builtin://${metadata.id}',
+                repoFullName: metadata.repoFullName,
+              ),
+            );
+          }
         } catch (e) {
           debugPrint('Error loading built-in extension $file: $e');
         }
-      }
-
-      // Ensure "demo.counter" is loaded if not found (fallback)
-      if (!_builtInExtensions.any((e) => e.id == 'demo.counter')) {
-        // Fallback logic handled by auto-parsing now
       }
 
       notifyListeners();
@@ -222,10 +228,14 @@ class ExtensionManager extends ChangeNotifier
 
   Future<BaseExtension?> installBuiltInExtensionById(String id) async {
     try {
-      // Find manifest path
-      final manifestPath = 'assets/extensions/$id/manifest.yaml';
-      final manifestContent = await rootBundle.loadString(manifestPath);
-      final metadata = ExtensionMetadata.fromYaml(manifestContent);
+      // Find README path
+      final readmePath = 'assets/extensions/$id/README.md';
+      final readmeContent = await rootBundle.loadString(readmePath);
+      final metadata = ExtensionMetadata.fromReadme(readmeContent);
+
+      if (metadata == null) {
+        throw Exception('No metadata found in README.md for $id');
+      }
 
       // Load view and logic if referenced
       Map<String, dynamic>? view;
@@ -255,7 +265,7 @@ class ExtensionManager extends ChangeNotifier
       if (view != null) data['view'] = view;
       if (logic != null) data['script'] = logic;
 
-      return await importFromContent(jsonEncode(data));
+      return await importFromContent(jsonEncode(data), skipConfirmation: true);
     } catch (e) {
       debugPrint('Failed to install built-in extension $id: $e');
       return null;
@@ -532,19 +542,10 @@ class ExtensionManager extends ChangeNotifier
               content = ExtensionConverter.extractContentFromZip(bytes);
             } else {
               final raw = await File(file.path!).readAsString();
-              if (extName == 'yaml' ||
-                  extName == 'yml' ||
-                  (!raw.trim().startsWith('{') &&
-                      !raw.trim().startsWith('['))) {
-                try {
-                  content = jsonEncode(
-                    ExtensionMetadata.fromYaml(raw).toJson(),
-                  );
-                } catch (e) {
-                  content = raw;
-                }
-              } else {
-                content = raw;
+              // Only support README.md with embedded metadata as per architecture
+              final metadata = ExtensionMetadata.fromReadme(raw);
+              if (metadata != null) {
+                content = jsonEncode(metadata.toJson());
               }
             }
 
@@ -619,17 +620,29 @@ class ExtensionManager extends ChangeNotifier
     }
   }
 
-  Future<BaseExtension?> importFromUrl(String url) async {
-    return await _importFromUrlInternal(url);
+  Future<BaseExtension?> importFromUrl(
+    String url, {
+    bool skipConfirmation = false,
+  }) async {
+    return await _importFromUrlInternal(
+      url,
+      skipConfirmation: skipConfirmation,
+    );
   }
 
-  Future<BaseExtension?> importFromZip(Uint8List zipBytes) async {
+  Future<BaseExtension?> importFromZip(
+    Uint8List zipBytes, {
+    bool skipConfirmation = false,
+  }) async {
     final content = ExtensionConverter.extractContentFromZip(zipBytes);
     if (content == null) return null;
-    return await importFromContent(content);
+    return await importFromContent(content, skipConfirmation: skipConfirmation);
   }
 
-  Future<BaseExtension?> _importFromUrlInternal(String url) async {
+  Future<BaseExtension?> _importFromUrlInternal(
+    String url, {
+    bool skipConfirmation = false,
+  }) async {
     try {
       if (url.startsWith('builtin://')) {
         final id = url.replaceFirst('builtin://', '');
@@ -682,10 +695,15 @@ class ExtensionManager extends ChangeNotifier
           bytes,
           fileName: finalUrl.split('/').last,
           repoFullName: repoFullName,
+          skipConfirmation: skipConfirmation,
         );
       } else {
         final content = utf8.decode(bytes);
-        return await importFromContent(content, repoFullName: repoFullName);
+        return await importFromContent(
+          content,
+          repoFullName: repoFullName,
+          skipConfirmation: skipConfirmation,
+        );
       }
     } catch (e) {
       debugPrint('Import from URL failed: $e');
@@ -697,10 +715,15 @@ class ExtensionManager extends ChangeNotifier
     Uint8List bytes, {
     String? fileName,
     String? repoFullName,
+    bool skipConfirmation = false,
   }) async {
     final content = ExtensionConverter.extractContentFromZip(bytes);
     if (content != null) {
-      return await importFromContent(content, repoFullName: repoFullName);
+      return await importFromContent(
+        content,
+        repoFullName: repoFullName,
+        skipConfirmation: skipConfirmation,
+      );
     }
     debugPrint('Failed to extract content from ZIP bytes');
     return null;
@@ -711,6 +734,7 @@ class ExtensionManager extends ChangeNotifier
     String? logicJs,
     Map<String, dynamic>? viewYaml,
     String? repoFullName,
+    bool skipConfirmation = false,
   }) async {
     debugPrint('Processing imported content, length: ${content.length}');
     final context = navigatorKey.currentContext;
@@ -751,19 +775,23 @@ class ExtensionManager extends ChangeNotifier
 
       if (!context.mounted) return null;
 
-      final installResult = await _showInstallationConfirmDialog(
-        context,
-        metadata,
-        jsonEncode(data),
-        oldExtension?.metadata,
-        oldContent,
-      );
+      bool isUntrustedFromDialog = false;
 
-      if (installResult == null || installResult['confirmed'] != true) {
-        return null;
+      if (!skipConfirmation) {
+        final installResult = await _showInstallationConfirmDialog(
+          context,
+          metadata,
+          jsonEncode(data),
+          oldExtension?.metadata,
+          oldContent,
+        );
+
+        if (installResult == null || installResult['confirmed'] != true) {
+          return null;
+        }
+        isUntrustedFromDialog = installResult['isUntrusted'] == true;
       }
 
-      final isUntrustedFromDialog = installResult['isUntrusted'] == true;
       final finalContent = jsonEncode(data);
 
       await _ref
@@ -1169,25 +1197,43 @@ class _InstallationDialogState extends State<_InstallationDialog> {
   @override
   Widget build(BuildContext context) {
     final isUpdate = widget.oldMetadata != null;
+    final theme = Theme.of(context);
 
     return AlertDialog(
       title: Text(isUpdate ? '更新扩展' : '安装扩展'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('是否${isUpdate ? '更新' : '安装'} "${widget.metadata.name}"?'),
-          const SizedBox(height: 16),
-          Text('版本: ${widget.metadata.version}'),
-          Text('作者: ${widget.metadata.author}'),
-          const SizedBox(height: 16),
-          CheckboxListTile(
-            value: _isUntrusted,
-            onChanged: (v) => setState(() => _isUntrusted = v ?? false),
-            title: const Text('启用受限访问模式'),
-            subtitle: const Text('限制扩展只能访问经授权的数据'),
-          ),
-        ],
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '是否${isUpdate ? '更新' : '安装'} "${widget.metadata.name}"?',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            if (widget.metadata.description.isNotEmpty) ...[
+              Text(
+                widget.metadata.description,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            _buildInfoRow(theme, '版本', widget.metadata.version),
+            _buildInfoRow(theme, '作者', widget.metadata.author),
+            if (widget.metadata.repoFullName != null)
+              _buildInfoRow(theme, '仓库', widget.metadata.repoFullName!),
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              value: _isUntrusted,
+              onChanged: (v) => setState(() => _isUntrusted = v ?? false),
+              title: const Text('启用受限访问模式'),
+              subtitle: const Text('限制扩展只能访问经授权的数据'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1202,6 +1248,33 @@ class _InstallationDialogState extends State<_InstallationDialog> {
           child: Text(isUpdate ? '更新' : '安装'),
         ),
       ],
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -393,7 +393,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get failedToLoadStore => '无法加载商店';
 
   @override
-  String get extensionPureMode => '纯净模式 (仅元数据)';
+  String get extensionPureMode => '扩展信息';
 
   @override
   String extensionStorageOccupied(String size) {
@@ -1281,7 +1281,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extDevSpecs => '扩展开发规范';
 
   @override
-  String get extDevSpecsDesc => '元数据、UI 组件库与逻辑引擎';
+  String get extDevSpecsDesc => '信息、UI 组件库与逻辑引擎';
 
   @override
   String get createRepoGuide => '扩展仓库创建指南';

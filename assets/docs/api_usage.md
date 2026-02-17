@@ -111,12 +111,13 @@ const response = await essenmelia.call('httpGet', {
 ## 2. 权限与沙箱
 
 ### 2.1 权限声明
-所有 API 调用均受权限系统保护。你必须在 `manifest.yaml` 中声明所需权限，否则调用会失败或被拦截。
+所有 API 调用均受权限系统保护。你必须在 `README.md` 中声明所需权限，否则调用会失败或被拦截。
 
-```yaml
-permissions:
-  - readEvents
-  - notifications
+```json
+"permissions": [
+  "readEvents",
+  "notifications"
+]
 ```
 
 ### 2.2 安全盾牌 (Security Shield)
