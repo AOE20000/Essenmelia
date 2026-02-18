@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 
+import '../widgets/installation_confirm_dialog.dart';
 import '../core/base_extension.dart';
 import '../core/extension_metadata.dart';
 import '../runtime/proxy_extension.dart';
@@ -16,7 +18,9 @@ import '../services/extension_store_service.dart';
 import '../utils/extension_converter.dart';
 import '../manager/extension_manager.dart';
 
-final extensionLifecycleServiceProvider = Provider<ExtensionLifecycleService>((ref) {
+final extensionLifecycleServiceProvider = Provider<ExtensionLifecycleService>((
+  ref,
+) {
   return ExtensionLifecycleService(ref);
 });
 
@@ -39,18 +43,18 @@ class ExtensionLifecycleService {
 
       if (text == null || text.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('剪贴板为空')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('剪贴板为空')));
         }
         return;
       }
 
       if (Uri.tryParse(text)?.hasAbsolutePath ?? false) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('检测到链接，正在下载...')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('检测到链接，正在下载...')));
         }
         if (context.mounted) {
           await installFromUrl(context, text);
@@ -66,9 +70,9 @@ class ExtensionLifecycleService {
     } catch (e) {
       debugPrint('Import from clipboard failed: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('剪贴板解析失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('剪贴板解析失败: $e')));
       }
     }
   }
@@ -99,21 +103,28 @@ class ExtensionLifecycleService {
         if (file.path != null) {
           try {
             String? content;
+            String? readme;
             final extName = file.extension?.toLowerCase();
             if (extName == 'zip') {
               final bytes = await File(file.path!).readAsBytes();
               content = ExtensionConverter.extractContentFromZip(bytes);
+              readme = ExtensionConverter.extractReadmeFromZip(bytes);
             } else {
               final raw = await File(file.path!).readAsString();
               final metadata = ExtensionMetadata.fromReadme(raw);
               if (metadata != null) {
                 content = jsonEncode(metadata.toJson());
+                readme = raw;
               }
             }
 
             if (content != null) {
               if (context.mounted) {
-                final ext = await _installFromContent(context, content);
+                final ext = await _installFromContent(
+                  context,
+                  content,
+                  readmeContent: readme,
+                );
                 if (ext != null) {
                   successCount++;
                 } else {
@@ -135,9 +146,9 @@ class ExtensionLifecycleService {
       if (totalCount > 1) {
         _showBatchResultDialog(context, successCount, totalCount, failedFiles);
       } else if (successCount == 1) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('扩展安装成功')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('扩展安装成功')));
       }
     }
   }
@@ -146,6 +157,7 @@ class ExtensionLifecycleService {
     BuildContext context,
     String url, {
     bool skipConfirmation = false,
+    void Function(double progress)? onProgress,
   }) async {
     try {
       var finalUrl = url;
@@ -182,7 +194,11 @@ class ExtensionLifecycleService {
       );
 
       if (!context.mounted) return null;
-      final bytes = await _downloadWithProgress(context, finalUrl);
+      final bytes = await _downloadWithProgress(
+        context,
+        finalUrl,
+        onProgress: onProgress,
+      );
       if (bytes == null || !context.mounted) return null;
 
       final isZip = finalUrl.toLowerCase().contains('.zip');
@@ -198,7 +214,7 @@ class ExtensionLifecycleService {
       } else {
         final content = utf8.decode(bytes);
         final metadata = ExtensionMetadata.fromReadme(content);
-        
+
         if (metadata != null) {
           final baseUrl = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
           return await _importFromReadmeAndNeighbors(
@@ -229,9 +245,9 @@ class ExtensionLifecycleService {
     } catch (e) {
       debugPrint('Import from URL failed: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('下载失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('下载失败: $e')));
       }
     }
     return null;
@@ -245,19 +261,21 @@ class ExtensionLifecycleService {
     bool skipConfirmation = false,
   }) async {
     final content = ExtensionConverter.extractContentFromZip(zipBytes);
+    final readme = ExtensionConverter.extractReadmeFromZip(zipBytes);
     if (content != null) {
       return await _installFromContent(
         context,
         content,
         repoFullName: repoFullName,
+        readmeContent: readme,
         skipConfirmation: skipConfirmation,
       );
     }
     debugPrint('Failed to extract content from ZIP bytes');
     if (context.mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(content: Text('ZIP 文件解析失败')),
-       );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ZIP 文件解析失败')));
     }
     return null;
   }
@@ -271,7 +289,7 @@ class ExtensionLifecycleService {
     _manager.removeAvailableUpdate(id);
 
     await _ref.read(extensionStoreServiceProvider.notifier).deleteExtension(id);
-    
+
     _manager.notifyManagerListeners();
   }
 
@@ -320,30 +338,35 @@ class ExtensionLifecycleService {
     final metadata = ExtensionMetadata.fromReadme(readmeContent);
     if (metadata == null) return null;
 
+    // Pre-load content for preview and size calculation
+    Map<String, dynamic>? view;
+    if (metadata.view != null) {
+      view = metadata.view;
+    } else {
+      final viewContent = await loadFile('view.yaml');
+      if (viewContent != null) {
+        view = ExtensionMetadata.yamlToMap(viewContent);
+      }
+    }
+
+    String? scriptContent = metadata.script;
+    scriptContent ??= await loadFile('main.js');
+
+    final Map<String, dynamic> data = metadata.toJson();
+    if (view != null) data['view'] = view;
+    if (scriptContent != null) data['script'] = scriptContent;
+
+    final finalContent = jsonEncode(data);
+
+    if (!context.mounted) return null;
+
     return await _processInstall(
       context,
       metadata,
-      () async {
-        Map<String, dynamic>? view;
-        if (metadata.view != null) {
-          view = metadata.view;
-        } else {
-          final viewContent = await loadFile('view.yaml');
-          if (viewContent != null) {
-            view = ExtensionMetadata.yamlToMap(viewContent);
-          }
-        }
-
-        String? scriptContent = metadata.script;
-        scriptContent ??= await loadFile('main.js');
-
-        final Map<String, dynamic> data = metadata.toJson();
-        if (view != null) data['view'] = view;
-        if (scriptContent != null) data['script'] = scriptContent;
-
-        return jsonEncode(data);
-      },
+      () async => finalContent,
       repoFullName: repoFullName,
+      previewContent: finalContent,
+      readmeContent: readmeContent,
       skipConfirmation: skipConfirmation,
     );
   }
@@ -352,6 +375,7 @@ class ExtensionLifecycleService {
     BuildContext context,
     String content, {
     String? repoFullName,
+    String? readmeContent,
     bool skipConfirmation = false,
   }) async {
     if (content.length > _maxSafeSize) {
@@ -368,12 +392,14 @@ class ExtensionLifecycleService {
     }
 
     Map<String, dynamic> data;
+    String? effectiveReadme = readmeContent;
     try {
       data = jsonDecode(content);
     } catch (_) {
       final metadata = ExtensionMetadata.fromReadme(content);
       if (metadata != null) {
         data = metadata.toJson();
+        effectiveReadme ??= content;
       } else {
         if (context.mounted) {
           await _showErrorHandlingDialog(context, '无法解析扩展内容');
@@ -387,13 +413,18 @@ class ExtensionLifecycleService {
     }
 
     final metadata = ExtensionMetadata.fromJson(data);
+    // Re-encode to ensure consistent formatting if needed, or just use content
+    // If we modified data (added repo_full_name), we must re-encode
+    final finalContent = jsonEncode(data);
 
     if (context.mounted) {
       return await _processInstall(
         context,
         metadata,
-        () async => jsonEncode(data),
+        () async => finalContent,
         repoFullName: repoFullName,
+        previewContent: finalContent,
+        readmeContent: effectiveReadme,
         skipConfirmation: skipConfirmation,
       );
     }
@@ -405,6 +436,8 @@ class ExtensionLifecycleService {
     ExtensionMetadata metadata,
     Future<String> Function() contentLoader, {
     String? repoFullName,
+    String? previewContent,
+    String? readmeContent,
     bool skipConfirmation = false,
   }) async {
     try {
@@ -418,16 +451,22 @@ class ExtensionLifecycleService {
 
       bool isUntrustedFromDialog = false;
 
+      // Ensure content is available for preview if possible
+      String displayContent = previewContent ?? '';
+      if (displayContent.isEmpty && skipConfirmation == false) {
+        // If we don't have preview content, we might want to load it now
+        // But contentLoader might be expensive or side-effect heavy?
+        // For now, we rely on caller to provide previewContent.
+      }
+
       if (!skipConfirmation) {
-        // We'll need to move the dialog logic here or create a UI helper
-        // For simplicity, I'm assuming we can invoke a dialog here
-        // Ideally this should be decoupled, but for "Service" pattern with UI context it works
-        final installResult = await _showInstallationConfirmDialog(
+        final installResult = await InstallationConfirmDialog.show(
           context,
-          metadata,
-          null,
-          oldExtension?.metadata,
-          oldContent,
+          newMeta: metadata,
+          newContent: displayContent,
+          oldMeta: oldExtension?.metadata,
+          oldContent: oldContent,
+          readme: readmeContent,
         );
 
         if (installResult == null || installResult['confirmed'] != true) {
@@ -472,7 +511,9 @@ class ExtensionLifecycleService {
 
       _manager.notifyManagerListeners();
 
-      return _manager.extensions.firstWhere((e) => e.metadata.id == metadata.id);
+      return _manager.extensions.firstWhere(
+        (e) => e.metadata.id == metadata.id,
+      );
     } catch (e) {
       debugPrint('Installation error: $e');
       if (context.mounted) {
@@ -533,11 +574,12 @@ class ExtensionLifecycleService {
   }
 
   // --- UI Helpers (Private) ---
-  
+
   Future<Uint8List?> _downloadWithProgress(
     BuildContext context,
-    String url,
-  ) async {
+    String url, {
+    void Function(double progress)? onProgress,
+  }) async {
     final client = http.Client();
     final request = http.Request('GET', Uri.parse(url));
     request.headers['User-Agent'] = 'Essenmelia-App';
@@ -559,99 +601,101 @@ class ExtensionLifecycleService {
       }
 
       BuildContext? dialogContext;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) {
-          dialogContext = ctx;
-          final theme = Theme.of(ctx);
-          return Dialog(
-            backgroundColor: theme.colorScheme.surfaceContainerHigh,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      CircularProgressIndicator(
+
+      if (onProgress == null) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            dialogContext = ctx;
+            final theme = Theme.of(ctx);
+            return PopScope(
+              canPop: false,
+              child: AlertDialog(
+                backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                title: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
                         color: theme.colorScheme.primary,
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Column(
+                    ),
+                    const SizedBox(width: 16),
+                    Text('正在下载扩展', style: theme.textTheme.titleLarge),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ValueListenableBuilder<double>(
+                      valueListenable: progressNotifier,
+                      builder: (context, progress, child) {
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              '正在下载...',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                            LinearProgressIndicator(
+                              value: contentLength != null ? progress : null,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                contentLength != null
+                                    ? '${(progress * 100).toStringAsFixed(0)}%'
+                                    : '正在接收数据...',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontFeatures: [
+                                    const ui.FontFeature.tabularFigures(),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            ValueListenableBuilder<double>(
-                              valueListenable: progressNotifier,
-                              builder: (context, progress, child) {
-                                final percent = contentLength != null
-                                    ? (progress * 100).toInt()
-                                    : 0;
-                                return Text(
-                                  contentLength != null
-                                      ? '$percent%'
-                                      : '请稍候...',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                );
-                              },
-                            ),
                           ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ValueListenableBuilder<double>(
-                    valueListenable: progressNotifier,
-                    builder: (context, progress, child) {
-                      if (contentLength == null) return const SizedBox.shrink();
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
-                          minHeight: 4,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      );
+            );
+          },
+        );
+      }
 
       try {
         await for (final chunk in response.stream) {
           bytes.addAll(chunk);
+          double progress = 0.0;
           if (contentLength != null && contentLength > 0) {
-            progressNotifier.value = bytes.length / contentLength;
+            progress = bytes.length / contentLength;
+            progressNotifier.value = progress;
+          }
+
+          if (onProgress != null) {
+            onProgress(progress);
           }
         }
-        
+
         // Small delay for UX if too fast
         if (bytes.length < 1024 * 100) {
           await Future.delayed(const Duration(milliseconds: 500));
         }
       } finally {
-        if (dialogContext != null && dialogContext!.mounted) {
-          Navigator.of(dialogContext!).pop();
-        } else if (context.mounted) {
-          Navigator.of(context, rootNavigator: true).pop();
+        if (onProgress == null) {
+          if (dialogContext != null && dialogContext!.mounted) {
+            Navigator.of(dialogContext!).pop();
+          } else if (context.mounted) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
         }
         client.close();
         progressNotifier.dispose();
@@ -670,12 +714,18 @@ class ExtensionLifecycleService {
     String title,
     String content,
   ) {
+    final theme = Theme.of(context);
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, size: 32, color: Colors.orange),
-        title: Text(title),
-        content: Text(content),
+        icon: Icon(
+          Icons.warning_rounded,
+          size: 32,
+          color: theme.colorScheme.error,
+        ),
+        title: Text(title, textAlign: TextAlign.center),
+        content: Text(content, textAlign: TextAlign.center),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -683,7 +733,57 @@ class ExtensionLifecycleService {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
             child: const Text('继续'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showBatchResultDialog(
+    BuildContext context,
+    int success,
+    int total,
+    List<String> failures,
+  ) {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('批量安装结果'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('成功: $success / $total'),
+            if (failures.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text('失败列表:'),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 100,
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: failures.length,
+                  itemBuilder: (context, index) {
+                    return Text(
+                      '• ${failures[index]}',
+                      style: const TextStyle(color: Colors.red),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('确定'),
           ),
         ],
       ),
@@ -694,185 +794,12 @@ class ExtensionLifecycleService {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.error_outline_rounded, size: 32, color: Colors.red),
-        title: const Text('错误'),
+        title: const Text('操作失败'),
         content: Text(error),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  void _showBatchResultDialog(
-    BuildContext context,
-    int successCount,
-    int totalCount,
-    List<String> failedFiles,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('批量导入完成'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('成功导入: $successCount / $totalCount'),
-            if (failedFiles.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              const Text(
-                '以下文件导入失败或已取消:',
-                style: TextStyle(color: Colors.red, fontSize: 12),
-              ),
-              const SizedBox(height: 4),
-              ...failedFiles
-                  .take(5)
-                  .map(
-                    (f) => Text(
-                      '• $f',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
-              if (failedFiles.length > 5)
-                Text(
-                  '...等 ${failedFiles.length} 个文件',
-                  style: const TextStyle(fontSize: 11),
-                ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('好的'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<Map<String, dynamic>?> _showInstallationConfirmDialog(
-    BuildContext context,
-    ExtensionMetadata metadata,
-    Map<String, dynamic>? newContent,
-    ExtensionMetadata? oldMetadata,
-    String? oldContent,
-  ) {
-    final theme = Theme.of(context);
-    final isUpdate = oldMetadata != null;
-
-    return showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          isUpdate ? Icons.system_update_alt_rounded : Icons.extension_rounded,
-          size: 32,
-          color: theme.colorScheme.primary,
-        ),
-        title: Text(
-          isUpdate ? '更新扩展' : '安装扩展',
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.label_outline, 
-                        size: 16, color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          metadata.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, 
-                        size: 16, color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 8),
-                      if (isUpdate)
-                         Expanded(
-                           child: Row(
-                             children: [
-                               Text(
-                                 'v${oldMetadata.version}',
-                                 style: TextStyle(
-                                   decoration: TextDecoration.lineThrough,
-                                   color: theme.colorScheme.onSurfaceVariant,
-                                 ),
-                               ),
-                               const Padding(
-                                 padding: EdgeInsets.symmetric(horizontal: 8),
-                                 child: Icon(Icons.arrow_forward, size: 14),
-                               ),
-                               Text(
-                                 'v${metadata.version}',
-                                 style: TextStyle(
-                                   color: theme.colorScheme.primary,
-                                   fontWeight: FontWeight.bold,
-                                 ),
-                               ),
-                             ],
-                           ),
-                         )
-                      else
-                        Text('v${metadata.version}'),
-                    ],
-                  ),
-                  if (metadata.author.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.person_outline, 
-                          size: 16, color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Text(metadata.author),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '请确保您信任此扩展的来源。',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, {'confirmed': false}),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, {'confirmed': true, 'isUntrusted': false}),
-            child: Text(isUpdate ? '更新' : '安装'),
+            child: const Text('关闭'),
           ),
         ],
       ),

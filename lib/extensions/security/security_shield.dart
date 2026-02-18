@@ -5,7 +5,7 @@ import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
 import '../core/globals.dart';
 import 'extension_auth_notifier.dart';
-import 'permission_dialog.dart';
+import '../widgets/permission_management_dialog.dart';
 import 'security_providers.dart';
 
 abstract class SecurityShieldDelegate {

@@ -7,9 +7,7 @@ import '../extensions/core/extension_metadata.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../extensions/security/extension_auth_notifier.dart';
 import '../extensions/runtime/api/extension_api_registry.dart';
-import '../widgets/extension_action_sheet.dart';
-import '../extensions/models/repository_extension.dart';
-import '../extensions/services/extension_repository_service.dart';
+import '../extensions/services/extension_lifecycle_service.dart';
 
 class ExtensionDetailsScreen extends ConsumerStatefulWidget {
   final BaseExtension extension;
@@ -649,56 +647,13 @@ class _ExtensionDetailsScreenState
     WidgetRef ref,
     ExtensionMetadata metadata,
   ) async {
-    final repoManifest = ref.read(extensionRepositoryManifestProvider).value;
-    final repoExt = repoManifest?.firstWhere(
-      (e) => e.id == metadata.id,
-      orElse: () => RepositoryExtension(
-        id: metadata.id,
-        name: metadata.name,
-        description: metadata.description,
-        author: metadata.author,
-        version: metadata.version,
-        iconUrl: null,
-        downloadUrl:
-            'https://github.com/${metadata.repoFullName}/archive/refs/heads/main.zip',
-        repoFullName: metadata.repoFullName,
-        tags: metadata.tags,
-      ),
-    );
+    if (metadata.repoFullName == null) return;
 
-    if (repoExt == null && metadata.repoFullName == null) return;
+    final url =
+        'https://github.com/${metadata.repoFullName}/archive/refs/heads/main.zip';
 
-    // Use constructed repoExt if not found in manifest but we have repoFullName
-    final targetExt =
-        repoExt ??
-        RepositoryExtension(
-          id: metadata.id,
-          name: metadata.name,
-          description: metadata.description,
-          author: metadata.author,
-          version: metadata.version,
-          iconUrl: null,
-          downloadUrl:
-              'https://github.com/${metadata.repoFullName}/archive/refs/heads/main.zip',
-          repoFullName: metadata.repoFullName,
-          tags: metadata.tags,
-        );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => ExtensionActionSheet(
-        installedExtension: widget.extension,
-        repositoryExtension: targetExt,
-        actionType: ExtensionActionType.update,
-        onActionCompleted: () {
-          if (context.mounted) {
-            Navigator.of(context).pop(); // Close details screen
-          }
-        },
-      ),
-    );
+    final lifecycleService = ref.read(extensionLifecycleServiceProvider);
+    await lifecycleService.installFromUrl(context, url);
   }
 
   void _showExportMenu(ThemeData theme, ExtensionMetadata metadata) {
@@ -815,24 +770,43 @@ class _ExtensionDetailsScreenState
     );
   }
 
-  void _confirmUninstall(
+  Future<void> _confirmUninstall(
     ThemeData theme,
     ExtensionMetadata metadata,
     ExtensionAuthNotifier authNotifier,
-  ) {
-    showModalBottomSheet(
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => ExtensionActionSheet(
-        installedExtension: widget.extension,
-        actionType: ExtensionActionType.uninstall,
-        onActionCompleted: () {
-          if (context.mounted) {
-            Navigator.of(context).pop(); // Close details screen
-          }
-        },
+      builder: (context) => AlertDialog(
+        title: Text(l10n.uninstall),
+        content: Text(l10n.uninstallConfirmation(metadata.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: Text(l10n.uninstall),
+          ),
+        ],
       ),
     );
+
+    if (confirmed == true && mounted) {
+      final lifecycleService = ref.read(extensionLifecycleServiceProvider);
+      await lifecycleService.uninstall(metadata.id);
+      if (mounted) {
+        Navigator.of(context).pop(); // Close details screen
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已卸载 ${metadata.name}')));
+      }
+    }
   }
 }

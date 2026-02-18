@@ -54,6 +54,19 @@ class ExtensionConverter {
     }
   }
 
+  /// Extract README.md content from ZIP bytes
+  static String? extractReadmeFromZip(Uint8List zipBytes) {
+    try {
+      final archive = ZipDecoder().decodeBytes(zipBytes);
+      final readmeFile = archive.firstWhere(
+        (f) => f.name.endsWith('README.md'),
+      );
+      return utf8.decode(readmeFile.content as List<int>);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Helper method: resolve separate view, logic, and script files
   static String _resolveSeparateFiles(
     Map<String, dynamic> manifest,

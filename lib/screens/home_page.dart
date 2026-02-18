@@ -16,7 +16,7 @@ import '../providers/ui_state_provider.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../extensions/security/extension_auth_notifier.dart';
 import '../extensions/core/base_extension.dart';
-import '../widgets/extension_action_sheet.dart';
+import '../extensions/services/extension_lifecycle_service.dart';
 import '../screens/extension_details_screen.dart';
 import '../screens/extension_logs_page.dart';
 import '../widgets/universal_image.dart';
@@ -142,21 +142,49 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _confirmUninstall(BuildContext context, dynamic ext) {
+  Future<void> _confirmUninstall(BuildContext context, dynamic ext) async {
     if (ext is! BaseExtension) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     
-    showModalBottomSheet(
+    final confirmed = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => ExtensionActionSheet(
-        installedExtension: ext,
-        actionType: ExtensionActionType.uninstall,
-        onActionCompleted: () {
-          // Additional logic if needed
-        },
+      builder: (context) => AlertDialog(
+        title: Text(l10n.uninstall),
+        content: Text(
+          l10n.uninstallConfirmation(ext.metadata.name),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: Text(l10n.uninstall),
+          ),
+        ],
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      final lifecycleService = ref.read(extensionLifecycleServiceProvider);
+      await lifecycleService.uninstall(ext.metadata.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '已卸载 ${ext.metadata.name}',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override

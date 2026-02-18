@@ -41,30 +41,16 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 - **交互绑定**：任意组件均可通过 `onTap` 属性绑定 JS 函数。
 - **代码参考**：[dynamic_engine.dart](Flutter-New/lib/extensions/runtime/view/dynamic_engine.dart)
 
-### 2.3 状态管理层：`Manager` (ExtensionManager)
-`ExtensionManager` 是扩展运行时的状态中枢，负责维护已加载扩展的注册表与活跃状态。
+### 2.3 管理层：`Manager` (ExtensionManager)
+`ExtensionManager` 是整个系统的中枢，负责扩展的生命周期与安全性。
 
 - **核心职责**：
-  - **扩展注册表**：维护内存中所有已安装扩展的实例 (`installedExtensions`)。
-  - **运行时状态**：管理扩展的激活/禁用状态 (`activeExtensions`)。
-  - **事件分发**：作为事件总线，向监听器广播扩展状态变更（安装、卸载、更新可用）。
-  - **依赖解耦**：不再直接处理安装/卸载逻辑，而是通过监听存储变更来更新状态。
+  - **自动发现**：自动扫描 `assets/extensions/` 目录下的内置扩展。
+  - **安装与更新**：支持 ZIP 安装包与基于GitHub README的检测更新
+  - **权限网关**：集成 `SecurityShield`，在 API 调用前进行权限检查。
 - **代码参考**：[extension_manager.dart](Flutter-New/lib/extensions/manager/extension_manager.dart)
 
-### 2.4 生命周期层：`Service` (ExtensionLifecycleService)
-`ExtensionLifecycleService` 负责扩展的物理生命周期管理，从安装源到文件系统，再到更新检查。
-
-- **核心职责**：
-  - **多源安装**：
-    - **剪贴板导入**：识别 URL 或 JSON 内容。
-    - **文件导入**：支持 `.zip` 归档或 `.json` 元数据文件。
-    - **URL 下载**：支持 GitHub 仓库直连下载（自动识别 `main.zip` 或 `raw` 内容）。
-  - **安全校验**：在安装前校验文件大小、解析元数据，并弹窗确认信任级别。
-  - **版本更新**：通过 GitHub API 对比本地与远程版本，提示更新。
-  - **卸载清理**：协调 `ExtensionStoreService` 删除文件，并通知 `ExtensionManager` 移除运行时状态。
-- **代码参考**：[extension_lifecycle_service.dart](Flutter-New/lib/extensions/services/extension_lifecycle_service.dart)
-
-### 2.5 安全层：`Security` (SecurityShield)
+### 2.4 安全层：`Security` (SecurityShield)
 `SecurityShield` 负责拦截非信任扩展的敏感操作。
 
 - **拦截策略**：
