@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-  "extensionError": "Extension Error",
   "uninstallExtension": "Uninstall Extension",
   "@uninstallExtension": {
     "description": "Title for uninstall confirmation dialog"
@@ -1490,9 +1489,17 @@
   "@systemFont": {
     "description": "Label for system font option"
   },
-  "builtInFont": "Built-in",
+  "builtInFont": "Google Fonts (Roboto)",
   "@builtInFont": {
-    "description": "Label for built-in font option"
+    "description": "Label for google fonts option"
+  },
+  "fontDownloadTitle": "Download Font?",
+  "@fontDownloadTitle": {
+    "description": "Title for font download confirmation"
+  },
+  "fontDownloadContent": "This will use Google Fonts which requires an internet connection to download font assets. Continue?",
+  "@fontDownloadContent": {
+    "description": "Content for font download confirmation"
   },
   "lastSync": "Last Sync: {time}",
   "@lastSync": {

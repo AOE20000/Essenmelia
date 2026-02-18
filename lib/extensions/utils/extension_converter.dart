@@ -109,50 +109,18 @@ class ExtensionConverter {
       }
     }
 
-    // 2. Resolve Logic (supports .yaml, .yml)
-    final logicVal = manifest['logic'];
-    if (logicVal is String) {
-      final logicPath = getFullPath(logicVal);
-      try {
-        final logicFile = archive.firstWhere(
-          (f) => f.name == logicPath || f.name.endsWith(logicPath),
-        );
-        final content = utf8.decode(logicFile.content as List<int>);
-        if (logicPath.endsWith('.yaml') || logicPath.endsWith('.yml')) {
-          manifest['logic'] = ExtensionMetadata.yamlToMap(content);
-        }
-      } catch (_) {}
-    } else if (logicVal == null) {
-      // Auto-discover logic.yaml
-      final candidates = ['logic.yaml', 'logic.yml'];
-      for (final name in candidates) {
-        try {
-          final fullPath = getFullPath(name);
-          final logicFile = archive.firstWhere(
-            (f) => f.name == fullPath || f.name.endsWith(fullPath),
-          );
-          final content = utf8.decode(logicFile.content as List<int>);
-          manifest['logic'] = ExtensionMetadata.yamlToMap(content);
-          break;
-        } catch (_) {}
-      }
-    }
-
-    // 3. Resolve Script (supports .js)
+    // 2. Resolve Script (supports .js)
     final scriptVal = manifest['script'];
     if (scriptVal == null) {
-      // If no script specified, try finding main.js or index.js
-      final candidates = ['main.js', 'index.js', 'script.js'];
-      for (final name in candidates) {
-        try {
-          final fullPath = getFullPath(name);
-          final scriptFile = archive.firstWhere(
-            (f) => f.name == fullPath || f.name.endsWith(fullPath),
-          );
-          manifest['script'] = utf8.decode(scriptFile.content as List<int>);
-          break;
-        } catch (_) {}
-      }
+      // If no script specified, try finding main.js
+      final name = 'main.js';
+      try {
+        final fullPath = getFullPath(name);
+        final scriptFile = archive.firstWhere(
+          (f) => f.name == fullPath || f.name.endsWith(fullPath),
+        );
+        manifest['script'] = utf8.decode(scriptFile.content as List<int>);
+      } catch (_) {}
     } else if (scriptVal is String && scriptVal.endsWith('.js')) {
       final scriptPath = getFullPath(scriptVal);
       try {
@@ -173,19 +141,12 @@ class ExtensionConverter {
     // 1. Prepare manifest data
     final manifest = metadata.toJson();
 
-    // If view/logic are complex Maps, separate them into YAML files
+    // If view is complex Map, separate into YAML file
     if (manifest['view'] is Map) {
       final viewYaml = _mapToYaml(manifest['view'] as Map<String, dynamic>);
       final viewBytes = utf8.encode(viewYaml);
       archive.addFile(ArchiveFile('view.yaml', viewBytes.length, viewBytes));
       manifest['view'] = 'view.yaml';
-    }
-
-    if (manifest['logic'] is Map) {
-      final logicYaml = _mapToYaml(manifest['logic'] as Map<String, dynamic>);
-      final logicBytes = utf8.encode(logicYaml);
-      archive.addFile(ArchiveFile('logic.yaml', logicBytes.length, logicBytes));
-      manifest['logic'] = 'logic.yaml';
     }
 
     // Handle script

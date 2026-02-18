@@ -98,12 +98,6 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
-  /// Error message when an extension fails to run
-  ///
-  /// In en, this message translates to:
-  /// **'Extension runtime error'**
-  String get extensionError;
-
   /// Title for uninstall confirmation dialog
   ///
   /// In en, this message translates to:
@@ -2036,11 +2030,23 @@ abstract class AppLocalizations {
   /// **'System'**
   String get systemFont;
 
-  /// Label for built-in font option
+  /// Label for google fonts option
   ///
   /// In en, this message translates to:
-  /// **'Built-in'**
+  /// **'Google Fonts (Roboto)'**
   String get builtInFont;
+
+  /// Title for font download confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Download Font?'**
+  String get fontDownloadTitle;
+
+  /// Content for font download confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'This will use Google Fonts which requires an internet connection to download font assets. Continue?'**
+  String get fontDownloadContent;
 
   /// Label for last sync time
   ///
@@ -2845,6 +2851,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All System Permissions'**
   String get allSystemPermissions;
+
+  /// Error message when an extension fails to run
+  ///
+  /// In en, this message translates to:
+  /// **'Extension runtime error'**
+  String get extensionError;
 
   /// Message shown when an extension lacks a view definition
   ///

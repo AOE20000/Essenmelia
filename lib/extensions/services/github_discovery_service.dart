@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/repository_extension.dart';
-import '../manager/extension_manager.dart';
 
 class GitHubDiscoveryService {
   static const String searchTopic = 'essenmelia-extend';
@@ -61,28 +60,6 @@ class GitHubDiscoveryService {
 
       String version = 'unknown';
       String author = item['owner']['login'];
-
-      try {
-        // 使用 raw.githubusercontent.com 避免 API 速率限制
-        final rawReadmeUrl =
-            'https://raw.githubusercontent.com/$fullName/$defaultBranch/README.md';
-        final resp = await http
-            .get(Uri.parse(rawReadmeUrl))
-            .timeout(const Duration(seconds: 5));
-        if (resp.statusCode == 200) {
-          final meta = ExtensionManager.parseReadmeMetadata(resp.body);
-          if (meta != null) {
-            if (meta['version'] != null) {
-              version = meta['version'];
-            }
-            if (meta['author'] != null) {
-              author = meta['author'];
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Failed to fetch/parse README for $fullName: $e');
-      }
 
       // 步骤 1: 立即创建基础扩展对象 (基于仓库名称和描述)
       return RepositoryExtension(

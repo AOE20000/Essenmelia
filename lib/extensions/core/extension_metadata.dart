@@ -14,7 +14,6 @@ class ExtensionMetadata {
   final IconData icon;
   final List<ExtensionPermission> requiredPermissions;
   final Map<String, dynamic>? view;
-  final Map<String, dynamic>? logic;
   final String? script;
   final List<String> tags;
 
@@ -28,7 +27,6 @@ class ExtensionMetadata {
     this.repoFullName,
     this.requiredPermissions = const [],
     this.view,
-    this.logic,
     this.script,
     this.tags = const [],
   });
@@ -45,7 +43,6 @@ class ExtensionMetadata {
       'icon_font': icon.fontFamily,
       'permissions': requiredPermissions.map((e) => e.name).toList(),
       'view': view,
-      'logic': logic,
       'script': script,
       'tags': tags,
     };
@@ -64,7 +61,6 @@ class ExtensionMetadata {
         fontFamily: json['icon_font'] ?? 'MaterialIcons',
       ),
       view: json['view'] is Map ? _convertYamlNode(json['view']) : null,
-      logic: json['logic'] is Map ? _convertYamlNode(json['logic']) : null,
       script: json['script'] as String?,
       tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
       requiredPermissions:

@@ -218,9 +218,31 @@ class SettingsSheet extends ConsumerWidget {
                           child: Text(l10n.systemFont),
                         ),
                         MenuItemButton(
-                          onPressed: () => ref
-                              .read(displaySettingsProvider.notifier)
-                              .setUseSystemFont(false),
+                          onPressed: () async {
+                            final shouldDownload = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text(l10n.fontDownloadTitle),
+                                content: Text(l10n.fontDownloadContent),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: Text(l10n.cancel),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: Text(l10n.confirm),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (shouldDownload == true) {
+                              ref
+                                  .read(displaySettingsProvider.notifier)
+                                  .setUseSystemFont(false);
+                            }
+                          },
                           child: Text(l10n.builtInFont),
                         ),
                       ],

@@ -5,8 +5,8 @@ import '../extensions/core/extension_metadata.dart';
 import '../extensions/core/base_extension.dart';
 import '../extensions/core/extension_permission.dart';
 import '../extensions/models/repository_extension.dart';
-import '../extensions/manager/extension_manager.dart';
 import '../extensions/services/extension_repository_service.dart';
+import '../extensions/services/extension_lifecycle_service.dart';
 import '../l10n/app_localizations.dart';
 import 'universal_image.dart';
 
@@ -41,8 +41,12 @@ class ExtensionActionSheet extends ConsumerWidget {
     if (repoFullName != null) {
       final readmeAsync = ref.watch(extensionReadmeProvider(repoFullName));
       if (readmeAsync.hasValue && readmeAsync.value != null) {
-        final map = ExtensionManager.parseReadmeMetadata(readmeAsync.value!);
-        if (map != null) {
+        final metadata = ExtensionMetadata.fromReadme(readmeAsync.value!);
+        if (metadata != null) {
+          // Convert to map for modification if needed, or just use metadata object
+          // For now, let's stick to the map logic to handle missing IDs
+          final map = metadata.toJson();
+
           // Ensure critical fields are present
           if (map['id'] == null && repositoryExtension != null) {
             map['id'] = repositoryExtension!.id;
@@ -93,20 +97,23 @@ class ExtensionActionSheet extends ConsumerWidget {
         repositoryExtension?.tags ??
         [];
 
+    final String? newVersion =
+        repositoryExtension?.version ?? readmeMetadata?.version;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: size.height * 0.85,
         minHeight: size.height * 0.4,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.surfaceContainerLow,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Container(
             width: 32,
             height: 4,
@@ -115,32 +122,33 @@ class ExtensionActionSheet extends ConsumerWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: iconUrl != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                           child: UniversalImage(imageUrl: iconUrl),
                         )
                       : Icon(
-                          iconData ?? Icons.extension,
-                          size: 32,
+                          iconData ?? Icons.extension_rounded,
+                          size: 40,
                           color: theme.colorScheme.primary,
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,15 +157,76 @@ class ExtensionActionSheet extends ConsumerWidget {
                         name,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'v$version • $author',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 8),
+                      if (actionType == ExtensionActionType.update &&
+                          newVersion != null &&
+                          version != newVersion)
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'v$version',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.tertiaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'v$newVersion',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onTertiaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'v$version • $author',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -246,24 +315,50 @@ class ExtensionActionSheet extends ConsumerWidget {
           // Action Button
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _handleAction(context, ref),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: actionType == ExtensionActionType.uninstall
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.primary,
-                    foregroundColor: actionType == ExtensionActionType.uninstall
-                        ? theme.colorScheme.onError
-                        : theme.colorScheme.onPrimary,
-                  ),
-                  icon: Icon(_getActionIcon()),
-                  label: Text(_getActionLabel(context)),
-                ),
-              ),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: actionType == ExtensionActionType.uninstall
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: BorderSide(
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                            child: Text(l10n.cancel),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () => _handleAction(context, ref),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: theme.colorScheme.error,
+                              foregroundColor: theme.colorScheme.onError,
+                            ),
+                            icon: const Icon(Icons.delete_forever_rounded),
+                            label: Text(l10n.uninstall),
+                          ),
+                        ),
+                      ],
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => _handleAction(context, ref),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                        ),
+                        icon: Icon(_getActionIcon()),
+                        label: Text(_getActionLabel(context)),
+                      ),
+                    ),
             ),
           ),
         ],
@@ -302,13 +397,6 @@ class ExtensionActionSheet extends ConsumerWidget {
         if (content == null || content.isEmpty) {
           return const SizedBox.shrink();
         }
-
-        // Trigger update logic
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(extensionManagerProvider)
-              .processReadmeUpdate(content, repoFullName);
-        });
 
         // Clean metadata block
         final cleanReadme = content
@@ -364,7 +452,7 @@ class ExtensionActionSheet extends ConsumerWidget {
   }
 
   Future<void> _handleAction(BuildContext context, WidgetRef ref) async {
-    final manager = ref.read(extensionManagerProvider);
+    final lifecycleService = ref.read(extensionLifecycleServiceProvider);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -372,41 +460,47 @@ class ExtensionActionSheet extends ConsumerWidget {
       switch (actionType) {
         case ExtensionActionType.install:
           if (repositoryExtension != null) {
-            navigator.pop(); // Close sheet first
             messenger.showSnackBar(
               const SnackBar(content: Text('Starting install...')),
             );
-            await manager.importFromUrl(
+            await lifecycleService.installFromUrl(
+              context,
               repositoryExtension!.downloadUrl,
               skipConfirmation: true,
             );
+            if (context.mounted) navigator.pop();
           }
           break;
         case ExtensionActionType.update:
           if (installedExtension != null &&
               installedExtension!.metadata.repoFullName != null) {
-            navigator.pop();
             final url =
                 'https://github.com/${installedExtension!.metadata.repoFullName}/archive/refs/heads/main.zip';
             messenger.showSnackBar(
               const SnackBar(content: Text('Starting update...')),
             );
-            await manager.importFromUrl(url, skipConfirmation: true);
+            await lifecycleService.installFromUrl(
+              context,
+              url,
+              skipConfirmation: true,
+            );
+            if (context.mounted) navigator.pop();
           } else if (repositoryExtension != null) {
-            navigator.pop();
             messenger.showSnackBar(
               const SnackBar(content: Text('Starting update...')),
             );
-            await manager.importFromUrl(
+            await lifecycleService.installFromUrl(
+              context,
               repositoryExtension!.downloadUrl,
               skipConfirmation: true,
             );
+            if (context.mounted) navigator.pop();
           }
           break;
         case ExtensionActionType.uninstall:
           if (installedExtension != null) {
             navigator.pop();
-            await manager.removeExtension(installedExtension!.metadata.id);
+            await lifecycleService.uninstall(installedExtension!.metadata.id);
             messenger.showSnackBar(
               SnackBar(
                 content: Text(
@@ -423,7 +517,9 @@ class ExtensionActionSheet extends ConsumerWidget {
       }
       onActionCompleted?.call();
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Action failed: $e')));
+      if (context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Action failed: $e')));
+      }
     }
   }
 }

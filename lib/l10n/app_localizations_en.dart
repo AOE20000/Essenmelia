@@ -9,9 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get extensionError => 'Extension runtime error';
-
-  @override
   String get uninstallExtension => 'Uninstall Extension';
 
   @override
@@ -1088,7 +1085,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemFont => 'System';
 
   @override
-  String get builtInFont => 'Built-in';
+  String get builtInFont => 'Google Fonts (Roboto)';
+
+  @override
+  String get fontDownloadTitle => 'Download Font?';
+
+  @override
+  String get fontDownloadContent =>
+      'This will use Google Fonts which requires an internet connection to download font assets. Continue?';
 
   @override
   String lastSync(String time) {
@@ -1522,6 +1526,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allSystemPermissions => 'All System Permissions';
+
+  @override
+  String get extensionError => 'Extension runtime error';
 
   @override
   String get extensionNoUI => 'This extension has no UI interface';

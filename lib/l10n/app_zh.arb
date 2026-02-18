@@ -1,6 +1,5 @@
 {
   "@@locale": "zh",
-  "extensionError": "扩展错误",
   "uninstallExtension": "卸载扩展",
   "uninstallConfirmation": "确定要卸载“{name}”吗？",
   "@uninstallConfirmation": {
@@ -645,7 +644,9 @@
   "getStarted": "开始使用",
   "font": "字体",
   "systemFont": "系统默认",
-  "builtInFont": "内置字体",
+  "builtInFont": "Google Fonts (Roboto)",
+  "fontDownloadTitle": "下载字体？",
+  "fontDownloadContent": "这将使用 Google Fonts，需要连接互联网下载字体资源。是否继续？",
   "dataMaintenance": "数据维护",
   "dangerZone": "危险区域",
 

@@ -61,7 +61,7 @@ Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使�
 | `permissions`| List | 申请的系统权限列表 | `["readEvents", "network"]` |
 | `view` | String | 可选。自定义视图文件路径，默认为 `view.yaml` | `ui/main.yaml` |
 | `script` | String | 可选。自定义 JS 脚本路径，默认为 `main.js` | `src/index.js` |
-
+```
 ### 2.2 权限系统 (Dynamic Permissions)
 
 Essenmelia 采用**动态权限绑定机制**。开发者必须在 `README.md` 中声明权限。

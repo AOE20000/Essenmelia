@@ -9,9 +9,6 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get extensionError => '扩展脚本运行错误';
-
-  @override
   String get uninstallExtension => '卸载扩展';
 
   @override
@@ -1055,7 +1052,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get systemFont => '系统默认';
 
   @override
-  String get builtInFont => '内置字体';
+  String get builtInFont => 'Google Fonts (Roboto)';
+
+  @override
+  String get fontDownloadTitle => '下载字体？';
+
+  @override
+  String get fontDownloadContent => '这将使用 Google Fonts，需要连接互联网下载字体资源。是否继续？';
 
   @override
   String lastSync(String time) {
@@ -1477,6 +1480,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get allSystemPermissions => '所有系统权限';
+
+  @override
+  String get extensionError => '扩展脚本运行错误';
 
   @override
   String get extensionNoUI => '此扩展未定义界面。';

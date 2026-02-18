@@ -44,8 +44,6 @@ Essenmelia通过GitHub Topic搜索和安装扩展。
     "writeCalendar"
   ]
 } -->
-```
-
 ---
 
 ## 部署与分发
