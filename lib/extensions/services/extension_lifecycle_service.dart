@@ -157,7 +157,8 @@ class ExtensionLifecycleService {
     BuildContext context,
     String url, {
     bool skipConfirmation = false,
-    void Function(double progress)? onProgress,
+    bool? isUntrusted,
+    void Function(double progress, String message)? onProgress,
   }) async {
     try {
       var finalUrl = url;
@@ -193,14 +194,20 @@ class ExtensionLifecycleService {
         'Downloading extension from: $finalUrl (Repo: ${repoFullName ?? 'Unknown'})',
       );
 
-      if (!context.mounted) return null;
+      if (!context.mounted) {
+        return null;
+      }
+      onProgress?.call(0.0, 'Starting download...');
       final bytes = await _downloadWithProgress(
         context,
         finalUrl,
         onProgress: onProgress,
       );
-      if (bytes == null || !context.mounted) return null;
+      if (bytes == null || !context.mounted) {
+        return null;
+      }
 
+      onProgress?.call(1.0, 'Processing...');
       final isZip = finalUrl.toLowerCase().contains('.zip');
 
       if (isZip) {
@@ -210,6 +217,8 @@ class ExtensionLifecycleService {
           fileName: finalUrl.split('/').last,
           repoFullName: repoFullName,
           skipConfirmation: skipConfirmation,
+          isUntrusted: isUntrusted,
+          onProgress: onProgress,
         );
       } else {
         final content = utf8.decode(bytes);
@@ -232,6 +241,8 @@ class ExtensionLifecycleService {
             },
             repoFullName: repoFullName,
             skipConfirmation: skipConfirmation,
+            isUntrusted: isUntrusted,
+            onProgress: onProgress,
           );
         }
 
@@ -240,14 +251,18 @@ class ExtensionLifecycleService {
           content,
           repoFullName: repoFullName,
           skipConfirmation: skipConfirmation,
+          isUntrusted: isUntrusted,
+          onProgress: onProgress,
         );
       }
     } catch (e) {
       debugPrint('Import from URL failed: $e');
-      if (context.mounted) {
+      if (context.mounted && onProgress == null) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('下载失败: $e')));
+      } else if (onProgress != null) {
+        throw Exception('下载失败: $e');
       }
     }
     return null;
@@ -259,7 +274,10 @@ class ExtensionLifecycleService {
     String? fileName,
     String? repoFullName,
     bool skipConfirmation = false,
+    bool? isUntrusted,
+    void Function(double progress, String message)? onProgress,
   }) async {
+    onProgress?.call(1.0, 'Extracting ZIP...');
     final content = ExtensionConverter.extractContentFromZip(zipBytes);
     final readme = ExtensionConverter.extractReadmeFromZip(zipBytes);
     if (content != null) {
@@ -269,13 +287,17 @@ class ExtensionLifecycleService {
         repoFullName: repoFullName,
         readmeContent: readme,
         skipConfirmation: skipConfirmation,
+        isUntrusted: isUntrusted,
+        onProgress: onProgress,
       );
     }
     debugPrint('Failed to extract content from ZIP bytes');
-    if (context.mounted) {
+    if (context.mounted && onProgress == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('ZIP 文件解析失败')));
+    } else if (onProgress != null) {
+      throw Exception('ZIP 文件解析失败');
     }
     return null;
   }
@@ -334,7 +356,10 @@ class ExtensionLifecycleService {
     Future<String?> Function(String filename) loadFile, {
     String? repoFullName,
     bool skipConfirmation = false,
+    bool? isUntrusted,
+    void Function(double progress, String message)? onProgress,
   }) async {
+    onProgress?.call(1.0, 'Analyzing metadata...');
     final metadata = ExtensionMetadata.fromReadme(readmeContent);
     if (metadata == null) return null;
 
@@ -368,6 +393,8 @@ class ExtensionLifecycleService {
       previewContent: finalContent,
       readmeContent: readmeContent,
       skipConfirmation: skipConfirmation,
+      isUntrusted: isUntrusted,
+      onProgress: onProgress,
     );
   }
 
@@ -377,7 +404,10 @@ class ExtensionLifecycleService {
     String? repoFullName,
     String? readmeContent,
     bool skipConfirmation = false,
+    bool? isUntrusted,
+    void Function(double progress, String message)? onProgress,
   }) async {
+    onProgress?.call(1.0, 'Parsing content...');
     if (content.length > _maxSafeSize) {
       if (context.mounted) {
         final proceed = await _showSecurityWarningDialog(
@@ -426,6 +456,8 @@ class ExtensionLifecycleService {
         previewContent: finalContent,
         readmeContent: effectiveReadme,
         skipConfirmation: skipConfirmation,
+        isUntrusted: isUntrusted,
+        onProgress: onProgress,
       );
     }
     return null;
@@ -439,7 +471,65 @@ class ExtensionLifecycleService {
     String? previewContent,
     String? readmeContent,
     bool skipConfirmation = false,
+    bool? isUntrusted,
+    void Function(double progress, String message)? onProgress,
   }) async {
+    Future<BaseExtension?> performInstall({
+      required bool isUntrustedOverride,
+      void Function(double, String)? internalProgress,
+    }) async {
+      internalProgress?.call(0.2, 'Loading content...');
+      final finalContent = await contentLoader();
+
+      if (!context.mounted) {
+        throw Exception('Context unmounted during load');
+      }
+
+      if (finalContent.length > _maxSafeSize) {
+        final proceed = await _showSecurityWarningDialog(
+          context,
+          '扩展文件过大 (${(finalContent.length / 1024).toStringAsFixed(1)} KB)',
+          '生成的扩展文件过大，可能会影响性能。是否继续？',
+        );
+        if (proceed != true) {
+          throw Exception('Cancelled by user (size warning)');
+        }
+      }
+
+      internalProgress?.call(0.4, 'Saving extension...');
+      await _ref
+          .read(extensionStoreServiceProvider.notifier)
+          .saveExtension(metadata.id, finalContent);
+
+      if (!context.mounted) {
+        throw Exception('Context unmounted during save');
+      }
+
+      internalProgress?.call(0.6, 'Registering extension...');
+      final newExt = ProxyExtension(metadata);
+      _manager.addInstalledExtension(newExt);
+
+      if (_manager.availableUpdates.containsKey(metadata.id)) {
+        _manager.removeAvailableUpdate(metadata.id);
+        _manager.notifyManagerListeners();
+      }
+
+      internalProgress?.call(0.8, 'Updating permissions...');
+      final auth = _ref.read(extensionAuthStateProvider.notifier);
+      await auth.setRunning(metadata.id, true);
+      await auth.setUntrusted(metadata.id, isUntrustedOverride);
+
+      final manifestHash = sha256.convert(utf8.encode(finalContent)).toString();
+      await auth.setManifestHash(metadata.id, manifestHash);
+
+      _manager.notifyManagerListeners();
+
+      internalProgress?.call(1.0, 'Installation complete');
+      return _manager.extensions.firstWhere(
+        (e) => e.metadata.id == metadata.id,
+      );
+    }
+
     try {
       final oldExtension = _manager.installedExtensions[metadata.id];
       String? oldContent;
@@ -449,75 +539,57 @@ class ExtensionLifecycleService {
             .getExtensionContent(metadata.id);
       }
 
-      bool isUntrustedFromDialog = false;
-
-      // Ensure content is available for preview if possible
       String displayContent = previewContent ?? '';
       if (displayContent.isEmpty && skipConfirmation == false) {
         // If we don't have preview content, we might want to load it now
-        // But contentLoader might be expensive or side-effect heavy?
-        // For now, we rely on caller to provide previewContent.
       }
 
       if (!skipConfirmation) {
-        final installResult = await InstallationConfirmDialog.show(
+        final Completer<BaseExtension?> completer = Completer();
+
+        await InstallationConfirmDialog.show(
           context,
           newMeta: metadata,
           newContent: displayContent,
           oldMeta: oldExtension?.metadata,
           oldContent: oldContent,
           readme: readmeContent,
+          onConfirm:
+              (
+                bool isUntrustedConfirmed,
+                void Function(double, String)? dialogProgress,
+              ) async {
+                try {
+                  final ext = await performInstall(
+                    isUntrustedOverride: isUntrustedConfirmed,
+                    internalProgress: dialogProgress ?? onProgress,
+                  );
+                  completer.complete(ext);
+                } catch (e) {
+                  // Do not complete with error, let the dialog handle it and allow retry
+                  // completer.completeError(e);
+                  rethrow;
+                }
+              },
         );
 
-        if (installResult == null || installResult['confirmed'] != true) {
+        if (completer.isCompleted) {
+          return await completer.future;
+        } else {
           return null;
         }
-        isUntrustedFromDialog = installResult['isUntrusted'] == true;
       }
 
-      final finalContent = await contentLoader();
-
-      if (!context.mounted) return null;
-
-      if (finalContent.length > _maxSafeSize) {
-        final proceed = await _showSecurityWarningDialog(
-          context,
-          '扩展文件过大 (${(finalContent.length / 1024).toStringAsFixed(1)} KB)',
-          '生成的扩展文件过大，可能会影响性能。是否继续？',
-        );
-        if (proceed != true) return null;
-      }
-
-      await _ref
-          .read(extensionStoreServiceProvider.notifier)
-          .saveExtension(metadata.id, finalContent);
-
-      if (!context.mounted) return null;
-
-      final newExt = ProxyExtension(metadata);
-      _manager.addInstalledExtension(newExt);
-
-      if (_manager.availableUpdates.containsKey(metadata.id)) {
-        _manager.removeAvailableUpdate(metadata.id);
-        _manager.notifyManagerListeners();
-      }
-
-      final auth = _ref.read(extensionAuthStateProvider.notifier);
-      await auth.setRunning(metadata.id, true);
-      await auth.setUntrusted(metadata.id, isUntrustedFromDialog);
-
-      final manifestHash = sha256.convert(utf8.encode(finalContent)).toString();
-      await auth.setManifestHash(metadata.id, manifestHash);
-
-      _manager.notifyManagerListeners();
-
-      return _manager.extensions.firstWhere(
-        (e) => e.metadata.id == metadata.id,
+      return await performInstall(
+        isUntrustedOverride: isUntrusted ?? false,
+        internalProgress: onProgress,
       );
     } catch (e) {
       debugPrint('Installation error: $e');
-      if (context.mounted) {
+      if (context.mounted && onProgress == null) {
         await _showErrorHandlingDialog(context, e.toString());
+      } else if (onProgress != null) {
+        rethrow;
       }
       return null;
     }
@@ -578,16 +650,24 @@ class ExtensionLifecycleService {
   Future<Uint8List?> _downloadWithProgress(
     BuildContext context,
     String url, {
-    void Function(double progress)? onProgress,
+    void Function(double progress, String message)? onProgress,
   }) async {
     final client = http.Client();
     final request = http.Request('GET', Uri.parse(url));
     request.headers['User-Agent'] = 'Essenmelia-App';
 
+    BuildContext? dialogContext;
+    bool isDialogShowing = false;
+
     try {
       final response = await client.send(request);
       if (response.statusCode != 200 || !context.mounted) {
         client.close();
+        if (onProgress != null) {
+          throw Exception(
+            'Download failed with status: ${response.statusCode}',
+          );
+        }
         return null;
       }
 
@@ -600,9 +680,8 @@ class ExtensionLifecycleService {
         return null;
       }
 
-      BuildContext? dialogContext;
-
       if (onProgress == null) {
+        isDialogShowing = true;
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -674,14 +753,18 @@ class ExtensionLifecycleService {
       try {
         await for (final chunk in response.stream) {
           bytes.addAll(chunk);
-          double progress = 0.0;
           if (contentLength != null && contentLength > 0) {
-            progress = bytes.length / contentLength;
+            final progress = bytes.length / contentLength;
             progressNotifier.value = progress;
-          }
-
-          if (onProgress != null) {
-            onProgress(progress);
+            onProgress?.call(
+              progress,
+              'Downloading... ${(progress * 100).toStringAsFixed(0)}%',
+            );
+          } else {
+            onProgress?.call(
+              0.0,
+              'Downloading... ${(bytes.length / 1024).toStringAsFixed(0)}KB',
+            );
           }
         }
 
@@ -690,12 +773,10 @@ class ExtensionLifecycleService {
           await Future.delayed(const Duration(milliseconds: 500));
         }
       } finally {
-        if (onProgress == null) {
-          if (dialogContext != null && dialogContext!.mounted) {
-            Navigator.of(dialogContext!).pop();
-          } else if (context.mounted) {
-            Navigator.of(context, rootNavigator: true).pop();
-          }
+        if (dialogContext != null && dialogContext!.mounted) {
+          Navigator.of(dialogContext!).pop();
+        } else if (onProgress == null && context.mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
         }
         client.close();
         progressNotifier.dispose();
@@ -705,6 +786,15 @@ class ExtensionLifecycleService {
     } catch (e) {
       debugPrint('Download error: $e');
       client.close();
+      if (onProgress == null && isDialogShowing) {
+        if (dialogContext != null && dialogContext!.mounted) {
+          Navigator.of(dialogContext!).pop();
+        } else if (context.mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+      } else if (onProgress != null) {
+        rethrow;
+      }
       return null;
     }
   }
@@ -744,42 +834,19 @@ class ExtensionLifecycleService {
     );
   }
 
-  Future<void> _showBatchResultDialog(
-    BuildContext context,
-    int success,
-    int total,
-    List<String> failures,
-  ) {
+  Future<void> _showErrorHandlingDialog(BuildContext context, String error) {
+    final theme = Theme.of(context);
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('批量安装结果'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('成功: $success / $total'),
-            if (failures.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('失败列表:'),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 100,
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: failures.length,
-                  itemBuilder: (context, index) {
-                    return Text(
-                      '• ${failures[index]}',
-                      style: const TextStyle(color: Colors.red),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ],
+        icon: Icon(
+          Icons.error_rounded,
+          size: 32,
+          color: theme.colorScheme.error,
         ),
+        title: const Text('安装失败', textAlign: TextAlign.center),
+        content: Text(error, textAlign: TextAlign.center),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -790,16 +857,74 @@ class ExtensionLifecycleService {
     );
   }
 
-  Future<void> _showErrorHandlingDialog(BuildContext context, String error) {
-    return showDialog(
+  void _showBatchResultDialog(
+    BuildContext context,
+    int successCount,
+    int totalCount,
+    List<String> failedFiles,
+  ) {
+    final theme = Theme.of(context);
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('操作失败'),
-        content: Text(error),
+        icon: Icon(
+          failedFiles.isEmpty ? Icons.check_circle_rounded : Icons.info_rounded,
+          size: 32,
+          color: failedFiles.isEmpty
+              ? theme.colorScheme.primary
+              : theme.colorScheme.error,
+        ),
+        title: Text(
+          failedFiles.isEmpty ? '批量安装成功' : '安装完成 (有失败)',
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('成功安装: $successCount / $totalCount'),
+            if (failedFiles.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                '失败列表:',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 150),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: failedFiles.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        failedFiles[index],
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
+            child: const Text('确定'),
           ),
         ],
       ),

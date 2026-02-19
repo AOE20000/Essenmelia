@@ -9,6 +9,21 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get extensionManagement => 'Extension Management';
+
+  @override
+  String get searchExtensions => 'Search extensions';
+
+  @override
+  String get installedExtensions => 'Installed';
+
+  @override
+  String get availableExtensions => 'Available';
+
+  @override
+  String get extensionPermissions => 'Permissions';
+
+  @override
   String get uninstallExtension => 'Uninstall Extension';
 
   @override
@@ -476,6 +491,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get extensionInstallError => 'Installation error';
+
+  @override
   String get eventReminder => 'Event Reminder';
 
   @override
@@ -685,6 +703,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get extensionRestrictedAccessDesc =>
       'Requires manual approval for all data access.';
+
+  @override
+  String get extensionSandboxGroup => 'Sandbox Group';
+
+  @override
+  String get extensionSandboxGroupDesc =>
+      'Extensions in the same group share mock data. Leave empty for default isolation.';
+
+  @override
+  String get editSandboxGroup => 'Edit Sandbox Group';
+
+  @override
+  String get enterSandboxGroupName => 'Enter sandbox group name';
+
+  @override
+  String get sandboxGroupHint => 'e.g., my_shared_group';
 
   @override
   String get extensionInterceptedTitle => 'Access Intercepted';
@@ -1151,9 +1185,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get extensionSandboxGroup => 'Sandbox Group';
-
-  @override
   String get extensionSandboxDesc =>
       'Sandbox groups determine data isolation. Enter the same ID to share storage.';
 
@@ -1535,4 +1566,171 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extensionButton => 'Button';
+
+  @override
+  String get healthCheckNetworkName => 'Network Connection';
+
+  @override
+  String get healthCheckNetworkDesc => 'Test Internet Access (DNS)';
+
+  @override
+  String get healthCheckDbName => 'Database Integrity';
+
+  @override
+  String get healthCheckDbDesc => 'Verify local storage R/W';
+
+  @override
+  String get healthCheckExtensionName => 'Extension System';
+
+  @override
+  String get healthCheckExtensionDesc => 'Check Extension Manager Status';
+
+  @override
+  String get healthCheckPermissionsName => 'System Permissions';
+
+  @override
+  String get healthCheckPermissionsDesc => 'Check Calendar/Notification';
+
+  @override
+  String get healthCheckNetworkSuccessBaidu => 'Connected (Baidu DNS)';
+
+  @override
+  String get healthCheckNetworkSuccessBing => 'Connected (Bing DNS)';
+
+  @override
+  String healthCheckNetworkFailed(String error) {
+    return 'DNS Resolution Failed: $error';
+  }
+
+  @override
+  String get healthCheckDbSuccess => 'R/W OK';
+
+  @override
+  String get healthCheckDbVerifyFailed => 'R/W Verification Failed';
+
+  @override
+  String healthCheckDbHiveError(String error) {
+    return 'Hive Error: $error';
+  }
+
+  @override
+  String healthCheckException(String error) {
+    return 'Exception: $error';
+  }
+
+  @override
+  String healthCheckExtensionSuccess(int count) {
+    return 'Service Running ($count extensions)';
+  }
+
+  @override
+  String healthCheckExtensionError(String error) {
+    return 'Provider Exception: $error';
+  }
+
+  @override
+  String get healthCheckPermissionCalendarOk => 'Calendar Permission OK';
+
+  @override
+  String get healthCheckPermissionCalendarMissing =>
+      'Missing Calendar Permission';
+
+  @override
+  String healthCheckPermissionError(String error) {
+    return 'Check Failed: $error';
+  }
+
+  @override
+  String get healthCheckApiSysInfoName => 'API: System Info';
+
+  @override
+  String get healthCheckApiSysInfoDesc => 'Test getSystemInfo';
+
+  @override
+  String healthCheckApiSysInfoSuccess(String platform) {
+    return 'Platform: $platform';
+  }
+
+  @override
+  String get healthCheckApiDbName => 'API: Database';
+
+  @override
+  String get healthCheckApiDbDesc => 'Test getDbSize';
+
+  @override
+  String healthCheckApiDbSuccess(Object size) {
+    return 'Size: $size';
+  }
+
+  @override
+  String get healthCheckApiTagsName => 'API: Tags';
+
+  @override
+  String get healthCheckApiTagsDesc => 'Test getTags';
+
+  @override
+  String healthCheckApiTagsSuccess(int count) {
+    return 'Tags count: $count';
+  }
+
+  @override
+  String get healthCheckApiSettingsName => 'API: Settings';
+
+  @override
+  String get healthCheckApiSettingsDesc => 'Test getSetting/saveSetting';
+
+  @override
+  String get healthCheckApiSettingsSuccess => 'Read/Write OK';
+
+  @override
+  String get healthCheckApiSettingsMismatch => 'Read/Write mismatch';
+
+  @override
+  String get healthCheckApiNetworkName => 'API: Network';
+
+  @override
+  String get healthCheckApiNetworkDesc => 'Test httpGet (via Extension)';
+
+  @override
+  String get healthCheckApiNetworkSuccess => 'Status: 200 OK';
+
+  @override
+  String get healthCheckApiEventsName => 'API: Events';
+
+  @override
+  String get healthCheckApiEventsDesc => 'Test getEvents';
+
+  @override
+  String healthCheckApiEventsSuccess(int count) {
+    return 'Events count: $count';
+  }
+
+  @override
+  String get healthCheckStoreRepoName => 'Store: Repository';
+
+  @override
+  String get healthCheckStoreRepoDesc => 'Test Extension Store Connection';
+
+  @override
+  String healthCheckStoreRepoSuccess(int count) {
+    return 'Extensions: $count';
+  }
+
+  @override
+  String get healthCheckRunTooltip => 'Run System Diagnostic';
+
+  @override
+  String get healthCheckTitle => 'System Health Diagnostic';
+
+  @override
+  String get healthCheckRerunTooltip => 'Rerun';
+
+  @override
+  String get healthCheckEnvironment => 'Environment';
+
+  @override
+  String get healthCheckSandboxMode => 'Sandbox Simulation';
+
+  @override
+  String get healthCheckRealMode => 'Real Environment';
 }

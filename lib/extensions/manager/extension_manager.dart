@@ -48,6 +48,9 @@ class ExtensionManager extends ChangeNotifier
   /// Available updates (extensionId -> newVersion)
   final Map<String, String> _availableUpdates = {};
 
+  /// Reserved Extension IDs that cannot be loaded from external sources
+  static const List<String> _reservedIds = ['system_health_check'];
+
   // Public getters
   Map<String, BaseExtension> get installedExtensions => _installedExtensions;
   Map<String, String> get availableUpdates => _availableUpdates;
@@ -197,6 +200,13 @@ class ExtensionManager extends ChangeNotifier
         final metadata = ExtensionMetadata.fromJson(jsonDecode(json));
         final extId = metadata.id;
 
+        if (_reservedIds.contains(extId)) {
+          debugPrint(
+            'Security Alert: Extension $extId is using a reserved system ID. Skipping.',
+          );
+          continue;
+        }
+
         if (extId != entry.key) {
           debugPrint(
             'Security Alert: Extension ID mismatch for ${entry.key}. Manifest claims $extId. Skipping.',
@@ -204,7 +214,7 @@ class ExtensionManager extends ChangeNotifier
           continue;
         }
 
-        _verifyIntegrityAsync(extId, json);
+        await _verifyIntegrityAsync(extId, json);
 
         _installedExtensions[extId] = ProxyExtension(metadata);
       } catch (e) {
@@ -364,8 +374,18 @@ class ExtensionManager extends ChangeNotifier
     Map<String, dynamic> data, {
     String? senderId,
   }) {
+    final senderGroup = senderId != null ? _getSandboxGroup(senderId) : null;
+
     for (var ext in _activeExtensions.values) {
       if (ext.metadata.id != senderId) {
+        // Check sandbox group isolation
+        if (senderGroup != null) {
+          final targetGroup = _getSandboxGroup(ext.metadata.id);
+          if (senderGroup != targetGroup) {
+            continue;
+          }
+        }
+
         try {
           ext.onExtensionEvent(name, data);
         } catch (e) {
@@ -373,6 +393,10 @@ class ExtensionManager extends ChangeNotifier
         }
       }
     }
+  }
+
+  String _getSandboxGroup(String extId) {
+    return _ref.read(extensionAuthStateProvider.notifier).getSandboxId(extId);
   }
 
   /// Notify extensions about a new event

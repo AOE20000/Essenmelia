@@ -66,7 +66,10 @@ Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使�
 
 Essenmelia 采用**动态权限绑定机制**。开发者必须在 `README.md` 中声明权限。
 
-- **透明展示**：在安装界面，系统会根据 `ExtensionApiRegistry` 动态列出该权限下允许扩展执行的具体操作（如“添加新任务”、“读取日历”等）。
+- **透明展示**：在安装界面 (`InstallationConfirmDialog`)，系统会：
+  - 动态列出该权限下允许扩展执行的具体操作（如“添加新任务”、“读取日历”等）。
+  - 提供完整的安装进度反馈（下载、校验、解压）。
+  - 统一展示错误信息与重试选项，不再依赖分散的全局提示。
 
 **常用权限：**
 - `readEvents`, `addEvents`, `updateEvents`, `deleteEvents`: 事件全生命周期管理。

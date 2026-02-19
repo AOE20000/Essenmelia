@@ -1042,15 +1042,16 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       onUpdate('', '');
       return;
     }
-    final sortedIndices = selectedIndices.toList()..sort();
-    final firstIndex = sortedIndices.first;
+    // Don't sort, keep selection order
+    final orderedIndices = selectedIndices.toList();
+    final firstIndex = orderedIndices.first;
     final title = (blocks[firstIndex]['text'] as String)
         .replaceAll('\n', ' ')
         .trim();
 
     String desc = '';
-    if (sortedIndices.length > 1) {
-      desc = sortedIndices
+    if (orderedIndices.length > 1) {
+      desc = orderedIndices
           .skip(1)
           .map(
             (idx) =>

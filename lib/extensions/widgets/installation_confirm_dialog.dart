@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
 import '../runtime/api/extension_api_registry.dart';
+import '../services/extension_lifecycle_service.dart';
 import '../../l10n/app_localizations.dart';
 
 /// 扩展安装/更新确认对话框
@@ -20,6 +21,12 @@ class InstallationConfirmDialog extends ConsumerStatefulWidget {
   final ExtensionMetadata? oldMeta;
   final String? oldContent;
   final String? readme;
+  final String? downloadUrl;
+  final Future<void> Function(
+    bool isUntrusted,
+    void Function(double, String)? onProgress,
+  )?
+  onConfirm;
 
   const InstallationConfirmDialog({
     super.key,
@@ -28,6 +35,8 @@ class InstallationConfirmDialog extends ConsumerStatefulWidget {
     this.oldMeta,
     this.oldContent,
     this.readme,
+    this.downloadUrl,
+    this.onConfirm,
   });
 
   /// 显示对话框的静态方法
@@ -40,6 +49,12 @@ class InstallationConfirmDialog extends ConsumerStatefulWidget {
     ExtensionMetadata? oldMeta,
     String? oldContent,
     String? readme,
+    String? downloadUrl,
+    Future<void> Function(
+      bool isUntrusted,
+      void Function(double, String)? onProgress,
+    )?
+    onConfirm,
   }) {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -55,6 +70,8 @@ class InstallationConfirmDialog extends ConsumerStatefulWidget {
         oldMeta: oldMeta,
         oldContent: oldContent,
         readme: readme,
+        downloadUrl: downloadUrl,
+        onConfirm: onConfirm,
       ),
     );
   }
@@ -67,6 +84,65 @@ class InstallationConfirmDialog extends ConsumerStatefulWidget {
 class _InstallationConfirmDialogState
     extends ConsumerState<InstallationConfirmDialog> {
   bool isUntrusted = false; // 默认不开启受限访问（即信任模式）
+  bool _isInstalling = false;
+  double _progress = 0.0;
+  String _statusMessage = '';
+  String? _errorMessage;
+
+  Future<void> _startInstall() async {
+    if (widget.downloadUrl == null && widget.onConfirm == null) {
+      Navigator.pop(context, {'confirmed': true, 'isUntrusted': isUntrusted});
+      return;
+    }
+
+    setState(() {
+      _isInstalling = true;
+      _errorMessage = null;
+      _progress = 0.0;
+      _statusMessage = 'Preparing...';
+    });
+
+    try {
+      if (widget.onConfirm != null) {
+        await widget.onConfirm!(isUntrusted, (progress, message) {
+          if (mounted) {
+            setState(() {
+              _progress = progress;
+              _statusMessage = message;
+            });
+          }
+        });
+      } else {
+        await ref
+            .read(extensionLifecycleServiceProvider)
+            .installFromUrl(
+              context,
+              widget.downloadUrl!,
+              skipConfirmation: true,
+              isUntrusted: isUntrusted,
+              onProgress: (progress, message) {
+                if (mounted) {
+                  setState(() {
+                    _progress = progress;
+                    _statusMessage = message;
+                  });
+                }
+              },
+            );
+      }
+
+      if (mounted) {
+        Navigator.pop(context, {'confirmed': true, 'isUntrusted': isUntrusted});
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isInstalling = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,13 +241,18 @@ class _InstallationConfirmDialogState
                           indicatorColor: theme.colorScheme.primary,
                           dividerColor: Colors.transparent, // 去掉下划线
                           tabs: [
-                            Tab(text: l10n.extensionInformation), // 概览/详情
                             const Tab(text: 'README'),
+                            Tab(text: l10n.extensionPermissions), // 权限 / 详情
                           ],
                         ),
                         Expanded(
                           child: TabBarView(
                             children: [
+                              _buildReadmeView(
+                                context,
+                                theme,
+                                scrollController,
+                              ),
                               _buildDetailsList(
                                 context,
                                 l10n,
@@ -182,11 +263,6 @@ class _InstallationConfirmDialogState
                                 newPerms,
                                 oldPerms,
                                 controller: scrollController,
-                              ),
-                              _buildReadmeView(
-                                context,
-                                theme,
-                                scrollController,
                               ),
                             ],
                           ),
@@ -207,7 +283,7 @@ class _InstallationConfirmDialogState
                   ),
           ),
 
-          // 底部操作按钮
+          // 底部操作区域
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             decoration: BoxDecoration(
@@ -220,39 +296,111 @@ class _InstallationConfirmDialogState
                 ),
               ),
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                if (_errorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(l10n.cancel),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context, {
-                      'confirmed': true,
-                      'isUntrusted': isUntrusted,
-                    }),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: isUpdate
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.secondary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(isUpdate ? l10n.update : l10n.install),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(l10n.cancel),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _startInstall,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(l10n.retry),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (_isInstalling) ...[
+                  Text(
+                    _statusMessage,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: _progress,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(l10n.cancel),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _startInstall,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: isUpdate
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.secondary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(isUpdate ? l10n.update : l10n.install),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

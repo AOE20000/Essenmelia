@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../extensions/services/extension_repository_service.dart';
 import '../extensions/models/repository_extension.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../extensions/services/extension_lifecycle_service.dart';
 import '../extensions/core/base_extension.dart';
-import '../extensions/core/extension_metadata.dart';
-import '../extensions/widgets/installation_confirm_dialog.dart';
 import '../widgets/universal_image.dart';
 import '../l10n/app_localizations.dart';
 import 'extension_details_screen.dart';
+
+import '../extensions/widgets/installation_confirm_dialog.dart';
+import '../extensions/core/extension_metadata.dart';
 
 final extensionSearchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -57,23 +56,23 @@ class _ExtensionManagementScreenState
     final manager = ref.watch(extensionManagerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.extensionManagement),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _showAddExtensionSheet(context, ref),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () {
-              ref.refresh(extensionRepositoryManifestProvider);
-            },
-          ),
-        ],
-      ),
       body: CustomScrollView(
         slivers: [
+          SliverAppBar.large(
+            title: Text(l10n.extensionManagement),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add_rounded),
+                onPressed: () => _showAddExtensionSheet(context, ref),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () {
+                  ref.invalidate(extensionRepositoryManifestProvider);
+                },
+              ),
+            ],
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -92,7 +91,7 @@ class _ExtensionManagementScreenState
               ),
             ),
           ),
-          if (manager.extensions.isNotEmpty) ...[
+          if (manager.installedExtensions.isNotEmpty) ...[
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
@@ -109,11 +108,13 @@ class _ExtensionManagementScreenState
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final ext = manager.extensions.values.elementAt(index);
+                  final ext = manager.installedExtensions.values.elementAt(
+                    index,
+                  );
                   return _ExtensionCard(
                     child: _InstalledExtensionItem(extension: ext),
                   );
-                }, childCount: manager.extensions.length),
+                }, childCount: manager.installedExtensions.length),
               ),
             ),
           ],
@@ -145,7 +146,6 @@ class _ExtensionManagementScreenState
   Widget _buildRepositoryList(BuildContext context, WidgetRef ref) {
     final manifestAsync = ref.watch(extensionRepositoryManifestProvider);
     final searchQuery = ref.watch(extensionSearchQueryProvider).toLowerCase();
-    final manager = ref.watch(extensionManagerProvider);
 
     return manifestAsync.when(
       data: (extensions) {
@@ -187,7 +187,7 @@ class _ExtensionManagementScreenState
       },
       loading: () => const SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32),
           child: Center(child: CircularProgressIndicator()),
         ),
       ),
@@ -231,6 +231,7 @@ class _InstalledExtensionItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final manager = ref.watch(extensionManagerProvider);
     final newVersion = manager.availableUpdates[extension.metadata.id];
     final hasUpdate = newVersion != null;
@@ -320,7 +321,15 @@ class _InstalledExtensionItem extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: hasUpdate ? l10n.update : l10n.uninstall,
+              icon: Icon(
+                hasUpdate
+                    ? Icons.system_update_alt_rounded
+                    : Icons.delete_outline_rounded,
+                color: hasUpdate
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
+              ),
               onPressed: () async {
                 final lifecycleService = ref.read(
                   extensionLifecycleServiceProvider,
@@ -388,12 +397,14 @@ class _StoreExtensionItem extends ConsumerWidget {
     final manager = ref.watch(extensionManagerProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    final installed = manager.extensions.cast<BaseExtension?>().firstWhere(
-      (ie) =>
-          ie?.metadata.repoFullName != null &&
-          ie?.metadata.repoFullName == extension.repoFullName,
-      orElse: () => null,
-    );
+    final installed = manager.installedExtensions.values
+        .cast<BaseExtension?>()
+        .firstWhere(
+          (ie) =>
+              ie?.metadata.repoFullName != null &&
+              ie?.metadata.repoFullName == extension.repoFullName,
+          orElse: () => null,
+        );
 
     final isUpdate =
         installed != null &&
@@ -401,18 +412,66 @@ class _StoreExtensionItem extends ConsumerWidget {
         extension.version != installed.metadata.version;
 
     return InkWell(
-      onTap: () {
-        showModalBottomSheet(
+      onTap: () async {
+        if (extension.repoFullName == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.extensionInstallError)));
+          return;
+        }
+
+        // Show loading
+        showDialog(
           context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          showDragHandle: true,
-          backgroundColor: theme.colorScheme.surface,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          builder: (context) => _ReadmePreviewSheet(extension: extension),
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
         );
+
+        try {
+          // Fetch README
+          final readme = await ref
+              .read(extensionRepositoryServiceProvider)
+              .fetchReadme(extension.repoFullName!);
+
+          if (!context.mounted) return;
+          Navigator.of(context, rootNavigator: true).pop(); // Close loading
+
+          if (readme == null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.extensionInstallError)));
+            return;
+          }
+
+          // Parse Metadata
+          final metadata = ExtensionMetadata.fromReadme(readme);
+          if (metadata == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Invalid extension format')),
+            );
+            return;
+          }
+
+          // Show Confirmation Dialog (Preview Mode)
+          await InstallationConfirmDialog.show(
+            context,
+            newMeta: metadata,
+            readme: readme,
+            oldMeta: installed?.metadata,
+            downloadUrl: extension.downloadUrl,
+          );
+        } catch (e) {
+          if (context.mounted) {
+            Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pop(); // Ensure loading closed
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          }
+        }
       },
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -464,7 +523,7 @@ class _StoreExtensionItem extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            FilledButton.tonalIcon(
+            IconButton.filledTonal(
               onPressed: () async {
                 final lifecycleService = ref.read(
                   extensionLifecycleServiceProvider,
@@ -478,11 +537,7 @@ class _StoreExtensionItem extends ConsumerWidget {
                 isUpdate
                     ? Icons.system_update_alt_rounded
                     : Icons.download_rounded,
-                size: 18,
-              ),
-              label: Text(isUpdate ? l10n.update : l10n.install),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                size: 20,
               ),
             ),
           ],
@@ -576,225 +631,4 @@ class _AddExtensionSheet extends ConsumerWidget {
   }
 }
 
-class _ReadmePreviewSheet extends ConsumerStatefulWidget {
-  final RepositoryExtension extension;
-
-  const _ReadmePreviewSheet({required this.extension});
-
-  @override
-  ConsumerState<_ReadmePreviewSheet> createState() =>
-      _ReadmePreviewSheetState();
-}
-
-class _ReadmePreviewSheetState extends ConsumerState<_ReadmePreviewSheet> {
-  late Future<String?> _readmeFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    final service = ref.read(extensionRepositoryServiceProvider);
-    if (widget.extension.repoFullName != null) {
-      _readmeFuture = service.fetchReadme(widget.extension.repoFullName!);
-    } else {
-      _readmeFuture = Future.value(null);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) => Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-            child: Row(
-              children: [
-                Hero(
-                  tag: 'ext_icon_preview_${widget.extension.id}',
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: widget.extension.iconUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: UniversalImage(
-                              imageUrl: widget.extension.iconUrl!,
-                            ),
-                          )
-                        : Icon(
-                            Icons.extension_rounded,
-                            color: theme.colorScheme.primary,
-                            size: 24,
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.extension.name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'v${widget.extension.version} • ${widget.extension.author}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Divider(),
-
-          // Content
-          Expanded(
-            child: FutureBuilder<String?>(
-              future: _readmeFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final content = snapshot.data;
-                if (content == null || content.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.description_outlined,
-                          size: 48,
-                          color: theme.colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No README available',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return Markdown(
-                  controller: scrollController,
-                  data: content,
-                  padding: const EdgeInsets.all(24),
-                  selectable: true,
-                  onTapLink: (text, href, title) {
-                    if (href != null) {
-                      launchUrl(Uri.parse(href));
-                    }
-                  },
-                  styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                    p: theme.textTheme.bodyMedium,
-                    h1: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    blockquoteDecoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border(
-                        left: BorderSide(
-                          color: theme.colorScheme.primary,
-                          width: 4,
-                        ),
-                      ),
-                    ),
-                    code: theme.textTheme.bodySmall?.copyWith(
-                      fontFamily: 'monospace',
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                    ),
-                    codeblockDecoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // Bottom Bar
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.3,
-                  ),
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(l10n.cancel),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(context); // Close preview
-                      final lifecycleService = ref.read(
-                        extensionLifecycleServiceProvider,
-                      );
-                      await lifecycleService.installFromUrl(
-                        context,
-                        widget.extension.downloadUrl,
-                      );
-                    },
-                    icon: const Icon(Icons.download_rounded),
-                    label: Text(l10n.install),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _ReadmePreviewSheet removed as it is replaced by InstallationConfirmDialog

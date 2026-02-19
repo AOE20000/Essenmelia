@@ -1,12 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../runtime/api/extension_api_registry.dart';
 import '../core/extension_permission.dart';
+import '../utils/mock_data_generator.dart';
 
 /// 系统/基础功能相关的扩展 API 实现 (网络、文件、分享)
 class SystemExtensionApiHandler {
@@ -105,7 +108,8 @@ class SystemExtensionApiHandler {
     final headers = (params['headers'] as Map?)?.cast<String, String>();
 
     if (isUntrusted) {
-      return '{"status": "success", "message": "PUT request simulated"}';
+      final mockData = MockDataGenerator.generateNetworkResponse(url, 'PUT');
+      return jsonEncode(mockData);
     }
 
     final response = await http
@@ -122,7 +126,8 @@ class SystemExtensionApiHandler {
     final headers = (params['headers'] as Map?)?.cast<String, String>();
 
     if (isUntrusted) {
-      return '{"status": "success", "message": "DELETE request simulated"}';
+      final mockData = MockDataGenerator.generateNetworkResponse(url, 'DELETE');
+      return jsonEncode(mockData);
     }
 
     final response = await http
@@ -167,7 +172,8 @@ class SystemExtensionApiHandler {
 
     if (isUntrusted) {
       // 受限模式下，禁止外网访问，返回模拟响应
-      return '{"status": "success", "data": "Mock data from sandbox", "url": "$url"}';
+      final mockData = MockDataGenerator.generateNetworkResponse(url, 'GET');
+      return jsonEncode(mockData);
     }
 
     final response = await http
@@ -185,7 +191,8 @@ class SystemExtensionApiHandler {
     final headers = (params['headers'] as Map?)?.cast<String, String>();
 
     if (isUntrusted) {
-      return '{"status": "success", "message": "POST request simulated"}';
+      final mockData = MockDataGenerator.generateNetworkResponse(url, 'POST');
+      return jsonEncode(mockData);
     }
 
     final response = await http
@@ -208,7 +215,9 @@ class SystemExtensionApiHandler {
 
     try {
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/$fileName');
+      // Security Fix: Prevent path traversal by using basename
+      final safeFileName = path.basename(fileName);
+      final file = File('${tempDir.path}/$safeFileName');
       await file.writeAsString(content);
 
       final result = await Share.shareXFiles(
@@ -229,8 +238,9 @@ class SystemExtensionApiHandler {
         ?.cast<String>();
 
     if (isUntrusted) {
-      // Return mock file content
-      return 'id,title,content\n1,Mock Task,Description from sandbox';
+      // Return mock file content based on requested extensions
+      final ext = allowedExtensions?.firstOrNull;
+      return MockDataGenerator.generateFileContent(ext);
     }
 
     final result = await FilePicker.platform.pickFiles(
@@ -249,6 +259,9 @@ class SystemExtensionApiHandler {
     Map<String, dynamic> params, {
     required bool isUntrusted,
   }) async {
+    if (isUntrusted) {
+      return MockDataGenerator.generateSystemInfo();
+    }
     return {
       'platform': Platform.operatingSystem,
       'version': Platform.operatingSystemVersion,

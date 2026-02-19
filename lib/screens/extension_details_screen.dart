@@ -234,11 +234,11 @@ class _ExtensionDetailsScreenState
                   sandboxId,
                   authNotifier,
                 ),
-                title: Text(l10n.extensionSandboxIsolation),
+                title: Text(l10n.extensionSandboxGroup),
                 subtitle: Text(
-                  isShared
-                      ? l10n.extensionSharedSandbox(sandboxId)
-                      : l10n.extensionIsolatedSandbox,
+                  isShared ? sandboxId : l10n.extensionSandboxGroupDesc,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -282,27 +282,26 @@ class _ExtensionDetailsScreenState
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.hub_rounded),
-        title: Text(l10n.extensionSandboxGroup),
+        title: Text(l10n.editSandboxGroup),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.extensionSandboxDesc,
+              l10n.extensionSandboxGroupDesc,
               style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: l10n.extensionSandboxId,
-                hintText: l10n.extensionSandboxDefaultHint,
+                labelText: l10n.enterSandboxGroupName,
+                hintText: l10n.sandboxGroupHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
                 prefixIcon: const Icon(Icons.tag_rounded),
-                helperText: l10n.extensionSandboxTip,
               ),
             ),
           ],

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/notification_service.dart';
@@ -133,7 +134,10 @@ class UIExtensionApiHandler {
       final context = navigatorKey.currentContext;
       if (context != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('[Mock Notification] $title: $body')),
+          SnackBar(
+            content: Text('Notification: $title'),
+            duration: const Duration(seconds: 1),
+          ),
         );
       }
       return;
@@ -161,8 +165,10 @@ class UIExtensionApiHandler {
     final cancelLabel = params['cancelLabel'] ?? l10n.cancel;
 
     if (isUntrusted) {
-      // 受限模式下可以返回假的选择，或者直接返回 true 欺骗扩展
-      return true;
+      // 模拟用户决策延迟
+      await Future.delayed(Duration(milliseconds: 500 + Random().nextInt(1500)));
+      // 85% 概率确认，15% 概率取消，模拟真实用户行为
+      return Random().nextDouble() < 0.85;
     }
 
     final context = navigatorKey.currentContext;

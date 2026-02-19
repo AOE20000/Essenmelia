@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/event.dart';
-import '../../providers/tags_provider.dart';
 import '../../providers/events_provider.dart';
 import '../../providers/filtered_events_provider.dart';
 import '../runtime/api/extension_api_registry.dart';
 import '../manager/extension_manager.dart';
 import '../core/extension_permission.dart';
+import '../security/extension_auth_notifier.dart';
 import '../utils/mock_data_generator.dart';
 
 /// 事件相关的扩展 API 实现
@@ -56,24 +56,6 @@ class EventsExtensionApiHandler {
       categoryEn: 'Data Writing',
     );
     registry.register(
-      'getTags',
-      _getTags,
-      permission: ExtensionPermission.readTags,
-      operation: 'Read All Tags',
-      operationEn: 'Read All Tags',
-      category: 'Data Reading',
-      categoryEn: 'Data Reading',
-    );
-    registry.register(
-      'addTag',
-      _addTag,
-      permission: ExtensionPermission.manageTags,
-      operation: 'Add New Tag',
-      operationEn: 'Add New Tag',
-      category: 'Data Writing',
-      categoryEn: 'Data Writing',
-    );
-    registry.register(
       'addStep',
       _addStep,
       permission: ExtensionPermission.updateEvents,
@@ -118,7 +100,18 @@ class EventsExtensionApiHandler {
   }
 
   String _getSandboxId(Map<String, dynamic> params) {
-    return params['sandboxId'] ?? 'default';
+    final extId = params['extensionId'] as String;
+    final userSandboxId = params['sandboxId'] ?? 'default';
+
+    // 获取扩展配置的沙箱组 ID
+    // 如果未配置，默认为 extId (独立隔离)
+    // 如果配置了组名 (如 "group1")，则前缀为 "group1"
+    final groupId = _ref
+        .read(extensionAuthStateProvider.notifier)
+        .getSandboxId(extId);
+
+    // 使用 groupId 作为沙箱键的前缀，实现同组共享
+    return '${groupId}_$userSandboxId';
   }
 
   Future<dynamic> _getEvents(
@@ -137,10 +130,12 @@ class EventsExtensionApiHandler {
 
     if (isUntrusted) {
       // 漏洞修复：对不信任扩展禁用 mixReal，防止侧信道攻击
+      // 随机化数量以增加真实感
+      final randomCount = 8 + DateTime.now().millisecond % 12; // 8-19
       return [
         ...sandboxEvents,
         ...MockDataGenerator.generateEvents(
-          count: 12,
+          count: randomCount,
           realData: realEvents,
           mixReal: false,
         ),
@@ -148,39 +143,6 @@ class EventsExtensionApiHandler {
     }
 
     return [...realEvents, ...sandboxEvents];
-  }
-
-  Future<dynamic> _getTags(
-    Map<String, dynamic> params, {
-    required bool isUntrusted,
-  }) async {
-    final tagsAsync = _ref.read(tagsProvider);
-    final realTags = tagsAsync.when(
-      data: (tags) => tags,
-      loading: () => <String>[],
-      error: (_, _) => <String>[],
-    );
-
-    if (isUntrusted) {
-      // 混淆逻辑：返回真实标签库的一部分，或者添加一些虚假标签
-      return [...realTags.take(3), '虚拟标签A', '虚拟标签B'];
-    }
-
-    return realTags;
-  }
-
-  Future<dynamic> _addTag(
-    Map<String, dynamic> params, {
-    required bool isUntrusted,
-  }) async {
-    final tag = params['tag'] as String;
-
-    if (isUntrusted) {
-      // Fake success, but don't actually write
-      return;
-    }
-
-    await _ref.read(tagsProvider.notifier).addTag(tag);
   }
 
   Future<dynamic> _addEvent(
@@ -320,7 +282,10 @@ class EventsExtensionApiHandler {
     required bool isUntrusted,
   }) async {
     final query = params['query'] as String;
-    // 搜索过滤通常不涉及敏感隐私，即便 untrusted 也可以执行，或者由框架决定是否拦截
+
+    // 安全修复：受限模式下禁止更改全局搜索状态，防止 UI 干扰
+    if (isUntrusted) return;
+
     _ref.read(searchProvider.notifier).setQuery(query);
   }
 }

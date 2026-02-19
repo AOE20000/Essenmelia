@@ -41,14 +41,23 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 - **交互绑定**：任意组件均可通过 `onTap` 属性绑定 JS 函数。
 - **代码参考**：[dynamic_engine.dart](Flutter-New/lib/extensions/runtime/view/dynamic_engine.dart)
 
-### 2.3 管理层：`Manager` (ExtensionManager)
-`ExtensionManager` 是整个系统的中枢，负责扩展的生命周期与安全性。
+### 2.3 管理层：`Manager` & `Lifecycle`
+此层负责扩展的生命周期管理、安装编排与安全性控制。
 
+#### ExtensionManager
+`ExtensionManager` 是系统的核心状态容器。
 - **核心职责**：
-  - **自动发现**：自动扫描 `assets/extensions/` 目录下的内置扩展。
-  - **安装与更新**：支持 ZIP 安装包与基于GitHub README的检测更新
+  - **状态维护**：维护已安装扩展列表、运行时状态及可用更新。
   - **权限网关**：集成 `SecurityShield`，在 API 调用前进行权限检查。
 - **代码参考**：[extension_manager.dart](Flutter-New/lib/extensions/manager/extension_manager.dart)
+
+#### ExtensionLifecycleService
+`ExtensionLifecycleService` 负责编排复杂的安装、卸载与更新流程。
+- **统一安装 UI**：
+  - 采用 **Callback-based UI Pattern**，将进度反馈 (`onProgress`) 与错误处理逻辑下放给 UI 层。
+  - **InstallationConfirmDialog**：集成了版本对比、权限确认、下载进度展示及错误重试功能，提供一站式安装体验，避免了分散的全局弹窗或 SnackBar。
+- **安装源支持**：支持 URL (GitHub/Raw)、ZIP 文件、剪贴板导入及本地文件扫描。
+- **代码参考**：[extension_lifecycle_service.dart](Flutter-New/lib/extensions/services/extension_lifecycle_service.dart)
 
 ### 2.4 安全层：`Security` (SecurityShield)
 `SecurityShield` 负责拦截非信任扩展的敏感操作。

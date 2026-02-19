@@ -98,6 +98,36 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
+  /// Title for extension management screen
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Management'**
+  String get extensionManagement;
+
+  /// Placeholder for extension search bar
+  ///
+  /// In en, this message translates to:
+  /// **'Search extensions'**
+  String get searchExtensions;
+
+  /// Section header for installed extensions
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get installedExtensions;
+
+  /// Section header for available extensions
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get availableExtensions;
+
+  /// Label for permissions tab or section
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get extensionPermissions;
+
   /// Title for uninstall confirmation dialog
   ///
   /// In en, this message translates to:
@@ -944,6 +974,12 @@ abstract class AppLocalizations {
   /// **'Installation error: {error}'**
   String installError(String error);
 
+  /// Error message when extension installation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Installation error'**
+  String get extensionInstallError;
+
   /// Title for event reminder notifications
   ///
   /// In en, this message translates to:
@@ -1321,6 +1357,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Requires manual approval for all data access.'**
   String get extensionRestrictedAccessDesc;
+
+  /// Label for extension sandbox group
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox Group'**
+  String get extensionSandboxGroup;
+
+  /// Description for sandbox group configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions in the same group share mock data. Leave empty for default isolation.'**
+  String get extensionSandboxGroupDesc;
+
+  /// Title for edit sandbox group dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Sandbox Group'**
+  String get editSandboxGroup;
+
+  /// Hint for sandbox group name input
+  ///
+  /// In en, this message translates to:
+  /// **'Enter sandbox group name'**
+  String get enterSandboxGroupName;
+
+  /// Example for sandbox group name
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., my_shared_group'**
+  String get sandboxGroupHint;
 
   /// Title for access interception dialog
   ///
@@ -2150,12 +2216,6 @@ abstract class AppLocalizations {
   /// **'Shared Sandbox: {id}'**
   String extensionSharedSandbox(String id);
 
-  /// Label for extension sandbox group
-  ///
-  /// In en, this message translates to:
-  /// **'Sandbox Group'**
-  String get extensionSandboxGroup;
-
   /// Description for extension sandbox groups
   ///
   /// In en, this message translates to:
@@ -2869,6 +2929,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Button'**
   String get extensionButton;
+
+  /// Name for network connection test
+  ///
+  /// In en, this message translates to:
+  /// **'Network Connection'**
+  String get healthCheckNetworkName;
+
+  /// Description for network connection test
+  ///
+  /// In en, this message translates to:
+  /// **'Test Internet Access (DNS)'**
+  String get healthCheckNetworkDesc;
+
+  /// Name for database integrity test
+  ///
+  /// In en, this message translates to:
+  /// **'Database Integrity'**
+  String get healthCheckDbName;
+
+  /// Description for database integrity test
+  ///
+  /// In en, this message translates to:
+  /// **'Verify local storage R/W'**
+  String get healthCheckDbDesc;
+
+  /// Name for extension system test
+  ///
+  /// In en, this message translates to:
+  /// **'Extension System'**
+  String get healthCheckExtensionName;
+
+  /// Description for extension system test
+  ///
+  /// In en, this message translates to:
+  /// **'Check Extension Manager Status'**
+  String get healthCheckExtensionDesc;
+
+  /// Name for system permissions test
+  ///
+  /// In en, this message translates to:
+  /// **'System Permissions'**
+  String get healthCheckPermissionsName;
+
+  /// Description for system permissions test
+  ///
+  /// In en, this message translates to:
+  /// **'Check Calendar/Notification'**
+  String get healthCheckPermissionsDesc;
+
+  /// Success message for Baidu DNS
+  ///
+  /// In en, this message translates to:
+  /// **'Connected (Baidu DNS)'**
+  String get healthCheckNetworkSuccessBaidu;
+
+  /// Success message for Bing DNS
+  ///
+  /// In en, this message translates to:
+  /// **'Connected (Bing DNS)'**
+  String get healthCheckNetworkSuccessBing;
+
+  /// Error message for DNS failure
+  ///
+  /// In en, this message translates to:
+  /// **'DNS Resolution Failed: {error}'**
+  String healthCheckNetworkFailed(String error);
+
+  /// Success message for database R/W
+  ///
+  /// In en, this message translates to:
+  /// **'R/W OK'**
+  String get healthCheckDbSuccess;
+
+  /// Error message for database verification failure
+  ///
+  /// In en, this message translates to:
+  /// **'R/W Verification Failed'**
+  String get healthCheckDbVerifyFailed;
+
+  /// Error message for Hive error
+  ///
+  /// In en, this message translates to:
+  /// **'Hive Error: {error}'**
+  String healthCheckDbHiveError(String error);
+
+  /// Generic exception message
+  ///
+  /// In en, this message translates to:
+  /// **'Exception: {error}'**
+  String healthCheckException(String error);
+
+  /// Success message for extension system
+  ///
+  /// In en, this message translates to:
+  /// **'Service Running ({count} extensions)'**
+  String healthCheckExtensionSuccess(int count);
+
+  /// Error message for extension provider
+  ///
+  /// In en, this message translates to:
+  /// **'Provider Exception: {error}'**
+  String healthCheckExtensionError(String error);
+
+  /// Success message for calendar permission
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Permission OK'**
+  String get healthCheckPermissionCalendarOk;
+
+  /// Error message for missing calendar permission
+  ///
+  /// In en, this message translates to:
+  /// **'Missing Calendar Permission'**
+  String get healthCheckPermissionCalendarMissing;
+
+  /// Error message for permission check failure
+  ///
+  /// In en, this message translates to:
+  /// **'Check Failed: {error}'**
+  String healthCheckPermissionError(String error);
+
+  /// Name for System Info API test
+  ///
+  /// In en, this message translates to:
+  /// **'API: System Info'**
+  String get healthCheckApiSysInfoName;
+
+  /// Description for System Info API test
+  ///
+  /// In en, this message translates to:
+  /// **'Test getSystemInfo'**
+  String get healthCheckApiSysInfoDesc;
+
+  /// Success message for System Info API
+  ///
+  /// In en, this message translates to:
+  /// **'Platform: {platform}'**
+  String healthCheckApiSysInfoSuccess(String platform);
+
+  /// Name for Database API test
+  ///
+  /// In en, this message translates to:
+  /// **'API: Database'**
+  String get healthCheckApiDbName;
+
+  /// Description for Database API test
+  ///
+  /// In en, this message translates to:
+  /// **'Test getDbSize'**
+  String get healthCheckApiDbDesc;
+
+  /// Success message for Database API
+  ///
+  /// In en, this message translates to:
+  /// **'Size: {size}'**
+  String healthCheckApiDbSuccess(Object size);
+
+  /// Name for Tags API test
+  ///
+  /// In en, this message translates to:
+  /// **'API: Tags'**
+  String get healthCheckApiTagsName;
+
+  /// Description for Tags API test
+  ///
+  /// In en, this message translates to:
+  /// **'Test getTags'**
+  String get healthCheckApiTagsDesc;
+
+  /// Success message for Tags API
+  ///
+  /// In en, this message translates to:
+  /// **'Tags count: {count}'**
+  String healthCheckApiTagsSuccess(int count);
+
+  /// Name for Settings API test
+  ///
+  /// In en, this message translates to:
+  /// **'API: Settings'**
+  String get healthCheckApiSettingsName;
+
+  /// Description for Settings API test
+  ///
+  /// In en, this message translates to:
+  /// **'Test getSetting/saveSetting'**
+  String get healthCheckApiSettingsDesc;
+
+  /// Success message for Settings API
+  ///
+  /// In en, this message translates to:
+  /// **'Read/Write OK'**
+  String get healthCheckApiSettingsSuccess;
+
+  /// Error message for Settings API mismatch
+  ///
+  /// In en, this message translates to:
+  /// **'Read/Write mismatch'**
+  String get healthCheckApiSettingsMismatch;
+
+  /// Name for Network API test
+  ///
+  /// In en, this message translates to:
+  /// **'API: Network'**
+  String get healthCheckApiNetworkName;
+
+  /// Description for Network API test
+  ///
+  /// In en, this message translates to:
+  /// **'Test httpGet (via Extension)'**
+  String get healthCheckApiNetworkDesc;
+
+  /// Success message for Network API
+  ///
+  /// In en, this message translates to:
+  /// **'Status: 200 OK'**
+  String get healthCheckApiNetworkSuccess;
+
+  /// Name for Events API test
+  ///
+  /// In en, this message translates to:
+  /// **'API: Events'**
+  String get healthCheckApiEventsName;
+
+  /// Description for Events API test
+  ///
+  /// In en, this message translates to:
+  /// **'Test getEvents'**
+  String get healthCheckApiEventsDesc;
+
+  /// Success message for Events API
+  ///
+  /// In en, this message translates to:
+  /// **'Events count: {count}'**
+  String healthCheckApiEventsSuccess(int count);
+
+  /// Name for Store Repository test
+  ///
+  /// In en, this message translates to:
+  /// **'Store: Repository'**
+  String get healthCheckStoreRepoName;
+
+  /// Description for Store Repository test
+  ///
+  /// In en, this message translates to:
+  /// **'Test Extension Store Connection'**
+  String get healthCheckStoreRepoDesc;
+
+  /// Success message for Store Repository
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions: {count}'**
+  String healthCheckStoreRepoSuccess(int count);
+
+  /// Tooltip for running system diagnostic
+  ///
+  /// In en, this message translates to:
+  /// **'Run System Diagnostic'**
+  String get healthCheckRunTooltip;
+
+  /// Title for system health diagnostic view
+  ///
+  /// In en, this message translates to:
+  /// **'System Health Diagnostic'**
+  String get healthCheckTitle;
+
+  /// Tooltip for rerunning tests
+  ///
+  /// In en, this message translates to:
+  /// **'Rerun'**
+  String get healthCheckRerunTooltip;
+
+  /// Label for test environment selection
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get healthCheckEnvironment;
+
+  /// Label for sandbox mode
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox Simulation'**
+  String get healthCheckSandboxMode;
+
+  /// Label for real environment
+  ///
+  /// In en, this message translates to:
+  /// **'Real Environment'**
+  String get healthCheckRealMode;
 }
 
 class _AppLocalizationsDelegate

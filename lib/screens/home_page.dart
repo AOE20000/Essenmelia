@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,11 +57,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     final delta = currentOffset - _lastScrollOffset;
 
     // 逻辑：
-    // 1. 如果在顶部，必须显示“新建”
+    // 1. 如果在顶部附近 (< 200)，必须显示“新建”
     // 2. 如果向下滚动 (delta > 0)，显示“回到顶部”
     // 3. 如果向上滚动 (delta < -10)，恢复为“新建” (添加一点阈值防止抖动)
 
-    if (currentOffset <= 0) {
+    if (currentOffset < 200) {
       if (_showScrollToTop) {
         setState(() => _showScrollToTop = false);
       }
@@ -147,14 +148,12 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.uninstall),
-        content: Text(
-          l10n.uninstallConfirmation(ext.metadata.name),
-        ),
+        content: Text(l10n.uninstallConfirmation(ext.metadata.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -176,13 +175,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       final lifecycleService = ref.read(extensionLifecycleServiceProvider);
       await lifecycleService.uninstall(ext.metadata.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '已卸载 ${ext.metadata.name}',
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已卸载 ${ext.metadata.name}')));
       }
     }
   }
@@ -190,15 +185,28 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final dbAsync = ref.watch(dbProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return dbAsync.when(
-      data: (_) => _buildAdaptiveLayout(context),
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(
-        body: Center(
-          child: Text(
-            AppLocalizations.of(context)!.databaseError(err.toString()),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: dbAsync.when(
+        data: (_) => _buildAdaptiveLayout(context),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        error: (err, stack) => Scaffold(
+          body: Center(
+            child: Text(
+              AppLocalizations.of(context)!.databaseError(err.toString()),
+            ),
           ),
         ),
       ),
@@ -224,7 +232,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final isSelectionMode = ref.watch(selectionProvider).isNotEmpty;
     final leftPanelContent = ref.watch(leftPanelContentProvider);
     final leftPanelEventId = ref.watch(leftPanelEventIdProvider);
-    final selectedEventId = ref.watch(selectedEventIdProvider);
 
     return Scaffold(
       floatingActionButton:
@@ -316,19 +323,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                           isLargeScreen,
                         ),
                       ),
-                      if (isLargeScreen && selectedEventId != null)
-                        _SideDetailPanel(
-                              screenWidth: screenWidth,
-                              selectedEventId: selectedEventId,
-                            )
-                            .animate()
-                            .fadeIn(duration: 200.ms)
-                            .slideX(
-                              begin: 0.1,
-                              end: 0,
-                              duration: 400.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
                     ],
                   ),
                   // Scrim for Left Panel
@@ -850,12 +844,14 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _handleOpenAddEvent(BuildContext context) {
-    if (_scrollController.hasClients && _scrollController.offset > 0) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOutCubic,
-      );
+    if (_showScrollToTop) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOutCubic,
+        );
+      }
       return;
     }
 
@@ -1180,85 +1176,93 @@ class _BatchEditTagsSheet extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          tagsAsync.when(
-            data: (allTags) {
-              if (allTags.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.label_off_outlined,
-                        size: 48,
-                        color: theme.colorScheme.outline.withValues(alpha: 0.5),
+          Flexible(
+            child: SingleChildScrollView(
+              child: tagsAsync.when(
+                data: (allTags) {
+                  if (allTags.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.label_off_outlined,
+                            size: 48,
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.noTags,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.noTags,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                    );
+                  }
 
-              return eventsAsync.when(
-                data: (allEvents) {
-                  final selectedEvents = allEvents
-                      .where((e) => selectedIds.contains(e.id))
-                      .toList();
+                  return eventsAsync.when(
+                    data: (allEvents) {
+                      final selectedEvents = allEvents
+                          .where((e) => selectedIds.contains(e.id))
+                          .toList();
 
-                  return Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: allTags.map((tag) {
-                      final count = selectedEvents
-                          .where((e) => e.tags?.contains(tag) ?? false)
-                          .length;
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: allTags.map((tag) {
+                          final count = selectedEvents
+                              .where((e) => e.tags?.contains(tag) ?? false)
+                              .length;
 
-                      final bool isAllSelected = count == selectedEvents.length;
-                      final bool isNoneSelected = count == 0;
-                      final bool isPartialSelected =
-                          !isAllSelected && !isNoneSelected;
+                          final bool isAllSelected =
+                              count == selectedEvents.length;
+                          final bool isNoneSelected = count == 0;
+                          final bool isPartialSelected =
+                              !isAllSelected && !isNoneSelected;
 
-                      return _TagBatchChip(
-                        label: tag,
-                        isAllSelected: isAllSelected,
-                        isPartialSelected: isPartialSelected,
-                        onTap: () async {
-                          // 点击逻辑：
-                          // 1. 如果是部分选中或未选中 -> 变为全部选中（为所有事件添加该标签）
-                          // 2. 如果是全部选中 -> 变为未选中（从所有事件中移除该标签）
-                          final bool shouldAdd = !isAllSelected;
+                          return _TagBatchChip(
+                            label: tag,
+                            isAllSelected: isAllSelected,
+                            isPartialSelected: isPartialSelected,
+                            onTap: () async {
+                              // 点击逻辑：
+                              // 1. 如果是部分选中或未选中 -> 变为全部选中（为所有事件添加该标签）
+                              // 2. 如果是全部选中 -> 变为未选中（从所有事件中移除该标签）
+                              final bool shouldAdd = !isAllSelected;
 
-                          for (final event in selectedEvents) {
-                            final currentTags = List<String>.from(
-                              event.tags ?? [],
-                            );
-                            if (shouldAdd) {
-                              if (!currentTags.contains(tag)) {
-                                currentTags.add(tag);
+                              for (final event in selectedEvents) {
+                                final currentTags = List<String>.from(
+                                  event.tags ?? [],
+                                );
+                                if (shouldAdd) {
+                                  if (!currentTags.contains(tag)) {
+                                    currentTags.add(tag);
+                                  }
+                                } else {
+                                  currentTags.remove(tag);
+                                }
+                                await ref
+                                    .read(eventsProvider.notifier)
+                                    .updateEventTags(event.id, currentTags);
                               }
-                            } else {
-                              currentTags.remove(tag);
-                            }
-                            await ref
-                                .read(eventsProvider.notifier)
-                                .updateEventTags(event.id, currentTags);
-                          }
-                        },
+                            },
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
+                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, _) => const SizedBox.shrink(),
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (_, _) => const SizedBox.shrink(),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => const SizedBox.shrink(),
+              ),
+            ),
           ),
         ],
       ),
@@ -1322,13 +1326,16 @@ class _TagBatchChip extends StatelessWidget {
             children: [
               Icon(icon, size: iconSize, color: textColor),
               const SizedBox(width: 10),
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: isAllSelected || isPartialSelected
-                      ? FontWeight.bold
-                      : FontWeight.w500,
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: textColor,
+                    fontWeight: isAllSelected || isPartialSelected
+                        ? FontWeight.bold
+                        : FontWeight.w500,
+                  ),
                 ),
               ),
             ],

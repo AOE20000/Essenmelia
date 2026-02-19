@@ -69,6 +69,7 @@ flutter {
 }
 
 dependencies {
+    implementation(kotlin("stdlib"))
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
     implementation("androidx.appcompat:appcompat:1.6.1")

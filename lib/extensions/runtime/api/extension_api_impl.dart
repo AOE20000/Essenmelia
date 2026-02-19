@@ -69,6 +69,12 @@ class ExtensionApiImpl implements ExtensionApi {
     // 1. Get registry metadata
     final metadata = registry.getMetadata(methodName);
 
+    // Security Check: Rate Limiting
+    if (!_shield.checkRateLimit(extId, methodName)) {
+      debugPrint('Rate limit exceeded: $extId calls $methodName too frequently');
+      return null;
+    }
+
     // 2. Prefer explicit params, otherwise use metadata definition (Fail-Closed basis)
     final effectivePermission = permission ?? metadata?.permission;
     final effectiveOperation = operation ?? metadata?.operation;

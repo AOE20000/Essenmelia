@@ -1,5 +1,25 @@
 {
   "@@locale": "en",
+  "extensionManagement": "Extension Management",
+  "@extensionManagement": {
+    "description": "Title for extension management screen"
+  },
+  "searchExtensions": "Search extensions",
+  "@searchExtensions": {
+    "description": "Placeholder for extension search bar"
+  },
+  "installedExtensions": "Installed",
+  "@installedExtensions": {
+    "description": "Section header for installed extensions"
+  },
+  "availableExtensions": "Available",
+  "@availableExtensions": {
+    "description": "Section header for available extensions"
+  },
+  "extensionPermissions": "Permissions",
+  "@extensionPermissions": {
+    "description": "Label for permissions tab or section"
+  },
   "uninstallExtension": "Uninstall Extension",
   "@uninstallExtension": {
     "description": "Title for uninstall confirmation dialog"
@@ -672,6 +692,10 @@
       }
     }
   },
+  "extensionInstallError": "Installation error",
+  "@extensionInstallError": {
+    "description": "Error message when extension installation fails"
+  },
   "eventReminder": "Event Reminder",
   "@eventReminder": {
     "description": "Title for event reminder notifications"
@@ -933,6 +957,26 @@
   "extensionRestrictedAccessDesc": "Requires manual approval for all data access.",
   "@extensionRestrictedAccessDesc": {
     "description": "Description for restricted access mode"
+  },
+  "extensionSandboxGroup": "Sandbox Group",
+  "@extensionSandboxGroup": {
+    "description": "Label for sandbox group configuration"
+  },
+  "extensionSandboxGroupDesc": "Extensions in the same group share mock data. Leave empty for default isolation.",
+  "@extensionSandboxGroupDesc": {
+    "description": "Description for sandbox group configuration"
+  },
+  "editSandboxGroup": "Edit Sandbox Group",
+  "@editSandboxGroup": {
+    "description": "Title for edit sandbox group dialog"
+  },
+  "enterSandboxGroupName": "Enter sandbox group name",
+  "@enterSandboxGroupName": {
+    "description": "Hint for sandbox group name input"
+  },
+  "sandboxGroupHint": "e.g., my_shared_group",
+  "@sandboxGroupHint": {
+    "description": "Example for sandbox group name"
   },
   "extensionInterceptedTitle": "Access Intercepted",
   "@extensionInterceptedTitle": {
@@ -2093,5 +2137,230 @@
   "extensionButton": "Button",
   "@extensionButton": {
     "description": "Default label for a button in dynamic UI"
+  },
+  "healthCheckNetworkName": "Network Connection",
+  "@healthCheckNetworkName": {
+    "description": "Name for network connection test"
+  },
+  "healthCheckNetworkDesc": "Test Internet Access (DNS)",
+  "@healthCheckNetworkDesc": {
+    "description": "Description for network connection test"
+  },
+  "healthCheckDbName": "Database Integrity",
+  "@healthCheckDbName": {
+    "description": "Name for database integrity test"
+  },
+  "healthCheckDbDesc": "Verify local storage R/W",
+  "@healthCheckDbDesc": {
+    "description": "Description for database integrity test"
+  },
+  "healthCheckExtensionName": "Extension System",
+  "@healthCheckExtensionName": {
+    "description": "Name for extension system test"
+  },
+  "healthCheckExtensionDesc": "Check Extension Manager Status",
+  "@healthCheckExtensionDesc": {
+    "description": "Description for extension system test"
+  },
+  "healthCheckPermissionsName": "System Permissions",
+  "@healthCheckPermissionsName": {
+    "description": "Name for system permissions test"
+  },
+  "healthCheckPermissionsDesc": "Check Calendar/Notification",
+  "@healthCheckPermissionsDesc": {
+    "description": "Description for system permissions test"
+  },
+  "healthCheckNetworkSuccessBaidu": "Connected (Baidu DNS)",
+  "@healthCheckNetworkSuccessBaidu": {
+    "description": "Success message for Baidu DNS"
+  },
+  "healthCheckNetworkSuccessBing": "Connected (Bing DNS)",
+  "@healthCheckNetworkSuccessBing": {
+    "description": "Success message for Bing DNS"
+  },
+  "healthCheckNetworkFailed": "DNS Resolution Failed: {error}",
+  "@healthCheckNetworkFailed": {
+    "description": "Error message for DNS failure",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "healthCheckDbSuccess": "R/W OK",
+  "@healthCheckDbSuccess": {
+    "description": "Success message for database R/W"
+  },
+  "healthCheckDbVerifyFailed": "R/W Verification Failed",
+  "@healthCheckDbVerifyFailed": {
+    "description": "Error message for database verification failure"
+  },
+  "healthCheckDbHiveError": "Hive Error: {error}",
+  "@healthCheckDbHiveError": {
+    "description": "Error message for Hive error",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "healthCheckException": "Exception: {error}",
+  "@healthCheckException": {
+    "description": "Generic exception message",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "healthCheckExtensionSuccess": "Service Running ({count} extensions)",
+  "@healthCheckExtensionSuccess": {
+    "description": "Success message for extension system",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "healthCheckExtensionError": "Provider Exception: {error}",
+  "@healthCheckExtensionError": {
+    "description": "Error message for extension provider",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "healthCheckPermissionCalendarOk": "Calendar Permission OK",
+  "@healthCheckPermissionCalendarOk": {
+    "description": "Success message for calendar permission"
+  },
+  "healthCheckPermissionCalendarMissing": "Missing Calendar Permission",
+  "@healthCheckPermissionCalendarMissing": {
+    "description": "Error message for missing calendar permission"
+  },
+  "healthCheckPermissionError": "Check Failed: {error}",
+  "@healthCheckPermissionError": {
+    "description": "Error message for permission check failure",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "healthCheckApiSysInfoName": "API: System Info",
+  "@healthCheckApiSysInfoName": {
+    "description": "Name for System Info API test"
+  },
+  "healthCheckApiSysInfoDesc": "Test getSystemInfo",
+  "@healthCheckApiSysInfoDesc": {
+    "description": "Description for System Info API test"
+  },
+  "healthCheckApiSysInfoSuccess": "Platform: {platform}",
+  "@healthCheckApiSysInfoSuccess": {
+    "description": "Success message for System Info API",
+    "placeholders": {
+      "platform": { "type": "String" }
+    }
+  },
+  "healthCheckApiDbName": "API: Database",
+  "@healthCheckApiDbName": {
+    "description": "Name for Database API test"
+  },
+  "healthCheckApiDbDesc": "Test getDbSize",
+  "@healthCheckApiDbDesc": {
+    "description": "Description for Database API test"
+  },
+  "healthCheckApiDbSuccess": "Size: {size}",
+  "@healthCheckApiDbSuccess": {
+    "description": "Success message for Database API",
+    "placeholders": {
+      "size": { "type": "Object" }
+    }
+  },
+  "healthCheckApiTagsName": "API: Tags",
+  "@healthCheckApiTagsName": {
+    "description": "Name for Tags API test"
+  },
+  "healthCheckApiTagsDesc": "Test getTags",
+  "@healthCheckApiTagsDesc": {
+    "description": "Description for Tags API test"
+  },
+  "healthCheckApiTagsSuccess": "Tags count: {count}",
+  "@healthCheckApiTagsSuccess": {
+    "description": "Success message for Tags API",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "healthCheckApiSettingsName": "API: Settings",
+  "@healthCheckApiSettingsName": {
+    "description": "Name for Settings API test"
+  },
+  "healthCheckApiSettingsDesc": "Test getSetting/saveSetting",
+  "@healthCheckApiSettingsDesc": {
+    "description": "Description for Settings API test"
+  },
+  "healthCheckApiSettingsSuccess": "Read/Write OK",
+  "@healthCheckApiSettingsSuccess": {
+    "description": "Success message for Settings API"
+  },
+  "healthCheckApiSettingsMismatch": "Read/Write mismatch",
+  "@healthCheckApiSettingsMismatch": {
+    "description": "Error message for Settings API mismatch"
+  },
+  "healthCheckApiNetworkName": "API: Network",
+  "@healthCheckApiNetworkName": {
+    "description": "Name for Network API test"
+  },
+  "healthCheckApiNetworkDesc": "Test httpGet (via Extension)",
+  "@healthCheckApiNetworkDesc": {
+    "description": "Description for Network API test"
+  },
+  "healthCheckApiNetworkSuccess": "Status: 200 OK",
+  "@healthCheckApiNetworkSuccess": {
+    "description": "Success message for Network API"
+  },
+  "healthCheckApiEventsName": "API: Events",
+  "@healthCheckApiEventsName": {
+    "description": "Name for Events API test"
+  },
+  "healthCheckApiEventsDesc": "Test getEvents",
+  "@healthCheckApiEventsDesc": {
+    "description": "Description for Events API test"
+  },
+  "healthCheckApiEventsSuccess": "Events count: {count}",
+  "@healthCheckApiEventsSuccess": {
+    "description": "Success message for Events API",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "healthCheckStoreRepoName": "Store: Repository",
+  "@healthCheckStoreRepoName": {
+    "description": "Name for Store Repository test"
+  },
+  "healthCheckStoreRepoDesc": "Test Extension Store Connection",
+  "@healthCheckStoreRepoDesc": {
+    "description": "Description for Store Repository test"
+  },
+  "healthCheckStoreRepoSuccess": "Extensions: {count}",
+  "@healthCheckStoreRepoSuccess": {
+    "description": "Success message for Store Repository",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "healthCheckRunTooltip": "Run System Diagnostic",
+  "@healthCheckRunTooltip": {
+    "description": "Tooltip for running system diagnostic"
+  },
+  "healthCheckTitle": "System Health Diagnostic",
+  "@healthCheckTitle": {
+    "description": "Title for system health diagnostic view"
+  },
+  "healthCheckRerunTooltip": "Rerun",
+  "@healthCheckRerunTooltip": {
+    "description": "Tooltip for rerunning tests"
+  },
+  "healthCheckEnvironment": "Environment",
+  "@healthCheckEnvironment": {
+    "description": "Label for test environment selection"
+  },
+  "healthCheckSandboxMode": "Sandbox Simulation",
+  "@healthCheckSandboxMode": {
+    "description": "Label for sandbox mode"
+  },
+  "healthCheckRealMode": "Real Environment",
+  "@healthCheckRealMode": {
+    "description": "Label for real environment"
   }
 }

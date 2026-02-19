@@ -73,6 +73,11 @@ class MockDataGenerator {
     '增加单元测试用例',
     '撰写项目总结报告',
     '更新相关的 Wiki 页面',
+    '修复 CI/CD 构建失败',
+    '重构遗留代码模块',
+    '更新依赖库版本',
+    '编写 API 接口文档',
+    '执行数据库迁移脚本',
   ];
 
   static final List<String> _descriptionTemplates = [
@@ -91,7 +96,125 @@ class MockDataGenerator {
     '社交活动的前期准备，包括邀约和选址。',
     '这是从第三方应用导入的同步任务。',
     '健康管理的重要环，请按时执行。',
+    '请参考 README.md 文件中的说明进行操作。',
+    '待处理的 Issue #42 相关的复现步骤。',
+    '临时记录的想法，稍后整理到 Notion。',
   ];
+
+  // --- System Info Mocking ---
+  static final List<String> _androidVersions = ['11', '12', '13', '14', '15'];
+  static final List<String> _manufacturers = [
+    'Google',
+    'Samsung',
+    'Xiaomi',
+    'OnePlus',
+    'Sony',
+    'Oppo',
+    'Vivo'
+  ];
+  static final List<String> _models = [
+    'Pixel 6',
+    'Pixel 7 Pro',
+    'Galaxy S22',
+    'Galaxy S23 Ultra',
+    'Mi 12',
+    'OnePlus 11',
+    'Xperia 1 V',
+    'Find X6 Pro',
+    'X90 Pro+'
+  ];
+
+  static Map<String, dynamic> generateSystemInfo() {
+    final androidVer = _androidVersions[_random.nextInt(_androidVersions.length)];
+    final manufacturer = _manufacturers[_random.nextInt(_manufacturers.length)];
+    final model = _models[_random.nextInt(_models.length)];
+    
+    // 生成一个看起来像真实的 Android ID
+    final androidId = List.generate(16, (_) => _random.nextInt(16).toRadixString(16)).join();
+    
+    return {
+      'platform': 'Android',
+      'version': androidVer,
+      'model': model,
+      'manufacturer': manufacturer,
+      'androidId': androidId,
+      'isPhysicalDevice': true,
+      'sdkVersion': '3.${19 + _random.nextInt(15)}.${_random.nextInt(5)}', // Mock Flutter Version
+      'locale': _random.nextBool() ? 'zh_CN' : 'en_US',
+    };
+  }
+
+  // --- File Content Mocking ---
+  static String generateFileContent(String? extension) {
+    final ext = extension?.toLowerCase().replaceAll('.', '') ?? 'txt';
+    
+    switch (ext) {
+      case 'json':
+        return '{\n  "id": "${_random.nextInt(1000)}",\n  "name": "Mock File",\n  "created_at": "${DateTime.now().toIso8601String()}",\n  "items": [1, 2, 3]\n}';
+      case 'csv':
+        return 'id,name,value\n1,Item A,100\n2,Item B,200\n3,Item C,300';
+      case 'xml':
+        return '<root>\n  <item id="1">Value A</item>\n  <item id="2">Value B</item>\n</root>';
+      case 'md':
+        return '# Mock Markdown File\n\nThis is a generated file content.\n\n- Item 1\n- Item 2';
+      case 'yaml':
+      case 'yml':
+        return 'name: Mock Config\nversion: 1.0.0\nenvironment: development';
+      default:
+        return 'This is a mock text file content generated at ${DateTime.now()}.';
+    }
+  }
+
+  // --- Network Response Mocking ---
+  static Map<String, dynamic> generateNetworkResponse(String url, String method) {
+    final uri = Uri.tryParse(url);
+    final host = uri?.host ?? 'example.com';
+    final path = uri?.path ?? '/';
+
+    // 针对常见 API 模式返回更真实的数据
+    if (host.contains('github.com') || host.contains('api.github.com')) {
+        return {
+          'id': _random.nextInt(1000000),
+          'name': 'mock-repo',
+          'full_name': 'mock-user/mock-repo',
+          'private': false,
+          'description': 'This is a mock repository description.',
+          'stargazers_count': _random.nextInt(5000),
+          'watchers_count': _random.nextInt(1000),
+          'language': 'Dart',
+        };
+    }
+
+    if (path.contains('/users') || path.contains('/profile')) {
+       return {
+         'id': _random.nextInt(1000),
+         'username': 'mock_user_${_random.nextInt(999)}',
+         'email': 'user${_random.nextInt(999)}@example.com',
+         'active': true,
+         'last_login': DateTime.now().subtract(Duration(days: _random.nextInt(30))).toIso8601String(),
+       };
+    }
+    
+    if (path.contains('/posts') || path.contains('/articles')) {
+       return {
+         'id': _random.nextInt(1000),
+         'title': _taskTemplates[_random.nextInt(_taskTemplates.length)],
+         'body': _descriptionTemplates[_random.nextInt(_descriptionTemplates.length)],
+         'userId': _random.nextInt(100),
+       };
+    }
+
+    // Default generic response
+    return {
+      'status': 'success',
+      'message': 'Mock response for $method $path',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'data': {
+        'mock_value': _random.nextInt(100),
+        'mock_string': 'random_string_${_random.nextInt(1000)}',
+      }
+    };
+  }
 
   static final List<String> _tags = [
     '工作', '生活', '学习', '健康', '紧急', '个人', '家庭', '社交', '财务', '娱乐', '技能', '待办'

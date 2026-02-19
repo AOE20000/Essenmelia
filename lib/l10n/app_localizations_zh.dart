@@ -9,6 +9,21 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get extensionManagement => '扩展管理';
+
+  @override
+  String get searchExtensions => '搜索扩展';
+
+  @override
+  String get installedExtensions => '已安装';
+
+  @override
+  String get availableExtensions => '可用';
+
+  @override
+  String get extensionPermissions => '权限';
+
+  @override
   String get uninstallExtension => '卸载扩展';
 
   @override
@@ -473,6 +488,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get extensionInstallError => '安装错误';
+
+  @override
   String get eventReminder => '事件提醒';
 
   @override
@@ -666,7 +684,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionRestrictedAccessDesc => '所有数据访问均需手动授权。';
 
   @override
-  String get extensionInterceptedTitle => '访问被拦截';
+  String get extensionSandboxGroup => '沙盒组';
+
+  @override
+  String get extensionSandboxGroupDesc => '处于同一沙箱组的扩展可以共享模拟数据。留空则默认独立隔离。';
+
+  @override
+  String get editSandboxGroup => '编辑沙箱组';
+
+  @override
+  String get enterSandboxGroupName => '输入沙箱组名称';
+
+  @override
+  String get sandboxGroupHint => '例如：my_shared_group';
+
+  @override
+  String get extensionInterceptedTitle => '权限拦截';
 
   @override
   String extensionInterceptedDesc(String name, String action) {
@@ -1116,9 +1149,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get extensionSandboxGroup => '沙盒组';
-
-  @override
   String get extensionSandboxDesc => '沙盒组决定数据隔离。输入相同的 ID 以共享存储。';
 
   @override
@@ -1489,4 +1519,170 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extensionButton => '按钮';
+
+  @override
+  String get healthCheckNetworkName => '网络连接';
+
+  @override
+  String get healthCheckNetworkDesc => '测试互联网访问能力 (DNS解析)';
+
+  @override
+  String get healthCheckDbName => '数据库完整性';
+
+  @override
+  String get healthCheckDbDesc => '验证本地存储读写能力';
+
+  @override
+  String get healthCheckExtensionName => '扩展系统';
+
+  @override
+  String get healthCheckExtensionDesc => '检查扩展管理器状态';
+
+  @override
+  String get healthCheckPermissionsName => '系统权限';
+
+  @override
+  String get healthCheckPermissionsDesc => '检查日历/通知权限状态';
+
+  @override
+  String get healthCheckNetworkSuccessBaidu => '已连接 (Baidu DNS)';
+
+  @override
+  String get healthCheckNetworkSuccessBing => '已连接 (Bing DNS)';
+
+  @override
+  String healthCheckNetworkFailed(String error) {
+    return 'DNS解析失败: $error';
+  }
+
+  @override
+  String get healthCheckDbSuccess => '读写正常';
+
+  @override
+  String get healthCheckDbVerifyFailed => '读写校验失败';
+
+  @override
+  String healthCheckDbHiveError(String error) {
+    return 'Hive错误: $error';
+  }
+
+  @override
+  String healthCheckException(String error) {
+    return '异常: $error';
+  }
+
+  @override
+  String healthCheckExtensionSuccess(int count) {
+    return '服务运行中 ($count 个扩展)';
+  }
+
+  @override
+  String healthCheckExtensionError(String error) {
+    return 'Provider异常: $error';
+  }
+
+  @override
+  String get healthCheckPermissionCalendarOk => '日历权限正常';
+
+  @override
+  String get healthCheckPermissionCalendarMissing => '缺少日历权限';
+
+  @override
+  String healthCheckPermissionError(String error) {
+    return '检查失败: $error';
+  }
+
+  @override
+  String get healthCheckApiSysInfoName => 'API: 系统信息';
+
+  @override
+  String get healthCheckApiSysInfoDesc => '测试 getSystemInfo';
+
+  @override
+  String healthCheckApiSysInfoSuccess(String platform) {
+    return '平台: $platform';
+  }
+
+  @override
+  String get healthCheckApiDbName => 'API: 数据库';
+
+  @override
+  String get healthCheckApiDbDesc => '测试 getDbSize';
+
+  @override
+  String healthCheckApiDbSuccess(Object size) {
+    return '大小: $size';
+  }
+
+  @override
+  String get healthCheckApiTagsName => 'API: 标签';
+
+  @override
+  String get healthCheckApiTagsDesc => '测试 getTags';
+
+  @override
+  String healthCheckApiTagsSuccess(int count) {
+    return '标签数量: $count';
+  }
+
+  @override
+  String get healthCheckApiSettingsName => 'API: 设置';
+
+  @override
+  String get healthCheckApiSettingsDesc => '测试 getSetting/saveSetting';
+
+  @override
+  String get healthCheckApiSettingsSuccess => '读写正常';
+
+  @override
+  String get healthCheckApiSettingsMismatch => '读写不一致';
+
+  @override
+  String get healthCheckApiNetworkName => 'API: 网络';
+
+  @override
+  String get healthCheckApiNetworkDesc => '测试 httpGet (扩展代理)';
+
+  @override
+  String get healthCheckApiNetworkSuccess => '状态: 200 OK';
+
+  @override
+  String get healthCheckApiEventsName => 'API: 事件';
+
+  @override
+  String get healthCheckApiEventsDesc => '测试 getEvents';
+
+  @override
+  String healthCheckApiEventsSuccess(int count) {
+    return '事件数量: $count';
+  }
+
+  @override
+  String get healthCheckStoreRepoName => '商店: 仓库';
+
+  @override
+  String get healthCheckStoreRepoDesc => '测试扩展商店连接';
+
+  @override
+  String healthCheckStoreRepoSuccess(int count) {
+    return '扩展: $count';
+  }
+
+  @override
+  String get healthCheckRunTooltip => '运行系统诊断';
+
+  @override
+  String get healthCheckTitle => '系统健康诊断';
+
+  @override
+  String get healthCheckRerunTooltip => '重新运行';
+
+  @override
+  String get healthCheckEnvironment => '运行环境';
+
+  @override
+  String get healthCheckSandboxMode => '沙盒模拟';
+
+  @override
+  String get healthCheckRealMode => '真实环境';
 }

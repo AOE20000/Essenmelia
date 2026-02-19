@@ -45,6 +45,11 @@ class SettingsExtensionApiHandler {
       return sandbox[key];
     }
 
+    // 如果是不信任模式，仅允许访问沙箱数据，禁止读取真实 Hive 存储
+    if (isUntrusted) {
+      return null;
+    }
+
     // 再查真实 Hive 存储
     final box = await Hive.openBox('ext_$extensionId');
     return box.get(key);

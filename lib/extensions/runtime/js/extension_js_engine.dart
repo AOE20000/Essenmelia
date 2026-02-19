@@ -127,6 +127,7 @@ class ExtensionJsEngine {
   }
 
   void dispose() {
+    _isInitialized = false;
     try {
       _jsRuntime.dispose();
     } catch (_) {}

@@ -29,7 +29,37 @@ class SecurityShield {
   bool _isDialogShowing = false;
   Future<void>? _currentDialogFuture;
 
+  // Rate limiting state
+  final Map<String, List<DateTime>> _apiCallTimestamps = {};
+
   SecurityShield(this._ref, this._delegate);
+
+  /// Check if the operation exceeds rate limits
+  bool checkRateLimit(String extensionId, String operation) {
+    final key = '${extensionId}_$operation';
+    final now = DateTime.now();
+    final timestamps = _apiCallTimestamps[key] ?? [];
+
+    // Remove calls older than 1 minute
+    timestamps.removeWhere((t) => now.difference(t).inMinutes >= 1);
+
+    // Define limits based on operation type
+    int limit = 60; // Default: 60 calls/min
+    if (operation.startsWith('show') || operation == 'publishEvent') {
+      limit = 10; // UI/Event spam protection: 10 calls/min
+    } else if (operation.startsWith('http')) {
+      limit = 30; // Network: 30 calls/min
+    }
+
+    if (timestamps.length >= limit) {
+      debugPrint('Rate limit exceeded for $extensionId:$operation');
+      return false;
+    }
+
+    timestamps.add(now);
+    _apiCallTimestamps[key] = timestamps;
+    return true;
+  }
 
   /// Permission management interception logic (Non-blocking + Post-hoc authorization)
   Future<bool> intercept(
