@@ -81,11 +81,64 @@ Essenmelia 采用**动态权限绑定机制**。开发者必须在 `README.md` �
 
 ---
 
-## 3. 现代化 UI 引擎 (MD3)
+## 3. UI 引擎 (DynamicEngine)
 
-`DynamicEngine` 已深度适配 **Material Design 3 (MD3)** 规范。
+`DynamicEngine` 支持 **YAML** 与 **HTML** 两种开发模式，并深度适配 **Material Design 3 (MD3)** 规范。
 
-### 3.1 颜色令牌 (Color Tokens)
+### 3.1 开发模式选择
+
+#### 模式 A: 混合开发 (推荐)
+使用 YAML 定义结构，结合原生组件与 HTML 内容。适合需要高性能列表、复杂交互或 MD3 风格一致性的场景。
+
+```yaml
+type: column
+children:
+  - type: text
+    props: { text: "Title", style: headlineMedium }
+  - type: html
+    props:
+      content: "<p>富文本内容 <a href='js:openDetail'>查看详情</a></p>"
+```
+
+#### 模式 B: 纯 HTML 模式
+直接使用 HTML 字符串作为视图定义。适合文档展示、简单工具或从 Web 迁移的项目。
+
+**配置方式** (在 `README.md` 的 JSON 配置块中)：
+```json
+"view": "<div style='padding:16px'><h1>Hello</h1><button onclick='location.href=\"js:handleClick\"'>Click Me</button></div>"
+```
+
+### 3.2 HTML 支持与 JS 桥接
+无论是混合模式还是纯 HTML 模式，HTML 内容均支持以下特性：
+
+- **标签支持**：`div`, `span`, `p`, `h1-h6`, `img`, `ul/ol`, `table`, `a` 等。
+- **样式继承**：自动适配当前主题的文字颜色与大小。
+- **JS 桥接协议**：
+  使用 `js:函数名` 协议调用扩展中的 JavaScript 函数。
+  
+  ```html
+  <!-- 调用无参函数 -->
+  <a href="js:refreshData">刷新</a>
+  
+  <!-- 调用带参函数 (需在 JS 中解析 URL 参数，暂未完全支持自动解包，建议通过状态传递复杂数据) -->
+  <a href="js:showDetail">详情</a>
+  ```
+
+### 3.3 CSS 样式支持
+扩展支持**内联样式 (Inline Styles)** 与**嵌入式样式表 (<style>)**，但受限于 Flutter 渲染机制，仅支持部分 CSS 属性：
+
+- **文本样式**：`color`, `font-size`, `font-weight`, `font-style`, `text-decoration`, `line-height`
+- **布局**：`margin`, `padding`, `text-align`, `vertical-align`
+- **背景**：`background-color`
+- **边框**：`border` (支持 `solid`, `dashed`, `dotted`), `border-radius`
+- **显示**：`display: none`, `display: block`, `display: inline`, `display: inline-block`
+
+**注意：**
+- 不支持复杂的 CSS 选择器（如 `div > p` 或 `:hover`）。
+- 不支持 Flexbox / Grid 布局（建议使用原生 YAML 组件实现布局）。
+- 不支持 `position: absolute / fixed`。
+
+### 3.4 颜色令牌 (Color Tokens)
 在 `view.yaml` 中，`color` 或 `textColor` 属性可以使用 MD3 标准色值名称：
 - **核心色**：`primary`, `onPrimary`, `primaryContainer`, `onPrimaryContainer`
 - **中性色**：`surface`, `onSurface`, `surfaceVariant`, `onSurfaceVariant`, `outline`

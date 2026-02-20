@@ -1,0 +1,40 @@
+type: column
+children:
+  - type: card
+    props:
+      variant: outlined
+      margin: [16, 16, 16, 8]
+    children:
+      - type: column
+        props:
+          padding: 16
+        children:
+          - type: text_field # Assuming text_field is supported or will be added
+            props:
+              label: "Bangumi 用户名"
+              stateKey: "username"
+              hintText: "请输入您的 Bangumi ID"
+          - type: sized_box
+            props:
+              height: 16
+          - type: text_field
+            props:
+              label: "默认标签 (以逗号分隔)"
+              stateKey: "defaultTags"
+              hintText: "例如: 追番, 动漫"
+          - type: row
+            props:
+              mainAxisAlignment: end
+              padding: [0, 16, 0, 0]
+            children:
+              - type: button
+                props:
+                  label: "获取收藏"
+                  icon: 0xe8b6 # search
+                  variant: filled
+                  onTap: "fetchCollections"
+
+  - type: column
+    props:
+      padding: 16
+    children: $collectionList

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,76 +12,23 @@ import 'package:url_launcher/url_launcher.dart';
 import '../runtime/api/extension_api_registry.dart';
 import '../core/extension_permission.dart';
 import '../utils/mock_data_generator.dart';
+import 'base_extension_service.dart';
 
-/// 系统/基础功能相关的扩展 API 实现 (网络、文件、分享)
-class SystemExtensionApiHandler {
-  SystemExtensionApiHandler(Ref ref);
+/// System/Basic extension API implementation (Network, File, Share)
+class SystemExtensionApiHandler extends BaseExtensionService {
+  SystemExtensionApiHandler(super.ref);
 
+  @override
   void register(ExtensionApiRegistry registry) {
-    registry.register(
-      'httpGet',
-      _httpGet,
-      permission: ExtensionPermission.network,
-      operation: '访问网络资源',
-      operationEn: 'Access Network Resources',
-      category: '网络访问',
-      categoryEn: 'Network Access',
-    );
-    registry.register(
-      'httpPost',
-      _httpPost,
-      permission: ExtensionPermission.network,
-      operation: '发送网络数据',
-      operationEn: 'Send Network Data',
-      category: '网络访问',
-      categoryEn: 'Network Access',
-    );
-    registry.register(
-      'httpPut',
-      _httpPut,
-      permission: ExtensionPermission.network,
-      operation: '更新网络数据',
-      operationEn: 'Update Network Data',
-      category: '网络访问',
-      categoryEn: 'Network Access',
-    );
-    registry.register(
-      'httpDelete',
-      _httpDelete,
-      permission: ExtensionPermission.network,
-      operation: '删除网络资源',
-      operationEn: 'Delete Network Resources',
-      category: '网络访问',
-      categoryEn: 'Network Access',
-    );
-    registry.register(
-      'openUrl',
-      _openUrl,
-      permission: ExtensionPermission.network,
-      operation: '在浏览器中打开链接',
-      operationEn: 'Open Link in Browser',
-      category: '网络访问',
-      categoryEn: 'Network Access',
-    );
-    registry.register(
-      'exportFile',
-      _exportFile,
-      permission: ExtensionPermission.fileSystem,
-      operation: '导出文件并调起系统分享',
-      operationEn: 'Export File and Share',
-      category: '文件操作',
-      categoryEn: 'File Operations',
-    );
-    registry.register(
-      'pickFile',
-      _pickFile,
-      permission: ExtensionPermission.fileSystem,
-      operation: '从您的设备选择并读取文件',
-      operationEn: 'Select and Read File from Device',
-      category: '文件操作',
-      categoryEn: 'File Operations',
-    );
-    registry.register(
+    // Network Operations
+    _registerNetworkApi(registry);
+
+    // File Operations
+    _registerFileApi(registry);
+
+    // System Info
+    registerApi(
+      registry,
       'getSystemInfo',
       _getSystemInfo,
       permission: ExtensionPermission.systemInfo,
@@ -88,7 +37,9 @@ class SystemExtensionApiHandler {
       category: '系统信息',
       categoryEn: 'System Info',
     );
-    registry.register(
+
+    registerApi(
+      registry,
       'getDbSize',
       _getDbSize,
       permission: ExtensionPermission.manageDb,
@@ -99,179 +50,230 @@ class SystemExtensionApiHandler {
     );
   }
 
-  Future<dynamic> _httpPut(
-    Map<String, dynamic> params, {
-    required bool isUntrusted,
-  }) async {
-    final url = params['url'] as String;
-    final body = params['body'];
-    final headers = (params['headers'] as Map?)?.cast<String, String>();
+  void _registerNetworkApi(ExtensionApiRegistry registry) {
+    const methods = ['httpGet', 'httpPost', 'httpPut', 'httpDelete'];
+    const operations = ['访问网络资源', '发送网络数据', '更新网络数据', '删除网络资源'];
+    const operationsEn = [
+      'Access Network Resources',
+      'Send Network Data',
+      'Update Network Data',
+      'Delete Network Resources',
+    ];
 
-    if (isUntrusted) {
-      final mockData = MockDataGenerator.generateNetworkResponse(url, 'PUT');
-      return jsonEncode(mockData);
+    for (var i = 0; i < methods.length; i++) {
+      registerApi(
+        registry,
+        methods[i],
+        (params, {required isUntrusted}) =>
+            _httpRequest(methods[i], params, isUntrusted: isUntrusted),
+        permission: ExtensionPermission.network,
+        operation: operations[i],
+        operationEn: operationsEn[i],
+        category: '网络访问',
+        categoryEn: 'Network Access',
+      );
     }
 
-    final response = await http
-        .put(Uri.parse(url), headers: headers, body: body)
-        .timeout(const Duration(seconds: 15));
-    return response.body;
+    registerApi(
+      registry,
+      'openUrl',
+      _openUrl,
+      permission: ExtensionPermission.network,
+      operation: '在浏览器中打开链接',
+      operationEn: 'Open Link in Browser',
+      category: '网络访问',
+      categoryEn: 'Network Access',
+    );
   }
 
-  Future<dynamic> _httpDelete(
+  void _registerFileApi(ExtensionApiRegistry registry) {
+    registerApi(
+      registry,
+      'exportFile',
+      _exportFile,
+      permission: ExtensionPermission.fileSystem,
+      operation: '导出文件并调起系统分享',
+      operationEn: 'Export File and Share',
+      category: '文件操作',
+      categoryEn: 'File Operations',
+    );
+    registerApi(
+      registry,
+      'pickFile',
+      _pickFile,
+      permission: ExtensionPermission.fileSystem,
+      operation: '从您的设备选择并读取文件',
+      operationEn: 'Select and Read File from Device',
+      category: '文件操作',
+      categoryEn: 'File Operations',
+    );
+  }
+
+  // Unified HTTP Request Handler
+  Future<dynamic> _httpRequest(
+    String method,
     Map<String, dynamic> params, {
     required bool isUntrusted,
-  }) async {
-    final url = params['url'] as String;
-    final headers = (params['headers'] as Map?)?.cast<String, String>();
+  }) {
+    print('SystemExtension: _httpRequest called for $method');
+    return execute(params, (p) async {
+      final url = p.get<String>('url');
+      print('SystemExtension: Requesting URL: $url');
+      final headers = p.getMap<String, String>('headers');
+      final body = p.getOptional('body'); // dynamic body
 
-    if (isUntrusted) {
-      final mockData = MockDataGenerator.generateNetworkResponse(url, 'DELETE');
-      return jsonEncode(mockData);
-    }
+      // Map method name to HTTP verb
+      final verb = method.replaceFirst('http', '').toUpperCase();
 
-    final response = await http
-        .delete(Uri.parse(url), headers: headers)
-        .timeout(const Duration(seconds: 15));
-    return response.body;
+      if (isUntrusted) {
+        print('SystemExtension: Untrusted request, returning mock data');
+        final mockData = MockDataGenerator.generateNetworkResponse(url, verb);
+        return jsonEncode(mockData);
+      }
+
+      http.Response response;
+      final uri = Uri.parse(url);
+      final timeout = const Duration(seconds: 15);
+
+      print('SystemExtension: Sending $verb request to $uri');
+      try {
+        switch (verb) {
+          case 'GET':
+            response = await http.get(uri, headers: headers).timeout(timeout);
+            break;
+          case 'POST':
+            response = await http
+                .post(uri, headers: headers, body: body)
+                .timeout(timeout);
+            break;
+          case 'PUT':
+            response = await http
+                .put(uri, headers: headers, body: body)
+                .timeout(timeout);
+            break;
+          case 'DELETE':
+            response = await http
+                .delete(uri, headers: headers)
+                .timeout(timeout);
+            break;
+          default:
+            throw ArgumentError('Unsupported HTTP method: $verb');
+        }
+        print('SystemExtension: Response received: ${response.statusCode}');
+        return response.body;
+      } catch (e, stack) {
+        print('SystemExtension: Request Error: $e\n$stack');
+        rethrow;
+      }
+    });
   }
 
   Future<dynamic> _openUrl(
     Map<String, dynamic> params, {
     required bool isUntrusted,
-  }) async {
-    final url = params['url'] as String;
-    if (isUntrusted) return false;
-    return await launchUrl(Uri.parse(url));
-  }
-
-  Future<dynamic> _getDbSize(
-    Map<String, dynamic> params, {
-    required bool isUntrusted,
-  }) async {
-    final extId = params['extensionId'] as String;
-    try {
-      final boxName = 'ext_$extId';
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/$boxName.hive');
-      if (await file.exists()) {
-        return await file.length();
-      }
-    } catch (e) {
-      // Ignore
-    }
-    return 0;
-  }
-
-  Future<dynamic> _httpGet(
-    Map<String, dynamic> params, {
-    required bool isUntrusted,
-  }) async {
-    final url = params['url'] as String;
-    final headers = (params['headers'] as Map?)?.cast<String, String>();
-
-    if (isUntrusted) {
-      // 受限模式下，禁止外网访问，返回模拟响应
-      final mockData = MockDataGenerator.generateNetworkResponse(url, 'GET');
-      return jsonEncode(mockData);
-    }
-
-    final response = await http
-        .get(Uri.parse(url), headers: headers)
-        .timeout(const Duration(seconds: 15));
-    return response.body;
-  }
-
-  Future<dynamic> _httpPost(
-    Map<String, dynamic> params, {
-    required bool isUntrusted,
-  }) async {
-    final url = params['url'] as String;
-    final body = params['body'];
-    final headers = (params['headers'] as Map?)?.cast<String, String>();
-
-    if (isUntrusted) {
-      final mockData = MockDataGenerator.generateNetworkResponse(url, 'POST');
-      return jsonEncode(mockData);
-    }
-
-    final response = await http
-        .post(Uri.parse(url), headers: headers, body: body)
-        .timeout(const Duration(seconds: 15));
-    return response.body;
+  }) {
+    return execute(params, (p) async {
+      final url = p.get<String>('url');
+      if (isUntrusted) return false;
+      return await launchUrl(Uri.parse(url));
+    });
   }
 
   Future<dynamic> _exportFile(
     Map<String, dynamic> params, {
     required bool isUntrusted,
-  }) async {
-    final content = params['content'] as String;
-    final fileName = params['fileName'] as String;
+  }) {
+    return execute(params, (p) async {
+      final content = p.get<String>('content');
+      final fileName = p.get<String>('fileName');
 
-    if (isUntrusted) {
-      // 欺骗：不执行真实导出，直接返回 true
-      return true;
-    }
+      if (isUntrusted) {
+        return true;
+      }
 
-    try {
-      final tempDir = await getTemporaryDirectory();
-      // Security Fix: Prevent path traversal by using basename
-      final safeFileName = path.basename(fileName);
-      final file = File('${tempDir.path}/$safeFileName');
-      await file.writeAsString(content);
+      try {
+        final tempDir = await getTemporaryDirectory();
+        final safeFileName = path.basename(fileName);
+        final file = File('${tempDir.path}/$safeFileName');
+        await file.writeAsString(content);
 
-      final result = await Share.shareXFiles(
-        [XFile(file.path)],
-        fileNameOverrides: [fileName],
-      );
-      return result.status == ShareResultStatus.success;
-    } catch (e) {
-      return false;
-    }
+        final result = await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Exported from Essenmelia',
+          subject: fileName,
+        );
+        return result.status == ShareResultStatus.success;
+      } catch (e) {
+        return false;
+      }
+    });
   }
 
   Future<dynamic> _pickFile(
     Map<String, dynamic> params, {
     required bool isUntrusted,
-  }) async {
-    final allowedExtensions = (params['allowedExtensions'] as List?)
-        ?.cast<String>();
+  }) {
+    return execute(params, (p) async {
+      final allowedExtensions = p.getList<String>('allowedExtensions');
 
-    if (isUntrusted) {
-      // Return mock file content based on requested extensions
-      final ext = allowedExtensions?.firstOrNull;
-      return MockDataGenerator.generateFileContent(ext);
-    }
+      if (isUntrusted) {
+        final ext = allowedExtensions?.firstOrNull;
+        return MockDataGenerator.generateFileContent(ext);
+      }
 
-    final result = await FilePicker.platform.pickFiles(
-      type: allowedExtensions != null ? FileType.custom : FileType.any,
-      allowedExtensions: allowedExtensions,
-    );
+      final result = await FilePicker.platform.pickFiles(
+        type: allowedExtensions != null ? FileType.custom : FileType.any,
+        allowedExtensions: allowedExtensions,
+      );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      return await file.readAsString();
-    }
-    return null;
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        return await file.readAsString();
+      }
+      return null;
+    });
   }
 
   Future<dynamic> _getSystemInfo(
     Map<String, dynamic> params, {
     required bool isUntrusted,
-  }) async {
-    if (isUntrusted) {
-      return MockDataGenerator.generateSystemInfo();
-    }
-    return {
-      'platform': Platform.operatingSystem,
-      'version': Platform.operatingSystemVersion,
-      'locale': Platform.localeName,
-      'sdkVersion': '3.38.9-preview',
-    };
+  }) {
+    // execute wrapper is optional if no params are needed, but good for consistency
+    return execute(params, (p) async {
+      if (isUntrusted) {
+        return MockDataGenerator.generateSystemInfo();
+      }
+      return {
+        'platform': Platform.operatingSystem,
+        'version': Platform.operatingSystemVersion,
+        'locale': Platform.localeName,
+        'sdkVersion': '3.38.9-preview',
+      };
+    });
+  }
+
+  Future<dynamic> _getDbSize(
+    Map<String, dynamic> params, {
+    required bool isUntrusted,
+  }) {
+    return execute(params, (p) async {
+      final extId = p.get<String>('extensionId');
+      try {
+        final boxName = 'ext_$extId';
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/$boxName.hive');
+        if (await file.exists()) {
+          return await file.length();
+        }
+      } catch (e) {
+        // Ignore
+      }
+      return 0;
+    });
   }
 }
 
-/// 提供自动注册的 Provider
+/// Provider
 final systemExtensionServiceProvider = Provider((ref) {
   final registry = ref.watch(extensionApiRegistryProvider);
   final handler = SystemExtensionApiHandler(ref);

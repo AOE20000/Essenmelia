@@ -20,6 +20,10 @@
   "@extensionPermissions": {
     "description": "Label for permissions tab or section"
   },
+  "copiedToClipboard": "Copied to clipboard",
+  "@copiedToClipboard": {
+    "description": "Message shown when text is copied to clipboard"
+  },
   "uninstallExtension": "Uninstall Extension",
   "@uninstallExtension": {
     "description": "Title for uninstall confirmation dialog"

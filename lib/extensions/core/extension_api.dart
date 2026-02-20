@@ -66,7 +66,7 @@ abstract class ExtensionApi {
   void setSearchQuery(String query);
 
   /// Create new event
-  Future<void> addEvent({
+  Future<String> addEvent({
     required String title,
     String? description,
     List<String>? tags,
@@ -76,6 +76,7 @@ abstract class ExtensionApi {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    List<Map<String, dynamic>>? steps,
   });
 
   /// Delete event

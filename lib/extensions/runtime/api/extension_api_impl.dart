@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,11 +60,17 @@ class ExtensionApiImpl implements ExtensionApi {
     String? category,
   }) async {
     final notifier = _ref.read(extensionAuthStateProvider.notifier);
+    // debugPrint('ExtensionApi: Waiting for notifier ready for $methodName');
     await notifier.ready;
+    // debugPrint('ExtensionApi: Notifier ready');
     final extId = _metadata.id;
     final registry = _ref.read(extensionApiRegistryProvider);
 
+    // Force print to debug console
+    print('ExtensionApi: Invoking $methodName for $extId');
+
     if (!notifier.isRunning(extId)) {
+      print('ExtensionApi: Extension $extId is not running');
       return null;
     }
 
@@ -71,7 +79,7 @@ class ExtensionApiImpl implements ExtensionApi {
 
     // Security Check: Rate Limiting
     if (!_shield.checkRateLimit(extId, methodName)) {
-      debugPrint('Rate limit exceeded: $extId calls $methodName too frequently');
+      print('ExtensionApi: Rate limit exceeded for $methodName');
       return null;
     }
 
@@ -111,6 +119,8 @@ class ExtensionApiImpl implements ExtensionApi {
       isUntrusted = true;
     }
 
+    print('ExtensionApi: Calling registry invoke for $methodName (untrusted=$isUntrusted)');
+
     // Inject extension meta info and sandbox ID
     final fullParams = {
       ...params,
@@ -128,13 +138,12 @@ class ExtensionApiImpl implements ExtensionApi {
       if (handler != null) {
         result = await handler(fullParams, isUntrusted: isUntrusted);
       } else {
-        debugPrint(
-          'Extension framework: No handler registered for $methodName',
-        );
+        print('ExtensionApi: No handler registered for $methodName');
         success = false;
         error = 'No handler registered';
       }
     } catch (e) {
+      print('ExtensionApi: Handler execution error: $e');
       success = false;
       error = e.toString();
       rethrow;
@@ -303,7 +312,7 @@ class ExtensionApiImpl implements ExtensionApi {
   }
 
   @override
-  Future<void> addEvent({
+  Future<String> addEvent({
     required String title,
     String? description,
     List<String>? tags,
@@ -313,8 +322,9 @@ class ExtensionApiImpl implements ExtensionApi {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    List<Map<String, dynamic>>? steps,
   }) async {
-    await _invokeApi(
+    final result = await _invokeApi(
       'addEvent',
       params: {
         'title': title,
@@ -326,8 +336,10 @@ class ExtensionApiImpl implements ExtensionApi {
         'reminderTime': reminderTime?.toIso8601String(),
         'reminderRecurrence': reminderRecurrence,
         'reminderScheme': reminderScheme,
+        'steps': steps,
       },
     );
+    return result as String;
   }
 
   @override

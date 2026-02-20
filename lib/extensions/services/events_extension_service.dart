@@ -161,6 +161,8 @@ class EventsExtensionApiHandler {
         : null;
     final reminderRecurrence = params['reminderRecurrence'] as String?;
     final reminderScheme = params['reminderScheme'] as String?;
+    final stepsJson = (params['steps'] as List?)?.cast<Map<String, dynamic>>();
+    final steps = stepsJson?.map((s) => EventStep.fromJson(s)).toList();
 
     if (isUntrusted) {
       final virtualEvent = Event()
@@ -175,15 +177,17 @@ class EventsExtensionApiHandler {
         ..reminderRecurrence = reminderRecurrence
         ..reminderScheme = reminderScheme;
 
+      if (steps != null) virtualEvent.steps = steps;
+
       final sandboxId = _getSandboxId(params);
       _virtualEvents[sandboxId] = [
         ...(_virtualEvents[sandboxId] ?? []),
         virtualEvent,
       ];
-      return;
+      return virtualEvent.id;
     }
 
-    await _ref
+    return await _ref
         .read(eventsProvider.notifier)
         .addEvent(
           title: title,
@@ -195,6 +199,7 @@ class EventsExtensionApiHandler {
           reminderTime: reminderTime,
           reminderRecurrence: reminderRecurrence,
           reminderScheme: reminderScheme,
+          steps: steps,
         );
   }
 

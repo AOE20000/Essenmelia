@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/base_extension.dart';
 import '../core/extension_api.dart';
+import '../manager/extension_manager.dart';
 import 'js/extension_js_engine.dart';
 import 'view/dynamic_engine.dart';
+import '../security/extension_auth_notifier.dart';
 
 /// Dynamic extension placeholder/proxy
 class ProxyExtension extends BaseExtension {
   ExtensionJsEngine? _engine;
+  String? _initError;
 
   ProxyExtension(super.metadata);
 
   @override
   Future<void> onInit(ExtensionApi api) async {
+    debugPrint('ProxyExtension.onInit called for ${metadata.id}');
     _engine = ExtensionJsEngine(metadata: metadata, api: api);
-    await _engine!.init();
+    try {
+      await _engine!.init();
+      debugPrint('ProxyExtension.onInit completed for ${metadata.id}');
+    } catch (e, stack) {
+      debugPrint('ProxyExtension.onInit failed for ${metadata.id}: $e\n$stack');
+      _initError = e.toString();
+      rethrow;
+    }
   }
 
   @override
@@ -39,8 +51,95 @@ class ProxyExtension extends BaseExtension {
     );
 
     // If dynamic view is defined, use DynamicEngine
-    if (metadata.view != null && metadata.view!.isNotEmpty) {
-      return DynamicEngine(engine: _engine!);
+    if (metadata.view != null &&
+        (metadata.view is String || metadata.view!.isNotEmpty)) {
+      return Consumer(
+        builder: (context, ref, child) {
+          // Watch manager to rebuild when extension is loaded
+          ref.watch(extensionManagerProvider);
+          // Watch auth state
+          ref.watch(extensionAuthStateProvider);
+
+          // Force check if extension is active in manager
+          final manager = ref.read(extensionManagerProvider);
+          final activeExt = manager.getExtension(metadata.id);
+          final isActive = activeExt != null;
+
+          // If active and engine is ready, show UI
+          if (isActive && _engine != null) {
+            return DynamicEngine(engine: _engine!);
+          }
+
+          // If we have an active extension instance but _engine is null, it means
+          // this ProxyExtension instance is stale or not the one being managed.
+          // However, since ProxyExtension *is* the instance in _activeExtensions for dynamic extensions,
+          // we need to ensure _engine is initialized.
+
+          if (_initError != null) {
+            return Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '扩展加载失败',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_initError!, textAlign: TextAlign.center),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          final notifier = ref.read(extensionAuthStateProvider.notifier);
+          final isRunning = notifier.isRunning(metadata.id);
+
+          if (!isRunning) {
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.pause_circle_outline, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      '扩展未运行',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '请在扩展详情页启用此扩展',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // If running but no engine, it might be initializing.
+          // Check if manager has it active.
+          if (!isActive) {
+            // Trigger load if not active
+            Future.microtask(() => manager.getExtension(metadata.id));
+          }
+
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        },
+      );
     }
 
     // Otherwise show developer sandbox

@@ -13,7 +13,7 @@ class ExtensionMetadata {
   final String? repoFullName;
   final IconData icon;
   final List<ExtensionPermission> requiredPermissions;
-  final Map<String, dynamic>? view;
+  final dynamic view;
   final String? script;
   final List<String> tags;
 
@@ -60,7 +60,9 @@ class ExtensionMetadata {
         json['icon_code'] ?? 0xe3af, // Default to 'extension' icon
         fontFamily: json['icon_font'] ?? 'MaterialIcons',
       ),
-      view: json['view'] is Map ? _convertYamlNode(json['view']) : null,
+      view: json['view'] is Map
+          ? _convertYamlNode(json['view'])
+          : (json['view'] is String ? json['view'] : null),
       script: json['script'] as String?,
       tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
       requiredPermissions:

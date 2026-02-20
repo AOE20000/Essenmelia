@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../l10n/app_localizations.dart';
 import '../js/extension_js_engine.dart';
 
@@ -46,15 +47,34 @@ class ExtensionConsole extends StatelessWidget {
           return Center(child: Text(l10n.noLogs));
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           itemCount: logs.length,
           itemBuilder: (context, index) {
             final log = logs[logs.length - 1 - index]; // Newest first
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text(
-                log,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            return Material(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: InkWell(
+                onLongPress: () async {
+                  await Clipboard.setData(ClipboardData(text: log));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.copiedToClipboard)),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    log,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ),
             );
           },

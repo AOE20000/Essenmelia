@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extensionPermissions => 'Permissions';
 
   @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
   String get uninstallExtension => 'Uninstall Extension';
 
   @override

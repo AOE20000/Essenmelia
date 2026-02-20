@@ -21,6 +21,7 @@ class ExtensionJsEngine {
 
   late JavascriptRuntime _jsRuntime;
   bool _isInitialized = false;
+  Future<void>? _initFuture;
   String? _error;
 
   VoidCallback? _onStateChanged;
@@ -62,9 +63,28 @@ class ExtensionJsEngine {
     }
   }
 
+  /// Update state without notifying Dart listeners (prevents UI rebuild loop)
+  /// But syncs to JS engine.
+  void updateStateSilent(String? key, dynamic value) {
+    if (key != null) {
+      state[key] = value;
+      // Sync to JS
+      final safeKey = jsonEncode(key);
+      _jsRuntime.evaluate(
+        'if (typeof _state !== "undefined") { _state[$safeKey] = ${jsonEncode(value)}; }',
+      );
+    }
+  }
+
   Future<void> init() async {
     if (_isInitialized) return;
+    if (_initFuture != null) return _initFuture;
 
+    _initFuture = _doInit();
+    return _initFuture;
+  }
+
+  Future<void> _doInit() async {
     try {
       _jsRuntime = getJavascriptRuntime();
 
@@ -73,8 +93,18 @@ class ExtensionJsEngine {
 
       // 2. Inject log listener
       _jsRuntime.onMessage('console_log', (dynamic message) {
-        _addLog('JS: $message');
-        debugPrint('JS Log: $message');
+        String logMessage;
+        if (message is String) {
+          logMessage = message;
+        } else {
+          try {
+            logMessage = jsonEncode(message);
+          } catch (e) {
+            logMessage = message.toString();
+          }
+        }
+        _addLog('JS: $logMessage');
+        debugPrint('JS Log: $logMessage');
       });
 
       _jsRuntime.evaluate('''
@@ -89,12 +119,61 @@ class ExtensionJsEngine {
             }
             return String(a);
           }).join(' ');
-          sendMessage('console_log', message);
+          sendMessage('console_log', JSON.stringify(message));
           originalLog.apply(console, arguments);
         };
       ''');
 
       _addLog('Initializing Engine...');
+
+      // Inject initial state
+      final initialStateJson = jsonEncode(state);
+      _jsRuntime.evaluate('''
+        var _rawState = $initialStateJson;
+        var _pendingRender = {};
+        var _renderTimer = null;
+
+        function _flushRender() {
+          // Clear timer flag immediately to allow new schedules if this one fails/finishes
+          var currentTimer = _renderTimer;
+          _renderTimer = null; 
+          
+          if (!currentTimer) return;
+          
+          try {
+            var payload = _pendingRender;
+            _pendingRender = {}; // Clear pending immediately
+            
+            var msg = JSON.stringify({
+              type: 'render',
+              payload: payload
+            });
+            if (typeof sendMessage === 'function') {
+              sendMessage('essenmelia_bridge', msg);
+            } else {
+              console.log("Render Error: sendMessage not found");
+            }
+          } catch (e) {
+            console.log("State Proxy Flush Error: " + e);
+          }
+        }
+
+        var _state = new Proxy(_rawState, {
+          set: function(obj, prop, value) {
+            obj[prop] = value;
+            try {
+              _pendingRender[prop] = value;
+              if (!_renderTimer) {
+                // Debounce render updates to next microtask/tick
+                _renderTimer = Promise.resolve().then(_flushRender);
+              }
+            } catch (e) {
+              console.log("State Proxy Error: " + e);
+            }
+            return true;
+          }
+        });
+      ''');
 
       // 3. Load extension script
       if (metadata.script != null) {
@@ -108,7 +187,6 @@ class ExtensionJsEngine {
       }
 
       // 4. Execute onLoad (if exists)
-      // onLoad usually contains async logic, we run it in background, not blocking isInitialized flag
       _isInitialized = true;
       _addLog('Engine Logic Loaded');
 
@@ -119,10 +197,11 @@ class ExtensionJsEngine {
           .catchError((e) {
             _addLog('onLoad Error: $e');
           });
-    } catch (e) {
+    } catch (e, stack) {
       _error = e.toString();
-      _addLog('Engine Setup Error: $e');
-      debugPrint('JS Engine Setup Error: $e');
+      _addLog('Init Error: $e');
+      debugPrint('JS Engine Init Error: $e\n$stack');
+      rethrow;
     }
   }
 
@@ -138,230 +217,331 @@ class ExtensionJsEngine {
   }
 
   void _setupApiBridges() {
-    // Robust Async Bridge: JS -> Dart
-    // JS calls `sendMessage('essenmelia_api_call', {id, method, params})`
-    // Dart processes and calls `_resolveRequest(id, result)` or `_rejectRequest(id, error)`
-    _jsRuntime.onMessage('essenmelia_api_call', (dynamic args) async {
-      Map<String, dynamic> data;
-      if (args is String) {
-        try {
-          data = jsonDecode(args);
-        } catch (e) {
-          debugPrint('essenmelia_api_call JSON parse error: $e');
-          return;
-        }
-      } else if (args is Map) {
-        data = Map<String, dynamic>.from(args);
-      } else {
-        return;
-      }
-
-      final String id = data['id'];
-      final String method = data['method'];
-      final Map<String, dynamic> params = data['params'] ?? {};
-
-      _addLog('API Call ($id): $method');
-
+    // Unified Bridge: JS -> Dart
+    // JS calls `sendMessage('essenmelia_bridge', {type, payload})`
+    _jsRuntime.onMessage('essenmelia_bridge', (dynamic args) async {
+      debugPrint(
+        'ExtensionJsEngine: Received message on essenmelia_bridge: $args',
+      );
       try {
-        dynamic result;
-        switch (method) {
-          case 'getEvents':
-            final events = await api.getEvents();
-            result = events.map((e) => e.toJson()).toList();
-            break;
-          case 'getTags':
-            result = await api.getTags();
-            break;
-          case 'showSnackBar':
-            api.showSnackBar(params['message']?.toString() ?? '');
-            result = null;
-            break;
-          case 'showConfirmDialog':
-            result = await api.showConfirmDialog(
-              title: params['title']?.toString() ?? '',
-              message: params['message']?.toString() ?? '',
-              confirmLabel: params['confirmLabel']?.toString() ?? '确定',
-              cancelLabel: params['cancelLabel']?.toString() ?? '取消',
-            );
-            break;
-          case 'navigateTo':
-            api.navigateTo(params['route']?.toString() ?? '');
-            result = null;
-            break;
-          case 'addEvent':
-            await api.addEvent(
-              title: params['title']?.toString() ?? '未命名任务',
-              description: params['description']?.toString(),
-              tags: params['tags'] != null
-                  ? List<String>.from(params['tags'])
-                  : null,
-            );
-            result = null;
-            break;
-          default:
-            result = await api.call(method, params);
-        }
-
-        // Send success response to JS
-        final safeId = jsonEncode(id);
-        final safeResult = jsonEncode(result);
-        _jsRuntime.evaluate('_resolveRequest($safeId, $safeResult);');
-      } catch (e) {
-        _addLog('API Error ($method): $e');
-        debugPrint('JS Bridge Error ($method): $e');
-
-        // Send error response to JS
-        final safeId = jsonEncode(id);
-        final safeError = jsonEncode(e.toString());
-        _jsRuntime.evaluate('_rejectRequest($safeId, $safeError);');
-      }
-    });
-
-    // State update bridge: essenmelia.updateState(key, value)
-    _jsRuntime.onMessage('essenmelia_state', (dynamic args) {
-      Map<String, dynamic> data;
-      if (args is String) {
-        try {
-          data = jsonDecode(args);
-        } catch (e) {
-          debugPrint('essenmelia_state JSON parse error: $e');
+        Map<String, dynamic> msg;
+        if (args is String) {
+          try {
+            msg = jsonDecode(args);
+          } catch (e) {
+            debugPrint('ExtensionJsEngine: JSON Decode Error: $e');
+            return;
+          }
+        } else if (args is Map) {
+          msg = Map<String, dynamic>.from(args);
+        } else {
+          debugPrint(
+            'Extension Bridge: Unknown message type: ${args.runtimeType}',
+          );
           return;
         }
-      } else if (args is Map) {
-        data = Map<String, dynamic>.from(args);
-      } else {
-        return;
-      }
 
-      final key = data['key']?.toString();
-      final value = data['value'];
-      updateState(key, value);
+        final type = msg['type'];
+        final payload = msg['payload'];
+        debugPrint('ExtensionJsEngine: Processing message type: $type');
+
+        if (type == 'api_call') {
+          // Handle API Call
+          final id = payload['id'];
+          final method = payload['method'];
+          final params = payload['params'] as Map<String, dynamic>? ?? {};
+
+          _addLog('API Call ($id): $method');
+          debugPrint('ExtensionJsEngine: Invoking API $method ($id)');
+
+          try {
+            dynamic result;
+            // Automatically route all calls to ExtensionApiImpl
+            result = await api.call(method, params);
+
+            debugPrint('ExtensionJsEngine: API $method ($id) Success');
+            // Send success response
+            final safeId = jsonEncode(id);
+            final safeResult = jsonEncode(result);
+            
+            // Use evaluateAsync to ensure microtasks are processed (essential for Promise resolution)
+            final evalFuture = _jsRuntime.evaluateAsync(
+              '_resolveRequest($safeId, $safeResult);',
+            );
+            final evalRes = await evalFuture;
+
+            if (evalRes.isError) {
+              debugPrint(
+                'ExtensionJsEngine: Resolve JS Error: ${evalRes.toString()}',
+              );
+              _addLog('Resolve JS Error: ${evalRes.toString()}');
+            } else {
+              debugPrint('ExtensionJsEngine: Resolve JS Success');
+              try {
+                _jsRuntime.executePendingJob();
+              } catch (e) {
+                // Ignore if not supported by current runtime
+              }
+            }
+          } catch (e) {
+            debugPrint('ExtensionJsEngine: API $method ($id) Error: $e');
+            _addLog('API Error ($id): $e');
+            final safeId = jsonEncode(id);
+            final safeError = jsonEncode(e.toString());
+            _jsRuntime.evaluateAsync('_rejectRequest($safeId, $safeError);');
+          }
+        } else if (type == 'render') {
+          // Handle Render
+          if (payload != null) {
+            try {
+              // Ensure payload is Map<String, dynamic>
+              Map<String, dynamic> stateMap;
+              if (payload is String) {
+                stateMap = jsonDecode(payload);
+              } else {
+                stateMap = Map<String, dynamic>.from(payload as Map);
+              }
+
+              stateMap.forEach((key, value) {
+                state[key] = value;
+                // Update notifier if exists
+                if (stateNotifiers.containsKey(key)) {
+                  stateNotifiers[key]!.value = value;
+                }
+              });
+
+              _onStateChanged?.call();
+            } catch (e) {
+              _addLog('Render Error (Dart): $e');
+            }
+          }
+        } else {
+          debugPrint('Extension Bridge: Unknown message type: $type');
+        }
+      } catch (e) {
+        debugPrint('Extension Bridge Error: $e');
+      }
     });
 
-    // Inject global object and helpers
     _jsRuntime.evaluate('''
-      var _pendingRequests = {};
-      var _state = {};
-      
-      // Global helpers for Dart to call back
-      function _resolveRequest(id, result) {
-        if (_pendingRequests[id]) {
-          _pendingRequests[id].resolve(result);
-          delete _pendingRequests[id];
-        }
+      if (typeof essenmelia === 'undefined') {
+        var essenmelia = {};
       }
       
-      function _rejectRequest(id, error) {
-        if (_pendingRequests[id]) {
-          _pendingRequests[id].reject(error);
-          delete _pendingRequests[id];
-        }
-      }
-
-      // State Proxy
-      var state = new Proxy(_state, {
-        set: function(target, prop, value) {
-          target[prop] = value;
-          essenmelia.updateState(prop, value);
-          return true;
-        }
-      });
-
-      // API Object
-      var essenmelia = {
-        call: function(method, params) {
-          return new Promise((resolve, reject) => {
-            var id = 'req_' + Math.random().toString(36).substr(2, 9);
-            _pendingRequests[id] = { resolve: resolve, reject: reject };
-            
-            sendMessage('essenmelia_api_call', JSON.stringify({
-              id: id,
-              method: method,
-              params: params || {}
-            }));
-            
-            // Timeout safety (30s)
-            setTimeout(() => {
-              if (_pendingRequests[id]) {
-                _pendingRequests[id].reject('Timeout');
-                delete _pendingRequests[id];
-              }
-            }, 30000);
-          });
-        },
-        
-        updateState: function(key, value) {
-          _state[key] = value;
-          sendMessage('essenmelia_state', JSON.stringify({ key: key, value: value }));
-        },
-        
-        // Convenience wrappers
-        getEvents: () => essenmelia.call('getEvents'),
-        showSnackBar: (msg) => essenmelia.call('showSnackBar', { message: msg }),
-        showConfirmDialog: function(args) {
-          if (typeof args === 'string') {
-            return essenmelia.call('showConfirmDialog', { title: arguments[0], message: arguments[1] });
+      // Inject render function
+      function render() {
+        if (typeof _state !== 'undefined') {
+          // Send shallow copy or full state? 
+          // _state is the source of truth.
+          try {
+            var msg = JSON.stringify({
+              type: 'render',
+              payload: _state
+            });
+            sendMessage('essenmelia_bridge', msg);
+          } catch(e) {
+            console.log("Render Error: " + e);
           }
-          return essenmelia.call('showConfirmDialog', args);
         }
+      }
+
+      essenmelia._requests = {};
+      
+      essenmelia.call = function(method, params) {
+        return new Promise(function(resolve, reject) {
+          var id = 'req_' + Math.random().toString(36).substr(2, 9);
+          try {
+            console.log("JS: Call " + method + " id=" + id);
+            essenmelia._requests[id] = { resolve: resolve, reject: reject };
+            var msg = JSON.stringify({
+              type: 'api_call',
+              payload: {
+                id: id,
+                method: method,
+                params: params || {}
+              }
+            });
+            
+            if (typeof sendMessage === 'function') {
+              sendMessage('essenmelia_bridge', msg);
+              console.log("JS: Call Sent " + id);
+            } else {
+              console.log("JS: Critical Error - sendMessage not found");
+              reject("Runtime Error: sendMessage not found");
+            }
+          } catch (e) {
+            console.log("JS: Call Error " + e);
+            if (essenmelia._requests[id]) {
+              delete essenmelia._requests[id];
+            }
+            reject("Call Error: " + e);
+          }
+        });
+      };
+      
+      essenmelia.httpGet = async function(url, headers) {
+        var result = await essenmelia.call('httpGet', {url: url, headers: headers});
+        if (typeof result === 'string') {
+          // Try parse JSON automatically? Or let caller do it?
+          // Bangumi API returns JSON.
+          // But httpGet contract says String?
+          // If we parse here, we break contract if caller expects string.
+          // But main.js code does JSON.parse(resStr).
+          // If result is already object, JSON.parse fails?
+          // No, JSON.parse(object) => stringifies object then parses it?
+          // No, JSON.parse("[object Object]") throws.
+          // Let's keep it simple.
+          return result;
+        }
+        return result;
+      };
+      
+      // Helper to resolve request from Dart
+      function _resolveRequest(id, result) {
+        console.log("JS: _resolveRequest called for " + id);
+        if (essenmelia._requests[id]) {
+          try {
+            // Need to parse if result is a JSON string of an object, 
+            // but api results are often just values or strings.
+            // If result was jsonEncoded in Dart, it's a string here.
+            // But if the original result was a Map/List, it's a JSON string now.
+            // The caller expects the raw object if it was JSON.
+            // However, our bridge sends strings.
+            // If the user expects an object, they should JSON.parse it?
+            // Or should we auto-parse if it looks like JSON?
+            // Currently, httpGet returns a String (the body).
+            // So result is "<body>".
+            // If we JSON.parse it, we get the body string.
+            // If the body itself is JSON, the user must parse it again.
+            // This seems correct for httpGet.
+            
+            essenmelia._requests[id].resolve(result);
+            console.log("JS: Promise Resolved for " + id);
+          } catch(e) {
+            console.log("JS: Promise Resolve Error: " + e);
+          }
+          delete essenmelia._requests[id];
+        } else {
+          console.log("JS: Request not found " + id);
+        }
+      }
+      
+      // Helper to reject request from Dart
+      function _rejectRequest(id, error) {
+        console.log("JS: _rejectRequest called for " + id + " error: " + error);
+        if (essenmelia._requests[id]) {
+            try {
+              essenmelia._requests[id].reject(error);
+            } catch(e) {
+            console.log("JS: Promise Reject Error: " + e);
+          }
+          delete essenmelia._requests[id];
+        }
+      }
+      
+      // State sync
+      // _state is initialized in _doInit with Proxy
+      
+      essenmelia.getState = function(key) {
+        return _state[key];
+      };
+      
+      // Add more helpers as needed
+      essenmelia.addEvent = function(event) {
+        return essenmelia.call('addEvent', event);
+      };
+      
+      essenmelia.httpGet = async function(url, headers) {
+        return essenmelia.call('httpGet', {url: url, headers: headers});
+      };
+      
+      essenmelia.showSnackBar = function(message) {
+        return essenmelia.call('showSnackBar', {message: message});
       };
     ''');
   }
 
+  /// Call a JS function from Dart
   Future<dynamic> callFunction(String name, [dynamic params]) async {
-    if (!_isInitialized) {
-      debugPrint('JS Engine not initialized, skipping $name');
-      return null;
-    }
-    try {
-      final paramsJson = jsonEncode(params ?? {});
-      // Use try-catch wrap JS call, and explicitly return JSON string or null
-      // Security Fix: Use globalThis[name] form call, and verify name is safe string, prevent injection
-      final safeName = jsonEncode(name);
-      final code =
-          '''
-        (function() {
-          var funcName = $safeName;
-          var func = globalThis[funcName];
-          if (typeof func === "function") {
-            try {
-              var result = func($paramsJson);
-              if (result instanceof Promise) {
-                return result.then(r => JSON.stringify(r)).catch(e => JSON.stringify({error: e.toString()}));
-              }
-              return JSON.stringify(result);
-            } catch (e) {
-              return JSON.stringify({error: e.toString()});
-            }
-          }
-          return null;
-        })()
-      ''';
+    if (!_isInitialized) return null;
 
-      final result = await _jsRuntime.evaluateAsync(code);
-      if (result.isError) {
-        debugPrint('JS Execution Error ($name): ${result.toString()}');
-        return null;
-      }
+    final safeName = name; // Basic validation could be added
+    String code;
 
-      final rawResult = result.stringResult;
-      if (rawResult == 'null' || rawResult == 'undefined') {
-        return null;
-      }
-
+    if (params != null) {
       try {
-        return jsonDecode(rawResult);
+        final safeParams = jsonEncode(params);
+        code = '$safeName($safeParams)';
       } catch (e) {
-        // If not JSON format, return raw string
-        return rawResult;
+        _addLog('JSON Encode Error ($name): $e');
+        rethrow;
       }
+    } else {
+      code = '$safeName()';
+    }
+
+    try {
+      // evaluateAsync is better for function calls that might return Promises
+    // But FlutterJs evaluateAsync result handling is tricky.
+    // For now, we use evaluateAsync if possible to ensure Promises don't hang.
+    // This is crucial for functions that use await.
+    
+    // We don't await the result here because the JS function might be long-running or return a Promise.
+    // If we await, we might block Dart if the JS promise never resolves (though evaluateAsync usually returns the Promise object immediately).
+    // But if we want the actual result of the function, we should await.
+    // However, for void functions or UI updates, fire-and-forget is okay.
+    // But to ensure the JS event loop runs, evaluateAsync is preferred.
+    
+    final evalFuture = _jsRuntime.evaluateAsync(code);
+    
+    // We wait for the evaluation to complete (which means the function started and returned its initial result/promise)
+    final result = await evalFuture;
+    
+    // Force microtask flush if needed
+    try {
+      _jsRuntime.executePendingJob();
     } catch (e) {
-      debugPrint('JS Execution Exception ($name): $e');
-      return null;
+      // Ignore
+    }
+
+    if (result.isError) {
+        String errorMsg;
+        try {
+          errorMsg = result.toString();
+        } catch (e) {
+          errorMsg = 'Unknown JS Error';
+        }
+        _addLog('JS Error ($name): $errorMsg');
+        throw errorMsg;
+      }
+
+      // If the result is a Promise (in JS), we can't easily await it from here
+      // unless we use the callback mechanism.
+      // For simple sync functions or fire-and-forget, this is fine.
+      return result.rawResult;
+    } catch (e) {
+      String errorMsg;
+      try {
+        errorMsg = e.toString();
+      } catch (_) {
+        errorMsg = 'Unknown Call Error';
+      }
+      _addLog('Call Error ($name): $errorMsg');
+      rethrow;
     }
   }
 
   void handleEvent(String name, Map<String, dynamic> data) {
-    callFunction('onEvent', {'name': name, 'data': data});
+    if (!_isInitialized) return;
+
+    // Call onEvent(name, data) in JS if it exists
+    final safeName = jsonEncode(name);
+    final safeData = jsonEncode(data);
+
+    _jsRuntime.evaluate('''
+      if (typeof onEvent === 'function') {
+        onEvent($safeName, $safeData);
+      }
+    ''');
   }
 }

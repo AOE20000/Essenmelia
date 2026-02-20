@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'Permissions'**
   String get extensionPermissions;
 
+  /// Message shown when text is copied to clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get copiedToClipboard;
+
   /// Title for uninstall confirmation dialog
   ///
   /// In en, this message translates to:

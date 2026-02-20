@@ -24,6 +24,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionPermissions => '权限';
 
   @override
+  String get copiedToClipboard => '已复制到剪贴板';
+
+  @override
   String get uninstallExtension => '卸载扩展';
 
   @override

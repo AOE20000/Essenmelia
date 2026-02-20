@@ -36,17 +36,12 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   web: ^1.1.1
-  fl_chart: ^1.1.1
-  photo_view: ^0.15.0
   http: ^1.6.0
   url_launcher: ^6.3.2
   google_mlkit_text_recognition: ^0.15.1
   google_mlkit_object_detection: ^0.15.1
-  image_cropper: ^11.0.0
-  quick_settings: ^1.0.1
   image: ^4.7.2
   desktop_drop: ^0.7.0
-  dotted_border: ^2.1.0
   path: ^1.9.1
   dynamic_color: ^1.8.1
   archive: ^4.0.7
@@ -59,6 +54,8 @@ dependencies:
   crypto: ^3.0.7
   animations: ^2.1.1
   pasteboard: ^0.4.0
+  flutter_widget_from_html: ^0.17.1
+  rfw: ^1.1.0
   # receive_intent: ^0.2.7
 
 dev_dependencies:

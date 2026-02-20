@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animations/animations.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../../l10n/app_localizations.dart';
 import '../js/extension_js_engine.dart';
 import 'extension_console.dart';
@@ -16,17 +17,38 @@ class DynamicEngine extends ConsumerStatefulWidget {
 }
 
 class _DynamicEngineState extends ConsumerState<DynamicEngine> {
+  final Map<String, TextEditingController> _controllers = {};
+
+  @override
+  void dispose() {
+    for (var controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
     widget.engine.setOnStateChanged(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     });
 
     if (!widget.engine.isInitialized) {
-      widget.engine.init().then((_) {
-        if (mounted) setState(() {});
-      });
+      widget.engine
+          .init()
+          .then((_) {
+            if (mounted) {
+              setState(() {});
+            }
+          })
+          .catchError((e) {
+            if (mounted) {
+              setState(() {});
+            }
+          });
     }
   }
 
@@ -107,6 +129,48 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
       );
     }
 
+    // Special case: HTML content as the entire view
+    if (viewDef is String) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.engine.metadata.name),
+          centerTitle: false,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: HtmlWidget(
+            viewDef,
+            textStyle: theme.textTheme.bodyMedium,
+            onTapUrl: (url) {
+              if (url.startsWith('js:')) {
+                // Parse js:funcName?param=value
+                // Remove 'js:' prefix to get the rest
+                final raw = url.substring(3);
+                final queryIndex = raw.indexOf('?');
+
+                String funcName;
+                Map<String, dynamic> params = {};
+
+                if (queryIndex != -1) {
+                  funcName = raw.substring(0, queryIndex);
+                  final query = raw.substring(queryIndex + 1);
+                  final uri = Uri(query: query);
+                  params = uri.queryParameters;
+                } else {
+                  funcName = raw;
+                }
+
+                widget.engine.callFunction(funcName, params);
+                return true;
+              }
+              // Allow default handling (url_launcher)
+              return false;
+            },
+          ),
+        ),
+      );
+    }
+
     return NestedScrollView(
       key: const ValueKey('content'),
       headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -126,7 +190,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: _buildWidget(viewDef),
+              child: _buildWidget(viewDef as Map<String, dynamic>),
             ),
           );
         },
@@ -206,7 +270,6 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   /// Internal build logic without state binding
   Widget _buildWidgetInternal(Map<String, dynamic> def, {Key? key}) {
     final type = def['type'] as String? ?? 'container';
-    final children = def['children'] as List?;
     final props = def['props'] as Map<String, dynamic>? ?? {};
 
     // Layout props
@@ -216,9 +279,29 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
     final height = (props['height'] as num?)?.toDouble();
     final color = _parseColor(props['color'], context);
 
+    // Resolve children
+    List<dynamic> resolvedChildren = [];
+    final rawChildren = def['children'];
+    if (rawChildren is List) {
+      resolvedChildren = rawChildren;
+    } else if (rawChildren is String && rawChildren.startsWith('\$')) {
+      final key = rawChildren.substring(1);
+      final val = widget.engine.state[key];
+      if (val is List) {
+        resolvedChildren = val;
+      }
+    }
+
     // Tap handling
     VoidCallback? onTap;
-    final action = def['onTap'] ?? props['action'];
+    // Compatibility: Support onTap, action, onPress in root or props
+    final action =
+        def['onTap'] ??
+        def['action'] ??
+        props['action'] ??
+        props['onTap'] ??
+        props['onPress'];
+
     if (action != null) {
       onTap = () {
         if (action is String) {
@@ -235,7 +318,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
     switch (type) {
       case 'column':
-        final hasFlex = (children ?? []).any((c) {
+        final hasFlex = resolvedChildren.any((c) {
           final childType = (c as Map)['type'];
           return childType == 'expanded' || childType == 'spacer';
         });
@@ -250,13 +333,13 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           mainAxisAlignment: _parseMainAxisAlignment(
             props['mainAxisAlignment'],
           ),
-          children: (children ?? [])
+          children: resolvedChildren
               .map((c) => _buildWidget(c as Map<String, dynamic>))
               .toList(),
         );
         break;
       case 'row':
-        final hasFlexRow = (children ?? []).any((c) {
+        final hasFlexRow = resolvedChildren.any((c) {
           final childType = (c as Map)['type'];
           return childType == 'expanded' || childType == 'spacer';
         });
@@ -271,7 +354,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           mainAxisAlignment: _parseMainAxisAlignment(
             props['mainAxisAlignment'],
           ),
-          children: (children ?? [])
+          children: resolvedChildren
               .map((c) => _buildWidget(c as Map<String, dynamic>))
               .toList(),
         );
@@ -286,7 +369,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         }
 
         current = Text(
-          _resolveValue(props['text'] ?? ''),
+          _resolveValue(props['text'] ?? '').toString(),
           key: key,
           textAlign: _parseTextAlign(props['textAlign']),
           style: style.copyWith(
@@ -294,6 +377,34 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             fontWeight: props['bold'] == true ? FontWeight.bold : null,
             color: _parseColor(props['textColor'], context),
           ),
+        );
+        break;
+      case 'html':
+        final content = _resolveValue(props['content'] ?? '').toString();
+        current = HtmlWidget(
+          content,
+          key: key,
+          textStyle: theme.textTheme.bodyMedium,
+          onTapUrl: (url) {
+            final action = def['onTapUrl'];
+            if (action != null) {
+              if (action is String) {
+                widget.engine.callFunction(action, {'url': url});
+              } else if (action is Map && action.containsKey('call')) {
+                widget.engine.callFunction(action['call'], {
+                  'url': url,
+                  ...?action['params'],
+                });
+              }
+              return true;
+            }
+            // If user explicitly wants to open in browser via extension API
+            if (url.startsWith('http')) {
+              // Default handling by widget is fine, but maybe we want to use our internal browser or launchUrl
+              // The widget uses url_launcher by default.
+            }
+            return false;
+          },
         );
         break;
       case 'button':
@@ -357,8 +468,8 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         final elevation = (props['elevation'] as num?)?.toDouble();
         final color = _parseColor(props['color'], context);
         final borderRadius = (props['borderRadius'] as num?)?.toDouble() ?? 12;
-        final child = children != null && children.isNotEmpty
-            ? _buildWidget(children.first as Map<String, dynamic>)
+        final child = resolvedChildren.isNotEmpty
+            ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
             : const SizedBox.shrink();
 
         if (variant == 'outlined') {
@@ -506,19 +617,138 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         break;
 
       case 'switch':
+        final val = _resolveValue(props['value']);
+        final isTrue = val == true || val.toString().toLowerCase() == 'true';
         current = Switch(
           key: key,
-          value: _resolveValue(props['value']) == true,
+          value: isTrue,
           onChanged: (val) {
-            final onChange = def['onChanged'] ?? props['onChange'];
+            final onChange =
+                def['onChanged'] ?? props['onChange'] ?? props['onChanged'];
             if (onChange != null) {
               if (onChange is String) {
                 widget.engine.callFunction(onChange, {'value': val});
               } else if (onChange is Map && onChange.containsKey('call')) {
-                widget.engine.callFunction(
-                  onChange['call'],
-                  {'value': val, ...?onChange['params']},
-                );
+                widget.engine.callFunction(onChange['call'], {
+                  'value': val,
+                  ...?onChange['params'],
+                });
+              }
+            }
+          },
+        );
+        break;
+
+      case 'expanded':
+        current = Expanded(
+          key: key,
+          flex: (props['flex'] as num?)?.toInt() ?? 1,
+          child: resolvedChildren.isNotEmpty
+              ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
+              : const SizedBox.shrink(),
+        );
+        break;
+
+      case 'spacer':
+        current = Spacer(key: key, flex: (props['flex'] as num?)?.toInt() ?? 1);
+        break;
+
+      case 'image':
+        final url = _resolveValue(props['url'] ?? '').toString();
+        final fitVal = props['fit']?.toString();
+        BoxFit fit = BoxFit.cover;
+        if (fitVal == 'contain') {
+          fit = BoxFit.contain;
+        } else if (fitVal == 'fill') {
+          fit = BoxFit.fill;
+        } else if (fitVal == 'fitWidth') {
+          fit = BoxFit.fitWidth;
+        } else if (fitVal == 'fitHeight') {
+          fit = BoxFit.fitHeight;
+        }
+
+        Widget img;
+        if (url.startsWith('http')) {
+          img = Image.network(
+            url,
+            key: key,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (ctx, err, stack) => Container(
+              width: width,
+              height: height,
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.broken_image, color: theme.colorScheme.error),
+            ),
+          );
+        } else {
+          img = Container(
+            width: width,
+            height: height,
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Icon(
+              Icons.image_not_supported,
+              color: theme.colorScheme.outline,
+            ),
+          );
+        }
+
+        final radius = (props['borderRadius'] as num?)?.toDouble();
+        if (radius != null && radius > 0) {
+          img = ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: img,
+          );
+        }
+        current = img;
+        break;
+
+      case 'text_field':
+        final label = props['label']?.toString();
+        final hintText = props['hintText']?.toString();
+        final stateKey = props['stateKey']?.toString();
+
+        TextEditingController? controller;
+        if (stateKey != null) {
+          controller = _controllers.putIfAbsent(stateKey, () {
+            return TextEditingController(
+              text: widget.engine.state[stateKey]?.toString(),
+            );
+          });
+
+          // Sync controller if state changed externally
+          final currentState = widget.engine.state[stateKey]?.toString() ?? '';
+          if (controller.text != currentState) {
+            // Only update if the difference is significant to avoid cursor jumps during typing
+            // if we were using a reactive stream.
+            // Since we use silent update for self-typing, this likely means external update.
+            controller.text = currentState;
+          }
+        }
+
+        current = TextField(
+          key: key,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hintText,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+          controller: controller,
+          onChanged: (val) {
+            if (stateKey != null) {
+              // Silent update to avoid rebuilding this widget and losing focus/cursor
+              widget.engine.updateStateSilent(stateKey, val);
+            }
+
+            final onChange = def['onChanged'] ?? props['onChange'];
+            if (onChange != null) {
+              if (onChange is String) {
+                widget.engine.callFunction(onChange, {'value': val});
               }
             }
           },
@@ -543,8 +773,8 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
                   )
                 : null,
           ),
-          child: children != null && children.isNotEmpty
-              ? _buildWidget(children.first as Map<String, dynamic>)
+          child: resolvedChildren.isNotEmpty
+              ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
               : null,
         );
         if (onTap != null) {
@@ -566,8 +796,12 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   // --- Helpers ---
 
   EdgeInsets? _parsePadding(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return EdgeInsets.all(value.toDouble());
+    if (value == null) {
+      return null;
+    }
+    if (value is num) {
+      return EdgeInsets.all(value.toDouble());
+    }
     if (value is List) {
       if (value.length == 2) {
         return EdgeInsets.symmetric(
@@ -588,8 +822,12 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   }
 
   Color? _parseColor(dynamic value, BuildContext context) {
-    if (value == null) return null;
-    if (value is int) return Color(value);
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return Color(value);
+    }
     if (value is String) {
       // Theme color reference
       final theme = Theme.of(context);
@@ -623,9 +861,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
           return Colors.transparent;
         default:
           if (value.startsWith('#')) {
-            return Color(
-              int.parse(value.substring(1), radix: 16) + 0xFF000000,
-            );
+            return Color(int.parse(value.substring(1), radix: 16) + 0xFF000000);
           }
       }
     }
@@ -748,6 +984,12 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
     // Also scan switch value etc
     if (def['type'] == 'switch') {
       scan(def['value']); // Usually prop but just in case
+    }
+
+    // Scan children if it's a dynamic binding
+    final children = def['children'];
+    if (children is String && children.startsWith('\$')) {
+      keys.add(children.substring(1));
     }
 
     return keys.toList();

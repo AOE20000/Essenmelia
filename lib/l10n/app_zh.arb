@@ -1,6 +1,7 @@
 {
   "@@locale": "zh",
   "extensionPermissions": "权限",
+  "copiedToClipboard": "已复制到剪贴板",
   "uninstallExtension": "卸载扩展",
   "uninstallConfirmation": "确定要卸载“{name}”吗？",
   "@uninstallConfirmation": {

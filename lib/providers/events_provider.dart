@@ -50,7 +50,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
   }
 
-  Future<void> addEvent({
+  Future<String> addEvent({
     required String title,
     String? description,
     List<String>? tags,
@@ -60,6 +60,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    List<EventStep>? steps,
   }) async {
     if (_box == null) {
       await _init();
@@ -75,6 +76,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       ..reminderTime = reminderTime
       ..reminderRecurrence = reminderRecurrence
       ..reminderScheme = reminderScheme;
+
+    if (steps != null) {
+      event.steps = steps;
+    }
 
     if (reminderTime != null) {
       if (reminderScheme == 'calendar') {
@@ -107,6 +112,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
     // Notify extension manager of new event
     ref.read(extensionManagerProvider).notifyEventAdded(event);
+    return event.id;
   }
 
   Future<void> updateEvent({

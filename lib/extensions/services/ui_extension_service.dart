@@ -166,7 +166,9 @@ class UIExtensionApiHandler {
 
     if (isUntrusted) {
       // 模拟用户决策延迟
-      await Future.delayed(Duration(milliseconds: 500 + Random().nextInt(1500)));
+      await Future.delayed(
+        Duration(milliseconds: 500 + Random().nextInt(1500)),
+      );
       // 85% 概率确认，15% 概率取消，模拟真实用户行为
       return Random().nextDouble() < 0.85;
     }

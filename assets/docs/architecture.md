@@ -22,14 +22,38 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
 - **核心职责**：
   - 初始化 `flutter_js` 运行时并注入 `essenmelia` 全局 API 对象。
   - 维护扩展的内部 `state`，并同步给 UI 渲染引擎。
+  - **统一消息桥接 (Unified Bridge)**：
+    - 废弃了多通道通信模式，统一使用 `essenmelia_bridge` 通道。
+    - **消息格式**：标准化的 JSON 结构 `{ type: 'api_call' | 'render', payload: ... }`。
+      - `api_call`: JS 请求调用 Dart 原生能力。
+      - `render`: JS 请求更新 UI 状态。
+    - 解决了多通道注册导致的通信冲突（如 Terminal 加载卡死问题）。
   - **JS 桥接安全 (Injection Prevention)**：
     - 状态同步时，对所有键名执行 `jsonEncode` 转义，防止通过恶意键名进行 JS 注入。
     - 函数调用采用 `globalThis[jsonEncode(name)]` 模式，确保执行路径受控。
   - **异步 Promise 桥接**：实现了基于 Promise 的双向通信，JS 调用 Dart API 时会自动挂起，直到 Dart 返回结果。
   - **日志追踪**：劫持 `console.log`，通过桥接转发至 Dart 侧的“扩展控制台”。
 - **状态同步机制**：
-  - JS 直接修改 `state` 属性 -> Proxy 拦截 -> 发送消息给 Dart -> 更新 `ExtensionJsEngine.state` -> 触发对应键的 `ValueNotifier` -> 局部 UI 刷新。
+  - JS 直接修改 `state` 属性 -> Proxy 拦截 -> 发送 `render` 类型消息给 Dart -> 更新 `ExtensionJsEngine.state` -> 触发对应键的 `ValueNotifier` -> 局部 UI 刷新。
 - **代码参考**：[extension_js_engine.dart](Flutter-New/lib/extensions/runtime/js/extension_js_engine.dart)
+
+### 2.5 API 扩展框架 (Host Side)
+为了解决生产环境 API 开发的效率瓶颈，引入了标准化的 API 开发范式。
+
+- **BaseExtensionService**:
+  - 所有扩展服务 (Service) 的基类。
+  - 提供了 `registerApi` 辅助方法，大幅减少样板代码。
+  - 统一处理异常捕获与日志记录。
+- **ApiParams (类型安全参数)**:
+  - 解决了 JS 与 Dart 之间的类型不匹配痛点。
+  - 提供 `get<T>(key)` 和 `getOptional<T>(key)` 方法。
+  - **自动类型转换**：
+    - String -> int/bool (如 "123" -> 123, "true" -> true)
+    - num -> int
+    - 增强了 API 的鲁棒性，减少因前端传参类型错误导致的崩溃。
+- **代码参考**：
+  - [base_extension_service.dart](Flutter-New/lib/extensions/services/base_extension_service.dart)
+  - [api_helpers.dart](Flutter-New/lib/extensions/runtime/api/api_helpers.dart)
 
 ### 2.2 渲染层：`Runtime/View` (DynamicEngine)
 渲染层将 YAML 定义转换为 Flutter Widget 树。

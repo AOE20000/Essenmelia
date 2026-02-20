@@ -171,6 +171,14 @@ class ExtensionManager extends ChangeNotifier
           if (id.startsWith('running_')) {
             if (!listEquals(previous[id], next[id])) {
               runningChanged = true;
+
+              // If extension is enabled, trigger load
+              final extId = id.substring('running_'.length);
+              final isRunning = next[id]?.firstOrNull != 'false';
+              if (isRunning) {
+                // Fire and forget, notify when done
+                _loadExtension(extId).whenComplete(() => notifyListeners());
+              }
               break;
             }
           }
@@ -217,6 +225,20 @@ class ExtensionManager extends ChangeNotifier
         await _verifyIntegrityAsync(extId, json);
 
         _installedExtensions[extId] = ProxyExtension(metadata);
+
+        // Auto-load if running
+        final auth = _ref.read(extensionAuthStateProvider.notifier);
+        if (auth.isRunning(extId)) {
+          // If extension is already active, force reload to apply updates
+          if (_activeExtensions.containsKey(extId)) {
+            debugPrint('Reloading updated extension: $extId');
+            final oldExt = _activeExtensions.remove(extId);
+            await oldExt?.onDispose();
+          }
+
+          // Fire and forget, but notify when done so UI updates
+          _loadExtension(extId).whenComplete(() => notifyListeners());
+        }
       } catch (e) {
         debugPrint('Failed to load extension ${entry.key}: $e');
       }
@@ -259,21 +281,25 @@ class ExtensionManager extends ChangeNotifier
     if (blueprint == null) return null;
 
     final auth = _ref.read(extensionAuthStateProvider.notifier);
+    debugPrint('Loading extension $id, running state: ${auth.isRunning(id)}');
     if (!auth.isRunning(id)) {
+      debugPrint('Extension $id is not running, returning blueprint.');
       return blueprint; // Return blueprint (Proxy) if not running
     }
 
     try {
+      debugPrint('Initializing extension $id...');
       // Create API implementation with SecurityShield
       final api = ExtensionApiImpl(_ref, blueprint.metadata, _securityShield);
 
       // Initialize extension (ProxyExtension will create JS engine)
       await blueprint.onInit(api);
+      debugPrint('Extension $id initialized successfully.');
 
       _activeExtensions[id] = blueprint;
       return blueprint;
-    } catch (e) {
-      debugPrint('Failed to initialize extension $id: $e');
+    } catch (e, stack) {
+      debugPrint('Failed to initialize extension $id: $e\n$stack');
       // Fallback to blueprint
       return blueprint;
     }
@@ -286,9 +312,11 @@ class ExtensionManager extends ChangeNotifier
     }
     // Trigger load if needed (async)
     if (_installedExtensions.containsKey(id)) {
-      _loadExtension(
-        id,
-      ); // Fire and forget load, UI will rebuild when notified?
+      final auth = _ref.read(extensionAuthStateProvider.notifier);
+      if (auth.isRunning(id)) {
+        // Only trigger load if it is supposed to be running
+        _loadExtension(id).whenComplete(() => notifyListeners());
+      }
       return _installedExtensions[id];
     }
     return null;
