@@ -708,9 +708,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Requires manual approval for all data access.';
 
   @override
-  String get extensionSandboxGroup => 'Sandbox Group';
-
-  @override
   String get extensionSandboxGroupDesc =>
       'Extensions in the same group share mock data. Leave empty for default isolation.';
 
@@ -1188,6 +1185,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get extensionSandboxGroup => 'Sandbox Group';
+
+  @override
   String get extensionSandboxDesc =>
       'Sandbox groups determine data isolation. Enter the same ID to share storage.';
 
@@ -1661,7 +1661,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get healthCheckApiDbDesc => 'Test getDbSize';
 
   @override
-  String healthCheckApiDbSuccess(Object size) {
+  String healthCheckApiDbSuccess(String size) {
     return 'Size: $size';
   }
 

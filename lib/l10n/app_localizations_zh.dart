@@ -687,9 +687,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionRestrictedAccessDesc => '所有数据访问均需手动授权。';
 
   @override
-  String get extensionSandboxGroup => '沙盒组';
-
-  @override
   String get extensionSandboxGroupDesc => '处于同一沙箱组的扩展可以共享模拟数据。留空则默认独立隔离。';
 
   @override
@@ -1150,6 +1147,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String extensionSharedSandbox(String id) {
     return '共享沙盒：$id';
   }
+
+  @override
+  String get extensionSandboxGroup => '沙盒组';
 
   @override
   String get extensionSandboxDesc => '沙盒组决定数据隔离。输入相同的 ID 以共享存储。';
@@ -1613,7 +1613,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get healthCheckApiDbDesc => '测试 getDbSize';
 
   @override
-  String healthCheckApiDbSuccess(Object size) {
+  String healthCheckApiDbSuccess(String size) {
     return '大小: $size';
   }
 

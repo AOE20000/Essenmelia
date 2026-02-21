@@ -16,6 +16,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
+import 'extensions/services/gateway_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -117,6 +118,8 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
     _initIntentHandler();
+    // Initialize Gateway Service
+    ref.read(gatewayServiceProvider).init();
   }
 
   void _initIntentHandler() {

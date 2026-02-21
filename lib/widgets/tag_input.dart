@@ -139,9 +139,11 @@ class _TagInputState extends ConsumerState<TagInput> {
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _selectedTags.map((tag) {
+            children: _selectedTags.asMap().entries.map((entry) {
+              final index = entry.key;
+              final tag = entry.value;
               return Chip(
-                key: ValueKey('tag_$tag'),
+                key: ValueKey('tag_${tag}_$index'),
                 label: Text(tag, style: const TextStyle(fontSize: 12)),
                 onDeleted: () => _removeTag(tag),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

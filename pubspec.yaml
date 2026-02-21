@@ -56,6 +56,7 @@ dependencies:
   pasteboard: ^0.4.0
   flutter_widget_from_html: ^0.17.1
   rfw: ^1.1.0
+  app_links: ^7.0.0
   # receive_intent: ^0.2.7
 
 dev_dependencies:
@@ -85,5 +86,6 @@ flutter:
   assets:
     - assets/images/
     - assets/docs/
+    - assets/extensions/builtin/external_call/
   generate: true
   uses-material-design: true

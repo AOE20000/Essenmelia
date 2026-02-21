@@ -59,82 +59,90 @@ class ExtensionApiImpl implements ExtensionApi {
     String? operation,
     String? category,
   }) async {
-    final notifier = _ref.read(extensionAuthStateProvider.notifier);
-    // debugPrint('ExtensionApi: Waiting for notifier ready for $methodName');
-    await notifier.ready;
-    // debugPrint('ExtensionApi: Notifier ready');
     final extId = _metadata.id;
-    final registry = _ref.read(extensionApiRegistryProvider);
 
-    // Force print to debug console
-    print('ExtensionApi: Invoking $methodName for $extId');
-
-    if (!notifier.isRunning(extId)) {
-      print('ExtensionApi: Extension $extId is not running');
-      return null;
-    }
-
-    // 1. Get registry metadata
-    final metadata = registry.getMetadata(methodName);
-
-    // Security Check: Rate Limiting
-    if (!_shield.checkRateLimit(extId, methodName)) {
-      print('ExtensionApi: Rate limit exceeded for $methodName');
-      return null;
-    }
-
-    // 2. Prefer explicit params, otherwise use metadata definition (Fail-Closed basis)
-    final effectivePermission = permission ?? metadata?.permission;
-    final effectiveOperation = operation ?? metadata?.operation;
-    final effectiveCategory = category ?? metadata?.category;
-
-    bool isUntrusted = false;
-
-    // 3. Privacy Shield Intercept logic (for restricted access mode)
-    if (effectiveOperation != null) {
-      final context = navigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        final operation = metadata?.getOperation(l10n) ?? effectiveOperation;
-        final category =
-            metadata?.getCategory(l10n) ??
-            effectiveCategory ??
-            l10n.extensionCategoryGeneral;
-
-        // Use SecurityShield to intercept
-        isUntrusted = !await _shield.intercept(
-          _metadata,
-          operation,
-          category,
-          permission: effectivePermission,
-        );
-      }
-    }
-
-    // 4. Explicit permission check (for persistent permissions)
-    // If API defines permission but check fails, force "untrusted" mode (return mock data)
-    if (!isUntrusted &&
-        effectivePermission != null &&
-        !_checkPermission(effectivePermission)) {
-      isUntrusted = true;
-    }
-
-    print('ExtensionApi: Calling registry invoke for $methodName (untrusted=$isUntrusted)');
-
-    // Inject extension meta info and sandbox ID
-    final fullParams = {
-      ...params,
-      'extensionId': _metadata.id,
-      'sandboxId': _getSandboxId(),
-    };
-
-    final handler = registry.getHandler(methodName);
-
-    dynamic result;
+    // Log state variables
     bool success = true;
     String? error;
+    bool isUntrusted = false;
+    dynamic result;
 
     try {
+      final notifier = _ref.read(extensionAuthStateProvider.notifier);
+      // debugPrint('ExtensionApi: Waiting for notifier ready for $methodName');
+      await notifier.ready;
+      // debugPrint('ExtensionApi: Notifier ready');
+
+      final registry = _ref.read(extensionApiRegistryProvider);
+
+      // Force print to debug console
+      print('ExtensionApi: Invoking $methodName for $extId');
+
+      if (!notifier.isRunning(extId)) {
+        print('ExtensionApi: Extension $extId is not running');
+        success = false;
+        error = 'Extension not running';
+        return null;
+      }
+
+      // 1. Get registry metadata
+      final metadata = registry.getMetadata(methodName);
+
+      // Security Check: Rate Limiting
+      if (!_shield.checkRateLimit(extId, methodName)) {
+        print('ExtensionApi: Rate limit exceeded for $methodName');
+        success = false;
+        error = 'Rate limit exceeded';
+        return null;
+      }
+
+      // 2. Prefer explicit params, otherwise use metadata definition (Fail-Closed basis)
+      final effectivePermission = permission ?? metadata?.permission;
+      final effectiveOperation = operation ?? metadata?.operation;
+      final effectiveCategory = category ?? metadata?.category;
+
+      // 3. Privacy Shield Intercept logic (for restricted access mode)
+      if (effectiveOperation != null) {
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          final operation = metadata?.getOperation(l10n) ?? effectiveOperation;
+          final category =
+              metadata?.getCategory(l10n) ??
+              effectiveCategory ??
+              l10n.extensionCategoryGeneral;
+
+          // Use SecurityShield to intercept
+          isUntrusted = !await _shield.intercept(
+            _metadata,
+            operation,
+            category,
+            permission: effectivePermission,
+          );
+        }
+      }
+
+      // 4. Explicit permission check (for persistent permissions)
+      // If API defines permission but check fails, force "untrusted" mode (return mock data)
+      if (!isUntrusted &&
+          effectivePermission != null &&
+          !_checkPermission(effectivePermission)) {
+        isUntrusted = true;
+      }
+
+      print(
+        'ExtensionApi: Calling registry invoke for $methodName (untrusted=$isUntrusted)',
+      );
+
+      // Inject extension meta info and sandbox ID
+      final fullParams = {
+        ...params,
+        'extensionId': _metadata.id,
+        'sandboxId': _getSandboxId(),
+      };
+
+      final handler = registry.getHandler(methodName);
+
       if (handler != null) {
         result = await handler(fullParams, isUntrusted: isUntrusted);
       } else {
@@ -142,6 +150,8 @@ class ExtensionApiImpl implements ExtensionApi {
         success = false;
         error = 'No handler registered';
       }
+
+      return result;
     } catch (e) {
       print('ExtensionApi: Handler execution error: $e');
       success = false;
@@ -149,23 +159,25 @@ class ExtensionApiImpl implements ExtensionApi {
       rethrow;
     } finally {
       // Record global log
-      _ref
-          .read(extensionLogProvider.notifier)
-          .addLog(
-            ExtensionLogEntry(
-              extensionId: _metadata.id,
-              extensionName: _metadata.name,
-              method: methodName,
-              params: params,
-              timestamp: DateTime.now(),
-              success: success,
-              error: error,
-              isUntrusted: isUntrusted,
-            ),
-          );
+      try {
+        _ref
+            .read(extensionLogProvider.notifier)
+            .addLog(
+              ExtensionLogEntry(
+                extensionId: _metadata.id,
+                extensionName: _metadata.name,
+                method: methodName,
+                params: params,
+                timestamp: DateTime.now(),
+                success: success,
+                error: error,
+                isUntrusted: isUntrusted,
+              ),
+            );
+      } catch (logError) {
+        print('ExtensionApi: Failed to record log: $logError');
+      }
     }
-
-    return result;
   }
 
   @override

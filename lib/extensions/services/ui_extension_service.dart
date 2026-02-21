@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/notification_service.dart';
+import 'extension_notification_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/l10n_provider.dart';
@@ -69,6 +70,30 @@ class UIExtensionApiHandler {
       operationEn: 'Get Current Locale',
       category: '系统信息',
       categoryEn: 'System Info',
+    );
+    registry.register(
+      'updateProgress',
+      _updateProgress,
+      permission: ExtensionPermission.uiInteraction,
+      operation: '更新任务进度',
+      operationEn: 'Update Task Progress',
+      category: '界面交互',
+      categoryEn: 'UI Interaction',
+    );
+  }
+
+  Future<dynamic> _updateProgress(
+    Map<String, dynamic> params, {
+    required bool isUntrusted,
+  }) async {
+    final extensionId = params['extensionId'] as String;
+    final progress = (params['progress'] as num).toDouble();
+    final message = params['message'] as String? ?? '';
+
+    _ref.read(extensionNotificationServiceProvider).showProgress(
+      extensionId,
+      progress,
+      message,
     );
   }
 

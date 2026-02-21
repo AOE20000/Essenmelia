@@ -93,6 +93,7 @@ await essenmelia.call('enableFeature', { active: "true" }); // 自动转为 true
 | `showSnackBar` | `uiInteraction` | 显示底部提示条 | `{ message: "操作成功" }` |
 | `showConfirmDialog` | `uiInteraction` | 弹出确认对话框 | `{ title: "确认", message: "是否继续？", confirmLabel: "是", cancelLabel: "否" }` |
 | `showNotification` | `notifications` | 发送系统通知 | `{ title: "提醒", body: "该喝水了", payload: "route://water" }` |
+| `updateProgress` | `uiInteraction` | 在通知栏更新任务进度 | `{ progress: 0.5, message: "正在加载..." }` (progress: 0.0~1.0, -1为不确定) |
 | `navigateTo` | `navigation` | 跳转应用内路由 | `{ route: "/settings" }` |
 | `getThemeMode` | `systemInfo` | 获取当前主题 ('light'/'dark') | 无 |
 | `getLocale` | `systemInfo` | 获取当前语言代码 (如 'zh') | 无 |
@@ -151,4 +152,8 @@ await essenmelia.call('showSnackBar', {
 - **写操作**（如 `addEvent`）：返回成功，但数据仅写入内存沙箱，重启即丢失。
 - **敏感操作**：可能会弹出系统授权对话框。
 
-这种机制确保了即使用户运行了恶意扩展，其真实隐私数据也不会泄露。
+#### 频率限制 (Rate Limiting)
+系统不再设置硬性的 API 调用频率上限。但为了防止扩展滥用资源或造成卡顿：
+- 当检测到短时间内频繁调用 API（如网络请求 > 60次/分，UI操作 > 30次/分）时，系统会弹出**警告通知**。
+- 用户可在警告通知中点击**“阻止运行”**，将该扩展加入黑名单，后续所有 API 调用将被拒绝。
+- 建议使用 `updateProgress` 等批量/异步接口，避免高频调用细粒度 API。

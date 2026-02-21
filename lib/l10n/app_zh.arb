@@ -365,7 +365,6 @@
   },
   "extensionRestrictedAccess": "受限访问",
   "extensionRestrictedAccessDesc": "所有数据访问均需手动授权。",
-  "extensionSandboxGroup": "沙箱组",
   "extensionSandboxGroupDesc": "处于同一沙箱组的扩展可以共享模拟数据。留空则默认独立隔离。",
   "editSandboxGroup": "编辑沙箱组",
   "enterSandboxGroupName": "输入沙箱组名称",

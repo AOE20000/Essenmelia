@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -11,6 +12,10 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+
+  final StreamController<NotificationResponse> _responseStream =
+      StreamController.broadcast();
+  Stream<NotificationResponse> get onResponse => _responseStream.stream;
 
   Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -32,7 +37,10 @@ class NotificationService {
     await _notifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (details) {
-        debugPrint('Notification tapped: ${details.payload}');
+        _responseStream.add(details);
+        debugPrint(
+          'Notification tapped: ${details.payload} action: ${details.actionId}',
+        );
       },
     );
   }
@@ -128,5 +136,83 @@ class NotificationService {
       ),
       payload: payload,
     );
+  }
+
+  Future<void> showProgress({
+    required int id,
+    required String title,
+    required String body,
+    required int progress,
+    required int maxProgress,
+    required String channelName,
+    required String channelDescription,
+  }) async {
+    await _notifications.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'extension_progress',
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.low,
+          priority: Priority.low,
+          onlyAlertOnce: true,
+          showProgress: true,
+          maxProgress: maxProgress,
+          progress: progress,
+          indeterminate: progress < 0,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: false,
+          presentBadge: true,
+          presentSound: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> showWarning({
+    required int id,
+    required String title,
+    required String body,
+    required String payload,
+    required String actionId,
+    required String actionLabel,
+    required String channelName,
+    required String channelDescription,
+  }) async {
+    await _notifications.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'extension_warning',
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          actions: [
+            AndroidNotificationAction(
+              actionId,
+              actionLabel,
+              showsUserInterface: true,
+            ),
+          ],
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: payload,
+    );
+  }
+
+  Future<void> cancel(int id) async {
+    await _notifications.cancel(id);
   }
 }

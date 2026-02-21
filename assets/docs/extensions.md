@@ -186,3 +186,42 @@ children:
 - `segmented_button`: 分段按钮。支持 `stateKey` (双向绑定), `segments` (包含 `value`, `label`, `icon` 的列表)。
 - `switch`: 开关。支持 `value` (绑定 `$state.key`), `onChanged` (绑定 JS 函数)。
 - `list_tile`: 列表项。支持 `title`, `subtitle`, `leading` (icon), `trailing` (widget), `onTap`。
+
+---
+
+## 4. 最佳实践 (Best Practices)
+
+### 4.1 任务进度反馈
+对于耗时较长的操作（如批量网络请求、数据处理），**强烈建议**使用 `updateProgress` API 向用户反馈进度，而不是频繁更新 UI 或发送 Toast。
+
+```javascript
+// ✅ 推荐写法
+async function syncData() {
+  await essenmelia.updateProgress(0, "开始同步...");
+  for (let i = 0; i < items.length; i++) {
+    // ... 处理逻辑 ...
+    // 更新进度条 (0.0 - 1.0)
+    await essenmelia.updateProgress((i + 1) / items.length, `已处理 ${i + 1} 项`);
+  }
+  // 完成
+  await essenmelia.updateProgress(1.0, "同步完成");
+}
+```
+
+- **优势**：
+  - 显示在系统通知栏，不干扰用户当前操作。
+  - 避免因频繁 `render` 导致的 UI 卡顿。
+  - 进度完成后自动消失。
+
+### 4.2 避免高频 API 调用
+系统会对扩展的 API 调用频率进行监测。
+- **警告阈值**：
+  - UI 操作（如 `showSnackBar`）：约 30次/分
+  - 网络请求：约 60次/分
+- **后果**：
+  - 触发阈值后，系统会弹出**警告通知**。
+  - 用户可在通知中点击**“阻止”**，该扩展将被永久屏蔽。
+- **建议**：
+  - 避免在循环中直接调用 `showSnackBar` 或 `render`。
+  - 使用 `updateProgress` 替代频繁的 UI 反馈。
+  - 批量处理数据，减少细碎的 API 调用。

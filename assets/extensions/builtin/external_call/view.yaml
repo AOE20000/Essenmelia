@@ -1,0 +1,49 @@
+type: scaffold
+appBar:
+  title: 指令网关
+  actions:
+    - type: icon_button
+      icon: delete_outline
+      onTap: clearLog
+      tooltip: 清空日志
+
+body:
+  type: column
+  children:
+    - type: card
+      margin: 16
+      child:
+        type: padding
+        padding: 16
+        child:
+          type: column
+          crossAxisAlignment: start
+          children:
+            - type: text
+              text: "网关状态: 运行中"
+              style: title_medium
+            - type: text
+              text: "正在监听 essenmelia:// 协议调用"
+              style: body_medium
+              color: grey
+
+    - type: padding
+      padding: "0, 16, 0, 8"
+      child:
+        type: text
+        text: " 调用日志"
+        style: title_small
+        color: primary
+
+    - type: list_view
+      expanded: true
+      children:
+        $map: requests
+        item:
+          type: list_tile
+          leading:
+            type: icon
+            icon: link
+          title: "$item.path"
+          subtitle: "$item.timestamp"
+          onTap: null

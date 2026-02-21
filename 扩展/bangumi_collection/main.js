@@ -7,6 +7,7 @@ state.loading = false;
 
 // Cache for items to avoid proxy overhead
 let cachedItems = [];
+let cachedItemsMap = {};
 
 function getStatusText(type) {
   switch (type) {
@@ -41,24 +42,80 @@ async function fetchCollections() {
   }];
 
   try {
-    const url = `https://api.bgm.tv/v0/users/${username}/collections`;
-    console.log('Fetching collections from: ' + url);
-    const resStr = await essenmelia.httpGet(url, {});
-    console.log('Response received, length: ' + (resStr ? resStr.length : 'null'));
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+    let allItems = [];
     
-    // Check if resStr is already an object (auto-parsed by bridge?)
-    let res;
-    if (typeof resStr === 'object') {
-      res = resStr;
-      console.log('Response is already an object');
-    } else {
-      res = JSON.parse(resStr);
-      console.log('JSON parsed successfully');
+    // Clear cache
+    cachedItems = [];
+    cachedItemsMap = {};
+
+    // Initial progress
+    await essenmelia.updateProgress(0, '开始获取收藏...');
+
+    while (hasMore) {
+        // Update UI to show progress
+        const page = (offset / limit) + 1;
+        const msg = `正在加载第 ${page} 页 (已获取 ${allItems.length} 条)...`;
+        
+        // Show indeterminate progress in notification bar
+        essenmelia.updateProgress(-1, msg);
+
+        state.collectionList = [{
+            type: 'container',
+            props: { height: 100, padding: 20 },
+            children: [{
+                type: 'text', 
+                props: { text: `正在加载第 ${(offset / limit) + 1} 页 (已获取 ${allItems.length} 条)...`, textAlign: 'center' }
+            }]
+        }];
+        
+        const url = `https://api.bgm.tv/v0/users/${username}/collections?limit=${limit}&offset=${offset}`;
+        console.log('Fetching collections from: ' + url);
+        const resStr = await essenmelia.httpGet(url, {
+            'User-Agent': 'Essenmelia/1.0 (https://github.com/Essenmelia/Essenmelia) BangumiCollection/1.0'
+        });
+        
+        let res;
+        if (typeof resStr === 'object') {
+            res = resStr;
+        } else {
+            try {
+                res = JSON.parse(resStr);
+            } catch (e) {
+                console.log('JSON parse error: ' + e);
+                hasMore = false;
+                break;
+            }
+        }
+        
+        if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+            console.log('Got ' + res.data.length + ' items');
+            allItems = allItems.concat(res.data);
+            if (res.data.length < limit) {
+                hasMore = false;
+            } else {
+                offset += limit;
+                // Removed delay to prevent potential event loop hanging
+            }
+        } else {
+            console.log('No more items or invalid response');
+            hasMore = false;
+        }
     }
     
-    if (res && res.data) {
-      const items = res.data;
+    if (allItems.length > 0) {
+      await essenmelia.updateProgress(1.0, `获取完成，共 ${allItems.length} 条`);
+      const items = allItems;
       cachedItems = items; // Cache items
+      cachedItemsMap = {}; // Reset cache map
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.subject && item.subject.id) {
+            cachedItemsMap[item.subject.id] = item;
+        }
+      }
       
       const newUiList = [];
 
@@ -273,6 +330,33 @@ async function fetchCollections() {
 }
 
 async function addToEvent(args, silent) {
+  // Try to use cached item first for better data completeness
+  if (args.subjectId && cachedItemsMap && cachedItemsMap[args.subjectId]) {
+      try {
+          const item = cachedItemsMap[args.subjectId];
+          const subject = item.subject || {};
+          const images = subject.images || {};
+          
+          // Override args with full data from cache
+          // Note: We use existing args as fallback or base, but overwrite with cache data
+          args.title = subject.name_cn || subject.name || args.title;
+          args.originalTitle = subject.name || args.originalTitle;
+          args.cover = images.common || images.medium || images.large || args.cover || '';
+          args.eps = (subject.eps || 0).toString();
+          args.watched = (item.ep_status || 0).toString();
+          args.summary = subject.summary || subject.short_summary || args.summary || '';
+          args.score = (subject.score || '0').toString();
+          args.userScore = (item.rate || '0').toString();
+          args.userComment = item.comment || args.userComment || '';
+          args.userTags = (item.tags || []).join(',');
+          args.collectionStatus = (item.type || 0).toString();
+          
+          console.log('Using cached data for import: ' + args.title);
+      } catch (e) {
+          console.log('Error using cached data: ' + e);
+      }
+  }
+
   const title = args.title;
   const originalTitle = args.originalTitle || '';
   const cover = args.cover;
@@ -332,19 +416,44 @@ async function addToEvent(args, silent) {
 
   // Build steps
   const steps = [];
-  if (eps > 0) {
-      for (let i = 1; i <= eps; i++) {
+  
+  // Logic to determine how many steps to generate
+  // If eps is 0 (unknown), but we have watched some, generate steps for what we've watched
+  let loopCount = eps;
+  if (loopCount === 0 && watched > 0) {
+      loopCount = watched; 
+  }
+  
+  if (loopCount > 0) {
+      for (let i = 1; i <= loopCount; i++) {
           steps.push({
               description: `第 ${i} 话`,
               completed: i <= watched,
               timestamp: new Date().toISOString()
           });
       }
+      
+      // If we don't know the total, add a generic "Next Episode" placeholder
+      if (eps === 0) {
+           steps.push({
+              description: `第 ${loopCount + 1} 话 (后续未知)`,
+              completed: false,
+              timestamp: new Date().toISOString()
+          });
+      }
+  } else if (watched > 0) {
+      // Fallback: if loopCount is still 0 but we have watched status (shouldn't happen due to logic above)
+      // Just in case
+      steps.push({
+          description: `已看 ${watched} 话`,
+          completed: true,
+          timestamp: new Date().toISOString()
+      });
   }
 
   try {
     await essenmelia.addEvent({
-      title: '追番: ' + title,
+      title: title,
       description: description,
       tags: tags,
       imageUrl: cover,
@@ -397,8 +506,11 @@ async function importAll() {
             console.log('Import failed for ' + title + ': ' + e);
         }
         
-        // Optional: throttle to avoid freezing UI or hitting DB too hard
-        // await new Promise(r => setTimeout(r, 50)); 
+        // Show progress every 20 items
+        if (i > 0 && i % 20 === 0) {
+             await essenmelia.showSnackBar(`正在导入... (${i}/${cachedItems.length})`);
+             // Yield to UI loop (no setTimeout as it may hang)
+        }
     }
     
     await essenmelia.showSnackBar('导入完成: 成功 ' + successCount + '/' + cachedItems.length);

@@ -263,7 +263,7 @@ class ExtensionJsEngine {
             // Send success response
             final safeId = jsonEncode(id);
             final safeResult = jsonEncode(result);
-            
+
             // Use evaluateAsync to ensure microtasks are processed (essential for Promise resolution)
             final evalFuture = _jsRuntime.evaluateAsync(
               '_resolveRequest($safeId, $safeResult);',
@@ -452,12 +452,50 @@ class ExtensionJsEngine {
       };
       
       essenmelia.httpGet = async function(url, headers) {
-        return essenmelia.call('httpGet', {url: url, headers: headers});
+        var result = await essenmelia.call('httpGet', {url: url, headers: headers});
+        if (typeof result === 'string') {
+          try {
+            // Only try to parse if it looks like JSON object/array
+            if (result.trim().startsWith('{') || result.trim().startsWith('[')) {
+               return JSON.parse(result);
+            }
+          } catch(e) {
+            // Ignore parse error, return raw string
+          }
+        }
+        return result;
       };
       
       essenmelia.showSnackBar = function(message) {
         return essenmelia.call('showSnackBar', {message: message});
       };
+      
+      essenmelia.updateProgress = function(progress, message) {
+        return essenmelia.call('updateProgress', {progress: progress, message: message});
+      };
+
+      // Event Listeners
+      essenmelia._listeners = {};
+      essenmelia.on = function(event, callback) {
+        if (!essenmelia._listeners[event]) {
+          essenmelia._listeners[event] = [];
+        }
+        essenmelia._listeners[event].push(callback);
+      };
+
+      // Global onEvent handler called by Dart
+      function onEvent(name, data) {
+        console.log("JS: Received Event " + name);
+        if (essenmelia._listeners[name]) {
+          essenmelia._listeners[name].forEach(function(callback) {
+            try {
+              callback(data);
+            } catch (e) {
+              console.log("Event Handler Error: " + e);
+            }
+          });
+        }
+      }
     ''');
   }
 
@@ -465,7 +503,43 @@ class ExtensionJsEngine {
   Future<dynamic> callFunction(String name, [dynamic params]) async {
     if (!_isInitialized) return null;
 
-    final safeName = name; // Basic validation could be added
+    // Handle parameterized route calls (e.g. "addToEvent?title=...")
+    String functionName = name;
+    Map<String, dynamic> urlParams = {};
+
+    if (name.contains('?')) {
+      final parts = name.split('?');
+      functionName = parts[0];
+      if (parts.length > 1) {
+        try {
+          // Parse query string manually to handle encoded values correctly
+          final queryString = parts[1];
+          final pairs = queryString.split('&');
+          for (var pair in pairs) {
+            final kv = pair.split('=');
+            if (kv.length >= 2) {
+              final key = kv[0];
+              // Use Uri.decodeComponent to handle %-encoded values from JS encodeURIComponent
+              // Join the rest of the parts in case the value contains '='
+              final valueStr = kv.sublist(1).join('=');
+              final value = Uri.decodeComponent(valueStr);
+              urlParams[key] = value;
+            }
+          }
+
+          // Merge with existing params if any
+          if (params is Map) {
+            urlParams.addAll(Map<String, dynamic>.from(params));
+            params = urlParams;
+          }
+          params ??= urlParams;
+        } catch (e) {
+          _addLog('Error parsing URL params: $e');
+        }
+      }
+    }
+
+    final safeName = functionName; // Basic validation could be added
     String code;
 
     if (params != null) {
@@ -482,29 +556,29 @@ class ExtensionJsEngine {
 
     try {
       // evaluateAsync is better for function calls that might return Promises
-    // But FlutterJs evaluateAsync result handling is tricky.
-    // For now, we use evaluateAsync if possible to ensure Promises don't hang.
-    // This is crucial for functions that use await.
-    
-    // We don't await the result here because the JS function might be long-running or return a Promise.
-    // If we await, we might block Dart if the JS promise never resolves (though evaluateAsync usually returns the Promise object immediately).
-    // But if we want the actual result of the function, we should await.
-    // However, for void functions or UI updates, fire-and-forget is okay.
-    // But to ensure the JS event loop runs, evaluateAsync is preferred.
-    
-    final evalFuture = _jsRuntime.evaluateAsync(code);
-    
-    // We wait for the evaluation to complete (which means the function started and returned its initial result/promise)
-    final result = await evalFuture;
-    
-    // Force microtask flush if needed
-    try {
-      _jsRuntime.executePendingJob();
-    } catch (e) {
-      // Ignore
-    }
+      // But FlutterJs evaluateAsync result handling is tricky.
+      // For now, we use evaluateAsync if possible to ensure Promises don't hang.
+      // This is crucial for functions that use await.
 
-    if (result.isError) {
+      // We don't await the result here because the JS function might be long-running or return a Promise.
+      // If we await, we might block Dart if the JS promise never resolves (though evaluateAsync usually returns the Promise object immediately).
+      // But if we want the actual result of the function, we should await.
+      // However, for void functions or UI updates, fire-and-forget is okay.
+      // But to ensure the JS event loop runs, evaluateAsync is preferred.
+
+      final evalFuture = _jsRuntime.evaluateAsync(code);
+
+      // We wait for the evaluation to complete (which means the function started and returned its initial result/promise)
+      final result = await evalFuture;
+
+      // Force microtask flush if needed
+      try {
+        _jsRuntime.executePendingJob();
+      } catch (e) {
+        // Ignore
+      }
+
+      if (result.isError) {
         String errorMsg;
         try {
           errorMsg = result.toString();

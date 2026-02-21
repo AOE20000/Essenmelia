@@ -962,10 +962,6 @@
   "@extensionRestrictedAccessDesc": {
     "description": "Description for restricted access mode"
   },
-  "extensionSandboxGroup": "Sandbox Group",
-  "@extensionSandboxGroup": {
-    "description": "Label for sandbox group configuration"
-  },
   "extensionSandboxGroupDesc": "Extensions in the same group share mock data. Leave empty for default isolation.",
   "@extensionSandboxGroupDesc": {
     "description": "Description for sandbox group configuration"
@@ -2267,7 +2263,7 @@
   "@healthCheckApiDbSuccess": {
     "description": "Success message for Database API",
     "placeholders": {
-      "size": { "type": "Object" }
+      "size": { "type": "String" }
     }
   },
   "healthCheckApiTagsName": "API: Tags",

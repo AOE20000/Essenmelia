@@ -1364,12 +1364,6 @@ abstract class AppLocalizations {
   /// **'Requires manual approval for all data access.'**
   String get extensionRestrictedAccessDesc;
 
-  /// Label for extension sandbox group
-  ///
-  /// In en, this message translates to:
-  /// **'Sandbox Group'**
-  String get extensionSandboxGroup;
-
   /// Description for sandbox group configuration
   ///
   /// In en, this message translates to:
@@ -2221,6 +2215,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shared Sandbox: {id}'**
   String extensionSharedSandbox(String id);
+
+  /// Label for extension sandbox group
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox Group'**
+  String get extensionSandboxGroup;
 
   /// Description for extension sandbox groups
   ///
@@ -3090,7 +3090,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Size: {size}'**
-  String healthCheckApiDbSuccess(Object size);
+  String healthCheckApiDbSuccess(String size);
 
   /// Name for Tags API test
   ///

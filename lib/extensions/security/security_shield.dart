@@ -7,6 +7,7 @@ import '../core/globals.dart';
 import 'extension_auth_notifier.dart';
 import '../widgets/permission_management_dialog.dart';
 import 'security_providers.dart';
+import '../services/extension_notification_service.dart';
 
 abstract class SecurityShieldDelegate {
   void resumeExtension(String extensionId);
@@ -32,10 +33,21 @@ class SecurityShield {
   // Rate limiting state
   final Map<String, List<DateTime>> _apiCallTimestamps = {};
 
+  // Blocked extensions
+  final Set<String> _blockedExtensions = {};
+
   SecurityShield(this._ref, this._delegate);
+
+  bool isBlocked(String extensionId) =>
+      _blockedExtensions.contains(extensionId);
 
   /// Check if the operation exceeds rate limits
   bool checkRateLimit(String extensionId, String operation) {
+    if (isBlocked(extensionId)) {
+      debugPrint('Extension $extensionId is blocked.');
+      return false;
+    }
+
     final key = '${extensionId}_$operation';
     final now = DateTime.now();
     final timestamps = _apiCallTimestamps[key] ?? [];
@@ -43,17 +55,38 @@ class SecurityShield {
     // Remove calls older than 1 minute
     timestamps.removeWhere((t) => now.difference(t).inMinutes >= 1);
 
-    // Define limits based on operation type
-    int limit = 60; // Default: 60 calls/min
+    // Define limits based on operation type (Relaxed for warning)
+    int limit = 120; // Default: 120 calls/min
     if (operation.startsWith('show') || operation == 'publishEvent') {
-      limit = 10; // UI/Event spam protection: 10 calls/min
+      limit = 30; // UI/Event spam protection: 30 calls/min
     } else if (operation.startsWith('http')) {
-      limit = 30; // Network: 30 calls/min
+      limit = 60; // Network: 60 calls/min
     }
 
     if (timestamps.length >= limit) {
-      debugPrint('Rate limit exceeded for $extensionId:$operation');
-      return false;
+      debugPrint('High frequency API usage for $extensionId:$operation');
+
+      // Throttle warnings (once every 10 seconds)
+      final warningKey = '${key}_warning';
+      final lastWarning = _dialogCooldowns[warningKey];
+      if (lastWarning == null || now.difference(lastWarning).inSeconds > 10) {
+        _dialogCooldowns[warningKey] = now;
+
+        // Notify on main thread
+        Future.microtask(() {
+          _ref.read(extensionNotificationServiceProvider).showWarning(
+            extensionId,
+            'API 调用过于频繁 ($operation)',
+            () {
+              _blockedExtensions.add(extensionId);
+              debugPrint('Extension $extensionId blocked by user action.');
+            },
+          );
+        });
+      }
+
+      // Allow execution unless explicitly blocked
+      // return true;
     }
 
     timestamps.add(now);
