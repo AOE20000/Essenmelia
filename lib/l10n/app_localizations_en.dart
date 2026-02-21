@@ -1736,4 +1736,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get healthCheckRealMode => 'Real Environment';
+
+  @override
+  String get disabledInBookMode => 'Unavailable in book mode';
 }

@@ -222,40 +222,62 @@ class EventsExtensionApiHandler {
     Map<String, dynamic> params, {
     required bool isUntrusted,
   }) async {
+    // 优先支持直接传入 Partial Map
     final Map<String, dynamic> eventJson;
-    if (params['event'] is Event) {
-      eventJson = (params['event'] as Event).toJson();
-    } else if (params['event'] is Map) {
+    if (params['event'] is Map) {
       eventJson = Map<String, dynamic>.from(params['event'] as Map);
+    } else if (params['event'] is Event) {
+      eventJson = (params['event'] as Event).toJson();
     } else {
       return;
     }
 
-    final event = Event.fromJson(eventJson);
+    // 必须包含 ID
+    final id = eventJson['id'] as String?;
+    if (id == null) return;
 
     if (isUntrusted) {
       final sandboxId = _getSandboxId(params);
       final sandbox = _virtualEvents[sandboxId] ?? [];
-      final index = sandbox.indexWhere((e) => e.id == event.id);
+      final index = sandbox.indexWhere((e) => e.id == id);
       if (index != -1) {
-        sandbox[index] = event;
+        final existing = sandbox[index];
+        // 模拟部分更新
+        if (eventJson.containsKey('title')) existing.title = eventJson['title'];
+        if (eventJson.containsKey('description')) existing.description = eventJson['description'];
+        if (eventJson.containsKey('tags')) existing.tags = (eventJson['tags'] as List?)?.cast<String>();
+        if (eventJson.containsKey('imageUrl')) existing.imageUrl = eventJson['imageUrl'];
+        if (eventJson.containsKey('steps')) {
+          existing.steps = (eventJson['steps'] as List)
+              .map((s) => EventStep.fromJson(s as Map<String, dynamic>))
+              .toList();
+        }
       }
       return;
     }
 
-    await _ref
-        .read(eventsProvider.notifier)
-        .updateEvent(
-          id: event.id,
-          title: event.title,
-          description: event.description,
-          tags: event.tags,
-          imageUrl: event.imageUrl,
-          stepDisplayMode: event.stepDisplayMode,
-          stepSuffix: event.stepSuffix,
-          reminderTime: event.reminderTime,
-          reminderRecurrence: event.reminderRecurrence,
-          reminderScheme: event.reminderScheme,
+    // 处理 Steps 反序列化
+    List<EventStep>? steps;
+    if (eventJson.containsKey('steps') && eventJson['steps'] != null) {
+      steps = (eventJson['steps'] as List)
+          .map((s) => EventStep.fromJson(s as Map<String, dynamic>))
+          .toList();
+    }
+
+    await _ref.read(eventsProvider.notifier).updateEvent(
+          id: id,
+          title: eventJson['title'] as String?,
+          description: eventJson['description'] as String?,
+          tags: (eventJson['tags'] as List?)?.cast<String>(),
+          imageUrl: eventJson['imageUrl'] as String?,
+          stepDisplayMode: eventJson['stepDisplayMode'] as String?,
+          stepSuffix: eventJson['stepSuffix'] as String?,
+          reminderTime: eventJson['reminderTime'] != null
+              ? DateTime.parse(eventJson['reminderTime'])
+              : null,
+          reminderRecurrence: eventJson['reminderRecurrence'] as String?,
+          reminderScheme: eventJson['reminderScheme'] as String?,
+          steps: steps,
         );
   }
 

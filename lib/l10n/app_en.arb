@@ -2362,5 +2362,9 @@
   "healthCheckRealMode": "Real Environment",
   "@healthCheckRealMode": {
     "description": "Label for real environment"
+  },
+  "disabledInBookMode": "Unavailable in book mode",
+  "@disabledInBookMode": {
+    "description": "Message shown when a setting is disabled because book mode (3* density) is active"
   }
 }

@@ -1283,7 +1283,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get welcomeSubtitle2 => '安全、透明、可控';
 
   @override
-  String get welcomeContent2 => '所有数据本地存储，非信任插件只能访问由系统生成的伪造数据，确保您的真实信息永不外泄。';
+  String get welcomeContent2 => '所有数据本地存储，严格权限管理，多种限制方案。';
 
   @override
   String get highlyCustomizable => '高度自定义';
@@ -1292,8 +1292,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get welcomeSubtitle3 => '随心而动，无限可能';
 
   @override
-  String get welcomeContent3 =>
-      '通过强大的插件系统，您可以轻松扩展应用功能。使用声明式 UI 引擎，定制属于您的专属管理工具。';
+  String get welcomeContent3 => '通过强大、可控的扩展系统，您可以轻松扩展应用功能。';
 
   @override
   String get startExperience => '开始体验';
@@ -1337,7 +1336,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get advancedSettingsAndReminders => '高级设置与提醒';
 
   @override
-  String get advancedSettingsSubtitle => '显示方式、数量后缀、定时提醒';
+  String get advancedSettingsSubtitle => '显示方式、事件后缀、定时提醒';
 
   @override
   String get advancedSettings => '高级设置';
@@ -1352,13 +1351,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stepMarkerMode => '步骤标记显示方式';
 
   @override
-  String get markerNumber => '序号 (1, 2, 3)';
+  String get markerNumber => '序号';
 
   @override
-  String get markerFirstChar => '首字 (简, 繁, 拼)';
+  String get markerFirstChar => '首字';
 
   @override
-  String get customCountSuffix => '自定义数量后缀';
+  String get customCountSuffix => '自定义事件后缀';
 
   @override
   String get suffixHint => '例如：任务、步骤、个';
@@ -1688,4 +1687,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get healthCheckRealMode => '真实环境';
+
+  @override
+  String get disabledInBookMode => '在书籍模式下不可用';
 }

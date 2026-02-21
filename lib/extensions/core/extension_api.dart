@@ -94,6 +94,7 @@ abstract class ExtensionApi {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    List<Map<String, dynamic>>? steps,
   });
 
   /// Add step to event

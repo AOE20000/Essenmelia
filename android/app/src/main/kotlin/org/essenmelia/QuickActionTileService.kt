@@ -1,4 +1,4 @@
-package com.example.essenmelia_flutter
+package org.essenmelia
 
 import android.app.PendingIntent
 import android.content.Intent

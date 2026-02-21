@@ -61,6 +61,7 @@ class EventDetailScreen extends ConsumerWidget {
           if (!isSidePanel)
             SliverAppBar(
               pinned: true,
+              scrolledUnderElevation: 0,
               title: Text(
                 l10n.eventDetails,
                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -91,28 +92,32 @@ class EventDetailScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: UniversalImage(
-                  imageUrl: event.imageUrl!,
-                  height: 240,
-                  fit: BoxFit.cover,
-                  borderRadius: BorderRadius.circular(28),
+                child: Hero(
+                  tag: event.id,
+                  child: UniversalImage(
+                    imageUrl: event.imageUrl!,
+                    height: 240,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
               ),
             ),
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                const SizedBox(height: 16),
                 // Title Section
                 if (!isSidePanel) ...[
                   Text(
                     event.title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                 ],
                 // Info Section
                 Column(
@@ -121,40 +126,33 @@ class EventDetailScreen extends ConsumerWidget {
                     if (isSidePanel) ...[
                       Text(
                         event.title,
-                        style: theme.textTheme.headlineSmall?.copyWith(
+                        style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                     ],
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 16,
-                                    color: theme.colorScheme.outline,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    DateFormat.yMMMd(
-                                      Localizations.localeOf(
-                                        context,
-                                      ).toString(),
-                                    ).add_Hm().format(event.createdAt),
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          color: theme.colorScheme.outline,
-                                        ),
-                                  ),
-                                ],
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 18,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                DateFormat.yMMMd(
+                                  Localizations.localeOf(context).toString(),
+                                ).add_Hm().format(event.createdAt),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
@@ -168,8 +166,8 @@ class EventDetailScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: event.isCompleted
                                 ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(12),
+                                : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             event.isCompleted
@@ -190,87 +188,85 @@ class EventDetailScreen extends ConsumerWidget {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: event.tags!
-                            .map(
-                              (tag) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.secondaryContainer,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  tag,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color:
-                                        theme.colorScheme.onSecondaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                        children: event.tags!.map((tag) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              tag,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSecondaryContainer,
                               ),
-                            )
-                            .toList(),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ],
                     if (event.reminderTime != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withValues(
-                            alpha: 0.3,
-                          ),
+                      const SizedBox(height: 16),
+                      Card(
+                        elevation: 0,
+                        color: theme.colorScheme.surfaceContainer,
+                        margin: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.2,
-                            ),
+                          side: BorderSide(
+                            color: theme.colorScheme.outlineVariant,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.notifications_active_outlined,
-                              size: 16,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.reminderAt(
-                                DateFormat.MMMd(
-                                  Localizations.localeOf(context).toString(),
-                                ).add_Hm().format(event.reminderTime!),
-                              ),
-                              style: theme.textTheme.labelMedium?.copyWith(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.notifications_active_rounded,
+                                size: 20,
                                 color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Text(
+                                l10n.reminderAt(
+                                  DateFormat.MMMd(
+                                    Localizations.localeOf(context).toString(),
+                                  ).add_Hm().format(event.reminderTime!),
+                                ),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                     if (event.description != null &&
                         event.description!.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
                         ),
                         child: Text(
                           event.description!,
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.6,
+                            color: theme.colorScheme.onSurface,
+                            height: 1.5,
                           ),
                         ),
                       ),
@@ -278,37 +274,35 @@ class EventDetailScreen extends ConsumerWidget {
                   ],
                 ),
 
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
                 if (event.steps.isNotEmpty) ...[
                   _QuickOverview(event: event),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                 ],
 
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       l10n.steps,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 2,
+                        horizontal: 12,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         "${event.steps.where((s) => s.completed).length}/${event.steps.length}",
-                        style: theme.textTheme.labelSmall?.copyWith(
+                        style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
                         ),
@@ -318,7 +312,7 @@ class EventDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 _StepsList(event: event),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 _AddStepButton(eventId: event.id),
                 const SizedBox(height: 48),
               ]),
@@ -470,10 +464,10 @@ class _StepsList extends ConsumerWidget {
     if (event.steps.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(24),
+          color: theme.colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Column(
@@ -486,8 +480,8 @@ class _StepsList extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               l10n.noStepsYet,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -501,16 +495,20 @@ class _StepsList extends ConsumerWidget {
         final isCompleted = step.completed;
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Material(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            elevation: 0,
             color: isCompleted
-                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                ? theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  )
                 : theme.colorScheme.surfaceContainerLow,
+            margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: isCompleted
-                    ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                    ? Colors.transparent
                     : theme.colorScheme.outlineVariant,
               ),
             ),
@@ -522,26 +520,25 @@ class _StepsList extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                    Container(
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
                         color: isCompleted
                             ? theme.colorScheme.primary
                             : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: isCompleted
                               ? theme.colorScheme.primary
-                              : theme.colorScheme.outline,
+                              : theme.colorScheme.onSurfaceVariant,
                           width: 2,
                         ),
-                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: isCompleted
                           ? Icon(
-                              Icons.check_rounded,
-                              size: 18,
+                              Icons.check,
+                              size: 16,
                               color: theme.colorScheme.onPrimary,
                             )
                           : null,
@@ -555,9 +552,11 @@ class _StepsList extends ConsumerWidget {
                               ? TextDecoration.lineThrough
                               : null,
                           color: isCompleted
-                              ? theme.colorScheme.outline
+                              ? theme.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.7,
+                                )
                               : theme.colorScheme.onSurface,
-                          height: 1.4,
+                          decorationColor: theme.colorScheme.outline,
                         ),
                       ),
                     ),
@@ -601,14 +600,11 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
 
     if (_isAdding) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: theme.colorScheme.primary.withValues(alpha: 0.5),
-            width: 2,
-          ),
+          color: theme.colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: theme.colorScheme.primary, width: 2),
         ),
         child: Row(
           children: [
@@ -621,7 +617,9 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
                   hintText: l10n.newStepPlaceholder,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  hintStyle: TextStyle(color: theme.colorScheme.outline),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 onSubmitted: (_) => _submit(),
               ),
@@ -633,7 +631,7 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
             ),
             IconButton(
               icon: const Icon(Icons.close_rounded),
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
               onPressed: () => setState(() => _isAdding = false),
             ),
           ],
@@ -641,17 +639,17 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
       );
     }
 
-    return OutlinedButton.icon(
-      onPressed: () => setState(() => _isAdding = true),
-      icon: const Icon(Icons.add_rounded),
-      label: Text(l10n.addStep),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1.5),
-        foregroundColor: theme.colorScheme.primary,
-        textStyle: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.bold,
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: FilledButton.tonalIcon(
+        onPressed: () => setState(() => _isAdding = true),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(l10n.addStep),
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
     );
@@ -774,124 +772,129 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bolt_rounded,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.quickEdit,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.bolt_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onPanStart: _handleDragStart,
-            onPanUpdate: _handleDragUpdate,
-            onPanEnd: _handleDragEnd,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 12,
-                children: List.generate(widget.event.steps.length, (index) {
-                  final isBeingDragged =
-                      _startDragIndex != null &&
-                      ((index >= _startDragIndex! &&
-                              index <=
-                                  (_currentDragIndex ?? _startDragIndex!)) ||
-                          (index <= _startDragIndex! &&
-                              index >=
-                                  (_currentDragIndex ?? _startDragIndex!)));
+                const SizedBox(width: 8),
+                Text(
+                  l10n.quickEdit,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onPanStart: _handleDragStart,
+              onPanUpdate: _handleDragUpdate,
+              onPanEnd: _handleDragEnd,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: List.generate(widget.event.steps.length, (index) {
+                    final isBeingDragged =
+                        _startDragIndex != null &&
+                        ((index >= _startDragIndex! &&
+                                index <=
+                                    (_currentDragIndex ?? _startDragIndex!)) ||
+                            (index <= _startDragIndex! &&
+                                index >=
+                                    (_currentDragIndex ?? _startDragIndex!)));
 
-                  final effectiveCompleted = isBeingDragged
-                      ? _dragTargetState
-                      : widget.event.steps[index].completed;
+                    final effectiveCompleted = isBeingDragged
+                        ? _dragTargetState
+                        : widget.event.steps[index].completed;
 
-                  final step = widget.event.steps[index];
-                  String stepMarker;
-                  if (widget.event.stepDisplayMode == 'firstChar' &&
-                      step.description.trim().isNotEmpty) {
-                    stepMarker = step.description.trim()[0];
-                  } else {
-                    stepMarker = '${index + 1}';
-                  }
+                    final step = widget.event.steps[index];
+                    String stepMarker;
+                    if (widget.event.stepDisplayMode == 'firstChar' &&
+                        step.description.trim().isNotEmpty) {
+                      stepMarker = step.description.trim()[0];
+                    } else {
+                      stepMarker = '${index + 1}';
+                    }
 
-                  return MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      key: _itemKeys[index],
-                      onTap: () => _handleTap(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: effectiveCompleted
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        key: _itemKeys[index],
+                        onTap: () => _handleTap(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
                             color: effectiveCompleted
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.outlineVariant,
-                            width: isBeingDragged ? 2.5 : 1,
-                          ),
-                          boxShadow: isBeingDragged
-                              ? [
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary.withValues(
-                                      alpha: 0.3,
+                                : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: effectiveCompleted
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
+                              width: isBeingDragged ? 2.5 : 1,
+                            ),
+                            boxShadow: isBeingDragged
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
                                     ),
-                                    blurRadius: 12,
-                                    spreadRadius: 2,
+                                  ]
+                                : [],
+                          ),
+                          child: Center(
+                            child: effectiveCompleted
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    size: 20,
+                                    color: theme.colorScheme.onPrimary,
+                                  )
+                                : Text(
+                                    stepMarker,
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
-                                ]
-                              : [],
-                        ),
-                        child: Center(
-                          child: effectiveCompleted
-                              ? Icon(
-                                  Icons.check_rounded,
-                                  size: 20,
-                                  color: theme.colorScheme.onPrimary,
-                                )
-                              : Text(
-                                  stepMarker,
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

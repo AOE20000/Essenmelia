@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -77,31 +78,55 @@ class NotificationService {
       return;
     }
 
-    await _notifications.zonedSchedule(
-      id,
-      notificationTitle,
-      event.title,
-      tz.TZDateTime.from(event.reminderTime!, tz.local),
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'event_reminders',
-          channelName,
-          channelDescription: channelDescription,
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'event_reminders',
+        channelName,
+        channelDescription: channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: matchComponents,
-      payload: event.id,
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
+
+    try {
+      await _notifications.zonedSchedule(
+        id,
+        notificationTitle,
+        event.title,
+        tz.TZDateTime.from(event.reminderTime!, tz.local),
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchComponents,
+        payload: event.id,
+      );
+    } on PlatformException catch (e) {
+      if (e.code == 'exact_alarms_not_permitted') {
+        debugPrint(
+          'NotificationService: Exact alarms not permitted, falling back to inexact',
+        );
+        await _notifications.zonedSchedule(
+          id,
+          notificationTitle,
+          event.title,
+          tz.TZDateTime.from(event.reminderTime!, tz.local),
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: matchComponents,
+          payload: event.id,
+        );
+      } else {
+        rethrow;
+      }
+    }
   }
 
   Future<void> cancelReminder(int reminderId) async {

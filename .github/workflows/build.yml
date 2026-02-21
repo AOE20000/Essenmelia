@@ -91,25 +91,66 @@ jobs:
           name: windows-release-zip
           path: windows-release.zip
 
+  build-linux:
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'master'
+          flutter-version: '3.38.9'
+          cache: true
+      - name: Enable Linux Desktop
+        run: flutter config --enable-linux-desktop
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Run Build Runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Build Linux
+        run: flutter build linux --release
+      - name: Zip Linux Build
+        run: |
+          cd build/linux/x64/release/bundle
+          zip -r ../../../../../linux-release.zip .
+      - name: Upload Linux Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-zip
+          path: linux-release.zip
+
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-android, build-windows]
+    needs: [build-android, build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Download Android APK
         uses: actions/download-artifact@v4
         with:
           name: android-release-apk
+          path: .
       - name: Download Windows Zip
         uses: actions/download-artifact@v4
         with:
           name: windows-release-zip
+          path: .
+      - name: Download Linux Zip
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-release-zip
+          path: .
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             app-release.apk
             windows-release.zip
+            linux-release.zip
           draft: false
           prerelease: false
         env:

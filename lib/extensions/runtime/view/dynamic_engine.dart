@@ -359,6 +359,24 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
               .toList(),
         );
         break;
+      case 'wrap':
+        current = Wrap(
+          key: key,
+          direction: props['direction'] == 'vertical'
+              ? Axis.vertical
+              : Axis.horizontal,
+          alignment: _parseWrapAlignment(props['alignment']),
+          spacing: (props['spacing'] as num?)?.toDouble() ?? 0.0,
+          runAlignment: _parseWrapAlignment(props['runAlignment']),
+          runSpacing: (props['runSpacing'] as num?)?.toDouble() ?? 0.0,
+          crossAxisAlignment: _parseWrapCrossAlignment(
+            props['crossAxisAlignment'],
+          ),
+          children: resolvedChildren
+              .map((c) => _buildWidget(c as Map<String, dynamic>))
+              .toList(),
+        );
+        break;
       case 'text':
         TextStyle style;
         final textStyleName = props['textStyle']?.toString();
@@ -897,6 +915,38 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
       case 'center':
       default:
         return MainAxisAlignment.center;
+    }
+  }
+
+  WrapAlignment _parseWrapAlignment(String? value) {
+    switch (value) {
+      case 'start':
+        return WrapAlignment.start;
+      case 'end':
+        return WrapAlignment.end;
+      case 'center':
+        return WrapAlignment.center;
+      case 'spaceBetween':
+        return WrapAlignment.spaceBetween;
+      case 'spaceAround':
+        return WrapAlignment.spaceAround;
+      case 'spaceEvenly':
+        return WrapAlignment.spaceEvenly;
+      default:
+        return WrapAlignment.start;
+    }
+  }
+
+  WrapCrossAlignment _parseWrapCrossAlignment(String? value) {
+    switch (value) {
+      case 'start':
+        return WrapCrossAlignment.start;
+      case 'end':
+        return WrapCrossAlignment.end;
+      case 'center':
+        return WrapCrossAlignment.center;
+      default:
+        return WrapCrossAlignment.start;
     }
   }
 

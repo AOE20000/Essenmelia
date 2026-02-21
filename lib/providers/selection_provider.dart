@@ -20,6 +20,11 @@ class SelectionNotifier extends StateNotifier<Set<String>> {
     state = Set.from(ids);
   }
 
+  void invert(List<String> allIds) {
+    final allSet = Set<String>.from(allIds);
+    state = allSet.difference(state);
+  }
+
   bool get isSelectionMode => state.isNotEmpty;
 }
 
@@ -42,6 +47,28 @@ class BatchActionsController {
     
     for (final id in selectedIds) {
       await notifier.deleteEvent(id);
+    }
+    
+    ref.read(selectionProvider.notifier).clear();
+  }
+
+  Future<void> updateSuffix(String suffix) async {
+    final selectedIds = ref.read(selectionProvider);
+    final notifier = ref.read(eventsProvider.notifier);
+    
+    for (final id in selectedIds) {
+      await notifier.updateSuffix(id, suffix);
+    }
+    
+    ref.read(selectionProvider.notifier).clear();
+  }
+
+  Future<void> adjustProgress(int delta) async {
+    final selectedIds = ref.read(selectionProvider);
+    final notifier = ref.read(eventsProvider.notifier);
+    
+    for (final id in selectedIds) {
+      await notifier.adjustProgress(id, delta);
     }
     
     ref.read(selectionProvider.notifier).clear();

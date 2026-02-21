@@ -1,7 +1,7 @@
 name: essenmelia_flutter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 2.0.0+1
+version: 3.0.0+1
 
 environment:
   sdk: ^3.10.8
@@ -31,7 +31,6 @@ dependencies:
   share_plus: ^10.0.0
   file_picker: ^8.0.0
 
-  cupertino_icons: ^1.0.8
   image_picker: ^1.2.1
   flutter_localizations:
     sdk: flutter
@@ -55,7 +54,6 @@ dependencies:
   animations: ^2.1.1
   pasteboard: ^0.4.0
   flutter_widget_from_html: ^0.17.1
-  rfw: ^1.1.0
   app_links: ^7.0.0
   # receive_intent: ^0.2.7
 
@@ -86,6 +84,5 @@ flutter:
   assets:
     - assets/images/
     - assets/docs/
-    - assets/extensions/builtin/external_call/
   generate: true
   uses-material-design: true

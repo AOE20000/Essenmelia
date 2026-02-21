@@ -16,7 +16,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
-import 'extensions/services/gateway_service.dart';
+import 'services/command_gateway_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,14 +112,14 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
-  static const _channel = MethodChannel('com.example.essenmelia/intent');
+  static const _channel = MethodChannel('org.essenmelia/intent');
 
   @override
   void initState() {
     super.initState();
     _initIntentHandler();
-    // Initialize Gateway Service
-    ref.read(gatewayServiceProvider).init();
+    // Initialize Command Gateway for deep links
+    ref.read(commandGatewayServiceProvider).init();
   }
 
   void _initIntentHandler() {

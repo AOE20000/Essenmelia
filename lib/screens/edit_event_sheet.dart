@@ -81,65 +81,64 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
   Widget _buildAdvancedSettingsButton(ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
-    return InkWell(
-      onTap: () => _showAdvancedSettings(theme),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () => _showAdvancedSettings(theme),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.settings_suggest_outlined,
+                size: 22,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.advancedSettingsAndReminders,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.advancedSettingsSubtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_reminderTime != null)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.settings_suggest_outlined,
-              size: 22,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.advancedSettingsAndReminders,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.advancedSettingsSubtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (_reminderTime != null)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.notifications_active,
-                  size: 12,
-                  color: Colors.white,
-                ),
-              ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
         ),
       ),
     );
@@ -150,35 +149,24 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      showDragHandle: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.75,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            child: Column(
+          return DraggableScrollableSheet(
+            initialChildSize: 0.75,
+            minChildSize: 0.5,
+            maxChildSize: 1.0,
+            expand: false,
+            builder: (context, scrollController) => Column(
               children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 48,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: Row(
                     children: [
                       Text(
                         l10n.advancedSettings,
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -192,16 +180,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 ),
                 const Divider(height: 1),
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: ListView(
+                    controller: scrollController,
                     padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStepDisplaySettingsInModal(theme, setModalState),
-                        const SizedBox(height: 32),
-                        _buildReminderSectionInModal(theme, setModalState),
-                      ],
-                    ),
+                    children: [
+                      _buildStepDisplaySettingsInModal(theme, setModalState),
+                      const SizedBox(height: 32),
+                      _buildReminderSectionInModal(theme, setModalState),
+                    ],
                   ),
                 ),
                 Padding(
@@ -261,9 +247,6 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,23 +290,101 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _suffixController,
-                onChanged: (_) => setState(() {}), // 同步到外部状态
-                decoration: InputDecoration(
-                  hintText: l10n.suffixHint,
-                  prefixIcon: const Icon(Icons.label_outline),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Autocomplete<String>(
+                    initialValue: TextEditingValue(text: _suffixController.text),
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      final events = ref.read(eventsProvider).value ?? [];
+                      final suffixes = events
+                          .map((e) => e.stepSuffix)
+                          .where((s) => s != null && s.isNotEmpty)
+                          .cast<String>()
+                          .toSet()
+                          .toList();
+
+                      if (textEditingValue.text.isEmpty) {
+                        return suffixes;
+                      }
+                      return suffixes.where((String option) {
+                        return option.toLowerCase().contains(
+                          textEditingValue.text.toLowerCase(),
+                        );
+                      });
+                    },
+                    onSelected: (String selection) {
+                      _suffixController.text = selection;
+                      setState(() {});
+                    },
+                    fieldViewBuilder: (
+                      BuildContext context,
+                      TextEditingController fieldTextEditingController,
+                      FocusNode fieldFocusNode,
+                      VoidCallback onFieldSubmitted,
+                    ) {
+                      return TextField(
+                        controller: fieldTextEditingController,
+                        focusNode: fieldFocusNode,
+                        onChanged: (value) {
+                          _suffixController.text = value;
+                          setState(() {});
+                        },
+                        decoration: InputDecoration(
+                          hintText: l10n.suffixHint,
+                          prefixIcon: const Icon(Icons.label_outline),
+                          filled: true,
+                          fillColor: theme.colorScheme.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4.0,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: constraints.maxWidth,
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final String option = options.elementAt(index);
+                                return InkWell(
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(
+                                      option,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 4),
               Text(
@@ -365,75 +426,74 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           ],
         ),
         const SizedBox(height: 16),
-        InkWell(
-          onTap: () => _pickReminderTimeInModal(theme, setModalState),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _reminderTime == null
-                            ? l10n.noReminderSet
-                            : DateFormat.yMMMd(
-                                Localizations.localeOf(context).toString(),
-                              ).add_Hm().format(_reminderTime!),
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: _reminderTime == null
-                              ? theme.colorScheme.onSurfaceVariant
-                              : theme.colorScheme.onSurface,
-                          fontWeight: _reminderTime == null
-                              ? FontWeight.normal
-                              : FontWeight.bold,
-                        ),
-                      ),
-                      if (_reminderTime != null) ...[
-                        const SizedBox(height: 4),
+        Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainerLow,
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: InkWell(
+            onTap: () => _pickReminderTimeInModal(theme, setModalState),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          _reminderScheme == 'calendar'
-                              ? l10n.calendarReminderDesc
-                              : l10n.notificationReminderDesc,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
+                          _reminderTime == null
+                              ? l10n.noReminderSet
+                              : DateFormat.yMMMd(
+                                  Localizations.localeOf(context).toString(),
+                                ).add_Hm().format(_reminderTime!),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: _reminderTime == null
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.onSurface,
+                            fontWeight: _reminderTime == null
+                                ? FontWeight.normal
+                                : FontWeight.bold,
                           ),
                         ),
+                        if (_reminderTime != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _reminderScheme == 'calendar'
+                                ? l10n.calendarReminderDesc
+                                : l10n.notificationReminderDesc,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ),
-                if (_reminderTime != null)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () {
-                      setModalState(() {
-                        _reminderTime = null;
-                        _reminderRecurrence = 'none';
-                        _reminderScheme = 'notification';
-                      });
-                      setState(() {}); // 同步到外部状态
-                    },
-                    style: IconButton.styleFrom(
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
                     ),
-                  )
-                else
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-              ],
+                  if (_reminderTime != null)
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () {
+                        setModalState(() {
+                          _reminderTime = null;
+                          _reminderRecurrence = 'none';
+                          _reminderScheme = 'notification';
+                        });
+                        setState(() {}); // 同步到外部状态
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -743,10 +803,8 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => DraggableScrollableSheet(
           initialChildSize: 0.9,
@@ -757,18 +815,6 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             backgroundColor: Colors.transparent,
             body: Column(
               children: [
-                // 顶部把手
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: 32,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
                 Expanded(
                   child: CustomScrollView(
                     controller: scrollController,
@@ -780,7 +826,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                         surfaceTintColor: theme.colorScheme.surfaceTint,
                         title: Text(
                           l10n.smartAnalysis,
-                          style: theme.textTheme.titleLarge?.copyWith(
+                          style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -925,10 +971,6 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.surfaceContainerLow,
                                   borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(
-                                    color: theme.colorScheme.outlineVariant
-                                        .withValues(alpha: 0.5),
-                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1325,7 +1367,28 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      final file = File(_currentImageUrl!);
+      String filePath;
+      if (_currentImageUrl!.startsWith('http')) {
+        setState(() => _isSaving = true);
+        final response = await http.get(Uri.parse(_currentImageUrl!));
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final uri = Uri.parse(_currentImageUrl!);
+          String extension = p.extension(uri.path);
+          if (extension.isEmpty) extension = '.jpg';
+          
+          final fileName = 'exported_${DateTime.now().millisecondsSinceEpoch}$extension';
+          final file = File(p.join(tempDir.path, fileName));
+          await file.writeAsBytes(response.bodyBytes);
+          filePath = file.path;
+        } else {
+          throw 'HTTP ${response.statusCode}';
+        }
+      } else {
+        filePath = _currentImageUrl!;
+      }
+
+      final file = File(filePath);
       if (await file.exists()) {
         await Share.shareXFiles([XFile(file.path)], text: l10n.exportImage);
       } else {
@@ -1337,6 +1400,8 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           SnackBar(content: Text(l10n.exportFailed(e.toString()))),
         );
       }
+    } finally {
+      if (mounted && _isSaving) setState(() => _isSaving = false);
     }
   }
 
@@ -1544,12 +1609,6 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                    width: 1.5,
-                  ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

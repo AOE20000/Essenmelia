@@ -775,7 +775,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Adaptive column count
     final itemsPerRow = displaySettings.itemsPerRow.clamp(
       1,
-      isSmallScreen ? 2 : 5,
+      isSmallScreen ? 3 : 5,
     );
 
     return Row(
@@ -819,6 +819,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       selectedEventId == event.id,
                                   isSelected: selectedIds.contains(event.id),
                                   isSelectionMode: isSelectionMode,
+                                  isBookMode: isSmallScreen && itemsPerRow == 3,
                                 )
                                 .animate()
                                 .fadeIn(delay: (30 * index).ms)
@@ -1006,6 +1007,88 @@ class _HomePageState extends ConsumerState<HomePage> {
               onPressed: () => _showBatchEditTagsSheet(context, selectedIds),
               color: theme.colorScheme.onPrimaryContainer,
             ),
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+              tooltip: '更多操作',
+              onSelected: (value) {
+                final filteredEvents = ref.read(filteredEventsProvider);
+                final allIds = filteredEvents.map((e) => e.id).toList();
+
+                switch (value) {
+                  case 'selectAll':
+                    ref.read(selectionProvider.notifier).selectAll(allIds);
+                    break;
+                  case 'invert':
+                    ref.read(selectionProvider.notifier).invert(allIds);
+                    break;
+                  case 'suffix':
+                    _showBatchEditSuffixSheet(context);
+                    break;
+                  case 'addProgress':
+                    ref.read(batchActionsProvider).adjustProgress(1);
+                    break;
+                  case 'subProgress':
+                    ref.read(batchActionsProvider).adjustProgress(-1);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'selectAll',
+                  child: Row(
+                    children: [
+                      Icon(Icons.select_all_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('全选'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'invert',
+                  child: Row(
+                    children: [
+                      Icon(Icons.swap_horiz_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('反选'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'suffix',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_note_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('修改后缀'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'addProgress',
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('增加进度 (+1)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'subProgress',
+                  child: Row(
+                    children: [
+                      Icon(Icons.remove_circle_outline_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('减少进度 (-1)'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             IconButton(
               icon: Icon(
                 Icons.delete_outline_rounded,
@@ -1059,6 +1142,15 @@ class _HomePageState extends ConsumerState<HomePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _BatchEditTagsSheet(selectedIds: selectedIds),
+    );
+  }
+
+  void _showBatchEditSuffixSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _BatchEditSuffixSheet(),
     );
   }
 }
@@ -1504,6 +1596,7 @@ class _EventCard extends ConsumerWidget {
   final bool isFocused;
   final bool isSelected;
   final bool isSelectionMode;
+  final bool isBookMode;
 
   const _EventCard({
     super.key,
@@ -1512,6 +1605,7 @@ class _EventCard extends ConsumerWidget {
     this.isFocused = false,
     this.isSelected = false,
     this.isSelectionMode = false,
+    this.isBookMode = false,
   });
 
   @override
@@ -1590,10 +1684,83 @@ class _EventCard extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final theme = Theme.of(context);
     final completedSteps = event.steps.where((s) => s.completed).length;
     final progress = event.steps.isNotEmpty
         ? completedSteps / event.steps.length
         : 0.0;
+
+    if (isBookMode) {
+      return AspectRatio(
+        aspectRatio: 0.7,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (event.imageUrl != null)
+              UniversalImage(imageUrl: event.imageUrl!, fit: BoxFit.cover)
+            else
+              Container(
+                color: theme.colorScheme.surfaceContainerHigh,
+                child: Center(
+                  child: Icon(
+                    Icons.book,
+                    size: 48,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 80,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${(progress * 100).toInt()}%',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1757,3 +1924,176 @@ class _ProgressBar extends StatelessWidget {
     );
   }
 }
+
+class _BatchEditSuffixSheet extends ConsumerStatefulWidget {
+  const _BatchEditSuffixSheet();
+
+  @override
+  ConsumerState<_BatchEditSuffixSheet> createState() => _BatchEditSuffixSheetState();
+}
+
+class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
+  String _currentValue = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        top: 16,
+        left: 24,
+        right: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '批量修改后缀',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '请输入新的步骤后缀（如：集、章、节）：',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Autocomplete<String>(
+                initialValue: TextEditingValue(text: _currentValue),
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  final events = ref.read(eventsProvider).value ?? [];
+                  final suffixes = events
+                      .map((e) => e.stepSuffix)
+                      .where((s) => s != null && s.isNotEmpty)
+                      .cast<String>()
+                      .toSet()
+                      .toList();
+
+                  if (textEditingValue.text.isEmpty) {
+                    return suffixes;
+                  }
+                  return suffixes.where((String option) {
+                    return option.toLowerCase().contains(
+                      textEditingValue.text.toLowerCase(),
+                    );
+                  });
+                },
+                onSelected: (String selection) {
+                  setState(() {
+                    _currentValue = selection;
+                  });
+                },
+                fieldViewBuilder: (
+                  BuildContext context,
+                  TextEditingController fieldTextEditingController,
+                  FocusNode fieldFocusNode,
+                  VoidCallback onFieldSubmitted,
+                ) {
+                  if (_currentValue.isNotEmpty && fieldTextEditingController.text != _currentValue) {
+                     fieldTextEditingController.text = _currentValue;
+                  }
+                  
+                  return TextField(
+                    controller: fieldTextEditingController,
+                    focusNode: fieldFocusNode,
+                    onChanged: (value) {
+                      _currentValue = value;
+                    },
+                    decoration: InputDecoration(
+                      labelText: '后缀',
+                      hintText: '例如：集',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                    ),
+                  );
+                },
+                optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4.0,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: constraints.maxWidth,
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainer,
+                                borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final String option = options.elementAt(index);
+                                return InkWell(
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(
+                                      option,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                    );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: () {
+              ref.read(batchActionsProvider).updateSuffix(_currentValue);
+              Navigator.pop(context);
+            },
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

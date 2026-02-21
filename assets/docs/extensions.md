@@ -22,33 +22,27 @@ Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使�
 ### 2.1 扩展信息 (README.md)
 
 开发者需在 `README.md` 的**第一行**插入一个包含 JSON 配置的 HTML 注释块：
----
+
+```html
 <!-- ESSENMELIA_EXTEND {
-  "id": "system.external_call",
-  "name": "指令网关",
-  "description": "系统级外部请求监控中心。负责拦截、验证并处理来自 ADB、Intent 或第三方应用的 API 调用。",
-  "author": "System",
-  "version": "2.1.0",
-  "icon_code": 984613,
-  "tags": ["System", "Gateway", "API"],
+  "id": "cn.thebearsoft.bangumi_collection",
+  "name": "Bangumi 收藏",
+  "description": "获取 Bangumi.tv 用户收藏数据，并以纯 Material 3 组件展示。",
+  "author": "BearYe",
+  "version": "1.1.0",
+  "icon_code": 983057,
+  "tags": ["Bangumi", "Anime", "Collection"],
   "permissions": [
-    "readEvents",
-    "addEvents",
-    "updateEvents",
-    "deleteEvents",
-    "readTags",
-    "manageTags",
-    "notifications",
-    "systemInfo",
-    "navigation",
     "network",
-    "fileSystem",
-    "readCalendar",
-    "writeCalendar"
-  ]
+    "uiInteraction",
+    "addEvents",
+    "readEvents",
+    "updateEvents"
+  ],
+  "view": "view.yaml"
 } -->
 
-# 我的扩展标题
+# Bangumi 收藏扩展
 这里是扩展的详细说明文档...
 ```
 
@@ -61,7 +55,7 @@ Essenmelia 扩展采用 **JavaScript (JS) + YAML** 的混合架构。推荐使�
 | `permissions`| List | 申请的系统权限列表 | `["readEvents", "network"]` |
 | `view` | String | 可选。自定义视图文件路径，默认为 `view.yaml` | `ui/main.yaml` |
 | `script` | String | 可选。自定义 JS 脚本路径，默认为 `main.js` | `src/index.js` |
-```
+
 ### 2.2 权限系统 (Dynamic Permissions)
 
 Essenmelia 采用**动态权限绑定机制**。开发者必须在 `README.md` 中声明权限。
@@ -108,103 +102,33 @@ children:
 "view": "<div style='padding:16px'><h1>Hello</h1><button onclick='location.href=\"js:handleClick\"'>Click Me</button></div>"
 ```
 
-### 3.2 HTML 支持与 JS 桥接
-无论是混合模式还是纯 HTML 模式，HTML 内容均支持以下特性：
+### 3.2 组件库 (Components)
+支持的组件包括但不限于：
+- 布局: `column`, `row`, `stack`, `expanded`, `sized_box`, `container`, `card`
+- 基础: `text`, `image`, `icon`, `button`, `html`
+- 输入: `text_field`
+- 列表: `list_view`, `grid_view`
 
-- **标签支持**：`div`, `span`, `p`, `h1-h6`, `img`, `ul/ol`, `table`, `a` 等。
-- **样式继承**：自动适配当前主题的文字颜色与大小。
-- **JS 桥接协议**：
-  使用 `js:函数名` 协议调用扩展中的 JavaScript 函数。
-  
-  ```html
-  <!-- 调用无参函数 -->
-  <a href="js:refreshData">刷新</a>
-  
-  <!-- 调用带参函数 (需在 JS 中解析 URL 参数，暂未完全支持自动解包，建议通过状态传递复杂数据) -->
-  <a href="js:showDetail">详情</a>
-  ```
-
-### 3.3 CSS 样式支持
-扩展支持**内联样式 (Inline Styles)** 与**嵌入式样式表 (<style>)**，但受限于 Flutter 渲染机制，仅支持部分 CSS 属性：
-
-- **文本样式**：`color`, `font-size`, `font-weight`, `font-style`, `text-decoration`, `line-height`
-- **布局**：`margin`, `padding`, `text-align`, `vertical-align`
-- **背景**：`background-color`
-- **边框**：`border` (支持 `solid`, `dashed`, `dotted`), `border-radius`
-- **显示**：`display: none`, `display: block`, `display: inline`, `display: inline-block`
-
-**注意：**
-- 不支持复杂的 CSS 选择器（如 `div > p` 或 `:hover`）。
-- 不支持 Flexbox / Grid 布局（建议使用原生 YAML 组件实现布局）。
-- 不支持 `position: absolute / fixed`。
-
-### 3.4 颜色令牌 (Color Tokens)
-在 `view.yaml` 中，`color` 或 `textColor` 属性可以使用 MD3 标准色值名称：
-- **核心色**：`primary`, `onPrimary`, `primaryContainer`, `onPrimaryContainer`
-- **中性色**：`surface`, `onSurface`, `surfaceVariant`, `onSurfaceVariant`, `outline`
-- **功能色**：`error`, `onError`, `tertiary`
-
-### 3.2 文字样式 (Typography)
-`text` 组件的 `style` 属性支持标准的 MD3 字阶：
-- **标题**：`displayLarge`, `headlineMedium`, `titleLarge` (默认标题风格)
-- **正文**：`bodyLarge`, `bodyMedium` (默认文本风格), `bodySmall`
-- **标签**：`labelLarge`, `labelSmall`
-
-### 2.2 响应式 UI (view.yaml)
-
-使用 YAML 定义 Material 3 组件树。
-
-**关键特性：**
-- **状态插值**: 使用 `$state.key` 引用 JS 侧的状态。
-- **双向绑定**: 使用 `stateKey: "key"` 属性实现输入组件（如 `textfield`, `switch`）与状态的自动同步。
+### 3.3 交互与状态绑定
+- **onTap**: 支持 JS 函数名 (如 `handleClick`) 或 URL (如 `https://...`)。
+- **stateKey**: 双向绑定 `text_field` 到 JS `state` 变量。
+- **$variable**: 在 YAML 中引用 JS `state` 变量。
 
 ---
 
-## 3. UI 组件库
+## 4. JS 逻辑引擎 (ExtensionJsEngine)
 
-### 3.1 容器与布局
-- `column` / `row`: 线性布局。
-- `grid_view`: 网格布局。支持 `crossAxisCount` (列数), `mainAxisSpacing`, `crossAxisSpacing`, `childAspectRatio`。
-- `card`: MD3 卡片。支持 `variant` (`elevated`, `filled`, `outlined`), `elevation`, `color`, `borderRadius`。
-- `settings_group`: **推荐使用的配置分组容器**。支持 `title`, `items` (子组件列表)。自动处理 MD3 圆角卡片背景与子项分割线。
-- `container`: 通用容器，支持 `padding`, `margin`, `color`, `borderRadius`。可作为交互区域。
-- `stack` / `positioned`: 层叠布局。
-- `expanded` / `spacer`: 灵活空间分配。
-- `sized_box`: 固定尺寸容器。
-- `wrap`: 流式布局。
-
-### 3.2 显示组件
-- `text`: 文本。支持 `fontSize`, `bold`, `textColor`, `textAlign`, `maxLines`。
-- `icon`: Material 图标。使用 `icon` (16进制编码)。
-- `image`: 网络图片。支持 `url`, `fit`, `borderRadius`。
-- `badge`: 徽标。支持 `label` (文本), `backgroundColor`, `textColor`。
-- `divider`: 分割线。
-- `circular_progress` / `linear_progress`: 进度条。支持 `value`, `color`。
-
-### 3.3 交互组件
-- `button`: 按钮。支持 `variant` (`filled`, `tonal`, `outlined`), `label`, `icon`, `onTap`。
-- `segmented_button`: 分段按钮。支持 `stateKey` (双向绑定), `segments` (包含 `value`, `label`, `icon` 的列表)。
-- `switch`: 开关。支持 `value` (绑定 `$state.key`), `onChanged` (绑定 JS 函数)。
-- `list_tile`: 列表项。支持 `title`, `subtitle`, `leading` (icon), `trailing` (widget), `onTap`。
-
----
-
-## 4. 最佳实践 (Best Practices)
-
-### 4.1 任务进度反馈
-对于耗时较长的操作（如批量网络请求、数据处理），**强烈建议**使用 `updateProgress` API 向用户反馈进度，而不是频繁更新 UI 或发送 Toast。
+### 4.1 异步与 Promise
+Essenmelia 提供了完整的 `Promise` 支持。所有 API 调用均为异步。
 
 ```javascript
-// ✅ 推荐写法
-async function syncData() {
-  await essenmelia.updateProgress(0, "开始同步...");
-  for (let i = 0; i < items.length; i++) {
-    // ... 处理逻辑 ...
-    // 更新进度条 (0.0 - 1.0)
-    await essenmelia.updateProgress((i + 1) / items.length, `已处理 ${i + 1} 项`);
+async function fetchData() {
+  try {
+    const res = await essenmelia.httpGet('https://api.example.com/data');
+    console.log(res);
+  } catch (e) {
+    console.error(e);
   }
-  // 完成
-  await essenmelia.updateProgress(1.0, "同步完成");
 }
 ```
 
@@ -225,3 +149,244 @@ async function syncData() {
   - 避免在循环中直接调用 `showSnackBar` 或 `render`。
   - 使用 `updateProgress` 替代频繁的 UI 反馈。
   - 批量处理数据，减少细碎的 API 调用。
+
+---
+
+## 5. 实战案例：Bangumi 收藏扩展 (Case Study)
+
+本节以 `bangumi_collection` 扩展为例，解析如何构建一个包含**表单输入、网络请求、动态列表渲染**的完整应用。
+
+### 5.1 视图布局 (`view.yaml`)
+
+这是一个典型的**表单+列表**结构：
+1. **表单区域**：使用 `text_field` 获取输入，通过 `stateKey` 双向绑定 JS 变量。
+2. **列表区域**：使用 `$state.collectionList` 动态插入 JS 生成的组件树。
+
+```yaml
+type: column
+children:
+  # --- 1. 表单区域 ---
+  - type: card
+    props:
+      variant: outlined
+      margin: [16, 16, 16, 8]
+    children:
+      - type: column
+        props:
+          padding: 16
+        children:
+          # 用户名输入框 (双向绑定 state.username)
+          - type: text_field
+            props:
+              label: "Bangumi 用户名"
+              stateKey: "username"
+              hintText: "请输入您的 Bangumi ID"
+          
+          # 间距
+          - type: sized_box
+            props: { height: 16 }
+
+          # 标签输入框 (双向绑定 state.defaultTags)
+          - type: text_field
+            props:
+              label: "默认标签 (以逗号分隔)"
+              stateKey: "defaultTags"
+              hintText: "例如: 追番, 动漫"
+
+          # 提交按钮 (绑定 fetchCollections 函数)
+          - type: row
+            props:
+              mainAxisAlignment: end
+              padding: [0, 16, 0, 0]
+            children:
+              - type: button
+                props:
+                  label: "获取收藏"
+                  icon: 0xe8b6 # search icon
+                  variant: filled
+                  onTap: "fetchCollections"
+
+  # --- 2. 动态列表区域 ---
+  # 直接引用 JS 中的 collectionList 数组作为 children
+  - type: column
+    props:
+      padding: 16
+    children: $collectionList
+```
+
+### 5.2 逻辑实现 (`main.js`)
+
+核心逻辑分为三个步骤：
+1. **初始化状态**：设置默认值。
+2. **获取数据**：调用 `httpGet`，解析 JSON。
+3. **构建 UI**：在 JS 中生成组件对象，赋值给 `state.collectionList`。
+
+```javascript
+// 1. 初始化状态
+const state = _state;
+state.username = state.username || 'user123';
+state.defaultTags = state.defaultTags || 'Bangumi';
+state.collectionList = state.collectionList || [];
+state.loading = false;
+
+// 2. 获取数据函数
+async function fetchCollections() {
+  if (state.loading) return;
+
+  const username = state.username ? state.username.trim() : '';
+  if (!username) {
+    await essenmelia.showSnackBar('请输入用户名');
+    return;
+  }
+
+  state.loading = true;
+  
+  // 显示加载中提示 (直接更新 UI 列表)
+  state.collectionList = [{
+    type: 'container',
+    props: { height: 100, padding: 20 },
+    children: [{
+      type: 'text', 
+      props: { text: '加载中...', textAlign: 'center' }
+    }]
+  }];
+
+  try {
+    // 启动进度条
+    await essenmelia.updateProgress(0, '开始获取收藏...');
+    
+    const url = `https://api.bgm.tv/v0/users/${username}/collections?limit=50`;
+    console.log('Fetching: ' + url);
+
+    // 发送 HTTP 请求 (带 UA 头)
+    const resStr = await essenmelia.httpGet(url, {
+        'User-Agent': 'EssenmeliaExtension/1.0'
+    });
+    
+    // 解析 JSON (兼容不同返回类型)
+    let res;
+    try {
+        res = typeof resStr === 'object' ? resStr : JSON.parse(resStr);
+    } catch (e) {
+        console.log('JSON parse error: ' + e);
+        return;
+    }
+
+    if (res && res.data && Array.isArray(res.data)) {
+        // 3. 构建 UI 组件列表
+        const newUiList = [];
+        const items = res.data;
+
+        // 遍历数据，生成 Card 组件
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const subject = item.subject || {};
+            
+            // 构建单个卡片对象
+            const card = {
+              type: 'card',
+              props: {
+                variant: 'filled',
+                margin: [0, 0, 0, 12],
+                onTap: 'openDetail', // 绑定详情点击事件
+                params: { id: subject.id } // 传递参数
+              },
+              children: [{
+                type: 'row',
+                children: [
+                  // 封面图
+                  {
+                    type: 'image',
+                    props: {
+                      url: subject.images?.medium || '',
+                      width: 80,
+                      height: 120,
+                      borderRadius: 12
+                    }
+                  },
+                  // 标题信息
+                  {
+                    type: 'expanded',
+                    children: [{
+                      type: 'column',
+                      props: { padding: 12 },
+                      children: [
+                        {
+                          type: 'text',
+                          props: {
+                            text: subject.name_cn || subject.name,
+                            style: 'titleMedium',
+                            bold: true
+                          }
+                        },
+                        {
+                          type: 'text',
+                          props: {
+                            text: subject.summary || '暂无简介',
+                            style: 'bodySmall',
+                            maxLines: 2
+                          }
+                        }
+                      ]
+                    }]
+                  }
+                ]
+              }]
+            };
+            
+            newUiList.push(card);
+        }
+        
+        // 更新状态，触发界面重绘
+        state.collectionList = newUiList;
+        await essenmelia.updateProgress(1.0, `获取完成，共 ${items.length} 条`);
+    }
+  } catch (e) {
+    console.log('Error: ' + e);
+    await essenmelia.showSnackBar('获取失败: ' + e);
+  } finally {
+    state.loading = false;
+  }
+}
+```
+
+### 5.3 关键技巧总结
+
+1.  **混合开发模式**：
+    - 在 YAML 中定义静态的大框架（如输入框、按钮）。
+    - 在 JS 中处理动态的列表数据（如 `collectionList`），利用 JS 的灵活性循环生成 UI 对象结构。
+    - 使用 `$variable` 在 YAML 中引用 JS 生成的对象树。
+
+2.  **状态驱动 UI**：
+    - 不需要手动操作 DOM 或 Widget。
+    - 只需修改 `state` 中的变量（如 `state.collectionList = [...]`），Essenmelia 引擎会自动 diff 并更新界面。
+
+3.  **双向绑定简化输入**：
+    - `text_field` 的 `stateKey: "username"` 使得输入内容自动同步到 `state.username`，无需手动监听 `onChange` 事件。
+
+4.  **优雅的异步反馈**：
+    - 在耗时操作前，先更新 `state.collectionList` 显示“加载中”占位符。
+    - 使用 `essenmelia.updateProgress` 在系统通知栏展示精确进度，提升用户体验。
+
+---
+
+## 6. JS API 参考 (API Reference)
+
+在 `main.js` 中，你可以通过全局对象 `essenmelia` 访问以下方法：
+
+### 核心方法
+- `essenmelia.call(method, params)`: 调用任意注册的 Dart 扩展 API。
+- `essenmelia.getState(key)`: 获取当前状态值。
+
+### 数据操作
+- `async essenmelia.getEvents()`: 获取当前用户的任务/事件列表。返回 `Event` 对象数组。
+- `async essenmelia.addEvent(event)`: 添加新任务。`event` 对象结构参考 `Event` 模型。
+- `async essenmelia.updateEvent(event)`: 更新任务。必须包含 `id` 字段。
+- `async essenmelia.deleteEvent(id)`: 删除任务。
+
+### 网络与工具
+- `async essenmelia.httpGet(url, headers)`: 发送 GET 请求。返回 JSON 对象或字符串。
+- `async essenmelia.showSnackBar(message)`: 显示底部提示条。
+- `async essenmelia.showConfirmDialog(options)`: 显示确认对话框。
+  - `options`: `{ title, message, confirmLabel, cancelLabel }`
+- `async essenmelia.updateProgress(progress, message)`: 更新通知栏进度条 (0.0 - 1.0)。

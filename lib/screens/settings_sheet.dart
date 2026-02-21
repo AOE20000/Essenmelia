@@ -66,7 +66,7 @@ class SettingsSheet extends ConsumerWidget {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
-    final maxDensity = isSmallScreen ? 2 : 5;
+    final maxDensity = isSmallScreen ? 3 : 5;
 
     final slivers = [
       if (!isSidePanel && screenWidth < 1024)
@@ -251,13 +251,25 @@ class SettingsSheet extends ConsumerWidget {
                   // Collapse Images
                   SwitchListTile(
                     title: Text(l10n.collapseImages),
+                    subtitle: isSmallScreen && displaySettings.itemsPerRow == 3
+                        ? Text(
+                            l10n.disabledInBookMode,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          )
+                        : null,
                     secondary: const Icon(Icons.image_not_supported_outlined),
-                    value: displaySettings.collapseImages,
-                    onChanged: (value) {
-                      ref
-                          .read(displaySettingsProvider.notifier)
-                          .toggleCollapseImages();
-                    },
+                    value: isSmallScreen && displaySettings.itemsPerRow == 3
+                        ? false
+                        : displaySettings.collapseImages,
+                    onChanged: isSmallScreen && displaySettings.itemsPerRow == 3
+                        ? null
+                        : (value) {
+                            ref
+                                .read(displaySettingsProvider.notifier)
+                                .toggleCollapseImages();
+                          },
                   ),
                   // Card Density
                   Padding(
@@ -287,7 +299,9 @@ class SettingsSheet extends ConsumerWidget {
                               maxDensity,
                               (i) => ButtonSegment(
                                 value: i + 1,
-                                label: Text('${i + 1}'),
+                                label: Text(
+                                  isSmallScreen && i == 2 ? '3*' : '${i + 1}',
+                                ),
                               ),
                             ),
                             selected: {

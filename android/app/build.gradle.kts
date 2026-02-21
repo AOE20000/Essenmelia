@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.essenmelia_flutter"
+    namespace = "org.essenmelia"
     // 升级到 SDK 36，用户已修复本地环境
     compileSdk = 36
     ndkVersion = "28.2.13676358"
@@ -30,12 +30,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.essenmelia_flutter"
+        applicationId = "org.essenmelia"
         // Flutter 3.38.9 (Preview) 建议 minSdk 至少为 24
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 30001
+        versionName = "3.0.0"
         
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")

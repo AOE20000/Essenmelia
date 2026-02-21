@@ -65,12 +65,19 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     if (_box == null) {
       await _init();
     }
+
+    // Auto-download remote images
+    String? localImageUrl = imageUrl;
+    if (imageUrl != null && imageUrl.startsWith('http')) {
+      localImageUrl = await StorageService.downloadAndSaveImage(imageUrl);
+    }
+
     final event = Event()
       ..title = title
       ..description = description
       ..createdAt = DateTime.now()
       ..tags = tags
-      ..imageUrl = imageUrl
+      ..imageUrl = localImageUrl
       ..stepDisplayMode = stepDisplayMode
       ..stepSuffix = stepSuffix
       ..reminderTime = reminderTime
@@ -94,12 +101,18 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         event.reminderId =
             DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
         final l10n = ref.read(l10nProvider);
-        await NotificationService().scheduleEventReminder(
-          event,
-          channelName: l10n.eventReminder,
-          channelDescription: l10n.eventReminderChannelDesc,
-          notificationTitle: l10n.eventReminder,
-        );
+        try {
+          await NotificationService().scheduleEventReminder(
+            event,
+            channelName: l10n.eventReminder,
+            channelDescription: l10n.eventReminderChannelDesc,
+            notificationTitle: l10n.eventReminder,
+          );
+        } catch (e) {
+          debugPrint(
+            'EventsNotifier: Failed to schedule reminder for new event: $e',
+          );
+        }
       }
     }
 
@@ -126,6 +139,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    List<EventStep>? steps,
   }) async {
     if (_box == null) {
       await _init();
@@ -134,13 +148,20 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     if (event != null) {
       if (title != null) event.title = title;
       if (description != null) event.description = description;
+      if (steps != null) event.steps = steps;
       if (tags != null) {
         event.tags = tags;
         if (tags.isNotEmpty) {
           _syncTags(tags);
         }
       }
-      if (imageUrl != null) event.imageUrl = imageUrl;
+      if (imageUrl != null) {
+        if (imageUrl.startsWith('http')) {
+          event.imageUrl = await StorageService.downloadAndSaveImage(imageUrl);
+        } else {
+          event.imageUrl = imageUrl;
+        }
+      }
       if (stepDisplayMode != null) event.stepDisplayMode = stepDisplayMode;
       if (stepSuffix != null) event.stepSuffix = stepSuffix;
 
@@ -186,12 +207,18 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
             event.reminderId =
                 DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
             final l10n = ref.read(l10nProvider);
-            await NotificationService().scheduleEventReminder(
-              event,
-              channelName: l10n.eventReminder,
-              channelDescription: l10n.eventReminderChannelDesc,
-              notificationTitle: l10n.eventReminder,
-            );
+            try {
+              await NotificationService().scheduleEventReminder(
+                event,
+                channelName: l10n.eventReminder,
+                channelDescription: l10n.eventReminderChannelDesc,
+                notificationTitle: l10n.eventReminder,
+              );
+            } catch (e) {
+              debugPrint(
+                'EventsNotifier: Failed to schedule reminder for updated event: $e',
+              );
+            }
           }
         }
       }
@@ -322,6 +349,55 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     final event = _box!.get(eventId);
     if (event != null) {
       event.tags = tags;
+      await event.save();
+    }
+  }
+
+  Future<void> updateSuffix(String eventId, String suffix) async {
+    if (_box == null) {
+      await _init();
+    }
+    final event = _box!.get(eventId);
+    if (event != null) {
+      event.stepSuffix = suffix;
+      await event.save();
+    }
+  }
+
+  Future<void> adjustProgress(String eventId, int delta) async {
+    if (_box == null) {
+      await _init();
+    }
+    final event = _box!.get(eventId);
+    if (event != null) {
+      // Create a new list to trigger change detection if needed, though modifying HiveObject fields usually requires save() on parent
+      final steps = List<EventStep>.from(event.steps);
+      
+      if (delta > 0) {
+        // Mark first 'delta' uncompleted steps as completed
+        int count = 0;
+        for (var step in steps) {
+          if (!step.completed) {
+            step.completed = true;
+            count++;
+            if (count >= delta) break;
+          }
+        }
+      } else if (delta < 0) {
+        // Mark last 'abs(delta)' completed steps as uncompleted
+        int count = 0;
+        final target = delta.abs();
+        for (var i = steps.length - 1; i >= 0; i--) {
+          if (steps[i].completed) {
+            steps[i].completed = false;
+            count++;
+            if (count >= target) break;
+          }
+        }
+      }
+      
+      // Assign back to trigger Hive update
+      event.steps = steps;
       await event.save();
     }
   }

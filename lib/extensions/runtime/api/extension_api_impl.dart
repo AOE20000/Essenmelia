@@ -371,6 +371,7 @@ class ExtensionApiImpl implements ExtensionApi {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    List<Map<String, dynamic>>? steps,
   }) async {
     // Construct a temporary Event object for serialization or pass params directly
     // In updateEvent handler, we can extract from params['event'] or direct params
@@ -388,6 +389,7 @@ class ExtensionApiImpl implements ExtensionApi {
           'reminderTime': reminderTime?.toIso8601String(),
           'reminderRecurrence': reminderRecurrence,
           'reminderScheme': reminderScheme,
+          'steps': steps,
         },
       },
     );

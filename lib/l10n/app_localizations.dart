@@ -3223,6 +3223,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Real Environment'**
   String get healthCheckRealMode;
+
+  /// Message shown when a setting is disabled because book mode (3* density) is active
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable in book mode'**
+  String get disabledInBookMode;
 }
 
 class _AppLocalizationsDelegate

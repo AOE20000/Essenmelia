@@ -1,4 +1,4 @@
-package com.example.essenmelia_flutter
+package org.essenmelia
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,8 +10,8 @@ import android.os.Handler
 import android.os.Looper
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.example.essenmelia/intent"
-    private val DEBUG_CHANNEL = "com.example.essenmelia/debug"
+    private val CHANNEL = "org.essenmelia/intent"
+    private val DEBUG_CHANNEL = "org.essenmelia/debug"
     private var pendingAction: String? = null
     private var debugChannel: MethodChannel? = null
     private var methodChannel: MethodChannel? = null
@@ -41,7 +41,7 @@ class MainActivity : FlutterActivity() {
             } else {
                 pendingAction = action
             }
-        } else if (intent.action == "com.example.essenmelia.INVOKE_API") {
+        } else if (intent.action == "org.essenmelia.INVOKE_API") {
             val method = intent.getStringExtra("method")
             val params = intent.getStringExtra("params") ?: "{}"
             val isUntrusted = intent.getBooleanExtra("isUntrusted", false)

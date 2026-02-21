@@ -474,28 +474,21 @@ class ExtensionJsEngine {
         return essenmelia.call('updateProgress', {progress: progress, message: message});
       };
 
-      // Event Listeners
-      essenmelia._listeners = {};
-      essenmelia.on = function(event, callback) {
-        if (!essenmelia._listeners[event]) {
-          essenmelia._listeners[event] = [];
-        }
-        essenmelia._listeners[event].push(callback);
+      essenmelia.showConfirmDialog = function(options) {
+        return essenmelia.call('showConfirmDialog', options);
       };
 
-      // Global onEvent handler called by Dart
-      function onEvent(name, data) {
-        console.log("JS: Received Event " + name);
-        if (essenmelia._listeners[name]) {
-          essenmelia._listeners[name].forEach(function(callback) {
-            try {
-              callback(data);
-            } catch (e) {
-              console.log("Event Handler Error: " + e);
-            }
-          });
-        }
-      }
+      essenmelia.getEvents = function() {
+        return essenmelia.call('getEvents');
+      };
+
+      essenmelia.updateEvent = function(eventData) {
+        return essenmelia.call('updateEvent', {event: eventData});
+      };
+
+      essenmelia.deleteEvent = function(id) {
+        return essenmelia.call('deleteEvent', {id: id});
+      };
     ''');
   }
 
