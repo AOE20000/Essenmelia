@@ -543,7 +543,7 @@ class _InstallationConfirmDialogState
         // 版本对比
         _buildDiffRow(
           context,
-          l10n.extensionVersion,
+          l10n.extensionVersionLabel,
           widget.oldMeta?.version ?? l10n.extensionNotInstalled,
           widget.newMeta.version,
           isHighlight: widget.oldMeta?.version != widget.newMeta.version,

@@ -12,6 +12,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extensionManagement => 'Extension Management';
 
   @override
+  String get videoLoadError => 'Failed to load video';
+
+  @override
+  String get novelContentEmpty => 'No content available';
+
+  @override
+  String get extensionRetry => 'Retry';
+
+  @override
+  String get extensionLoading => 'Loading...';
+
+  @override
   String get searchExtensions => 'Search extensions';
 
   @override
@@ -64,6 +76,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get add => 'Add';
+
+  @override
+  String get extensionLoadFailed => 'Extension Load Failed';
+
+  @override
+  String get extensionNotRunning => 'Extension Not Running';
+
+  @override
+  String get enableExtensionHint =>
+      'Please enable this extension in details page';
+
+  @override
+  String extensionVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get extensionInfo => 'Extension Info';
+
+  @override
+  String storageUsage(String size) {
+    return 'Storage: $size';
+  }
+
+  @override
+  String get functionDescription => 'Description';
+
+  @override
+  String get developer => 'Developer';
+
+  @override
+  String get uniqueId => 'Unique ID';
+
+  @override
+  String get developerSandbox => 'Pure Shell (Dev)';
+
+  @override
+  String get sandboxPureModeHint =>
+      'This extension is running in \"Pure Shell\" mode. You can test its permissions below.';
+
+  @override
+  String get getEvents => 'Get Events';
+
+  @override
+  String getEventsSuccess(int count) {
+    return 'Successfully fetched $count events';
+  }
+
+  @override
+  String getEventsFailed(String error) {
+    return 'Fetch failed: $error';
+  }
+
+  @override
+  String get sendNotification => 'Send Notification';
+
+  @override
+  String get testNotification => 'Test notification from sandbox';
 
   @override
   String get renameTag => 'Rename Tag';
@@ -407,41 +477,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failedToLoadStore => 'Failed to load store';
-
-  @override
-  String get extensionPureMode => 'Pure Mode (Metadata only)';
-
-  @override
-  String extensionStorageOccupied(String size) {
-    return 'Storage: $size';
-  }
-
-  @override
-  String get extensionDeveloperSandbox => 'Developer Sandbox';
-
-  @override
-  String get extensionSandboxInstruction =>
-      'This extension is running as a \'pure shell\'. You can test its permissions below.';
-
-  @override
-  String get extensionGetEvents => 'Get Events';
-
-  @override
-  String get extensionSendNotification => 'Send Notification';
-
-  @override
-  String extensionGetEventsSuccess(int count) {
-    return 'Successfully fetched $count events';
-  }
-
-  @override
-  String extensionGetEventsFailed(String error) {
-    return 'Fetch failed: $error';
-  }
-
-  @override
-  String get extensionSandboxNotification =>
-      'Test notification from extension sandbox';
 
   @override
   String get extensionDefaultButtonLabel => 'Button';
@@ -1217,7 +1252,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extensionInformation => 'Information';
 
   @override
-  String get extensionVersion => 'Version';
+  String get extensionVersionLabel => 'Version';
 
   @override
   String get extensionNotInstalled => 'N/A';

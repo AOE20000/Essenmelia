@@ -12,6 +12,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionManagement => '扩展管理';
 
   @override
+  String get videoLoadError => '视频加载失败';
+
+  @override
+  String get novelContentEmpty => '暂无内容';
+
+  @override
+  String get extensionRetry => '重试';
+
+  @override
+  String get extensionLoading => '加载中...';
+
+  @override
   String get searchExtensions => '搜索扩展';
 
   @override
@@ -64,6 +76,63 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get add => '添加';
+
+  @override
+  String get extensionLoadFailed => '扩展加载失败';
+
+  @override
+  String get extensionNotRunning => '扩展未运行';
+
+  @override
+  String get enableExtensionHint => '请在扩展详情页启用此扩展';
+
+  @override
+  String extensionVersion(String version) {
+    return '版本 $version';
+  }
+
+  @override
+  String get extensionInfo => '扩展信息';
+
+  @override
+  String storageUsage(String size) {
+    return '存储占用: $size';
+  }
+
+  @override
+  String get functionDescription => '功能描述';
+
+  @override
+  String get developer => '开发者';
+
+  @override
+  String get uniqueId => '唯一标识 (ID)';
+
+  @override
+  String get developerSandbox => '纯净壳 (Dev)';
+
+  @override
+  String get sandboxPureModeHint =>
+      '此扩展没有图形界面或显示于事件详情的内容区域，您可以点击下方按钮测试其申请的权限是否生效。';
+
+  @override
+  String get getEvents => '获取事件';
+
+  @override
+  String getEventsSuccess(int count) {
+    return '成功获取 $count 个事件';
+  }
+
+  @override
+  String getEventsFailed(String error) {
+    return '获取失败: $error';
+  }
+
+  @override
+  String get sendNotification => '发送通知';
+
+  @override
+  String get testNotification => '来自扩展沙箱的测试通知';
 
   @override
   String get renameTag => '重命名标签';
@@ -406,40 +475,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get failedToLoadStore => '无法加载商店';
-
-  @override
-  String get extensionPureMode => '扩展信息';
-
-  @override
-  String extensionStorageOccupied(String size) {
-    return '存储占用: $size';
-  }
-
-  @override
-  String get extensionDeveloperSandbox => '开发沙箱';
-
-  @override
-  String get extensionSandboxInstruction =>
-      '此扩展目前作为“纯净壳”运行。你可以点击下方按钮测试其申请的权限是否生效。';
-
-  @override
-  String get extensionGetEvents => '获取事件';
-
-  @override
-  String get extensionSendNotification => '发送通知';
-
-  @override
-  String extensionGetEventsSuccess(int count) {
-    return '成功获取 $count 个事件';
-  }
-
-  @override
-  String extensionGetEventsFailed(String error) {
-    return '获取失败: $error';
-  }
-
-  @override
-  String get extensionSandboxNotification => '来自扩展沙箱的测试通知';
 
   @override
   String get extensionDefaultButtonLabel => '按钮';
@@ -1179,7 +1214,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionInformation => '扩展信息';
 
   @override
-  String get extensionVersion => '版本';
+  String get extensionVersionLabel => '版本';
 
   @override
   String get extensionNotInstalled => '未安装';

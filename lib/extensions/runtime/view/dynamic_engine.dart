@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../l10n/app_localizations.dart';
 import '../js/extension_js_engine.dart';
 import 'extension_console.dart';
@@ -9,8 +13,15 @@ import 'extension_console.dart';
 /// Dynamic UI Renderer (works with ExtensionJsEngine)
 class DynamicEngine extends ConsumerStatefulWidget {
   final ExtensionJsEngine engine;
+  final Map<String, dynamic>? viewOverride;
+  final bool isEmbedded;
 
-  const DynamicEngine({super.key, required this.engine});
+  const DynamicEngine({
+    super.key,
+    required this.engine,
+    this.viewOverride,
+    this.isEmbedded = false,
+  });
 
   @override
   ConsumerState<DynamicEngine> createState() => _DynamicEngineState();
@@ -56,6 +67,18 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+
+    // Inject locale into engine state silently
+    if (widget.engine.isInitialized) {
+      final currentLocale = Localizations.localeOf(context).toString();
+      if (widget.engine.state['locale'] != currentLocale) {
+        widget.engine.updateStateSilent('locale', currentLocale);
+      }
+    }
+
+    if (widget.isEmbedded) {
+      return _buildMainContent(theme, l10n);
+    }
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.small(
@@ -121,7 +144,7 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
       );
     }
 
-    final viewDef = widget.engine.metadata.view;
+    final viewDef = widget.viewOverride ?? widget.engine.metadata.view;
     if (viewDef == null) {
       return Center(
         key: const ValueKey('no_ui'),
@@ -131,6 +154,41 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
 
     // Special case: HTML content as the entire view
     if (viewDef is String) {
+      if (widget.isEmbedded) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: HtmlWidget(
+            viewDef,
+            textStyle: theme.textTheme.bodyMedium,
+            onTapUrl: (url) {
+              if (url.startsWith('js:')) {
+                // Parse js:funcName?param=value
+                // Remove 'js:' prefix to get the rest
+                final raw = url.substring(3);
+                final queryIndex = raw.indexOf('?');
+
+                String funcName;
+                Map<String, dynamic> params = {};
+
+                if (queryIndex != -1) {
+                  funcName = raw.substring(0, queryIndex);
+                  final query = raw.substring(queryIndex + 1);
+                  final uri = Uri(query: query);
+                  params = uri.queryParameters;
+                } else {
+                  funcName = raw;
+                }
+
+                widget.engine.callFunction(funcName, params);
+                return true;
+              }
+              // Allow default handling (url_launcher)
+              return false;
+            },
+          ),
+        );
+      }
+
       return Scaffold(
         appBar: AppBar(
           title: Text(widget.engine.metadata.name),
@@ -168,6 +226,13 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             },
           ),
         ),
+      );
+    }
+
+    if (widget.isEmbedded) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: _buildWidget(viewDef as Map<String, dynamic>),
       );
     }
 
@@ -424,6 +489,99 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
             return false;
           },
         );
+        break;
+      case 'markdown':
+        final data = _resolveValue(props['data'] ?? '').toString();
+        Widget md = MarkdownBody(
+          data: data,
+          selectable: props['selectable'] == true,
+          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+            p: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: (props['fontSize'] as num?)?.toDouble(),
+              height: 1.6,
+            ),
+          ),
+          onTapLink: (text, href, title) async {
+            final action = def['onTapUrl'];
+            if (action != null) {
+              if (action is String) {
+                widget.engine.callFunction(action, {'url': href});
+              } else if (action is Map && action.containsKey('call')) {
+                widget.engine.callFunction(action['call'], {
+                  'url': href,
+                  ...?action['params'],
+                });
+              }
+            } else if (href != null) {
+              final uri = Uri.tryParse(href);
+              if (uri != null && await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            }
+          },
+        );
+
+        if (height != null) {
+          md = SingleChildScrollView(child: md);
+        }
+
+        current = Container(
+          width: width,
+          height: height,
+          padding: _parsePadding(props['padding']),
+          color: _parseColor(props['backgroundColor'], context),
+          child: md,
+        );
+        break;
+      case 'video':
+        final url = _resolveValue(props['url'] ?? '').toString();
+        if (url.isNotEmpty) {
+          current = _VideoPlayerWrapper(
+            url: url,
+            autoPlay: props['autoPlay'] == true,
+            looping: props['looping'] == true,
+            aspectRatio: (props['aspectRatio'] as num?)?.toDouble(),
+          );
+        } else {
+          current = const SizedBox.shrink();
+        }
+        break;
+      case 'novel':
+        final text = _resolveValue(props['text'] ?? '').toString();
+        if (text.isEmpty) {
+          current = Center(
+            child: Text(
+              l10n.novelContentEmpty,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          );
+        } else {
+          Widget txt = SelectableText(
+            text,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontSize: (props['fontSize'] as num?)?.toDouble() ?? 18,
+              height: (props['lineHeight'] as num?)?.toDouble() ?? 1.8,
+              color: _parseColor(props['textColor'], context),
+              fontFamily: props['fontFamily']?.toString(),
+            ),
+            textAlign: TextAlign.justify,
+          );
+
+          if (height != null) {
+            txt = SingleChildScrollView(child: txt);
+          }
+
+          current = Container(
+            width: width,
+            height: height,
+            padding:
+                _parsePadding(props['padding']) ?? const EdgeInsets.all(16),
+            color: _parseColor(props['backgroundColor'], context),
+            child: txt,
+          );
+        }
         break;
       case 'button':
         final label = Text(
@@ -1043,5 +1201,153 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
     }
 
     return keys.toList();
+  }
+}
+
+class _VideoPlayerWrapper extends StatefulWidget {
+  final String url;
+  final bool autoPlay;
+  final bool looping;
+  final double? aspectRatio;
+
+  const _VideoPlayerWrapper({
+    required this.url,
+    this.autoPlay = false,
+    this.looping = false,
+    this.aspectRatio,
+  });
+
+  @override
+  State<_VideoPlayerWrapper> createState() => _VideoPlayerWrapperState();
+}
+
+class _VideoPlayerWrapperState extends State<_VideoPlayerWrapper> {
+  late VideoPlayerController _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  @override
+  void didUpdateWidget(_VideoPlayerWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.url != oldWidget.url) {
+      _disposeControllers();
+      _initializePlayer();
+    }
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.url),
+      );
+      await _videoPlayerController.initialize();
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController,
+        autoPlay: widget.autoPlay,
+        looping: widget.looping,
+        aspectRatio: widget.aspectRatio,
+        errorBuilder: (context, errorMessage) {
+          return Center(
+            child: Text(
+              errorMessage,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          );
+        },
+      );
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isError = true;
+        });
+      }
+    }
+  }
+
+  void _disposeControllers() {
+    _videoPlayerController.dispose();
+    _chewieController?.dispose();
+    _chewieController = null;
+  }
+
+  @override
+  void dispose() {
+    _disposeControllers();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    if (_isError) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: theme.colorScheme.error),
+              const SizedBox(height: 8),
+              Text(
+                l10n.videoLoadError,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_chewieController != null &&
+        _videoPlayerController.value.isInitialized) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: AspectRatio(
+          aspectRatio:
+              widget.aspectRatio ?? _videoPlayerController.value.aspectRatio,
+          child: Chewie(controller: _chewieController!),
+        ),
+      );
+    } else {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.3,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                l10n.extensionLoading,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }

@@ -65,9 +65,15 @@ class SearchNotifier extends StateNotifier<SearchState> {
     await ref.read(dbProvider.future);
     _box = Hive.box('settings');
     final savedSortOrder = _box!.get('sortOrder');
+    final savedTags = _box!.get('selectedTags');
+    final savedStatusFilter = _box!.get('statusFilter');
+    final savedOnlyShowReminders = _box!.get('onlyShowReminders');
+
+    SearchState newState = state;
+
     if (savedSortOrder != null) {
       try {
-        state = state.copyWith(
+        newState = newState.copyWith(
           sortOrder: SortOrder.values.firstWhere(
             (e) => e.toString() == savedSortOrder,
             orElse: () => SortOrder.createdAtDesc,
@@ -75,6 +81,33 @@ class SearchNotifier extends StateNotifier<SearchState> {
         );
       } catch (_) {}
     }
+
+    if (savedTags != null) {
+      try {
+        newState = newState.copyWith(
+          selectedTags: (savedTags as List).cast<String>(),
+        );
+      } catch (_) {}
+    }
+
+    if (savedStatusFilter != null) {
+      try {
+        newState = newState.copyWith(
+          statusFilter: EventStatusFilter.values.firstWhere(
+            (e) => e.toString() == savedStatusFilter,
+            orElse: () => EventStatusFilter.all,
+          ),
+        );
+      } catch (_) {}
+    }
+
+    if (savedOnlyShowReminders != null) {
+      newState = newState.copyWith(
+        onlyShowReminders: savedOnlyShowReminders as bool,
+      );
+    }
+
+    state = newState;
   }
 
   void setQuery(String query) {
@@ -89,10 +122,12 @@ class SearchNotifier extends StateNotifier<SearchState> {
       tags.add(tag);
     }
     state = state.copyWith(selectedTags: tags);
+    _box?.put('selectedTags', tags);
   }
 
   void clearTags() {
     state = state.copyWith(selectedTags: []);
+    _box?.put('selectedTags', []);
   }
 
   Future<void> setSortOrder(SortOrder order) async {
@@ -104,10 +139,13 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
   void setStatusFilter(EventStatusFilter filter) {
     state = state.copyWith(statusFilter: filter);
+    _box?.put('statusFilter', filter.toString());
   }
 
   void toggleOnlyShowReminders() {
-    state = state.copyWith(onlyShowReminders: !state.onlyShowReminders);
+    final newValue = !state.onlyShowReminders;
+    state = state.copyWith(onlyShowReminders: newValue);
+    _box?.put('onlyShowReminders', newValue);
   }
 }
 

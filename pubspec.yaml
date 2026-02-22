@@ -1,7 +1,7 @@
 name: essenmelia_flutter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 3.0.0+1
+version: 3.1.0+1
 
 environment:
   sdk: ^3.10.8
@@ -55,6 +55,8 @@ dependencies:
   pasteboard: ^0.4.0
   flutter_widget_from_html: ^0.17.1
   app_links: ^7.0.0
+  video_player: ^2.11.0
+  chewie: ^1.13.0
   # receive_intent: ^0.2.7
 
 dev_dependencies:
@@ -79,6 +81,13 @@ flutter_launcher_icons:
   # Then we will manually replace it with the correct Vector Drawable XML
   monochrome_android: "assets/images/Essenmelia.png"
   min_sdk_android: 21
+  windows:
+    generate: true
+    image_path: "assets/images/Essenmelia.png"
+    icon_size: 48
+  linux:
+    generate: true
+    image_path: "assets/images/Essenmelia.png"
 
 flutter:
   assets:

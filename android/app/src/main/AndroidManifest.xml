@@ -70,7 +70,7 @@
 
         <service
             android:name=".QuickActionTileService"
-            android:icon="@drawable/ic_launcher_monochrome"
+            android:icon="@mipmap/launcher_icon"
             android:label="快速记录"
             android:exported="true"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">

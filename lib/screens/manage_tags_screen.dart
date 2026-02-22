@@ -132,12 +132,9 @@ class ManageTagsScreen extends ConsumerWidget {
                                   _showEditDialog(context, ref, tag),
                             ),
                           ),
-                        )
-                        .animate()
-                        .fadeIn(delay: (index * 50).ms)
-                        .slideX(begin: 0.1, curve: Curves.easeOut),
-              );
-            }, childCount: tags.length),
+                        ),
+                      );
+                    }, childCount: tags.length),
           ),
         );
       },

@@ -228,6 +228,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= 1024;
+    final showNavigationRail = screenWidth >= 600;
     final currentTab = ref.watch(homeTabProvider);
     final isSelectionMode = ref.watch(selectionProvider).isNotEmpty;
     final leftPanelContent = ref.watch(leftPanelContentProvider);
@@ -253,7 +254,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             )
           : null,
-      bottomNavigationBar: !isLargeScreen
+      bottomNavigationBar: !showNavigationRail
           ? NavigationBar(
               selectedIndex: currentTab.index,
               onDestinationSelected: (index) {
@@ -282,7 +283,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: SafeArea(
         child: Row(
           children: [
-            if (isLargeScreen)
+            if (showNavigationRail)
               NavigationRail(
                 extended: screenWidth >= 1200,
                 selectedIndex: currentTab.index,
@@ -456,38 +457,40 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           body: extensions.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHigh,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.extension_off_outlined,
-                          size: 48,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.5,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHigh,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.extension_off_outlined,
+                            size: 48,
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        l10n.noExtensionsInstalled,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.outline,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 24),
+                        Text(
+                          l10n.noExtensionsInstalled,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.outline,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton.tonalIcon(
-                        onPressed: () => _showAddExtensionDialog(context),
-                        icon: const Icon(Icons.add),
-                        label: Text(l10n.addExtension),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        FilledButton.tonalIcon(
+                          onPressed: () => _showAddExtensionDialog(context),
+                          icon: const Icon(Icons.add),
+                          label: Text(l10n.addExtension),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : CustomScrollView(
@@ -811,19 +814,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                           itemBuilder: (context, index) {
                             final event = filteredEvents[index];
                             return _EventCard(
-                                  key: ValueKey(event.id),
-                                  event: event,
-                                  collapseImage: displaySettings.collapseImages,
-                                  isFocused:
-                                      isLargeScreen &&
-                                      selectedEventId == event.id,
-                                  isSelected: selectedIds.contains(event.id),
-                                  isSelectionMode: isSelectionMode,
-                                  isBookMode: isSmallScreen && itemsPerRow == 3,
-                                )
-                                .animate()
-                                .fadeIn(delay: (30 * index).ms)
-                                .slideY(begin: 0.1, end: 0);
+                              key: ValueKey(event.id),
+                              event: event,
+                              collapseImage: displaySettings.collapseImages,
+                              isFocused:
+                                  isLargeScreen && selectedEventId == event.id,
+                              isSelected: selectedIds.contains(event.id),
+                              isSelectionMode: isSelectionMode,
+                              isBookMode: isSmallScreen && itemsPerRow == 3,
+                            );
                           },
                         ),
                       ),
@@ -1929,7 +1928,8 @@ class _BatchEditSuffixSheet extends ConsumerStatefulWidget {
   const _BatchEditSuffixSheet();
 
   @override
-  ConsumerState<_BatchEditSuffixSheet> createState() => _BatchEditSuffixSheetState();
+  ConsumerState<_BatchEditSuffixSheet> createState() =>
+      _BatchEditSuffixSheetState();
 }
 
 class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
@@ -1939,7 +1939,7 @@ class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
@@ -1984,10 +1984,7 @@ class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            '请输入新的步骤后缀（如：集、章、节）：',
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text('请输入新的步骤后缀（如：集、章、节）：', style: theme.textTheme.bodyMedium),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -2016,69 +2013,71 @@ class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
                     _currentValue = selection;
                   });
                 },
-                fieldViewBuilder: (
-                  BuildContext context,
-                  TextEditingController fieldTextEditingController,
-                  FocusNode fieldFocusNode,
-                  VoidCallback onFieldSubmitted,
-                ) {
-                  if (_currentValue.isNotEmpty && fieldTextEditingController.text != _currentValue) {
-                     fieldTextEditingController.text = _currentValue;
-                  }
-                  
-                  return TextField(
-                    controller: fieldTextEditingController,
-                    focusNode: fieldFocusNode,
-                    onChanged: (value) {
-                      _currentValue = value;
+                fieldViewBuilder:
+                    (
+                      BuildContext context,
+                      TextEditingController fieldTextEditingController,
+                      FocusNode fieldFocusNode,
+                      VoidCallback onFieldSubmitted,
+                    ) {
+                      if (_currentValue.isNotEmpty &&
+                          fieldTextEditingController.text != _currentValue) {
+                        fieldTextEditingController.text = _currentValue;
+                      }
+
+                      return TextField(
+                        controller: fieldTextEditingController,
+                        focusNode: fieldFocusNode,
+                        onChanged: (value) {
+                          _currentValue = value;
+                        },
+                        decoration: InputDecoration(
+                          labelText: '后缀',
+                          hintText: '例如：集',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                        ),
+                      );
                     },
-                    decoration: InputDecoration(
-                      labelText: '后缀',
-                      hintText: '例如：集',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                optionsViewBuilder: (context, onSelected, options) {
+                  return Align(
+                    alignment: Alignment.topLeft,
+                    child: Material(
+                      elevation: 4.0,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: constraints.maxWidth,
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: options.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final String option = options.elementAt(index);
+                            return InkWell(
+                              onTap: () {
+                                onSelected(option);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text(
+                                  option,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                      filled: true,
                     ),
                   );
-                },
-                optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4.0,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: constraints.maxWidth,
-                            constraints: const BoxConstraints(maxHeight: 200),
-                            decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainer,
-                                borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final String option = options.elementAt(index);
-                                return InkWell(
-                                  onTap: () {
-                                    onSelected(option);
-                                  },
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Text(
-                                      option,
-                                      style: theme.textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                    );
                 },
               );
             },
@@ -2096,4 +2095,3 @@ class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
     );
   }
 }
-

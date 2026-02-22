@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_js/flutter_js.dart';
 import '../../core/extension_api.dart';
@@ -127,6 +128,7 @@ class ExtensionJsEngine {
       _addLog('Initializing Engine...');
 
       // Inject initial state
+      state['locale'] = Platform.localeName;
       final initialStateJson = jsonEncode(state);
       _jsRuntime.evaluate('''
         var _rawState = $initialStateJson;
@@ -488,6 +490,15 @@ class ExtensionJsEngine {
 
       essenmelia.deleteEvent = function(id) {
         return essenmelia.call('deleteEvent', {id: id});
+      };
+
+      essenmelia.registerEventDetailContent = function(eventId, extensionId, content, title) {
+        return essenmelia.call('registerEventDetailContent', {
+          eventId: eventId, 
+          extensionId: extensionId, 
+          content: content, 
+          title: title
+        });
       };
     ''');
   }

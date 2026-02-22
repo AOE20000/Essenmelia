@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 import '../providers/db_provider.dart';
+import '../providers/ui_state_provider.dart';
 import '../services/file_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -219,22 +220,22 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
           }
 
           // Import Templates
-           if (data['templates'] is List) {
-             for (var t in data['templates']) {
-               final template =
-                   StepTemplate.fromJson(t as Map<String, dynamic>);
-               await templateBox.put(template.id, template);
-             }
-           }
+          if (data['templates'] is List) {
+            for (var t in data['templates']) {
+              final template = StepTemplate.fromJson(t as Map<String, dynamic>);
+              await templateBox.put(template.id, template);
+            }
+          }
 
-           // Import Sets
-           if (data['set_templates'] is List) {
-             for (var t in data['set_templates']) {
-               final template =
-                   StepSetTemplate.fromJson(t as Map<String, dynamic>);
-               await setTemplateBox.put(template.id, template);
-             }
-           }
+          // Import Sets
+          if (data['set_templates'] is List) {
+            for (var t in data['set_templates']) {
+              final template = StepSetTemplate.fromJson(
+                t as Map<String, dynamic>,
+              );
+              await setTemplateBox.put(template.id, template);
+            }
+          }
 
           if (mounted) {
             _loadAllStats();
@@ -521,7 +522,10 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () {
+                        ref.read(leftPanelContentProvider.notifier).state =
+                            LeftPanelContent.none;
+                      },
                     ),
                   ],
                 ),
@@ -682,11 +686,11 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                   ),
                   onPressed: () => _showDeleteConfirm(context, dbName),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   void _showDeleteConfirm(BuildContext context, String dbName) {
@@ -699,10 +703,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
       builder: (context) => AlertDialog(
         icon: Icon(Icons.delete_sweep_rounded, color: colorScheme.error),
         title: Text(l10n.deleteDbTitle(dbName)),
-        content: Text(
-          l10n.deleteDbWarning,
-          style: theme.textTheme.bodyMedium,
-        ),
+        content: Text(l10n.deleteDbWarning, style: theme.textTheme.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -798,7 +799,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
 
     return ListTile(
       onTap: onTap,
-      splashColor: isDestructive 
+      splashColor: isDestructive
           ? colorScheme.error.withValues(alpha: 0.1)
           : colorScheme.primary.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

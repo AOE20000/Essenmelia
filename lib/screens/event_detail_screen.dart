@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +10,12 @@ import '../providers/ui_state_provider.dart';
 import '../widgets/universal_image.dart';
 import 'edit_event_sheet.dart';
 import 'steps_editor_screen.dart';
+import '../extensions/services/ui_extension_service.dart';
+import '../extensions/manager/extension_manager.dart';
+import '../extensions/runtime/proxy_extension.dart';
+import '../extensions/runtime/view/dynamic_engine.dart';
 
-class EventDetailScreen extends ConsumerWidget {
+class EventDetailScreen extends ConsumerStatefulWidget {
   final String eventId;
   final bool isSidePanel;
 
@@ -21,15 +26,41 @@ class EventDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EventDetailScreen> createState() => _EventDetailScreenState();
+}
+
+class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    setState(() => _currentPage = index);
+  }
+
+  void _jumpToPage(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Handle small to large screen transition
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= 1024;
 
-    if (!isSidePanel && isLargeScreen) {
+    if (!widget.isSidePanel && isLargeScreen) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
-          ref.read(selectedEventIdProvider.notifier).state = eventId;
+          ref.read(selectedEventIdProvider.notifier).state = widget.eventId;
           context.pop();
         }
       });
@@ -38,27 +69,182 @@ class EventDetailScreen extends ConsumerWidget {
 
     final eventsAsync = ref.watch(eventsProvider);
     final event = eventsAsync.asData?.value.cast<Event?>().firstWhere(
-      (e) => e?.id.toString() == eventId,
+      (e) => e?.id.toString() == widget.eventId,
       orElse: () => null,
     );
-
-    if (event == null) {
-      if (isSidePanel) {
-        return Center(child: Text(AppLocalizations.of(context)!.eventNotFound));
-      }
-      return Scaffold(
-        body: Center(child: Text(AppLocalizations.of(context)!.eventNotFound)),
-      );
-    }
 
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    final body = SafeArea(
+    if (event == null) {
+      if (widget.isSidePanel) {
+        return Center(child: Text(l10n.eventNotFound));
+      }
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.eventDetails)),
+        body: Center(child: Text(l10n.eventNotFound)),
+      );
+    }
+
+    final extensionContents =
+        ref.watch(eventDetailContentProvider)[widget.eventId] ?? [];
+    final hasExtensions = extensionContents.isNotEmpty;
+
+    final mainPage = _buildMainPage(
+      context,
+      event,
+      theme,
+      l10n,
+      onImageTap: hasExtensions ? () => _jumpToPage(1) : null,
+    );
+
+    final pages = [
+      mainPage,
+      ...extensionContents.map((data) => _buildExtensionPage(data)),
+    ];
+
+    if (_currentPage >= pages.length) {
+      _currentPage = max(0, pages.length - 1);
+      if (_pageController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _pageController.jumpToPage(_currentPage);
+        });
+      }
+    }
+
+    Widget? bottomBar;
+    if (hasExtensions && _currentPage > 0) {
+      bottomBar = Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentPage,
+          onDestinationSelected: _jumpToPage,
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.event_note_outlined),
+              selectedIcon: const Icon(Icons.event_note),
+              label: l10n.eventDetails,
+            ),
+            ...extensionContents.map((data) {
+              return NavigationDestination(
+                icon: const Icon(Icons.extension_outlined),
+                selectedIcon: const Icon(Icons.extension),
+                label: data['title'] as String? ?? 'Extension',
+              );
+            }),
+          ],
+        ),
+      );
+    }
+
+    if (widget.isSidePanel) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            color: theme.colorScheme.surface,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.eventDetails,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _showEditSheet(context, event, ref),
+                  tooltip: l10n.edit,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.checklist_rtl_outlined),
+                  onPressed: () =>
+                      _navigateToStepsEditor(context, event.id, ref),
+                  tooltip: l10n.steps,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  onPressed: () => _confirmDelete(context, ref, event),
+                  color: theme.colorScheme.error,
+                  tooltip: l10n.delete,
+                ),
+                const SizedBox(width: 4),
+                const VerticalDivider(width: 1, indent: 8, endIndent: 8),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () =>
+                      ref.read(selectedEventIdProvider.notifier).state = null,
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              children: pages,
+            ),
+          ),
+          if (hasExtensions && _currentPage > 0) bottomBar!,
+        ],
+      );
+    }
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              children: pages,
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _currentPage > 0 ? bottomBar : null,
+    );
+  }
+
+  Widget _buildExtensionPage(Map<String, dynamic> data) {
+    final extensionId = data['extensionId'] as String;
+    final content = data['content'] as Map<String, dynamic>;
+
+    final manager = ref.watch(extensionManagerProvider);
+    final extension = manager.getExtension(extensionId);
+
+    if (extension is ProxyExtension && extension.engine != null) {
+      return DynamicEngine(
+        engine: extension.engine!,
+        viewOverride: content,
+        isEmbedded: true,
+      );
+    }
+
+    return Center(child: Text('Extension $extensionId not ready'));
+  }
+
+  Widget _buildMainPage(
+    BuildContext context,
+    Event event,
+    ThemeData theme,
+    AppLocalizations l10n, {
+    VoidCallback? onImageTap,
+  }) {
+    return SafeArea(
       top: false,
       child: CustomScrollView(
         slivers: [
-          if (!isSidePanel)
+          if (!widget.isSidePanel)
             SliverAppBar(
               pinned: true,
               scrolledUnderElevation: 0,
@@ -94,11 +280,47 @@ class EventDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Hero(
                   tag: event.id,
-                  child: UniversalImage(
-                    imageUrl: event.imageUrl!,
-                    height: 240,
-                    fit: BoxFit.cover,
+                  child: InkWell(
+                    onTap: onImageTap,
                     borderRadius: BorderRadius.circular(24),
+                    child: SizedBox(
+                      height: 240,
+                      width: double.infinity,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          UniversalImage(
+                            imageUrl: event.imageUrl!,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          if (onImageTap != null)
+                            Positioned(
+                              bottom: 12,
+                              right: 12,
+                              child: Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.colorScheme.surface,
+                                    width: 2,
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -109,7 +331,7 @@ class EventDetailScreen extends ConsumerWidget {
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 16),
                 // Title Section
-                if (!isSidePanel) ...[
+                if (!widget.isSidePanel) ...[
                   Text(
                     event.title,
                     style: theme.textTheme.headlineMedium?.copyWith(
@@ -123,7 +345,7 @@ class EventDetailScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isSidePanel) ...[
+                    if (widget.isSidePanel) ...[
                       Text(
                         event.title,
                         style: theme.textTheme.headlineMedium?.copyWith(
@@ -321,58 +543,6 @@ class EventDetailScreen extends ConsumerWidget {
         ],
       ),
     );
-
-    if (isSidePanel) {
-      return Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            color: theme.colorScheme.surface,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.eventDetails,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _showEditSheet(context, event, ref),
-                  tooltip: l10n.edit,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.checklist_rtl_outlined),
-                  onPressed: () =>
-                      _navigateToStepsEditor(context, event.id, ref),
-                  tooltip: l10n.steps,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  onPressed: () => _confirmDelete(context, ref, event),
-                  color: theme.colorScheme.error,
-                  tooltip: l10n.delete,
-                ),
-                const SizedBox(width: 4),
-                const VerticalDivider(width: 1, indent: 8, endIndent: 8),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () =>
-                      ref.read(selectedEventIdProvider.notifier).state = null,
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(child: body),
-        ],
-      );
-    }
-
-    return Scaffold(body: body);
   }
 
   void _showEditSheet(BuildContext context, Event event, WidgetRef ref) {
@@ -444,7 +614,7 @@ class EventDetailScreen extends ConsumerWidget {
     if (confirm == true) {
       ref.read(eventsProvider.notifier).deleteEvent(event.id);
       ref.read(selectedEventIdProvider.notifier).state = null;
-      if (!isSidePanel && context.mounted) {
+      if (!widget.isSidePanel && context.mounted) {
         context.pop();
       }
     }

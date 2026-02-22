@@ -372,7 +372,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     if (event != null) {
       // Create a new list to trigger change detection if needed, though modifying HiveObject fields usually requires save() on parent
       final steps = List<EventStep>.from(event.steps);
-      
+
       if (delta > 0) {
         // Mark first 'delta' uncompleted steps as completed
         int count = 0;
@@ -395,7 +395,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           }
         }
       }
-      
+
       // Assign back to trigger Hive update
       event.steps = steps;
       await event.save();
@@ -464,6 +464,17 @@ class TemplatesController {
       final t = templates[i];
       t.order = i;
       await t.save();
+    }
+  }
+
+  Future<void> updateTemplate(String id, String description) async {
+    await ref.read(dbProvider.future);
+    final activePrefix = ref.read(activePrefixProvider);
+    final box = Hive.box<StepTemplate>('${activePrefix}_templates');
+    final template = box.get(id);
+    if (template != null) {
+      template.description = description;
+      await template.save();
     }
   }
 

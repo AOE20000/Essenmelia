@@ -431,6 +431,42 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     );
   }
 
+  void _showEditTemplateDialog(String id, String currentDescription) {
+    final controller = TextEditingController(text: currentDescription);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.edit),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.description,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          maxLines: null,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                ref
+                    .read(templatesControllerProvider)
+                    .updateTemplate(id, controller.text.trim());
+                Navigator.pop(context);
+              }
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCurrentStepsTab(Event event) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -648,6 +684,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                     )
                   : ReorderableListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                      buildDefaultDragHandles: false,
                       itemCount: templates.length,
                       proxyDecorator: (child, index, animation) {
                         return AnimatedBuilder(
@@ -705,21 +742,9 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                     }
                                   });
                                 } else {
-                                  // Add to steps on tap
-                                  ref
-                                      .read(eventsProvider.notifier)
-                                      .addStep(
-                                        widget.eventId,
-                                        template.description,
-                                      );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(l10n.addedToSteps),
-                                      behavior: SnackBarBehavior.floating,
-                                      duration: const Duration(
-                                        milliseconds: 500,
-                                      ),
-                                    ),
+                                  _showEditTemplateDialog(
+                                    template.id,
+                                    template.description,
                                   );
                                 }
                               },

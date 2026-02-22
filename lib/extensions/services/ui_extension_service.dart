@@ -10,6 +10,12 @@ import '../runtime/api/extension_api_registry.dart';
 import '../core/extension_permission.dart';
 import '../core/globals.dart';
 
+/// Provider to store extension-provided content for event detail pages
+/// Key: eventId
+/// Value: List of `{ 'extensionId': String, 'content': Map<String, dynamic> }`
+final eventDetailContentProvider =
+    StateProvider<Map<String, List<Map<String, dynamic>>>>((ref) => {});
+
 /// UI 相关的扩展 API 实现 (SnackBar, Dialog, Navigation, Theme, Locale)
 class UIExtensionApiHandler {
   final Ref _ref;
@@ -80,6 +86,39 @@ class UIExtensionApiHandler {
       category: '界面交互',
       categoryEn: 'UI Interaction',
     );
+    registry.register(
+      'registerEventDetailContent',
+      _registerEventDetailContent,
+      permission: ExtensionPermission.uiInteraction,
+      operation: '注册事件详情页内容',
+      operationEn: 'Register Event Detail Content',
+      category: '界面交互',
+      categoryEn: 'UI Interaction',
+    );
+  }
+
+  Future<dynamic> _registerEventDetailContent(
+    Map<String, dynamic> params, {
+    required bool isUntrusted,
+  }) async {
+    final extensionId = params['extensionId'] as String;
+    final eventId = params['eventId'] as String;
+    final content = params['content'] as Map<String, dynamic>;
+    final title = params['title'] as String? ?? 'Extension';
+
+    _ref.read(eventDetailContentProvider.notifier).update((state) {
+      final currentList = state[eventId] ?? [];
+      // Remove existing content from same extension if any
+      final newList = currentList
+          .where((e) => e['extensionId'] != extensionId)
+          .toList();
+      newList.add({
+        'extensionId': extensionId,
+        'content': content,
+        'title': title,
+      });
+      return {...state, eventId: newList};
+    });
   }
 
   Future<dynamic> _updateProgress(
@@ -90,11 +129,9 @@ class UIExtensionApiHandler {
     final progress = (params['progress'] as num).toDouble();
     final message = params['message'] as String? ?? '';
 
-    _ref.read(extensionNotificationServiceProvider).showProgress(
-      extensionId,
-      progress,
-      message,
-    );
+    _ref
+        .read(extensionNotificationServiceProvider)
+        .showProgress(extensionId, progress, message);
   }
 
   Future<dynamic> _getThemeMode(

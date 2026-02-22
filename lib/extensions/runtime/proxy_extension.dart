@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_localizations.dart';
 import '../core/base_extension.dart';
 import '../core/extension_api.dart';
 import '../manager/extension_manager.dart';
@@ -11,6 +12,8 @@ import '../security/extension_auth_notifier.dart';
 class ProxyExtension extends BaseExtension {
   ExtensionJsEngine? _engine;
   String? _initError;
+
+  ExtensionJsEngine? get engine => _engine;
 
   ProxyExtension(super.metadata);
 
@@ -70,6 +73,8 @@ class ProxyExtension extends BaseExtension {
             return DynamicEngine(engine: _engine!);
           }
 
+          final l10n = AppLocalizations.of(context)!;
+
           // If we have an active extension instance but _engine is null, it means
           // this ProxyExtension instance is stale or not the one being managed.
           // However, since ProxyExtension *is* the instance in _activeExtensions for dynamic extensions,
@@ -90,7 +95,7 @@ class ProxyExtension extends BaseExtension {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '扩展加载失败',
+                        l10n.extensionLoadFailed,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 8),
@@ -114,12 +119,12 @@ class ProxyExtension extends BaseExtension {
                     const Icon(Icons.pause_circle_outline, size: 48),
                     const SizedBox(height: 16),
                     Text(
-                      '扩展未运行',
+                      l10n.extensionNotRunning,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '请在扩展详情页启用此扩展',
+                      l10n.enableExtensionHint,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -157,6 +162,7 @@ class ProxyExtension extends BaseExtension {
 
         final dbSize = snapshot.data?[1] as int? ?? 0;
         final theme = Theme.of(context);
+        final l10n = AppLocalizations.of(context)!;
         return Scaffold(
           appBar: AppBar(title: Text(metadata.name)),
           body: SingleChildScrollView(
@@ -178,7 +184,7 @@ class ProxyExtension extends BaseExtension {
                   ),
                 ),
                 Text(
-                  '版本 ${metadata.version}',
+                  l10n.extensionVersion(metadata.version),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -191,25 +197,29 @@ class ProxyExtension extends BaseExtension {
                   children: [
                     _buildTag(
                       theme,
-                      '扩展信息',
+                      l10n.extensionInfo,
                       color: theme.colorScheme.tertiaryContainer,
                       textColor: theme.colorScheme.onTertiaryContainer,
                     ),
                     _buildTag(
                       theme,
-                      '存储占用: ${_formatSize(dbSize)}',
+                      l10n.storageUsage(_formatSize(dbSize)),
                       isSecondary: true,
                     ),
                   ],
                 ),
                 const SizedBox(height: 32),
-                _buildInfoSection(theme, '功能描述', metadata.description),
-                _buildInfoSection(theme, '开发者', metadata.author),
-                _buildInfoSection(theme, '唯一标识 (ID)', metadata.id),
+                _buildInfoSection(
+                  theme,
+                  l10n.functionDescription,
+                  metadata.description,
+                ),
+                _buildInfoSection(theme, l10n.developer, metadata.author),
+                _buildInfoSection(theme, l10n.uniqueId, metadata.id),
                 const SizedBox(height: 32),
                 const Divider(),
                 const SizedBox(height: 24),
-                _buildDeveloperSandbox(theme, api),
+                _buildDeveloperSandbox(theme, api, l10n),
                 const SizedBox(height: 40),
               ],
             ),
@@ -219,7 +229,11 @@ class ProxyExtension extends BaseExtension {
     );
   }
 
-  Widget _buildDeveloperSandbox(ThemeData theme, ExtensionApi api) {
+  Widget _buildDeveloperSandbox(
+    ThemeData theme,
+    ExtensionApi api,
+    AppLocalizations l10n,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -237,7 +251,7 @@ class ProxyExtension extends BaseExtension {
               Icon(Icons.terminal, size: 20, color: theme.colorScheme.primary),
               const SizedBox(width: 10),
               Text(
-                '开发沙箱',
+                l10n.developerSandbox,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -245,28 +259,30 @@ class ProxyExtension extends BaseExtension {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            '此扩展目前作为“纯净壳”运行。你可以点击下方按钮测试其申请的权限是否生效。',
-            style: theme.textTheme.bodySmall,
-          ),
+          Text(l10n.sandboxPureModeHint, style: theme.textTheme.bodySmall),
           const SizedBox(height: 20),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: [
-              _buildSandboxAction(theme, '获取事件', Icons.list_alt, () async {
-                try {
-                  final events = await api.getEvents();
-                  api.showSnackBar('成功获取 ${events.length} 个事件');
-                } catch (e) {
-                  api.showSnackBar('获取失败: $e');
-                }
-              }),
               _buildSandboxAction(
                 theme,
-                '发送通知',
+                l10n.getEvents,
+                Icons.list_alt,
+                () async {
+                  try {
+                    final events = await api.getEvents();
+                    api.showSnackBar(l10n.getEventsSuccess(events.length));
+                  } catch (e) {
+                    api.showSnackBar(l10n.getEventsFailed(e.toString()));
+                  }
+                },
+              ),
+              _buildSandboxAction(
+                theme,
+                l10n.sendNotification,
                 Icons.notification_important_outlined,
-                () => api.showSnackBar('来自扩展沙箱的测试通知'),
+                () => api.showSnackBar(l10n.testNotification),
               ),
             ],
           ),

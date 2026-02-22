@@ -104,6 +104,30 @@ abstract class AppLocalizations {
   /// **'Extension Management'**
   String get extensionManagement;
 
+  /// Error message when video fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load video'**
+  String get videoLoadError;
+
+  /// Message when novel content is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No content available'**
+  String get novelContentEmpty;
+
+  /// Label for retry button
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get extensionRetry;
+
+  /// Label for loading state
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get extensionLoading;
+
   /// Placeholder for extension search bar
   ///
   /// In en, this message translates to:
@@ -199,6 +223,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get add;
+
+  /// Error message when extension fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Load Failed'**
+  String get extensionLoadFailed;
+
+  /// Message when extension is not running
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Not Running'**
+  String get extensionNotRunning;
+
+  /// Hint to enable extension
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable this extension in details page'**
+  String get enableExtensionHint;
+
+  /// Version label with version number
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String extensionVersion(String version);
+
+  /// Title for extension info section
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Info'**
+  String get extensionInfo;
+
+  /// No description provided for @storageUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage: {size}'**
+  String storageUsage(String size);
+
+  /// Label for function description
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get functionDescription;
+
+  /// Label for developer name
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get developer;
+
+  /// Label for unique ID
+  ///
+  /// In en, this message translates to:
+  /// **'Unique ID'**
+  String get uniqueId;
+
+  /// Label for developer sandbox mode
+  ///
+  /// In en, this message translates to:
+  /// **'Pure Shell (Dev)'**
+  String get developerSandbox;
+
+  /// Hint text for sandbox mode
+  ///
+  /// In en, this message translates to:
+  /// **'This extension is running in \"Pure Shell\" mode. You can test its permissions below.'**
+  String get sandboxPureModeHint;
+
+  /// Button label to get events
+  ///
+  /// In en, this message translates to:
+  /// **'Get Events'**
+  String get getEvents;
+
+  /// No description provided for @getEventsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully fetched {count} events'**
+  String getEventsSuccess(int count);
+
+  /// No description provided for @getEventsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch failed: {error}'**
+  String getEventsFailed(String error);
+
+  /// Button label to send notification
+  ///
+  /// In en, this message translates to:
+  /// **'Send Notification'**
+  String get sendNotification;
+
+  /// Message for test notification
+  ///
+  /// In en, this message translates to:
+  /// **'Test notification from sandbox'**
+  String get testNotification;
 
   /// Title for renaming a tag
   ///
@@ -847,60 +967,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load store'**
   String get failedToLoadStore;
-
-  /// Label for pure metadata extension mode
-  ///
-  /// In en, this message translates to:
-  /// **'Pure Mode (Metadata only)'**
-  String get extensionPureMode;
-
-  /// Label for extension storage usage
-  ///
-  /// In en, this message translates to:
-  /// **'Storage: {size}'**
-  String extensionStorageOccupied(String size);
-
-  /// Title for extension developer sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'Developer Sandbox'**
-  String get extensionDeveloperSandbox;
-
-  /// Instruction for extension developer sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'This extension is running as a \'pure shell\'. You can test its permissions below.'**
-  String get extensionSandboxInstruction;
-
-  /// Button label to get events in sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'Get Events'**
-  String get extensionGetEvents;
-
-  /// Button label to send notification in sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'Send Notification'**
-  String get extensionSendNotification;
-
-  /// Success message for getting events in sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'Successfully fetched {count} events'**
-  String extensionGetEventsSuccess(int count);
-
-  /// Error message for getting events in sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'Fetch failed: {error}'**
-  String extensionGetEventsFailed(String error);
-
-  /// Test notification message from sandbox
-  ///
-  /// In en, this message translates to:
-  /// **'Test notification from extension sandbox'**
-  String get extensionSandboxNotification;
 
   /// Default label for extension buttons
   ///
@@ -2280,7 +2346,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Version'**
-  String get extensionVersion;
+  String get extensionVersionLabel;
 
   /// Label for extension not installed status
   ///

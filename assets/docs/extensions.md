@@ -109,10 +109,32 @@ children:
 - 输入: `text_field`
 - 列表: `list_view`, `grid_view`
 
+#### 3.2.1 多媒体与阅读组件 (Multimedia & Reader)
+- **video**: 视频播放器
+  - `url`: 视频链接 (支持网络 URL)
+  - `autoPlay`: 是否自动播放 (默认 false)
+  - `looping`: 是否循环播放 (默认 false)
+  - `aspectRatio`: 宽高比 (如 1.77)
+- **markdown**: Markdown 渲染器
+  - `data`: Markdown 文本内容
+  - `selectable`: 是否可选中 (默认 false)
+- **novel**: 小说/长文阅读器
+  - `text`: 文本内容
+  - `fontSize`: 字体大小 (默认 18)
+  - `lineHeight`: 行高 (默认 1.8)
+  - `backgroundColor`: 背景颜色
+  - `padding`: 内边距
+
 ### 3.3 交互与状态绑定
 - **onTap**: 支持 JS 函数名 (如 `handleClick`) 或 URL (如 `https://...`)。
 - **stateKey**: 双向绑定 `text_field` 到 JS `state` 变量。
 - **$variable**: 在 YAML 中引用 JS `state` 变量。
+
+### 3.4 事件详情页集成 (Event Detail Integration)
+扩展可以向事件详情页注入自定义内容（如多媒体、图表等）。
+- **API**: `essenmelia.registerEventDetailContent(eventId, extensionId, content, title)`
+- **content**: 遵循 DynamicEngine 组件规范的 JSON 对象。
+- **title**: 在详情页 Tab 中显示的标题。
 
 ---
 
@@ -390,3 +412,151 @@ async function fetchCollections() {
 - `async essenmelia.showConfirmDialog(options)`: 显示确认对话框。
   - `options`: `{ title, message, confirmLabel, cancelLabel }`
 - `async essenmelia.updateProgress(progress, message)`: 更新通知栏进度条 (0.0 - 1.0)。
+
+---
+
+## 7. 实战案例：多媒体与阅读 (Multimedia & Reading)
+
+本节展示如何构建包含**视频播放**、**Markdown 渲染**和**小说阅读器**的富媒体扩展。
+
+### 7.1 视频播放器 (Video Player)
+在 YAML 中直接定义视频组件，支持网络流媒体播放。
+
+```yaml
+type: column
+children:
+  - type: text
+    props:
+      text: "扩展视频演示"
+      style: "titleLarge"
+      padding: 16
+  
+  - type: video
+    props:
+      url: "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4"
+      autoPlay: false
+      looping: true
+      aspectRatio: 1.77
+```
+
+### 7.2 Markdown 阅读器
+适合展示文档、更新日志或富文本内容。
+
+```yaml
+type: markdown
+props:
+  data: |
+    # Hello Markdown
+    
+    This is a **bold** text and *italic* text.
+    
+    - List item 1
+    - List item 2
+    
+    [Link to Google](https://google.com)
+  selectable: true
+```
+
+### 7.3 小说阅读器 (Novel Reader)
+专为长文本优化，提供舒适的阅读体验。
+
+```yaml
+type: novel
+props:
+  text: "这里是小说正文内容..."
+  fontSize: 18
+  lineHeight: 1.8
+  backgroundColor: 0xFFF5F5F5 # 浅灰背景
+  padding: [16, 16, 16, 16]
+```
+
+### 7.4 动态组合示例 (JS + YAML)
+结合 JS 逻辑，可以动态切换显示内容。
+
+**view.yaml**:
+```yaml
+type: column
+children:
+  # 顶部切换按钮栏
+  - type: row
+    props: { mainAxisAlignment: spaceEvenly, padding: 8 }
+    children:
+      - type: button
+        props: { label: "视频模式", onTap: "showVideo" }
+      - type: button
+        props: { label: "阅读模式", onTap: "showReader" }
+
+  # 动态内容区域
+  - type: container
+    children: $contentArea
+```
+
+**main.js**:
+```javascript
+const state = _state;
+
+// 初始化默认显示视频
+if (!state.contentArea) {
+  showVideo();
+}
+
+function showVideo() {
+  state.contentArea = [{
+    type: 'video',
+    props: {
+      url: 'https://example.com/video.mp4',
+      autoPlay: true
+    }
+  }];
+}
+
+function showReader() {
+  state.contentArea = [{
+    type: 'novel',
+    props: {
+      text: '长篇小说内容...',
+      fontSize: 20
+    }
+  }];
+}
+```
+
+### 7.5 国际化支持 (Internationalization)
+扩展可以通过 `state.locale` 获取当前应用的语言代码（如 'en', 'zh'），并在 JS 中动态返回不同的文本内容。
+
+**main.js**:
+```javascript
+const state = _state;
+const locale = state.locale || 'en'; // 默认为英文
+
+const strings = {
+    en: {
+        hello: 'Hello World',
+        btn: 'Click Me'
+    },
+    zh: {
+        hello: '你好，世界',
+        btn: '点我'
+    }
+};
+
+// 获取当前语言的字符串资源
+const t = locale.startsWith('zh') ? strings.zh : strings.en;
+
+// 在构建 UI 时使用
+function buildUI() {
+    return {
+        type: 'column',
+        children: [
+            {
+                type: 'text',
+                props: { text: t.hello }
+            },
+            {
+                type: 'button',
+                props: { label: t.btn, onTap: 'handleClick' }
+            }
+        ]
+    };
+}
+```

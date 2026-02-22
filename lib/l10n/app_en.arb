@@ -4,6 +4,22 @@
   "@extensionManagement": {
     "description": "Title for extension management screen"
   },
+  "videoLoadError": "Failed to load video",
+  "@videoLoadError": {
+    "description": "Error message when video fails to load"
+  },
+  "novelContentEmpty": "No content available",
+  "@novelContentEmpty": {
+    "description": "Message when novel content is empty"
+  },
+  "extensionRetry": "Retry",
+  "@extensionRetry": {
+    "description": "Label for retry button"
+  },
+  "extensionLoading": "Loading...",
+  "@extensionLoading": {
+    "description": "Label for loading state"
+  },
   "searchExtensions": "Search extensions",
   "@searchExtensions": {
     "description": "Placeholder for extension search bar"
@@ -82,6 +98,87 @@
     "description": "Hint text for tag name input"
   },
   "add": "Add",
+  "extensionLoadFailed": "Extension Load Failed",
+  "@extensionLoadFailed": {
+    "description": "Error message when extension fails to load"
+  },
+  "extensionNotRunning": "Extension Not Running",
+  "@extensionNotRunning": {
+    "description": "Message when extension is not running"
+  },
+  "enableExtensionHint": "Please enable this extension in details page",
+  "@enableExtensionHint": {
+    "description": "Hint to enable extension"
+  },
+  "extensionVersion": "Version {version}",
+  "@extensionVersion": {
+    "description": "Version label with version number",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionInfo": "Extension Info",
+  "@extensionInfo": {
+    "description": "Title for extension info section"
+  },
+  "storageUsage": "Storage: {size}",
+  "@storageUsage": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "functionDescription": "Description",
+  "@functionDescription": {
+    "description": "Label for function description"
+  },
+  "developer": "Developer",
+  "@developer": {
+    "description": "Label for developer name"
+  },
+  "uniqueId": "Unique ID",
+  "@uniqueId": {
+    "description": "Label for unique ID"
+  },
+  "developerSandbox": "Pure Shell (Dev)",
+  "@developerSandbox": {
+    "description": "Label for developer sandbox mode"
+  },
+  "sandboxPureModeHint": "This extension is running in \"Pure Shell\" mode. You can test its permissions below.",
+  "@sandboxPureModeHint": {
+    "description": "Hint text for sandbox mode"
+  },
+  "getEvents": "Get Events",
+  "@getEvents": {
+    "description": "Button label to get events"
+  },
+  "getEventsSuccess": "Successfully fetched {count} events",
+  "@getEventsSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "getEventsFailed": "Fetch failed: {error}",
+  "@getEventsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sendNotification": "Send Notification",
+  "@sendNotification": {
+    "description": "Button label to send notification"
+  },
+  "testNotification": "Test notification from sandbox",
+  "@testNotification": {
+    "description": "Message for test notification"
+  },
   "@add": {
     "description": "Label for add action"
   },
@@ -564,57 +661,6 @@
   "failedToLoadStore": "Failed to load store",
   "@failedToLoadStore": {
     "description": "Error message when store fails to load"
-  },
-  "extensionPureMode": "Pure Mode (Metadata only)",
-  "@extensionPureMode": {
-    "description": "Label for pure metadata extension mode"
-  },
-  "extensionStorageOccupied": "Storage: {size}",
-  "@extensionStorageOccupied": {
-    "description": "Label for extension storage usage",
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "extensionDeveloperSandbox": "Developer Sandbox",
-  "@extensionDeveloperSandbox": {
-    "description": "Title for extension developer sandbox"
-  },
-  "extensionSandboxInstruction": "This extension is running as a 'pure shell'. You can test its permissions below.",
-  "@extensionSandboxInstruction": {
-    "description": "Instruction for extension developer sandbox"
-  },
-  "extensionGetEvents": "Get Events",
-  "@extensionGetEvents": {
-    "description": "Button label to get events in sandbox"
-  },
-  "extensionSendNotification": "Send Notification",
-  "@extensionSendNotification": {
-    "description": "Button label to send notification in sandbox"
-  },
-  "extensionGetEventsSuccess": "Successfully fetched {count} events",
-  "@extensionGetEventsSuccess": {
-    "description": "Success message for getting events in sandbox",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "extensionGetEventsFailed": "Fetch failed: {error}",
-  "@extensionGetEventsFailed": {
-    "description": "Error message for getting events in sandbox",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "extensionSandboxNotification": "Test notification from extension sandbox",
-  "@extensionSandboxNotification": {
-    "description": "Test notification message from sandbox"
   },
   "extensionDefaultButtonLabel": "Button",
   "@extensionDefaultButtonLabel": {
@@ -1663,8 +1709,8 @@
   "@extensionInformation": {
     "description": "Label for extension information section"
   },
-  "extensionVersion": "Version",
-  "@extensionVersion": {
+  "extensionVersionLabel": "Version",
+  "@extensionVersionLabel": {
     "description": "Label for extension version"
   },
   "extensionNotInstalled": "N/A",

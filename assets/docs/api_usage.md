@@ -97,6 +97,7 @@ await essenmelia.call('enableFeature', { active: "true" }); // 自动转为 true
 | `navigateTo` | `navigation` | 跳转应用内路由 | `{ route: "/settings" }` |
 | `getThemeMode` | `systemInfo` | 获取当前主题 ('light'/'dark') | 无 |
 | `getLocale` | `systemInfo` | 获取当前语言代码 (如 'zh') | 无 |
+| `registerEventDetailContent` | `uiInteraction` | 注册事件详情页扩展内容 | `{ eventId: "...", extensionId: "...", content: {}, title: "Tab名称" }` |
 
 ### 1.6 扩展存储 (Settings)
 
@@ -157,3 +158,62 @@ await essenmelia.call('showSnackBar', {
 - 当检测到短时间内频繁调用 API（如网络请求 > 60次/分，UI操作 > 30次/分）时，系统会弹出**警告通知**。
 - 用户可在警告通知中点击**“阻止运行”**，将该扩展加入黑名单，后续所有 API 调用将被拒绝。
 - 建议使用 `updateProgress` 等批量/异步接口，避免高频调用细粒度 API。
+
+---
+
+## 4. 外部调用与集成 (External Integration)
+
+Essenmelia 支持通过 Deep Link (URL Scheme) 机制从外部应用（Web、ADB、快捷指令等）触发内部 API。
+
+### 4.1 URL Scheme 格式
+
+支持以下两种 Scheme：
+- `essenmelia://`
+- `esml://` (简写)
+
+#### 路径调用法 (Path-based)
+适用于简单参数。
+```
+essenmelia://command/{methodName}?param1=value1&param2=value2
+```
+
+#### 查询调用法 (Query-based)
+适用于复杂 JSON 参数。
+```
+essenmelia://gateway?method={methodName}&params={json_string}
+```
+
+### 4.2 Web 调用示例 (Web Integration)
+
+你可以在网页中放置链接，点击后直接唤起 Essenmelia 并执行操作：
+
+```html
+<!-- 添加任务 -->
+<a href="essenmelia://command/addEvent?title=买菜&description=记得买葱">
+  添加买菜任务
+</a>
+
+<!-- 复杂操作 (需 URL 编码 JSON 参数) -->
+<a href="essenmelia://gateway?method=showSnackBar&params=%7B%22message%22%3A%22Hello%20from%20Web%22%7D">
+  显示提示
+</a>
+```
+
+### 4.3 ADB 调用示例 (ADB Integration)
+
+开发者可以通过 ADB 命令行模拟外部调用，方便进行自动化测试或脚本控制。
+
+```bash
+# Windows PowerShell
+adb shell am start -W -a android.intent.action.VIEW -d "essenmelia://command/showSnackBar?message=HelloFromADB"
+
+# macOS / Linux
+adb shell am start -W -a android.intent.action.VIEW -d "essenmelia://command/addEvent?title=TestTask"
+```
+
+### 4.4 安全机制
+
+为了防止恶意网页或应用滥用 API：
+1. **用户确认**：任何通过外部链接触发的 API 调用，**必须**经过用户在弹窗中点击“允许”后才会执行。
+2. **显式参数**：确认弹窗中会展示调用的方法名及所有参数，供用户核对。
+3. **不可绕过**：外部调用无法绕过此确认机制（即使是只读操作）。

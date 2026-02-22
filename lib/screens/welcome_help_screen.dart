@@ -37,6 +37,8 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final isWelcomeMode = uiState.mode == WelcomeMode.welcome;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
@@ -61,57 +63,92 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
           ),
           centerTitle: true,
         ),
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-            return Stack(
-              alignment: Alignment.topCenter,
-              children: <Widget>[
-                ...previousChildren.map((child) => IgnorePointer(child: child)),
-                currentChild ?? const SizedBox.shrink(),
-              ],
-            );
-          },
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.0, 0.05),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
+        body: Row(
+          children: [
+            if (isLandscape)
+              NavigationRail(
+                selectedIndex: uiState.mode.index,
+                onDestinationSelected: (index) {
+                  final newMode = WelcomeMode.values[index];
+                  ref.read(uiStateProvider.notifier).setMode(newMode);
+                  if (newMode == WelcomeMode.welcome) {
+                    setState(() => _selectedDocTitle = null);
+                  }
+                },
+                labelType: NavigationRailLabelType.all,
+                destinations: [
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    selectedIcon: const Icon(Icons.auto_awesome_rounded),
+                    label: Text(l10n.welcome),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.help_outline_rounded),
+                    selectedIcon: const Icon(Icons.help_rounded),
+                    label: Text(l10n.help),
+                  ),
+                ],
               ),
-            );
-          },
-          child: isWelcomeMode
-              ? _buildOnboarding(context, theme, l10n)
-              : _buildMarkdownReader(context, l10n, theme, colorScheme),
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: uiState.mode.index,
-          onDestinationSelected: (index) {
-            final newMode = WelcomeMode.values[index];
-            ref.read(uiStateProvider.notifier).setMode(newMode);
-            if (newMode == WelcomeMode.welcome) {
-              setState(() => _selectedDocTitle = null);
-            }
-          },
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.auto_awesome_outlined),
-              selectedIcon: const Icon(Icons.auto_awesome_rounded),
-              label: l10n.welcome,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.help_outline_rounded),
-              selectedIcon: const Icon(Icons.help_rounded),
-              label: l10n.help,
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                layoutBuilder:
+                    (Widget? currentChild, List<Widget> previousChildren) {
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: <Widget>[
+                          ...previousChildren.map(
+                            (child) => IgnorePointer(child: child),
+                          ),
+                          currentChild ?? const SizedBox.shrink(),
+                        ],
+                      );
+                    },
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.0, 0.05),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: isWelcomeMode
+                    ? _buildOnboarding(context, theme, l10n)
+                    : _buildMarkdownReader(context, l10n, theme, colorScheme),
+              ),
             ),
           ],
         ),
+        bottomNavigationBar: isLandscape
+            ? null
+            : NavigationBar(
+                selectedIndex: uiState.mode.index,
+                onDestinationSelected: (index) {
+                  final newMode = WelcomeMode.values[index];
+                  ref.read(uiStateProvider.notifier).setMode(newMode);
+                  if (newMode == WelcomeMode.welcome) {
+                    setState(() => _selectedDocTitle = null);
+                  }
+                },
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    selectedIcon: const Icon(Icons.auto_awesome_rounded),
+                    label: l10n.welcome,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.help_outline_rounded),
+                    selectedIcon: const Icon(Icons.help_rounded),
+                    label: l10n.help,
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -150,109 +187,120 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
       ),
     ];
 
-    return Column(
-      children: [
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: steps.length,
-            onPageChanged: (index) => setState(() => _currentStep = index),
-            itemBuilder: (context, index) {
-              final step = steps[index];
-              return SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 48,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 1000),
-                        curve: Curves.elasticOut,
-                        builder: (context, value, child) {
-                          return Transform.scale(
-                            scale: value,
-                            child: Transform.rotate(
-                              angle: (1.0 - value) * 0.2,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                step.color.withValues(alpha: 0.2),
-                                step.color.withValues(alpha: 0.05),
+    return Container(
+      color: theme.colorScheme.surface,
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: steps.length,
+              onPageChanged: (index) => setState(() => _currentStep = index),
+              itemBuilder: (context, index) {
+                final step = steps[index];
+                final isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
+
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: isLandscape ? 16 : 48,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: const Duration(milliseconds: 1000),
+                          curve: Curves.elasticOut,
+                          builder: (context, value, child) {
+                            return Transform.scale(
+                              scale: value,
+                              child: Transform.rotate(
+                                angle: (1.0 - value) * 0.2,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: isLandscape ? 100 : 180,
+                            height: isLandscape ? 100 : 180,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  step.color.withValues(alpha: 0.2),
+                                  step.color.withValues(alpha: 0.05),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(48),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: step.color.withValues(alpha: 0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(48),
-                            boxShadow: [
-                              BoxShadow(
-                                color: step.color.withValues(alpha: 0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
+                            child: Icon(
+                              step.icon,
+                              color: step.color,
+                              size: isLandscape ? 48 : 80,
+                            ),
                           ),
-                          child: Icon(step.icon, color: step.color, size: 80),
                         ),
-                      ),
-                      const SizedBox(height: 64),
-                      Text(
-                        step.title,
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: -1,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: step.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          step.subtitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: step.color,
-                            fontWeight: FontWeight.bold,
+                        SizedBox(height: isLandscape ? 24 : 64),
+                        Text(
+                          step.title,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -1,
+                            fontSize: isLandscape ? 28 : null,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        step.content,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          height: 1.6,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 17,
+                        SizedBox(height: isLandscape ? 8 : 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: step.color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            step.subtitle,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: step.color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                        SizedBox(height: isLandscape ? 16 : 32),
+                        Text(
+                          step.content,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            height: 1.6,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: 17,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-        _buildOnboardingBottom(steps.length, colorScheme, l10n),
-      ],
+          _buildOnboardingBottom(steps.length, colorScheme, l10n),
+        ],
+      ),
     );
   }
 
@@ -261,8 +309,11 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     ColorScheme colorScheme,
     AppLocalizations l10n,
   ) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
+      padding: EdgeInsets.fromLTRB(32, 0, 32, isLandscape ? 16 : 32),
       child: SafeArea(
         top: false,
         child: Column(
@@ -287,7 +338,7 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: isLandscape ? 16 : 32),
             Row(
               children: [
                 if (_currentStep > 0)
@@ -300,7 +351,9 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isLandscape ? 12 : 18,
+                        ),
                       ),
                       child: Text(
                         l10n.cancel, // Use cancel or similar
@@ -325,7 +378,9 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                       }
                     },
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: EdgeInsets.symmetric(
+                        vertical: isLandscape ? 12 : 18,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -470,152 +525,158 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
   ) {
     final isLargeScreen = MediaQuery.of(context).size.width > 900;
 
-    return FutureBuilder<List<_DocItem>>(
-      future: _docsFuture,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return Container(
+      color: theme.colorScheme.surface,
+      child: FutureBuilder<List<_DocItem>>(
+        future: _docsFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final docs = snapshot.data!;
+          final docs = snapshot.data!;
 
-        return Row(
-          children: [
-            if (isLargeScreen)
-              Container(
-                width: 320,
-                decoration: BoxDecoration(
-                  border: Border(
-                    right: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                      child: Text(
-                        l10n.helpAndDocs,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
+          return Row(
+            children: [
+              if (isLargeScreen)
+                Container(
+                  width: 320,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        itemCount: docs.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 4),
-                        itemBuilder: (context, index) {
-                          final doc = docs[index];
-                          final isSelected = _selectedDocTitle == doc.title;
-                          return Material(
-                            color: isSelected
-                                ? colorScheme.primaryContainer
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                              onTap: () =>
-                                  setState(() => _selectedDocTitle = doc.title),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                        child: Text(
+                          l10n.helpAndDocs,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: docs.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 4),
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final isSelected = _selectedDocTitle == doc.title;
+                            return Material(
+                              color: isSelected
+                                  ? colorScheme.primaryContainer
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                onTap: () => setState(
+                                  () => _selectedDocTitle = doc.title,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      doc.icon,
-                                      size: 20,
-                                      color: isSelected
-                                          ? colorScheme.onPrimaryContainer
-                                          : colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            doc.title,
-                                            style: theme.textTheme.labelLarge
-                                                ?.copyWith(
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                  color: isSelected
-                                                      ? colorScheme
-                                                            .onPrimaryContainer
-                                                      : colorScheme.onSurface,
-                                                ),
-                                          ),
-                                          Text(
-                                            doc.description,
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: isSelected
-                                                      ? colorScheme
-                                                            .onPrimaryContainer
-                                                            .withValues(
-                                                              alpha: 0.7,
-                                                            )
-                                                      : colorScheme
-                                                            .onSurfaceVariant,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        doc.icon,
+                                        size: 20,
+                                        color: isSelected
+                                            ? colorScheme.onPrimaryContainer
+                                            : colorScheme.onSurfaceVariant,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              doc.title,
+                                              style: theme.textTheme.labelLarge
+                                                  ?.copyWith(
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                    color: isSelected
+                                                        ? colorScheme
+                                                              .onPrimaryContainer
+                                                        : colorScheme.onSurface,
+                                                  ),
+                                            ),
+                                            Text(
+                                              doc.description,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: isSelected
+                                                        ? colorScheme
+                                                              .onPrimaryContainer
+                                                              .withValues(
+                                                                alpha: 0.7,
+                                                              )
+                                                        : colorScheme
+                                                              .onSurfaceVariant,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: () {
+                    final selectedDoc = docs
+                        .where((d) => d.title == _selectedDocTitle)
+                        .firstOrNull;
+
+                    if (selectedDoc == null) {
+                      return _buildDocPlaceholder(
+                        isLargeScreen,
+                        docs,
+                        l10n,
+                        theme,
+                        colorScheme,
+                      );
+                    }
+
+                    return _MarkdownContentViewer(
+                      key: ValueKey(_selectedDocTitle),
+                      doc: selectedDoc,
+                      onBack: isLargeScreen
+                          ? null
+                          : () => setState(() => _selectedDocTitle = null),
+                    );
+                  }(),
                 ),
               ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: () {
-                  final selectedDoc = docs
-                      .where((d) => d.title == _selectedDocTitle)
-                      .firstOrNull;
-
-                  if (selectedDoc == null) {
-                    return _buildDocPlaceholder(
-                      isLargeScreen,
-                      docs,
-                      l10n,
-                      theme,
-                      colorScheme,
-                    );
-                  }
-
-                  return _MarkdownContentViewer(
-                    key: ValueKey(_selectedDocTitle),
-                    doc: selectedDoc,
-                    onBack: isLargeScreen
-                        ? null
-                        : () => setState(() => _selectedDocTitle = null),
-                  );
-                }(),
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
