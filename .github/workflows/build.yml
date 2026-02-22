@@ -79,10 +79,10 @@ jobs:
         run: flutter pub get
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs
-      - name: Setup Inno Setup
-        uses: MinnowWare/setup-inno-setup@v1
-        with:
-          version: "6.2.2"
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup --no-progress
+          echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
       - name: Build Windows and Installer
         run: dart run inno_build --release --verbose
       - name: Zip Windows Build
