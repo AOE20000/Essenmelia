@@ -80,7 +80,7 @@ jobs:
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs
       - name: Setup Inno Setup
-        uses: dspecio/setup-inno-setup-action@v3
+        uses: MinnowWare/setup-inno-setup@v1
         with:
           version: "6.2.2"
       - name: Build Windows and Installer
