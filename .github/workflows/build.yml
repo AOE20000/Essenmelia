@@ -79,8 +79,12 @@ jobs:
         run: flutter pub get
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Setup Inno Setup
+        uses: dspecio/setup-inno-setup-action@v3
+        with:
+          version: "6.2.2"
       - name: Build Windows and Installer
-        run: dart run inno_build --release --install --verbose
+        run: dart run inno_build --release --verbose
       - name: Zip Windows Build
         shell: pwsh
         run: |
@@ -128,8 +132,8 @@ jobs:
           flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
       - name: Build Flatpak
         run: |
-          flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo build-dir flatpak/org.essenmelia.yml
-          flatpak build-bundle repo essenmelia.flatpak org.essenmelia
+          flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo build-dir flatpak/org.essenmelia.Essenmelia.yml
+          flatpak build-bundle repo essenmelia.flatpak org.essenmelia.Essenmelia
       - name: Zip Linux Build
         run: |
           cd build/linux/x64/release/bundle
