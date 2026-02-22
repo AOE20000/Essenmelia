@@ -4,9 +4,12 @@ import 'package:intl/intl.dart';
 import '../extensions/extension_log_manager.dart';
 import '../l10n/app_localizations.dart';
 import '../extensions/services/system_health_check_service.dart';
+import '../providers/ui_state_provider.dart';
 
 class ExtensionLogsPage extends ConsumerWidget {
-  const ExtensionLogsPage({super.key});
+  final bool isSidePanel;
+
+  const ExtensionLogsPage({super.key, this.isSidePanel = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,6 +17,110 @@ class ExtensionLogsPage extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final logs = ref.watch(extensionLogProvider);
     final l10n = AppLocalizations.of(context)!;
+
+    final contentSlivers = [
+      if (logs.isEmpty)
+        SliverFillRemaining(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.assignment_outlined,
+                  size: 64,
+                  color: colorScheme.outlineVariant,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.noApiLogs,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+      else
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final log = logs[index];
+              return _buildLogItem(context, log);
+            }, childCount: logs.length),
+          ),
+        ),
+    ];
+
+    if (isSidePanel) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () {
+                    // Assuming "back" means going back to extension list if opened from there,
+                    // or just closing if it's the only thing.
+                    // But usually logs are opened from the main extension tab toolbar.
+                    // If we want to mimic "back", maybe go to extension manager?
+                    // Actually, logs are global, not per extension.
+                    // So maybe just close or go back to "none" if it was opened from menu.
+                    // But usually back means "go back to previous panel state".
+                    // For now, let's make it go to extensionManager if that makes sense,
+                    // or just close if it was opened from top bar.
+                    // The user said "like DB manager", DB manager has back button.
+                    // Let's make it go to extensionManager if appropriate, or just close.
+                    // Actually, if opened from the top bar of the main screen, there is no "previous" panel.
+                    // So maybe just close it? Or maybe the back button isn't needed if it's a top level panel.
+                    // But DB manager has it.
+                    // Let's look at DB manager usage.
+                    // If it's a top level thing, maybe we don't need back button, just close.
+                    // But for consistency with the "left panel" design, let's include it.
+                    // If we are in "Extension Logs", maybe back goes to "Extension List"?
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.none;
+                  },
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.extensionLogsTitle,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.bug_report_outlined),
+                  tooltip: l10n.healthCheckRunTooltip,
+                  onPressed: () => _showHealthCheck(context),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () {
+                    ref.read(extensionLogProvider.notifier).clearLogs();
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.none;
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: CustomScrollView(slivers: contentSlivers)),
+        ],
+      );
+    }
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -35,38 +142,7 @@ class ExtensionLogsPage extends ConsumerWidget {
               ),
             ],
           ),
-          if (logs.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: 64,
-                      color: colorScheme.outlineVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.noApiLogs,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final log = logs[index];
-                  return _buildLogItem(context, log);
-                }, childCount: logs.length),
-              ),
-            ),
+          ...contentSlivers,
         ],
       ),
     );

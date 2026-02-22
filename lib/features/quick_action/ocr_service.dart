@@ -1,11 +1,22 @@
+import 'dart:io';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class OcrService {
-  final TextRecognizer _textRecognizer = TextRecognizer(
-    script: TextRecognitionScript.chinese,
-  );
+  late final TextRecognizer? _textRecognizer;
+
+  OcrService() {
+    if (Platform.isAndroid || Platform.isIOS) {
+      _textRecognizer = TextRecognizer(script: TextRecognitionScript.chinese);
+    } else {
+      _textRecognizer = null;
+    }
+  }
 
   Future<Map<String, dynamic>> recognizeDetailed(String imagePath) async {
+    if (_textRecognizer == null) {
+      return {'fullText': '', 'blocks': <Map<String, dynamic>>[]};
+    }
+
     final inputImage = InputImage.fromFilePath(imagePath);
     final RecognizedText recognizedText = await _textRecognizer.processImage(
       inputImage,
@@ -28,6 +39,6 @@ class OcrService {
   }
 
   void dispose() {
-    _textRecognizer.close();
+    _textRecognizer?.close();
   }
 }

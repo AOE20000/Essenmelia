@@ -2828,6 +2828,12 @@ abstract class AppLocalizations {
   /// **'Smartly analyze content'**
   String get smartAnalysisTooltip;
 
+  /// Message shown when a feature is not supported on desktop
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is not supported on desktop yet'**
+  String get featureNotSupportedOnDesktop;
+
   /// Message indicating AI auto-fill
   ///
   /// In en, this message translates to:

@@ -5,6 +5,7 @@ import '../core/base_extension.dart';
 import '../core/extension_api.dart';
 import '../manager/extension_manager.dart';
 import 'js/extension_js_engine.dart';
+import 'view/extension_console.dart';
 import 'view/dynamic_engine.dart';
 import '../security/extension_auth_notifier.dart';
 
@@ -82,6 +83,21 @@ class ProxyExtension extends BaseExtension {
 
           if (_initError != null) {
             return Scaffold(
+              floatingActionButton: _engine != null
+                  ? FloatingActionButton.small(
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.7,
+                            child: ExtensionConsole(engine: _engine!),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.bug_report_rounded),
+                    )
+                  : null,
               body: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -165,6 +181,19 @@ class ProxyExtension extends BaseExtension {
         final l10n = AppLocalizations.of(context)!;
         return Scaffold(
           appBar: AppBar(title: Text(metadata.name)),
+          floatingActionButton: _engine != null ? FloatingActionButton.small(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: ExtensionConsole(engine: _engine!),
+                ),
+              );
+            },
+            child: const Icon(Icons.bug_report_rounded),
+          ) : null,
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(

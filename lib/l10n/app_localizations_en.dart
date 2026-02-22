@@ -1509,6 +1509,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smartAnalysisTooltip => 'Smartly analyze content';
 
   @override
+  String get featureNotSupportedOnDesktop =>
+      'This feature is not supported on desktop yet';
+
+  @override
   String get autoFilledByAi => 'Auto-filled by AI Assistant';
 
   @override

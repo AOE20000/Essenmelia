@@ -717,6 +717,16 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   Future<void> _processImageML(File imageFile) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.featureNotSupportedOnDesktop)),
+        );
+      }
+      return;
+    }
+
     setState(() => _isProcessingML = true);
     try {
       // 1. OCR 识别

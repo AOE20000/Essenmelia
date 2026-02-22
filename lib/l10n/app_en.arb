@@ -2043,6 +2043,10 @@
   "@smartAnalysisTooltip": {
     "description": "Tooltip for smart analysis button"
   },
+  "featureNotSupportedOnDesktop": "This feature is not supported on desktop yet",
+  "@featureNotSupportedOnDesktop": {
+    "description": "Message shown when a feature is not supported on desktop"
+  },
   "autoFilledByAi": "Auto-filled by AI Assistant",
   "@autoFilledByAi": {
     "description": "Message indicating AI auto-fill"

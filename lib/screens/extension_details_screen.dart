@@ -9,10 +9,17 @@ import '../extensions/security/extension_auth_notifier.dart';
 import '../extensions/runtime/api/extension_api_registry.dart';
 import '../extensions/services/extension_lifecycle_service.dart';
 
+import '../providers/ui_state_provider.dart';
+
 class ExtensionDetailsScreen extends ConsumerStatefulWidget {
   final BaseExtension extension;
+  final bool isSidePanel;
 
-  const ExtensionDetailsScreen({super.key, required this.extension});
+  const ExtensionDetailsScreen({
+    super.key,
+    required this.extension,
+    this.isSidePanel = false,
+  });
 
   @override
   ConsumerState<ExtensionDetailsScreen> createState() =>
@@ -31,6 +38,74 @@ class _ExtensionDetailsScreenState
     final isUntrusted = authNotifier.isUntrusted(metadata.id);
     final isRunning = authNotifier.isRunning(metadata.id);
 
+    final content = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          // Header Info Card
+          _buildHeaderCard(theme, metadata),
+          const SizedBox(height: 24),
+
+          // Main Controls
+          _buildControlSection(
+            theme,
+            metadata,
+            isRunning,
+            isUntrusted,
+            authNotifier,
+          ),
+          const SizedBox(height: 24),
+
+          // Permissions Section
+          _buildPermissionsSection(theme, metadata, authState, authNotifier),
+          const SizedBox(height: 32),
+
+          // Action Buttons
+          _buildActionButtons(theme, metadata, authNotifier),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+
+    if (widget.isSidePanel) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () {
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.extensionManager;
+                  },
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.extensionDetails,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.none;
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: content),
+        ],
+      );
+    }
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
@@ -39,34 +114,7 @@ class _ExtensionDetailsScreenState
         scrolledUnderElevation: 0,
         backgroundColor: theme.colorScheme.surface,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: [
-            // Header Info Card
-            _buildHeaderCard(theme, metadata),
-            const SizedBox(height: 24),
-
-            // Main Controls
-            _buildControlSection(
-              theme,
-              metadata,
-              isRunning,
-              isUntrusted,
-              authNotifier,
-            ),
-            const SizedBox(height: 24),
-
-            // Permissions Section
-            _buildPermissionsSection(theme, metadata, authState, authNotifier),
-            const SizedBox(height: 32),
-
-            // Action Buttons
-            _buildActionButtons(theme, metadata, authNotifier),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
+      body: content,
     );
   }
 

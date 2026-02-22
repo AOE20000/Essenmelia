@@ -7,6 +7,7 @@ import '../extensions/services/extension_lifecycle_service.dart';
 import '../extensions/core/base_extension.dart';
 import '../widgets/universal_image.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/ui_state_provider.dart';
 import 'extension_details_screen.dart';
 
 import '../extensions/widgets/installation_confirm_dialog.dart';
@@ -15,7 +16,8 @@ import '../extensions/core/extension_metadata.dart';
 final extensionSearchQueryProvider = StateProvider<String>((ref) => '');
 
 class ExtensionManagementScreen extends ConsumerStatefulWidget {
-  const ExtensionManagementScreen({super.key});
+  final bool isSidePanel;
+  const ExtensionManagementScreen({super.key, this.isSidePanel = false});
 
   @override
   ConsumerState<ExtensionManagementScreen> createState() =>
@@ -55,92 +57,138 @@ class _ExtensionManagementScreenState
     final l10n = AppLocalizations.of(context)!;
     final manager = ref.watch(extensionManagerProvider);
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar.large(
-            title: Text(l10n.extensionManagement),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add_rounded),
-                onPressed: () => _showAddExtensionSheet(context, ref),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: () {
-                  ref.invalidate(extensionRepositoryManifestProvider);
-                },
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SearchBar(
-                hintText: l10n.searchExtensions,
-                leading: const Icon(Icons.search_rounded),
-                onChanged: (value) {
-                  ref.read(extensionSearchQueryProvider.notifier).state = value;
-                },
-                elevation: WidgetStateProperty.all(0),
-                backgroundColor: WidgetStateProperty.all(
-                  theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
-                  ),
-                ),
-              ),
+    final slivers = [
+      if (!widget.isSidePanel)
+        SliverAppBar.large(
+          title: Text(l10n.extensionManagement),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add_rounded),
+              onPressed: () => _showAddExtensionSheet(context, ref),
             ),
-          ),
-          if (manager.installedExtensions.isNotEmpty) ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                child: Text(
-                  l10n.installedExtensions,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final ext = manager.installedExtensions.values.elementAt(
-                    index,
-                  );
-                  return _ExtensionCard(
-                    child: _InstalledExtensionItem(extension: ext),
-                  );
-                }, childCount: manager.installedExtensions.length),
-              ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () {
+                ref.invalidate(extensionRepositoryManifestProvider);
+              },
             ),
           ],
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-              child: Row(
-                children: [
-                  Text(
-                    l10n.availableExtensions,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Add filter or other controls here if needed
-                ],
+        ),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SearchBar(
+            hintText: l10n.searchExtensions,
+            leading: const Icon(Icons.search_rounded),
+            onChanged: (value) {
+              ref.read(extensionSearchQueryProvider.notifier).state = value;
+            },
+            elevation: WidgetStateProperty.all(0),
+            backgroundColor: WidgetStateProperty.all(
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+      ),
+      if (manager.installedExtensions.isNotEmpty) ...[
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+            child: Text(
+              l10n.installedExtensions,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          _buildRepositoryList(context, ref),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final ext = manager.installedExtensions.values.elementAt(index);
+              return _ExtensionCard(
+                child: _InstalledExtensionItem(
+                  extension: ext,
+                  isSidePanel: widget.isSidePanel,
+                ),
+              );
+            }, childCount: manager.installedExtensions.length),
+          ),
+        ),
+      ],
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          child: Row(
+            children: [
+              Text(
+                l10n.availableExtensions,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              // Add filter or other controls here if needed
+            ],
+          ),
+        ),
       ),
-    );
+      _buildRepositoryList(context, ref),
+      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+    ];
+
+    if (widget.isSidePanel) {
+      return Stack(
+        children: [
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      l10n.extensionManagement,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded),
+                      onPressed: () {
+                        ref.invalidate(extensionRepositoryManifestProvider);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () {
+                        ref.read(leftPanelContentProvider.notifier).state =
+                            LeftPanelContent.none;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: CustomScrollView(slivers: slivers)),
+            ],
+          ),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () => _showAddExtensionSheet(context, ref),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(l10n.addExtension),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Scaffold(body: CustomScrollView(slivers: slivers));
   }
 
   Widget _buildRepositoryList(BuildContext context, WidgetRef ref) {
@@ -225,8 +273,12 @@ class _ExtensionCard extends StatelessWidget {
 
 class _InstalledExtensionItem extends ConsumerWidget {
   final BaseExtension extension;
+  final bool isSidePanel;
 
-  const _InstalledExtensionItem({required this.extension});
+  const _InstalledExtensionItem({
+    required this.extension,
+    this.isSidePanel = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -238,11 +290,18 @@ class _InstalledExtensionItem extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => ExtensionDetailsScreen(extension: extension),
-          ),
-        );
+        if (isSidePanel) {
+          ref.read(selectedExtensionProvider.notifier).state = extension;
+          ref.read(leftPanelContentProvider.notifier).state =
+              LeftPanelContent.extensionDetails;
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder:
+                  (context) => ExtensionDetailsScreen(extension: extension),
+            ),
+          );
+        }
       },
       child: Padding(
         padding: const EdgeInsets.all(16),

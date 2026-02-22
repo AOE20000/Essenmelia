@@ -6,6 +6,7 @@ import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import 'db_manager_screen.dart';
 import '../providers/ui_state_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SettingsSheet extends ConsumerWidget {
   final bool isSidePanel;
@@ -226,11 +227,13 @@ class SettingsSheet extends ConsumerWidget {
                                 content: Text(l10n.fontDownloadContent),
                                 actions: [
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
                                     child: Text(l10n.cancel),
                                   ),
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
                                     child: Text(l10n.confirm),
                                   ),
                                 ],
@@ -238,9 +241,61 @@ class SettingsSheet extends ConsumerWidget {
                             );
 
                             if (shouldDownload == true) {
-                              ref
-                                  .read(displaySettingsProvider.notifier)
-                                  .setUseSystemFont(false);
+                              if (!context.mounted) return;
+                              // Show loading dialog
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => Center(
+                                  child: Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const CircularProgressIndicator(),
+                                          const SizedBox(height: 16),
+                                          Text(l10n.extensionLoading),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+
+                              try {
+                                // Trigger font download
+                                await GoogleFonts.pendingFonts([
+                                  GoogleFonts.roboto(),
+                                ]);
+
+                                if (context.mounted) {
+                                  Navigator.pop(
+                                    context,
+                                  ); // Close loading dialog
+                                  ref
+                                      .read(displaySettingsProvider.notifier)
+                                      .setUseSystemFont(false);
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(l10n.apply)),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  Navigator.pop(
+                                    context,
+                                  ); // Close loading dialog
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.error(e.toString())),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                                  );
+                                }
+                              }
                             }
                           },
                           child: Text(l10n.builtInFont),

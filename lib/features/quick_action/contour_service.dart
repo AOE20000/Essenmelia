@@ -1,21 +1,30 @@
+import 'dart:io';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 
 class ContourService {
-  late ObjectDetector _objectDetector;
+  late ObjectDetector? _objectDetector;
 
   ContourService() {
-    // 使用基础模型进行通用物体检测
-    final options = ObjectDetectorOptions(
-      mode: DetectionMode.single,
-      classifyObjects: true,
-      multipleObjects: true,
-    );
-    _objectDetector = ObjectDetector(options: options);
+    if (Platform.isAndroid || Platform.isIOS) {
+      // 使用基础模型进行通用物体检测
+      final options = ObjectDetectorOptions(
+        mode: DetectionMode.single,
+        classifyObjects: true,
+        multipleObjects: true,
+      );
+      _objectDetector = ObjectDetector(options: options);
+    } else {
+      _objectDetector = null;
+    }
   }
 
   Future<Map<String, dynamic>> detectObjects(String imagePath) async {
+    if (_objectDetector == null) {
+      return {'objects': <Map<String, dynamic>>[]};
+    }
+
     final inputImage = InputImage.fromFilePath(imagePath);
-    final List<DetectedObject> objects = await _objectDetector.processImage(
+    final List<DetectedObject> objects = await _objectDetector!.processImage(
       inputImage,
     );
 
@@ -37,6 +46,6 @@ class ContourService {
   }
 
   void dispose() {
-    _objectDetector.close();
+    _objectDetector?.close();
   }
 }

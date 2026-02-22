@@ -280,46 +280,49 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Hero(
                   tag: event.id,
-                  child: InkWell(
-                    onTap: onImageTap,
-                    borderRadius: BorderRadius.circular(24),
-                    child: SizedBox(
-                      height: 240,
-                      width: double.infinity,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          UniversalImage(
-                            imageUrl: event.imageUrl!,
-                            fit: BoxFit.cover,
+                  child: SizedBox(
+                    height: 240,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        UniversalImage(
+                          imageUrl: event.imageUrl!,
+                          fit: BoxFit.cover,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onImageTap,
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          if (onImageTap != null)
-                            Positioned(
-                              bottom: 12,
-                              right: 12,
-                              child: Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: theme.colorScheme.surface,
-                                    width: 2,
-                                  ),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 4,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
+                        ),
+                        if (onImageTap != null)
+                          Positioned(
+                            bottom: 12,
+                            right: 12,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: theme.colorScheme.surface,
+                                  width: 2,
                                 ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

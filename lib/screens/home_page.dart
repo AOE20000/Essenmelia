@@ -87,11 +87,19 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showAddExtensionDialog(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ExtensionManagementScreen(),
-      ),
-    );
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 1024;
+
+    if (isLargeScreen) {
+      ref.read(leftPanelContentProvider.notifier).state =
+          LeftPanelContent.extensionManager;
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const ExtensionManagementScreen(),
+        ),
+      );
+    }
   }
 
   void _showExtensionContextMenu(BuildContext context, dynamic ext) {
@@ -107,12 +115,19 @@ class _HomePageState extends ConsumerState<HomePage> {
               title: Text(l10n.manageAndPermissions),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ExtensionDetailsScreen(extension: ext),
-                  ),
-                );
+                final screenWidth = MediaQuery.of(context).size.width;
+                if (screenWidth >= 1024 && ext is BaseExtension) {
+                  ref.read(selectedExtensionProvider.notifier).state = ext;
+                  ref.read(leftPanelContentProvider.notifier).state =
+                      LeftPanelContent.extensionDetails;
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ExtensionDetailsScreen(extension: ext),
+                    ),
+                  );
+                }
               },
             ),
             ListTile(
@@ -421,6 +436,351 @@ class _HomePageState extends ConsumerState<HomePage> {
         final authNotifier = ref.watch(extensionAuthStateProvider.notifier);
         final showExtensionGuide = ref.watch(showExtensionGuideProvider);
         final theme = Theme.of(context);
+        final runningExt = ref.watch(runningExtensionProvider);
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isLargeScreen = screenWidth >= 1024;
+
+        // 如果是大屏且有正在运行的扩展，自动清理选中的事件（避免 UI 冲突，虽然在不同 Tab 但保持一致性）
+        // 这里主要逻辑是：如果切换了 Tab，之前的状态可能需要保留或清理。
+        // 目前 Tab 切换会重建 _getTabWidget，但 Provider 状态保留。
+        // 由于是不同 Tab，SideDetailPanel (Event) 和 SideExtensionPanel (Extension) 互不干扰。
+
+        final mainContent = extensions.isEmpty
+            ? Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.extension_off_outlined,
+                          size: 48,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        l10n.noExtensionsInstalled,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton.tonalIcon(
+                        onPressed: () => _showAddExtensionDialog(context),
+                        icon: const Icon(Icons.add),
+                        label: Text(l10n.addExtension),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : CustomScrollView(
+                slivers: [
+                  if (showExtensionGuide)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Material(
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            side: BorderSide(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome,
+                                      size: 20,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        l10n.welcomeToExtensions,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () {
+                                        ref
+                                            .read(
+                                              showExtensionGuideProvider
+                                                  .notifier,
+                                            )
+                                            .dismissGuide();
+                                      },
+                                      icon: const Icon(Icons.close, size: 18),
+                                      tooltip: l10n.dontShowAgain,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.longPressToManageExtension,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.85,
+                          ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final ext = extensions[index];
+                        final isRunning = authNotifier.isRunning(
+                          ext.metadata.id,
+                        );
+                        final isSelectedRunning =
+                            isLargeScreen &&
+                            runningExt?.metadata.id == ext.metadata.id;
+
+                        return Material(
+                          color: isSelectedRunning
+                              ? theme.colorScheme.primaryContainer.withValues(
+                                  alpha: 0.3,
+                                )
+                              : (isRunning
+                                    ? theme.colorScheme.surfaceContainerLow
+                                    : theme.colorScheme.surfaceContainerLowest),
+                          clipBehavior: Clip.antiAlias,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            side: BorderSide(
+                              color: isSelectedRunning
+                                  ? theme.colorScheme.primary
+                                  : (isRunning
+                                        ? theme.colorScheme.primary.withValues(
+                                            alpha: 0.15,
+                                          )
+                                        : theme.colorScheme.outlineVariant
+                                              .withValues(alpha: 0.3)),
+                              width: isSelectedRunning || isRunning ? 1.5 : 1,
+                            ),
+                          ),
+                          child: InkWell(
+                            onLongPress: () {
+                              final screenWidth = MediaQuery.of(
+                                context,
+                              ).size.width;
+                              if (screenWidth >= 1024) {
+                                ref
+                                        .read(
+                                          selectedExtensionProvider.notifier,
+                                        )
+                                        .state =
+                                    ext;
+                                ref
+                                        .read(leftPanelContentProvider.notifier)
+                                        .state =
+                                    LeftPanelContent.extensionDetails;
+                              } else {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ExtensionDetailsScreen(extension: ext),
+                                  ),
+                                );
+                              }
+                            },
+                            onSecondaryTap: () =>
+                                _showExtensionContextMenu(context, ext),
+                            onTap: () {
+                              if (!isRunning) {
+                                final screenWidth = MediaQuery.of(
+                                  context,
+                                ).size.width;
+                                if (screenWidth >= 1024) {
+                                  ref
+                                          .read(
+                                            selectedExtensionProvider.notifier,
+                                          )
+                                          .state =
+                                      ext;
+                                  ref
+                                      .read(leftPanelContentProvider.notifier)
+                                      .state = LeftPanelContent
+                                      .extensionDetails;
+                                } else {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ExtensionDetailsScreen(
+                                            extension: ext,
+                                          ),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+
+                              // isRunning logic
+                              final screenWidth = MediaQuery.of(
+                                context,
+                              ).size.width;
+                              if (screenWidth >= 1024) {
+                                ref
+                                        .read(runningExtensionProvider.notifier)
+                                        .state =
+                                    ext;
+                              } else {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => ext.build(
+                                      context,
+                                      extensionManager.getApiFor(ext),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Stack(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: isRunning
+                                              ? theme
+                                                    .colorScheme
+                                                    .primaryContainer
+                                                    .withValues(alpha: 0.4)
+                                              : theme
+                                                    .colorScheme
+                                                    .surfaceContainerHighest
+                                                    .withValues(alpha: 0.3),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: Hero(
+                                          tag: 'ext_icon_${ext.metadata.id}',
+                                          child: Icon(
+                                            ext.metadata.icon,
+                                            size: 40,
+                                            color: isRunning
+                                                ? theme.colorScheme.primary
+                                                : theme.colorScheme.outline,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        ext.metadata.name,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: isRunning
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                              color: isRunning
+                                                  ? theme.colorScheme.onSurface
+                                                  : theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant
+                                                        .withValues(alpha: 0.8),
+                                            ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        ext.metadata.description,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.outline
+                                                  .withValues(
+                                                    alpha: isRunning
+                                                        ? 0.9
+                                                        : 0.6,
+                                                  ),
+                                            ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (!isRunning)
+                                  Positioned(
+                                    top: 12,
+                                    right: 12,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme
+                                            .surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        l10n.deactivated,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.colorScheme.outline,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }, childCount: extensions.length),
+                    ),
+                  ),
+                ],
+              );
 
         return Scaffold(
           key: const ValueKey('extensions'),
@@ -438,11 +798,17 @@ class _HomePageState extends ConsumerState<HomePage> {
               IconButton.filledTonal(
                 icon: const Icon(Icons.assignment_outlined),
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ExtensionLogsPage(),
-                    ),
-                  );
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  if (screenWidth >= 1024) {
+                    ref.read(leftPanelContentProvider.notifier).state =
+                        LeftPanelContent.extensionLogs;
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ExtensionLogsPage(),
+                      ),
+                    );
+                  }
                 },
                 tooltip: l10n.extensionLogs,
               ),
@@ -455,297 +821,16 @@ class _HomePageState extends ConsumerState<HomePage> {
               const SizedBox(width: 8),
             ],
           ),
-          body: extensions.isEmpty
-              ? Center(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHigh,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.extension_off_outlined,
-                            size: 48,
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          l10n.noExtensionsInstalled,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.outline,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.tonalIcon(
-                          onPressed: () => _showAddExtensionDialog(context),
-                          icon: const Icon(Icons.add),
-                          label: Text(l10n.addExtension),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : CustomScrollView(
-                  slivers: [
-                    if (showExtensionGuide)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Material(
-                            color: theme.colorScheme.primaryContainer
-                                .withValues(alpha: 0.3),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              side: BorderSide(
-                                color: theme.colorScheme.primary.withValues(
-                                  alpha: 0.2,
-                                ),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.auto_awesome,
-                                        size: 20,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          l10n.welcomeToExtensions,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color:
-                                                    theme.colorScheme.primary,
-                                              ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        visualDensity: VisualDensity.compact,
-                                        onPressed: () {
-                                          ref
-                                              .read(
-                                                showExtensionGuideProvider
-                                                    .notifier,
-                                              )
-                                              .dismissGuide();
-                                        },
-                                        icon: const Icon(Icons.close, size: 18),
-                                        tooltip: l10n.dontShowAgain,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    l10n.longPressToManageExtension,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 200,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.85,
-                            ),
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final ext = extensions[index];
-                          final isRunning = authNotifier.isRunning(
-                            ext.metadata.id,
-                          );
-
-                          return Material(
-                            color: isRunning
-                                ? theme.colorScheme.surfaceContainerLow
-                                : theme.colorScheme.surfaceContainerLowest,
-                            clipBehavior: Clip.antiAlias,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              side: BorderSide(
-                                color: isRunning
-                                    ? theme.colorScheme.primary.withValues(
-                                        alpha: 0.15,
-                                      )
-                                    : theme.colorScheme.outlineVariant
-                                          .withValues(alpha: 0.3),
-                                width: isRunning ? 1.5 : 1,
-                              ),
-                            ),
-                            child: InkWell(
-                              onLongPress: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ExtensionDetailsScreen(extension: ext),
-                                  ),
-                                );
-                              },
-                              onSecondaryTap: () =>
-                                  _showExtensionContextMenu(context, ext),
-                              onTap: () {
-                                if (!isRunning) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ExtensionDetailsScreen(
-                                            extension: ext,
-                                          ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => ext.build(
-                                      context,
-                                      extensionManager.getApiFor(ext),
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Stack(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: isRunning
-                                                ? theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withValues(alpha: 0.4)
-                                                : theme
-                                                      .colorScheme
-                                                      .surfaceContainerHighest
-                                                      .withValues(alpha: 0.3),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          child: Hero(
-                                            tag: 'ext_icon_${ext.metadata.id}',
-                                            child: Icon(
-                                              ext.metadata.icon,
-                                              size: 40,
-                                              color: isRunning
-                                                  ? theme.colorScheme.primary
-                                                  : theme.colorScheme.outline,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          ext.metadata.name,
-                                          style: theme.textTheme.titleSmall
-                                              ?.copyWith(
-                                                fontWeight: isRunning
-                                                    ? FontWeight.bold
-                                                    : FontWeight.w500,
-                                                color: isRunning
-                                                    ? theme
-                                                          .colorScheme
-                                                          .onSurface
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSurfaceVariant
-                                                          .withValues(
-                                                            alpha: 0.8,
-                                                          ),
-                                              ),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          ext.metadata.description,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: theme.colorScheme.outline
-                                                    .withValues(
-                                                      alpha: isRunning
-                                                          ? 0.9
-                                                          : 0.6,
-                                                    ),
-                                              ),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (!isRunning)
-                                    Positioned(
-                                      top: 12,
-                                      right: 12,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: theme
-                                              .colorScheme
-                                              .surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          l10n.deactivated,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color:
-                                                    theme.colorScheme.outline,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }, childCount: extensions.length),
-                      ),
-                    ),
-                  ],
+          body: Row(
+            children: [
+              Expanded(child: mainContent),
+              if (isLargeScreen && runningExt != null)
+                _SideExtensionPanel(
+                  extension: runningExt,
+                  screenWidth: screenWidth,
                 ),
+            ],
+          ),
         );
       case HomeTab.settings:
         return const SettingsSheet(key: ValueKey('settings'));
@@ -1154,6 +1239,36 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
+class _SideExtensionPanel extends ConsumerWidget {
+  final BaseExtension extension;
+  final double screenWidth;
+
+  const _SideExtensionPanel({
+    required this.extension,
+    required this.screenWidth,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final extensionManager = ref.watch(extensionManagerProvider);
+
+    return Container(
+      width: screenWidth * 0.35, // Match Left Panel width
+      margin: const EdgeInsets.only(left: 8), // Small gap from main content
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: extension.build(context, extensionManager.getApiFor(extension)),
+    );
+  }
+}
+
 class _ReminderInfo extends StatelessWidget {
   final DateTime reminderTime;
   final String? recurrence;
@@ -1537,6 +1652,23 @@ class _SideLeftPanel extends ConsumerWidget {
         break;
       case LeftPanelContent.manageTags:
         child = const ManageTagsScreen(isSidePanel: true);
+        break;
+      case LeftPanelContent.extensionManager:
+        child = const ExtensionManagementScreen(isSidePanel: true);
+        break;
+      case LeftPanelContent.extensionDetails:
+        final selectedExtension = ref.watch(selectedExtensionProvider);
+        if (selectedExtension == null) {
+          child = const Center(child: Text("No extension selected"));
+        } else {
+          child = ExtensionDetailsScreen(
+            extension: selectedExtension,
+            isSidePanel: true,
+          );
+        }
+        break;
+      case LeftPanelContent.extensionLogs:
+        child = const ExtensionLogsPage(isSidePanel: true);
         break;
       case LeftPanelContent.none:
         return const SizedBox.shrink();

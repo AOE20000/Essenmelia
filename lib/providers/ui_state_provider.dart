@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../extensions/core/base_extension.dart';
 import 'db_provider.dart';
 
 enum WelcomeMode { welcome, help }
@@ -152,12 +153,17 @@ enum LeftPanelContent {
   editEvent,
   dbManager,
   manageTags,
+  extensionManager,
+  extensionDetails,
+  extensionLogs,
 }
 
 final leftPanelContentProvider = StateProvider<LeftPanelContent>(
   (ref) => LeftPanelContent.none,
 );
 final leftPanelEventIdProvider = StateProvider<String?>((ref) => null);
+final selectedExtensionProvider = StateProvider<BaseExtension?>((ref) => null);
+final runningExtensionProvider = StateProvider<BaseExtension?>((ref) => null);
 
 // Keyboard persistence
 final keyboardTotalHeightProvider =

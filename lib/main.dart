@@ -17,6 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
 import 'services/command_gateway_service.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -201,6 +202,12 @@ class _MyAppState extends ConsumerState<MyApp> {
           );
 
           if (displaySettings.useSystemFont) {
+            // Windows 平台默认字体修复
+            if (Platform.isWindows) {
+              return baseTheme.copyWith(
+                textTheme: baseTheme.textTheme.apply(fontFamily: 'Microsoft YaHei'),
+              );
+            }
             return baseTheme;
           } else {
             // 使用内置 MD3 字体 (Roboto)

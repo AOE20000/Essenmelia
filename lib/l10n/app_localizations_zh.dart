@@ -109,7 +109,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uniqueId => '唯一标识 (ID)';
 
   @override
-  String get developerSandbox => '纯净壳 (Dev)';
+  String get developerSandbox => '关于';
 
   @override
   String get sandboxPureModeHint =>
@@ -1459,6 +1459,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get smartAnalysisTooltip => '智能分析内容';
+
+  @override
+  String get featureNotSupportedOnDesktop => '此功能暂不支持桌面端';
 
   @override
   String get autoFilledByAi => 'AI 助手已自动填充';
