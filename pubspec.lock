@@ -25,6 +25,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  ansi_regex:
+    dependency: transitive
+    description:
+      name: ansi_regex
+      sha256: ca4f2b24a85e797a1512e1d3fe34d5f8429648f78e2268b6a8b5628c8430e643
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
+  ansi_strip:
+    dependency: transitive
+    description:
+      name: ansi_strip
+      sha256: "9bb54e10962ac1de86b9b64a278a5b8965a28a2f741975eac7fe9fb0ebe1aaac"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1+1"
   app_links:
     dependency: "direct main"
     description:
@@ -209,6 +225,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.13.0"
+  cli_spin:
+    dependency: transitive
+    description:
+      name: cli_spin
+      sha256: d942e605e508820b8bde1cfc26f19810abd6bd6bfa32a4f049c9ebaaccbddb50
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   cli_util:
     dependency: transitive
     description:
@@ -329,6 +353,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.8.1"
+  east_asian_width:
+    dependency: transitive
+    description:
+      name: east_asian_width
+      sha256: a13c5487dab7ddbad48875789819f0ea38a61cbaaa3024ebe7b199521e6f5788
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
+  emoji_regex:
+    dependency: transitive
+    description:
+      name: emoji_regex
+      sha256: "3a25dd4d16f98b6f76dc37cc9ae49b8511891ac4b87beac9443a1e9f4634b6c7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
   fake_async:
     dependency: transitive
     description:
@@ -805,6 +845,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
+  inno_build:
+    dependency: "direct dev"
+    description:
+      name: inno_build
+      sha256: f5e9b7d5a79dc1bceb41e6db2a1013b607cb7b273d8b72bd8c77a7adcca8e10e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   intl:
     dependency: "direct main"
     description:
@@ -1298,6 +1346,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  string_width:
+    dependency: transitive
+    description:
+      name: string_width
+      sha256: "0ea481fbb6d5e2d70937fea303d8cc9296048da107dffeecf2acb675c8b47e7f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.5"
   sync_http:
     dependency: transitive
     description:
@@ -1626,6 +1682,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.3"
+  yaml_writer:
+    dependency: transitive
+    description:
+      name: yaml_writer
+      sha256: "69651cd7238411179ac32079937d4aa9a2970150d6b2ae2c6fe6de09402a5dc5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
 sdks:
   dart: ">=3.10.8 <4.0.0"
   flutter: ">=3.38.4"

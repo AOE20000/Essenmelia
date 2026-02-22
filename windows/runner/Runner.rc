@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "org.essenmelia" "\0"
-            VALUE "FileDescription", "essenmelia_flutter" "\0"
+            VALUE "CompanyName", "Essenmelia Team" "\0"
+            VALUE "FileDescription", "Essenmelia Application" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "essenmelia_flutter" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 org.essenmelia. All rights reserved." "\0"
-            VALUE "OriginalFilename", "essenmelia_flutter.exe" "\0"
-            VALUE "ProductName", "essenmelia_flutter" "\0"
+            VALUE "InternalName", "Essenmelia" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Essenmelia Team. All rights reserved." "\0"
+            VALUE "OriginalFilename", "Essenmelia.exe" "\0"
+            VALUE "ProductName", "Essenmelia" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
