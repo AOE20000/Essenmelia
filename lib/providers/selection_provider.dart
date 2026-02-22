@@ -71,6 +71,7 @@ class BatchActionsController {
       await notifier.adjustProgress(id, delta);
     }
     
-    ref.read(selectionProvider.notifier).clear();
+    // Keep selection active for repeated actions
+    // ref.read(selectionProvider.notifier).clear();
   }
 }
