@@ -138,9 +138,14 @@ jobs:
           sudo apt-get install -y flatpak flatpak-builder libstdc++-12-dev
           flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
       - name: Import GPG Key
-        if: secrets.GPG_PRIVATE_KEY != ''
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          if [ -n "$GPG_PRIVATE_KEY" ]; then
+            echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          else
+            echo "No GPG private key provided, skipping import."
+          fi
       - name: Build Flatpak
         run: |
           # 初始化 repo（如果不存在）
