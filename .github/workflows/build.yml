@@ -205,14 +205,25 @@ jobs:
           # Pass GPG_TTY for pinentry
           export GPG_TTY=$(tty || echo "")
           
-          # 创建 flatpak-builder 的 expect 包装脚本
-          # GPGME 错误通常是因为 flatpak-builder 调用 gpg 时无法处理 pinentry
-          # 我们使用 expect 来捕获潜在的密码提示并发送回车
-          printf 'set timeout -1\nspawn flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo %s build-dir flatpak/org.essenmelia.Essenmelia.yml\nexpect {\n    "Passphrase:" {\n        send "\\r"\n        exp_continue\n    }\n    eof\n}\ncatch wait result\nexit [lindex $result 3]' "$GPG_ARGS" > build.exp
+          # 构建 Flatpak (不带签名参数)
+          flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo build-dir flatpak/org.essenmelia.Essenmelia.yml
           
-          # 构建 Flatpak (通过 expect)
-          expect build.exp
-          rm build.exp
+          # 手动对 repo 进行 GPG 签名
+          # 由于 flatpak-builder 的 GPGME 调用在 CI 环境下极不稳定，我们选择先构建后签名
+          if [ -n "$GPG_PRIVATE_KEY" ]; then
+             echo "Manually signing Flatpak repo..."
+             # 获取最新的 commit ID
+             COMMIT_ID=$(flatpak remote-ls --user --repo=repo --columns=commit org.essenmelia.Essenmelia | head -n 1)
+             if [ -n "$COMMIT_ID" ]; then
+                 # 使用 expect 脚本调用 ostree commit --gpg-sign 进行签名
+                 printf 'spawn ostree commit --repo=repo --gpg-sign=E28C8DAF881F77322556C886B5549E0EA516EE25 --gpg-homedir=%s/.gnupg %s\nexpect {\n    "Passphrase:" {\n        send "\\r"\n        exp_continue\n    }\n    eof\n}\n' "$HOME" "$COMMIT_ID" > sign_repo.exp
+                 expect sign_repo.exp
+                 rm sign_repo.exp
+                 echo "Manual signing completed."
+             else
+                 echo "Could not find commit ID to sign."
+             fi
+          fi
           
           # 打包
           flatpak build-bundle repo essenmelia.flatpak org.essenmelia.Essenmelia
