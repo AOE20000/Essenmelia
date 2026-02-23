@@ -205,8 +205,15 @@ jobs:
           # Pass GPG_TTY for pinentry
           export GPG_TTY=$(tty || echo "")
           
-          # 构建 Flatpak
-          flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo $GPG_ARGS build-dir flatpak/org.essenmelia.Essenmelia.yml
+          # 创建 flatpak-builder 的 expect 包装脚本
+          # GPGME 错误通常是因为 flatpak-builder 调用 gpg 时无法处理 pinentry
+          # 我们使用 expect 来捕获潜在的密码提示并发送回车
+          printf 'set timeout -1\nspawn flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo %s build-dir flatpak/org.essenmelia.Essenmelia.yml\nexpect {\n    "Passphrase:" {\n        send "\\r"\n        exp_continue\n    }\n    eof\n}\ncatch wait result\nexit [lindex $result 3]' "$GPG_ARGS" > build.exp
+          
+          # 构建 Flatpak (通过 expect)
+          expect build.exp
+          rm build.exp
+          
           # 打包
           flatpak build-bundle repo essenmelia.flatpak org.essenmelia.Essenmelia
       - name: Zip Linux Build
