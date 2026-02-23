@@ -142,15 +142,27 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
           if [ -n "$GPG_PRIVATE_KEY" ]; then
-            # Configure GPG for headless environment to prevent "Inappropriate ioctl for device" error
+            # Configure GPG for headless environment
             mkdir -p ~/.gnupg
-            echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-            echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
             chmod 700 ~/.gnupg
+            
+            # Use standard pinentry-mode loopback configuration
+            echo "use-agent" > ~/.gnupg/gpg.conf
+            echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+            echo "no-tty" >> ~/.gnupg/gpg.conf
+            
+            # Configure agent to allow loopback
+            echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+            
+            # Restart agent to apply changes
             gpg-connect-agent reloadagent /bye
 
             # Import key
             echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+            
+            # Verify key import and trust it ultimately to avoid "There is no assurance this key belongs to the named user"
+            KEY_ID="E28C8DAF881F77322556C886B5549E0EA516EE25"
+            echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key $KEY_ID trust
           else
             echo "No GPG private key provided, skipping import."
           fi
@@ -166,11 +178,15 @@ jobs:
           # 安装依赖并构建
           GPG_ARGS=""
           if gpg --list-keys "E28C8DAF881F77322556C886B5549E0EA516EE25" > /dev/null 2>&1; then
-            GPG_ARGS="--gpg-sign=E28C8DAF881F77322556C886B5549E0EA516EE25"
+            GPG_ARGS="--gpg-sign=E28C8DAF881F77322556C886B5549E0EA516EE25 --gpg-homedir=$HOME/.gnupg"
             echo "Signing Flatpak with GPG Key: E28C8DAF881F77322556C886B5549E0EA516EE25"
           else
             echo "No GPG key found, skipping signing."
           fi
+          
+          # Pass GPG_TTY for pinentry
+          export GPG_TTY=$(tty)
+          
           # 构建 Flatpak
           flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo $GPG_ARGS build-dir flatpak/org.essenmelia.Essenmelia.yml
           # 打包
