@@ -12,7 +12,6 @@ finish-args:
 modules:
   - name: essenmelia
     buildsystem: simple
-    no-debuginfo: true
     build-commands:
       - install -D essenmelia /app/bin/essenmelia
       - cp -r lib /app/lib
