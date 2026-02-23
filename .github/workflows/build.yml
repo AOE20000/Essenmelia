@@ -135,8 +135,12 @@ jobs:
       - name: Install Flatpak Builder
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y flatpak flatpak-builder libstdc++-12-dev
           flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+      - name: Import GPG Key
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
       - name: Build Flatpak
         run: |
           # 初始化 repo（如果不存在）
@@ -144,8 +148,18 @@ jobs:
           if [ ! -d "repo/objects" ]; then
             ostree init --mode=archive-z2 --repo=repo
           fi
+          # 添加 Flathub 远程源
+          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
           # 安装依赖并构建
-          flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo build-dir flatpak/org.essenmelia.Essenmelia.yml
+           GPG_ARGS=""
+           if gpg --list-keys "E28C8DAF881F77322556C886B5549E0EA516EE25" > /dev/null 2>&1; then
+             GPG_ARGS="--gpg-sign=E28C8DAF881F77322556C886B5549E0EA516EE25"
+             echo "Signing Flatpak with GPG Key: E28C8DAF881F77322556C886B5549E0EA516EE25"
+           else
+             echo "No GPG key found, skipping signing."
+           fi
+           
+           flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo $GPG_ARGS build-dir flatpak/org.essenmelia.Essenmelia.yml
           # 打包
           flatpak build-bundle repo essenmelia.flatpak org.essenmelia.Essenmelia
       - name: Zip Linux Build
