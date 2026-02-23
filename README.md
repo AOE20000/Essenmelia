@@ -62,5 +62,5 @@ Essenmelia 最初诞生于一个简单的诉求：打造一款不受干扰、数
 - [扩展开发指南](assets/docs/extensions.md) - 技术规范与 UI 组件库。
 - [API使用文档](assets/docs/api_usage.md) - 调用示例与安全机制说明。
 - [创建仓库指南](assets/docs/create_repository_guide.md) - 了解如何分发你的扩展。
-- [扩展示例](https://github.com/AOE20000/Export-from-Bangumi-to-Essenmelia) - “Bangumi 收藏导入”插件的实现代码。
+- [扩展示例](https://github.com/AOE20000/Export-from-Bangumi-to-Essenmelia) - **Bangumi 收藏导入** 扩展的实现代码。
 - [项目主页](https://github.com/AOE20000/Essenmelia) - 访问 GitHub 仓库。
