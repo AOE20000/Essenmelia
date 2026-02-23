@@ -168,13 +168,27 @@ jobs:
              echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
              echo "GPG Trust imported successfully."
  
+             # Install expect to handle pinentry interactively if needed
+             sudo apt-get update && sudo apt-get install -y expect
+ 
+             # Create an expect script to handle passphrase prompt
+             cat <<EOF > sign.exp
+             spawn gpg --pinentry-mode loopback --sign test.txt
+             expect {
+                 "Passphrase:" {
+                     send "\r"
+                     exp_continue
+                 }
+                 eof
+             }
+             EOF
+             
              # Test signing a dummy file to ensure GPG agent is ready and unlocked
              # This also primes the gpg-agent cache with the empty passphrase
              echo "test" > test.txt
-             # Pipe empty string to passphrase-fd 0
-             echo -n "" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --sign test.txt
+             expect sign.exp
              echo "GPG Signing test passed."
-             rm test.txt test.txt.gpg
+             rm test.txt test.txt.gpg sign.exp
           else
             echo "No GPG private key provided, skipping import."
           fi
