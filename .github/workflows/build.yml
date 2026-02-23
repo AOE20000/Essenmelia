@@ -46,6 +46,13 @@ jobs:
         run: |
           sdkmanager --update
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_JKS_BASE64 }}" | base64 --decode > android/app/keystore.jks
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=keystore.jks" >> android/key.properties
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -132,7 +139,14 @@ jobs:
           flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
       - name: Build Flatpak
         run: |
+          # 初始化 repo（如果不存在）
+          mkdir -p repo
+          if [ ! -d "repo/objects" ]; then
+            ostree init --mode=archive-z2 --repo=repo
+          fi
+          # 安装依赖并构建
           flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo build-dir flatpak/org.essenmelia.Essenmelia.yml
+          # 打包
           flatpak build-bundle repo essenmelia.flatpak org.essenmelia.Essenmelia
       - name: Zip Linux Build
         run: |
