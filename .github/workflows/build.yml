@@ -168,15 +168,14 @@ jobs:
              echo "GPG Trust imported successfully."
  
              # Preset passphrase (empty) for the key to avoid "No passphrase given" error
-             # Get keygrip
-             KEYGRIP=$(gpg --with-colons --list-secret-keys E28C8DAF881F77322556C886B5549E0EA516EE25 | grep grp | cut -d: -f10)
-             if [ -n "$KEYGRIP" ]; then
-                echo "Presetting passphrase for keygrip: $KEYGRIP"
-                # Use echo -n to pipe empty string, as <<< "" might be treated as newline only
-                echo -n "" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"
-             else
-                echo "Warning: Could not find keygrip for GPG key."
-             fi
+             # Get keygrips and loop through them (handle multiple subkeys)
+             gpg --with-colons --list-secret-keys E28C8DAF881F77322556C886B5549E0EA516EE25 | grep grp | cut -d: -f10 | while read KEYGRIP; do
+                if [ -n "$KEYGRIP" ]; then
+                   echo "Presetting passphrase for keygrip: $KEYGRIP"
+                   # Use echo -n to pipe empty string
+                   echo -n "" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"
+                fi
+             done
 
              # Test signing a dummy file to ensure GPG agent is ready and unlocked
              echo "test" > test.txt
