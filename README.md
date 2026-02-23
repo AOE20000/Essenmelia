@@ -48,7 +48,7 @@ Essenmelia 最初诞生于一个简单的诉求：打造一款不受外界干涉
 * Deep Link 支持，通过 esml:// 或 essenmelia:// 协议，从网页、快捷指令一键唤起应用并触发操作。
 * 支持通过 ADB 操作，为开发者自动化测试与极客脚本留出无限可能。
 
-# 🧩 扩展
+## 🧩 扩展
 
 > **打破能力的边界**
 > * Essenmelia 扩展通过 GitHub api 发现和安装扩展，它能将应用从一个单纯的“记录本”升华为个性化的**“全能媒体枢纽”**。
@@ -58,7 +58,7 @@ Essenmelia 最初诞生于一个简单的诉求：打造一款不受外界干涉
 * 支持从 Bangumi 等开放平台导入记录和接入任意播放源。
 
 ---
-### 🗂️ 开发资源
+## 🗂️ 开发资源
 - [扩展开发指南](assets/docs/extensions.md) - 技术规范与 UI 组件库。
 - [API 使用文档](assets/docs/api_usage.md) - 调用示例与安全机制说明。
 - [创建仓库指南](assets/docs/create_repository_guide.md) - 了解如何分发你的扩展。
