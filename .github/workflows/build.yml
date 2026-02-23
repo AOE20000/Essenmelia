@@ -145,6 +145,7 @@ jobs:
             # Configure GPG for headless environment
             mkdir -p ~/.gnupg
             chmod 700 ~/.gnupg
+            export GPG_TTY=$(tty)
             
             # Use standard pinentry-mode loopback configuration
             echo "use-agent" > ~/.gnupg/gpg.conf
@@ -161,13 +162,13 @@ jobs:
             echo "$GPG_PRIVATE_KEY" | gpg --batch --import
             
             # Set ultimate trust for the key using import-ownertrust (non-interactive)
-             echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
+            echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
 
-             # Test signing a dummy file to ensure GPG agent is ready and unlocked
-             echo "test" > test.txt
-             gpg --batch --yes --sign test.txt
-             rm test.txt test.txt.gpg
-           else
+            # Test signing a dummy file to ensure GPG agent is ready and unlocked
+            echo "test" > test.txt
+            gpg --batch --yes --pinentry-mode loopback --sign test.txt
+            rm test.txt test.txt.gpg
+          else
             echo "No GPG private key provided, skipping import."
           fi
       - name: Build Flatpak
