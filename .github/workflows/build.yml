@@ -153,12 +153,13 @@ jobs:
              echo "use-agent" > ~/.gnupg/gpg.conf
              echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
              
-             # Configure agent to allow loopback AND preset passphrase
+             # Configure agent to allow loopback AND set long cache TTL
              echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
-             echo "allow-preset-passphrase" >> ~/.gnupg/gpg-agent.conf
+             echo "default-cache-ttl 34560000" >> ~/.gnupg/gpg-agent.conf
+             echo "max-cache-ttl 34560000" >> ~/.gnupg/gpg-agent.conf
              
-             # Restart agent to apply changes
-             gpg-connect-agent reloadagent /bye
+             # Kill agent to ensure config is picked up
+             gpgconf --kill gpg-agent
  
              # Import key
              echo "$GPG_PRIVATE_KEY" | gpg --batch --import
@@ -167,19 +168,11 @@ jobs:
              echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
              echo "GPG Trust imported successfully."
  
-             # Preset passphrase (empty) for the key to avoid "No passphrase given" error
-             # Get keygrips and loop through them (handle multiple subkeys)
-             gpg --with-colons --list-secret-keys E28C8DAF881F77322556C886B5549E0EA516EE25 | grep grp | cut -d: -f10 | while read KEYGRIP; do
-                if [ -n "$KEYGRIP" ]; then
-                   echo "Presetting passphrase for keygrip: $KEYGRIP"
-                   # Use echo -n to pipe empty string
-                   echo -n "" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"
-                fi
-             done
-
              # Test signing a dummy file to ensure GPG agent is ready and unlocked
+             # This also primes the gpg-agent cache with the empty passphrase
              echo "test" > test.txt
-             gpg --batch --yes --pinentry-mode loopback --sign test.txt
+             # Pipe empty string to passphrase-fd 0
+             echo -n "" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --sign test.txt
              echo "GPG Signing test passed."
              rm test.txt test.txt.gpg
           else
