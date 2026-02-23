@@ -172,16 +172,8 @@ jobs:
              sudo apt-get update && sudo apt-get install -y expect
  
              # Create an expect script to handle passphrase prompt
-             cat <<EOF > sign.exp
-             spawn gpg --pinentry-mode loopback --sign test.txt
-             expect {
-                 "Passphrase:" {
-                     send "\r"
-                     exp_continue
-                 }
-                 eof
-             }
-             EOF
+             # Use printf to avoid heredoc indentation issues in YAML
+             printf 'spawn gpg --pinentry-mode loopback --sign test.txt\nexpect {\n    "Passphrase:" {\n        send "\\r"\n        exp_continue\n    }\n    eof\n}\n' > sign.exp
              
              # Test signing a dummy file to ensure GPG agent is ready and unlocked
              # This also primes the gpg-agent cache with the empty passphrase
