@@ -143,31 +143,36 @@ jobs:
         run: |
           if [ -n "$GPG_PRIVATE_KEY" ]; then
             # Configure GPG for headless environment
-            mkdir -p ~/.gnupg
-            chmod 700 ~/.gnupg
-            export GPG_TTY=$(tty)
-            
-            # Use standard pinentry-mode loopback configuration
-            echo "use-agent" > ~/.gnupg/gpg.conf
-            echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-            echo "no-tty" >> ~/.gnupg/gpg.conf
-            
-            # Configure agent to allow loopback
-            echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
-            
-            # Restart agent to apply changes
-            gpg-connect-agent reloadagent /bye
-
-            # Import key
-            echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-            
-            # Set ultimate trust for the key using import-ownertrust (non-interactive)
-            echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
-
-            # Test signing a dummy file to ensure GPG agent is ready and unlocked
-            echo "test" > test.txt
-            gpg --batch --yes --pinentry-mode loopback --sign test.txt
-            rm test.txt test.txt.gpg
+             mkdir -p ~/.gnupg
+             chmod 700 ~/.gnupg
+             
+             # Attempt to set GPG_TTY, falling back if tty is not available
+             export GPG_TTY=$(tty || echo "")
+             
+             # Use standard pinentry-mode loopback configuration
+             echo "use-agent" > ~/.gnupg/gpg.conf
+             echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+             echo "no-tty" >> ~/.gnupg/gpg.conf
+             
+             # Configure agent to allow loopback
+             echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+             
+             # Restart agent to apply changes
+             gpg-connect-agent reloadagent /bye
+ 
+             # Import key
+             echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+             
+             # Set ultimate trust for the key using import-ownertrust (non-interactive)
+             echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
+             echo "GPG Trust imported successfully."
+ 
+             # Test signing a dummy file to ensure GPG agent is ready and unlocked
+             echo "test" > test.txt
+             # Explicitly pass empty passphrase to satisfy pinentry in loopback mode if needed
+             gpg --batch --yes --pinentry-mode loopback --passphrase '' --sign test.txt
+             echo "GPG Signing test passed."
+             rm test.txt test.txt.gpg
           else
             echo "No GPG private key provided, skipping import."
           fi
@@ -190,7 +195,7 @@ jobs:
           fi
           
           # Pass GPG_TTY for pinentry
-          export GPG_TTY=$(tty)
+          export GPG_TTY=$(tty || echo "")
           
           # 构建 Flatpak
           flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo $GPG_ARGS build-dir flatpak/org.essenmelia.Essenmelia.yml
