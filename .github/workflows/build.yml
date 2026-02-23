@@ -152,10 +152,10 @@ jobs:
              # Use standard pinentry-mode loopback configuration
              echo "use-agent" > ~/.gnupg/gpg.conf
              echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-             echo "no-tty" >> ~/.gnupg/gpg.conf
              
-             # Configure agent to allow loopback
+             # Configure agent to allow loopback AND preset passphrase
              echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+             echo "allow-preset-passphrase" >> ~/.gnupg/gpg-agent.conf
              
              # Restart agent to apply changes
              gpg-connect-agent reloadagent /bye
