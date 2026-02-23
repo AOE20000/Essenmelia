@@ -161,9 +161,14 @@ jobs:
             echo "$GPG_PRIVATE_KEY" | gpg --batch --import
             
             # Verify key import and trust it ultimately to avoid "There is no assurance this key belongs to the named user"
-            KEY_ID="E28C8DAF881F77322556C886B5549E0EA516EE25"
-            echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key $KEY_ID trust
-          else
+             KEY_ID="E28C8DAF881F77322556C886B5549E0EA516EE25"
+             echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key $KEY_ID trust
+
+             # Test signing a dummy file to ensure GPG agent is ready and unlocked
+             echo "test" > test.txt
+             gpg --batch --yes --sign test.txt
+             rm test.txt test.txt.gpg
+           else
             echo "No GPG private key provided, skipping import."
           fi
       - name: Build Flatpak
