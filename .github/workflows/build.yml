@@ -160,9 +160,8 @@ jobs:
             # Import key
             echo "$GPG_PRIVATE_KEY" | gpg --batch --import
             
-            # Verify key import and trust it ultimately to avoid "There is no assurance this key belongs to the named user"
-             KEY_ID="E28C8DAF881F77322556C886B5549E0EA516EE25"
-             echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key $KEY_ID trust
+            # Set ultimate trust for the key using import-ownertrust (non-interactive)
+             echo "E28C8DAF881F77322556C886B5549E0EA516EE25:6:" | gpg --import-ownertrust
 
              # Test signing a dummy file to ensure GPG agent is ready and unlocked
              echo "test" > test.txt
