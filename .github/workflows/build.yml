@@ -172,7 +172,8 @@ jobs:
              KEYGRIP=$(gpg --with-colons --list-secret-keys E28C8DAF881F77322556C886B5549E0EA516EE25 | grep grp | cut -d: -f10)
              if [ -n "$KEYGRIP" ]; then
                 echo "Presetting passphrase for keygrip: $KEYGRIP"
-                /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP" <<< ""
+                # Use echo -n to pipe empty string, as <<< "" might be treated as newline only
+                echo -n "" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"
              else
                 echo "Warning: Could not find keygrip for GPG key."
              fi
