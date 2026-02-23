@@ -171,8 +171,8 @@ jobs:
           else
             echo "No GPG key found, skipping signing."
           fi
-          
-          flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo $GPG_ARGS build-dir flatpak/org.essenmelia.Essenmelia.yml
+          # 构建 Flatpak
+          flatpak-builder -v --user --install-deps-from=flathub --force-clean --repo=repo $GPG_ARGS build-dir flatpak/org.essenmelia.Essenmelia.yml
           # 打包
           flatpak build-bundle repo essenmelia.flatpak org.essenmelia.Essenmelia
       - name: Zip Linux Build
