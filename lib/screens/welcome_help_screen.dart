@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/ui_state_provider.dart';
 
@@ -237,11 +238,19 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                step.icon,
-                                color: step.color,
-                                size: isLandscape ? 48 : 80,
-                              ),
+                              child: index == 0
+                                  ? Center(
+                                      child: SvgPicture.asset(
+                                        'assets/images/launcher_icon.svg',
+                                        width: isLandscape ? 80 : 160,
+                                        height: isLandscape ? 80 : 160,
+                                      ),
+                                    )
+                                  : Icon(
+                                      step.icon,
+                                      color: step.color,
+                                      size: isLandscape ? 48 : 80,
+                                    ),
                             )
                             .animate(key: ValueKey(index))
                             .scale(duration: 800.ms, curve: Curves.elasticOut)

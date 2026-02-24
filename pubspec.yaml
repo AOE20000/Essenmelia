@@ -58,6 +58,7 @@ dependencies:
   video_player: ^2.11.0
   chewie: ^1.13.0
   package_info_plus: ^9.0.0
+  flutter_svg: ^2.2.3
   # receive_intent: ^0.2.7
 
 dev_dependencies:

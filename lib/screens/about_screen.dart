@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/ui_state_provider.dart';
 import '../services/update_check_service.dart';
@@ -21,17 +22,15 @@ class AboutScreen extends ConsumerWidget {
         children: [
           const SizedBox(height: 24),
           // App Icon & Name
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              size: 64,
-              color: theme.colorScheme.primary,
+          SizedBox(
+            width: 120,
+            height: 120,
+            child: Center(
+              child: SvgPicture.asset(
+                'assets/images/launcher_icon.svg',
+                width: 100,
+                height: 100,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -82,9 +81,9 @@ class AboutScreen extends ConsumerWidget {
                     .checkForUpdates(manual: true);
 
                 if (!hasUpdate && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.isLatestVersion)),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(l10n.isLatestVersion)));
                 }
               },
             ),
@@ -97,7 +96,7 @@ class AboutScreen extends ConsumerWidget {
               ),
             ),
           ]),
-          
+
           const SizedBox(height: 24),
           Text(
             '© 2026 Essenmelia Team',
