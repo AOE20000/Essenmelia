@@ -40,8 +40,8 @@ android {
         // Flutter 3.38.9 (Preview) 建议 minSdk 至少为 24
         minSdk = 24
         targetSdk = 36
-        versionCode = 30101
-        versionName = "3.1.0"
+        versionCode = 30200
+        versionName = "3.2.0"
         
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")

@@ -2690,6 +2690,12 @@ abstract class AppLocalizations {
   /// **'First Char (A, B, C)'**
   String get markerFirstChar;
 
+  /// Option for slider-based step markers
+  ///
+  /// In en, this message translates to:
+  /// **'Slider'**
+  String get markerSlider;
+
   /// Label for custom count suffix setting
   ///
   /// In en, this message translates to:

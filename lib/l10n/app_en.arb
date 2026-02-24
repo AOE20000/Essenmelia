@@ -1951,6 +1951,10 @@
   "@markerFirstChar": {
     "description": "Option for first character step markers"
   },
+  "markerSlider": "Slider",
+  "@markerSlider": {
+    "description": "Option for slider-based step markers"
+  },
   "customCountSuffix": "Custom Count Suffix",
   "@customCountSuffix": {
     "description": "Label for custom count suffix setting"

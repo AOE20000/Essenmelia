@@ -75,6 +75,13 @@ await essenmelia.call('enableFeature', { active: "true" }); // 自动转为 true
 | `deleteEvent` | `deleteEvents` | 删除任务 | `{ id: "event-uuid-123" }` |
 | `updateEvent` | `updateEvents` | 更新任务详情 | `{ event: eventObject }` |
 | `addStep` | `updateEvents` | 为任务添加子步骤 | `{ eventId: "...", description: "第一步..." }` |
+
+> **提示：关于 `stepDisplayMode` (高级选项)**
+> 系统支持多种步骤显示模式，默认为 `number`。
+> - `number`: 步骤以 1, 2, 3... 序号显示。
+> - `firstChar`: 步骤以描述的首字符显示。
+> - `slider`: **条型模式 (特殊用途)**。在详情页显示为双控制柄滑动条，适用于书籍进度或超长线性任务。配合 `stepSuffix` (如 "页") 使用。
+
 | `setSearchQuery` | `navigation` | 触发全局搜索过滤 | `{ query: "关键字" }` |
 | `publishEvent` | `systemInfo` | 发送系统广播 (跨扩展通信) | `{ name: "custom_event", data: {}, extensionId: "..." }` |
 

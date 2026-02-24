@@ -17,6 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
 import 'services/command_gateway_service.dart';
+import 'services/app_initialization_service.dart';
 import 'dart:io';
 
 void main() async {
@@ -119,8 +120,6 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
     _initIntentHandler();
-    // Initialize Command Gateway for deep links
-    ref.read(commandGatewayServiceProvider).init();
   }
 
   void _initIntentHandler() {
@@ -153,6 +152,13 @@ class _MyAppState extends ConsumerState<MyApp> {
     final themeModeOption = ref.watch(themeProvider);
     final locale = ref.watch(localeProvider);
     final displaySettings = ref.watch(displaySettingsProvider);
+
+    // Trigger app-wide initialization service
+    // This ensures extensions are loaded only after DB is ready
+    ref.watch(appInitializationServiceProvider);
+
+    // Initialize Command Gateway for deep links
+    ref.watch(commandGatewayServiceProvider);
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -205,7 +211,9 @@ class _MyAppState extends ConsumerState<MyApp> {
             // Windows 平台默认字体修复
             if (Platform.isWindows) {
               return baseTheme.copyWith(
-                textTheme: baseTheme.textTheme.apply(fontFamily: 'Microsoft YaHei'),
+                textTheme: baseTheme.textTheme.apply(
+                  fontFamily: 'Microsoft YaHei',
+                ),
               );
             }
             return baseTheme;

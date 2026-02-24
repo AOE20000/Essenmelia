@@ -81,22 +81,27 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
   Widget _buildAdvancedSettingsButton(ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 0,
+    return Material(
       color: theme.colorScheme.surfaceContainerLow,
-      margin: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () => _showAdvancedSettings(theme),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Icon(
-                Icons.settings_suggest_outlined,
-                size: 22,
-                color: theme.colorScheme.primary,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.settings_suggest_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -107,6 +112,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                       l10n.advancedSettingsAndReminders,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -120,22 +126,20 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 ),
               ),
               if (_reminderTime != null)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
+                Badge(
+                  backgroundColor: theme.colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  label: const Icon(
                     Icons.notifications_active,
-                    size: 12,
+                    size: 10,
                     color: Colors.white,
                   ),
                 ),
               const SizedBox(width: 8),
               Icon(
-                Icons.chevron_right_rounded,
-                color: theme.colorScheme.onSurfaceVariant,
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -271,6 +275,11 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                       value: 'firstChar',
                       label: Text(l10n.markerFirstChar),
                       icon: const Icon(Icons.sort_by_alpha),
+                    ),
+                    ButtonSegment(
+                      value: 'slider',
+                      label: Text(l10n.markerSlider),
+                      icon: const Icon(Icons.linear_scale),
                     ),
                   ],
                   selected: {_stepDisplayMode},
@@ -1756,6 +1765,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Title Field - Large and bold, but within a container to define the text area
         TextField(
           controller: _titleController,
           contentInsertionConfiguration: ContentInsertionConfiguration(
@@ -1770,30 +1780,57 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
+            letterSpacing: -0.5,
           ),
           decoration: InputDecoration(
             hintText: l10n.title,
             hintStyle: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              fontWeight: FontWeight.bold,
             ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerLowest,
+            border: OutlineInputBorder(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderSide: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderSide: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             suffixIcon: _wasAutoFilled
-                ? Tooltip(
-                    message: l10n.autoFilledByAi,
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: theme.colorScheme.primary,
-                      size: 20,
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Tooltip(
+                      message: l10n.autoFilledByAi,
+                      child: Icon(
+                        Icons.auto_awesome,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
                     ),
                   )
                 : null,
           ),
         ),
-        const SizedBox(height: 8),
+        
+        // Description Field - Integrated with title via border
         TextField(
           controller: _descController,
           maxLines: null,
+          minLines: 5,
           contentInsertionConfiguration: ContentInsertionConfiguration(
             onContentInserted: _handleContentInsertion,
             allowedMimeTypes: const [
@@ -1810,10 +1847,30 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           decoration: InputDecoration(
             hintText: l10n.description,
             hintStyle: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerLowest,
+            border: OutlineInputBorder(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderSide: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderSide: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           ),
         ),
       ],

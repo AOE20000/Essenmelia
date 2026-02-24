@@ -1392,6 +1392,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get markerFirstChar => '首字';
 
   @override
+  String get markerSlider => '条型';
+
+  @override
   String get customCountSuffix => '自定义事件后缀';
 
   @override

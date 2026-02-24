@@ -383,29 +383,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           ),
                         ),
                         // Completion Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: event.isCompleted
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            event.isCompleted
-                                ? l10n.statusCompleted
-                                : l10n.statusInProgress,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: event.isCompleted
-                                  ? theme.colorScheme.onPrimaryContainer
-                                  : theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                        _buildStatusBadge(theme, l10n, event),
                       ],
                     ),
                     if (event.tags != null && event.tags!.isNotEmpty) ...[
@@ -536,7 +514,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _StepsList(event: event),
+                // _StepsList(event: event), // Removed: moving to SliverList for performance
+              ]),
+            ),
+          ),
+
+          // Steps List (Virtualized)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: _buildVirtualizedStepsList(context, event, theme, l10n),
+          ),
+
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
                 const SizedBox(height: 24),
                 _AddStepButton(eventId: event.id),
                 const SizedBox(height: 48),
@@ -544,6 +536,166 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVirtualizedStepsList(
+    BuildContext context,
+    Event event,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    if (event.steps.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.checklist_rounded,
+                size: 48,
+                color: theme.colorScheme.outline,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.noStepsYet,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final step = event.steps[index];
+        final isCompleted = step.completed;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            elevation: 0,
+            color: isCompleted
+                ? theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  )
+                : theme.colorScheme.surfaceContainerLow,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: isCompleted
+                    ? Colors.transparent
+                    : theme.colorScheme.outlineVariant,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () =>
+                  ref.read(eventsProvider.notifier).toggleStep(event.id, index),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? theme.colorScheme.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isCompleted
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                          width: 2,
+                        ),
+                      ),
+                      child: isCompleted
+                          ? Icon(
+                              Icons.check,
+                              size: 16,
+                              color: theme.colorScheme.onPrimary,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        step.description,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: isCompleted
+                              ? theme.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.7,
+                                )
+                              : theme.colorScheme.onSurface,
+                          decorationColor: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }, childCount: event.steps.length),
+    );
+  }
+
+  Widget _buildStatusBadge(
+    ThemeData theme,
+    AppLocalizations l10n,
+    Event event,
+  ) {
+    final bool isCompleted = event.isCompleted;
+    final bool isNotStarted =
+        event.steps.isNotEmpty && event.steps.every((s) => !s.completed);
+
+    String label = l10n.statusInProgress;
+    Color bgColor = theme.colorScheme.surfaceContainerHighest;
+    Color textColor = theme.colorScheme.onSurfaceVariant;
+
+    if (isCompleted) {
+      label = l10n.statusCompleted;
+      bgColor = theme.colorScheme.primaryContainer;
+      textColor = theme.colorScheme.onPrimaryContainer;
+    } else if (isNotStarted) {
+      label = l10n.statusNotStarted;
+      // 使用更淡的颜色表示未开始
+      bgColor = theme.colorScheme.surfaceContainerLow;
+      textColor = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: isNotStarted
+            ? Border.all(color: theme.colorScheme.outlineVariant, width: 0.5)
+            : null,
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -621,126 +773,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         context.pop();
       }
     }
-  }
-}
-
-class _StepsList extends ConsumerWidget {
-  final Event event;
-
-  const _StepsList({required this.event});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    if (event.steps.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.checklist_rounded,
-              size: 48,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.noStepsYet,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: List.generate(event.steps.length, (index) {
-        final step = event.steps[index];
-        final isCompleted = step.completed;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Card(
-            elevation: 0,
-            color: isCompleted
-                ? theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
-                  )
-                : theme.colorScheme.surfaceContainerLow,
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: isCompleted
-                    ? Colors.transparent
-                    : theme.colorScheme.outlineVariant,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () =>
-                  ref.read(eventsProvider.notifier).toggleStep(event.id, index),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: isCompleted
-                            ? theme.colorScheme.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isCompleted
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                          width: 2,
-                        ),
-                      ),
-                      child: isCompleted
-                          ? Icon(
-                              Icons.check,
-                              size: 16,
-                              color: theme.colorScheme.onPrimary,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        step.description,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          decoration: isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: isCompleted
-                              ? theme.colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.7,
-                                )
-                              : theme.colorScheme.onSurface,
-                          decorationColor: theme.colorScheme.outline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
   }
 }
 
@@ -844,6 +876,9 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   final List<GlobalKey> _itemKeys = [];
   final List<Rect> _itemBounds = [];
 
+  // 为条型模式添加本地状态以保证拖动流畅
+  RangeValues? _sliderValues;
+
   void _updateItemKeys(int count) {
     if (_itemKeys.length != count) {
       _itemKeys.clear();
@@ -939,12 +974,272 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     });
   }
 
+  void _updateFromSlider(RangeValues values) {
+    final progress = values.start.round();
+    final total = values.end.round();
+    final currentSteps = widget.event.steps;
+
+    final List<EventStep> newSteps = [];
+    final suffix = widget.event.stepSuffix ?? "";
+
+    for (int i = 0; i < total; i++) {
+      if (i < currentSteps.length) {
+        final oldStep = currentSteps[i];
+        newSteps.add(
+          EventStep()
+            ..description = oldStep.description
+            ..timestamp = oldStep.timestamp
+            ..completed = i < progress,
+        );
+      } else {
+        // 新增步骤
+        newSteps.add(
+          EventStep()
+            ..description = "${i + 1} $suffix"
+            ..timestamp = DateTime.now()
+            ..completed = i < progress,
+        );
+      }
+    }
+
+    ref.read(eventsProvider.notifier).updateSteps(widget.event.id, newSteps);
+  }
+
+  Widget _buildMicroAdjustButton(
+    ThemeData theme,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton.filledTonal(
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        iconSize: 18,
+        icon: Icon(icon),
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    _updateItemKeys(widget.event.steps.length);
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final isSlider = widget.event.stepDisplayMode == 'slider';
+    final stepCount = widget.event.steps.length;
 
+    if (isSlider) {
+      // ... existing slider logic ...
+      final currentProgress = widget.event.steps
+          .where((s) => s.completed)
+          .length
+          .toDouble();
+      final currentTotal = widget.event.steps.length.toDouble();
+
+      // 初始化本地状态
+      _sliderValues ??= RangeValues(currentProgress, currentTotal);
+
+      // 如果外部数据发生变化且不是因为拖动导致的（例如撤销），则同步外部数据
+      if (_startDragIndex == null &&
+          (_sliderValues!.start != currentProgress ||
+              _sliderValues!.end != currentTotal)) {
+        _sliderValues = RangeValues(currentProgress, currentTotal);
+      }
+
+      // 优化手感：在拖动过程中保持最大值稳定，避免因比例变化导致的灵敏度异常
+      // 使用 currentTotal（数据库中的真实值）来计算最大值，而不是使用正在拖动的值
+      double effectiveMax;
+      if (currentTotal < 100) {
+        effectiveMax = 100.0;
+      } else {
+        // 向上取整到最近的 100，并始终保持至少 50 的增长余量
+        effectiveMax = (currentTotal / 100).ceil() * 100.0;
+        if (currentTotal > effectiveMax - 20) {
+          effectiveMax += 100.0;
+        }
+      }
+
+      // 极端情况下的安全检查：确保当前滑块不会越界
+      if (_sliderValues!.end > effectiveMax) {
+        effectiveMax = _sliderValues!.end;
+      }
+
+      return Card(
+        elevation: 0,
+        color: theme.colorScheme.surfaceContainer,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.auto_stories_rounded,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.quickEdit,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    "${_sliderValues!.start.round()} / ${_sliderValues!.end.round()}",
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: RangeSlider(
+                      values: _sliderValues!,
+                      min: 0,
+                      max: effectiveMax,
+                      divisions:
+                          effectiveMax.toInt() > 0 ? effectiveMax.toInt() : 1,
+                      labels: RangeLabels(
+                        _sliderValues!.start.round().toString(),
+                        _sliderValues!.end.round().toString(),
+                      ),
+                      onChanged: (values) {
+                        setState(() {
+                          _sliderValues = values;
+                          _startDragIndex = 999; // 标记正在拖动以阻止外部同步
+                        });
+                      },
+                      onChangeEnd: (values) {
+                        setState(() => _startDragIndex = null);
+                        _updateFromSlider(values);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    children: [
+                      _buildMicroAdjustButton(
+                        theme,
+                        Icons.add_rounded,
+                        () {
+                          final newStart = (_sliderValues!.start + 1)
+                              .clamp(0.0, _sliderValues!.end);
+                          final newValues =
+                              RangeValues(newStart, _sliderValues!.end);
+                          setState(() => _sliderValues = newValues);
+                          _updateFromSlider(newValues);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMicroAdjustButton(
+                        theme,
+                        Icons.remove_rounded,
+                        () {
+                          final newStart = (_sliderValues!.start - 1)
+                              .clamp(0.0, _sliderValues!.end);
+                          final newValues =
+                              RangeValues(newStart, _sliderValues!.end);
+                          setState(() => _sliderValues = newValues);
+                          _updateFromSlider(newValues);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 性能优化：如果步骤过多（> 120），在常规模式下引导切换到条型模式
+    if (stepCount > 120) {
+      return Card(
+        elevation: 0,
+        color: theme.colorScheme.surfaceContainer,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        child: InkWell(
+          onTap: () {
+            ref.read(eventsProvider.notifier).updateEvent(
+                  id: widget.event.id,
+                  stepDisplayMode: 'slider',
+                );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.speed_rounded,
+                      color: theme.colorScheme.primary, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "步骤过多 ($stepCount)",
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "建议切换到“条型”模式以获得更流畅的体验",
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    _updateItemKeys(widget.event.steps.length);
     return Card(
       elevation: 0,
       color: theme.colorScheme.surfaceContainer,
@@ -988,8 +1283,8 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                   runSpacing: 12,
                   alignment: WrapAlignment.center,
                   children: List.generate(widget.event.steps.length, (index) {
-                    final isBeingDragged =
-                        _startDragIndex != null &&
+                    final isBeingDragged = _startDragIndex != null &&
+                        _startDragIndex != 999 &&
                         ((index >= _startDragIndex! &&
                                 index <=
                                     (_currentDragIndex ?? _startDragIndex!)) ||

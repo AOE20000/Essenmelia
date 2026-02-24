@@ -471,6 +471,7 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final isSlider = event.stepDisplayMode == 'slider';
 
     return Column(
       children: [
@@ -497,6 +498,13 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                       ],
                     ),
                   ),
+                )
+              : isSlider
+              ? ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                  itemCount: event.steps.length,
+                  itemBuilder: (context, index) =>
+                      _buildStepItem(event, index, theme, colorScheme, l10n),
                 )
               : ReorderableListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
@@ -532,108 +540,8 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                       child: child,
                     );
                   },
-                  itemBuilder: (context, index) {
-                    final step = event.steps[index];
-                    final isSelected = _selectedStepIndices.contains(index);
-
-                    return Container(
-                      key: ValueKey(
-                        'step_${step.timestamp.millisecondsSinceEpoch}_$index',
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: Material(
-                        color: isSelected
-                            ? colorScheme.primaryContainer
-                            : colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(16),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            if (_selectedStepIndices.isNotEmpty) {
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedStepIndices.remove(index);
-                                } else {
-                                  _selectedStepIndices.add(index);
-                                }
-                              });
-                            } else {
-                              _showEditStepDialog(event, index, step);
-                            }
-                          },
-                          onLongPress: () {
-                            setState(() {
-                              _selectedStepIndices.add(index);
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: isSelected,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  onChanged: (val) {
-                                    setState(() {
-                                      if (val == true) {
-                                        _selectedStepIndices.add(index);
-                                      } else {
-                                        _selectedStepIndices.remove(index);
-                                      }
-                                    });
-                                  },
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    step.description,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: isSelected
-                                          ? colorScheme.onPrimaryContainer
-                                          : colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                                ReorderableDragStartListener(
-                                  index: index,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Icon(
-                                      Icons.drag_indicator_rounded,
-                                      color: colorScheme.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: colorScheme.error.withValues(
-                                      alpha: 0.7,
-                                    ),
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    final newSteps = List<EventStep>.from(
-                                      event.steps,
-                                    );
-                                    newSteps.removeAt(index);
-                                    ref
-                                        .read(eventsProvider.notifier)
-                                        .updateSteps(event.id, newSteps);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                  itemBuilder: (context, index) =>
+                      _buildStepItem(event, index, theme, colorScheme, l10n),
                 ),
         ),
         _buildInputArea(
@@ -645,6 +553,109 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildStepItem(
+    Event event,
+    int index,
+    ThemeData theme,
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+  ) {
+    final step = event.steps[index];
+    final isSelected = _selectedStepIndices.contains(index);
+    final isSlider = event.stepDisplayMode == 'slider';
+
+    return Container(
+      key: ValueKey('step_${step.timestamp.millisecondsSinceEpoch}_$index'),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: isSelected
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            if (_selectedStepIndices.isNotEmpty) {
+              setState(() {
+                if (isSelected) {
+                  _selectedStepIndices.remove(index);
+                } else {
+                  _selectedStepIndices.add(index);
+                }
+              });
+            } else {
+              _showEditStepDialog(event, index, step);
+            }
+          },
+          onLongPress: () {
+            setState(() {
+              _selectedStepIndices.add(index);
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: isSelected,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      if (val == true) {
+                        _selectedStepIndices.add(index);
+                      } else {
+                        _selectedStepIndices.remove(index);
+                      }
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Text(
+                    step.description,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: isSelected
+                          ? colorScheme.onPrimaryContainer
+                          : colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (!isSlider)
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: colorScheme.error.withValues(alpha: 0.7),
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    final newSteps = List<EventStep>.from(event.steps);
+                    newSteps.removeAt(index);
+                    ref
+                        .read(eventsProvider.notifier)
+                        .updateSteps(event.id, newSteps);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

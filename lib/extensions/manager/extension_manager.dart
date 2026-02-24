@@ -7,6 +7,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'dart:io';
+import 'package:archive/archive.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../core/base_extension.dart';
 import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
@@ -202,6 +207,9 @@ class ExtensionManager extends ChangeNotifier
 
     _installedExtensions.removeWhere((id, ext) => id != 'external_call');
 
+    // 收集需要加载的扩展 ID
+    final List<String> toLoad = [];
+
     for (var entry in installed.entries) {
       final json = entry.value;
       try {
@@ -223,27 +231,43 @@ class ExtensionManager extends ChangeNotifier
         }
 
         await _verifyIntegrityAsync(extId, json);
-
         _installedExtensions[extId] = ProxyExtension(metadata);
 
-        // Auto-load if running
         final auth = _ref.read(extensionAuthStateProvider.notifier);
         if (auth.isRunning(extId)) {
-          // If extension is already active, force reload to apply updates
-          if (_activeExtensions.containsKey(extId)) {
-            debugPrint('Reloading updated extension: $extId');
-            final oldExt = _activeExtensions.remove(extId);
-            await oldExt?.onDispose();
-          }
-
-          // Fire and forget, but notify when done so UI updates
-          _loadExtension(extId).whenComplete(() => notifyListeners());
+          toLoad.add(extId);
         }
       } catch (e) {
-        debugPrint('Failed to load extension ${entry.key}: $e');
+        debugPrint('Failed to parse extension ${entry.key}: $e');
       }
     }
+
     notifyListeners();
+
+    // 分批次异步加载，避免阻塞主线程
+    _sequentialLoad(toLoad);
+  }
+
+  Future<void> _sequentialLoad(List<String> ids) async {
+    for (var i = 0; i < ids.length; i++) {
+      final id = ids[i];
+
+      // 每加载 2 个扩展或在每个扩展之间插入一个微小的延迟，给 UI 渲染留出空间
+      if (i > 0) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
+      try {
+        if (_activeExtensions.containsKey(id)) {
+          final oldExt = _activeExtensions.remove(id);
+          await oldExt?.onDispose();
+        }
+        await _loadExtension(id);
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Sequential load failed for $id: $e');
+      }
+    }
   }
 
   Future<void> _verifyIntegrityAsync(String extId, String json) async {
@@ -329,14 +353,129 @@ class ExtensionManager extends ChangeNotifier
 
   /// Export extension as ZIP
   Future<void> exportExtensionAsZip(String id) async {
-    // Implementation TBD - requires zipping logic
-    // For now, show not implemented message
     final context = navigatorKey.currentContext;
-    if (context != null && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('导出功能暂未实现')));
+    final ext = _installedExtensions[id];
+
+    if (ext == null) {
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Extension not found')));
+      }
+      return;
     }
+
+    try {
+      final metadata = ext.metadata;
+      final archive = Archive();
+
+      // 1. view.yaml
+      String viewContent;
+      if (metadata.view is String) {
+        viewContent = metadata.view;
+      } else {
+        // Fallback: JSON is valid YAML
+        viewContent = const JsonEncoder.withIndent('  ').convert(metadata.view);
+      }
+      archive.addFile(
+        ArchiveFile(
+          'view.yaml',
+          utf8.encode(viewContent).length,
+          utf8.encode(viewContent),
+        ),
+      );
+
+      // 2. main.js
+      if (metadata.script != null) {
+        archive.addFile(
+          ArchiveFile(
+            'main.js',
+            utf8.encode(metadata.script!).length,
+            utf8.encode(metadata.script!),
+          ),
+        );
+      }
+
+      // 3. README.md
+      final readmeContent = _generateReadme(metadata);
+      archive.addFile(
+        ArchiveFile(
+          'README.md',
+          utf8.encode(readmeContent).length,
+          utf8.encode(readmeContent),
+        ),
+      );
+
+      // Encode ZIP
+      final zipEncoder = ZipEncoder();
+      final zipData = zipEncoder.encode(archive);
+
+      // Save or Share
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        final fileName =
+            '${metadata.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')}_v${metadata.version}.zip';
+        final result = await FilePicker.platform.saveFile(
+          dialogTitle: 'Export Extension Source',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['zip'],
+        );
+
+        if (result != null) {
+          final file = File(result);
+          await file.writeAsBytes(zipData);
+          if (context != null && context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Exported to $result')));
+          }
+        }
+      } else {
+        // Mobile: Share
+        final tempDir = await getTemporaryDirectory();
+        final fileName = '${metadata.id}.zip';
+        final file = File('${tempDir.path}/$fileName');
+        await file.writeAsBytes(zipData);
+
+        await Share.shareXFiles([
+          XFile(file.path),
+        ], subject: 'Extension Source: ${metadata.name}');
+      }
+    } catch (e) {
+      debugPrint('Export failed: $e');
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+      }
+    }
+  }
+
+  String _generateReadme(ExtensionMetadata metadata) {
+    final metaJson = const JsonEncoder.withIndent('  ').convert({
+      'id': metadata.id,
+      'name': metadata.name,
+      'description': metadata.description,
+      'author': metadata.author,
+      'version': metadata.version,
+      'icon_code': metadata.icon.codePoint,
+      'tags': metadata.tags,
+      'permissions': metadata.requiredPermissions.map((e) => e.name).toList(),
+    });
+
+    return '''
+# ${metadata.name}
+
+${metadata.description}
+
+---
+
+## Metadata
+<!-- ESSENMELIA_EXTEND $metaJson -->
+
+---
+Generated by Essenmelia
+''';
   }
 
   /// Copy GitHub Link

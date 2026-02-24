@@ -1436,6 +1436,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markerFirstChar => 'First Char (A, B, C)';
 
   @override
+  String get markerSlider => 'Slider';
+
+  @override
   String get customCountSuffix => 'Custom Count Suffix';
 
   @override
