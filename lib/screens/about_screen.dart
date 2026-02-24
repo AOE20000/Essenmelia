@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/ui_state_provider.dart';
 import '../services/update_check_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +13,7 @@ class AboutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final content = SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -34,7 +36,7 @@ class AboutScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Essenmelia',
+            l10n.appTitle,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -45,12 +47,20 @@ class AboutScreen extends ConsumerWidget {
             builder: (context, snapshot) {
               final version = snapshot.data?.version ?? '...';
               return Text(
-                'Version $version',
+                l10n.extensionVersion(version),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
               );
             },
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.appDescription,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
           ),
           const SizedBox(height: 48),
 
@@ -58,12 +68,12 @@ class AboutScreen extends ConsumerWidget {
           _buildActionCard(theme, [
             _AboutActionItem(
               icon: Icons.system_update_rounded,
-              title: '检查应用更新',
+              title: l10n.checkForUpdates,
               onTap: () async {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('正在检查更新...'),
-                    duration: Duration(seconds: 1),
+                  SnackBar(
+                    content: Text(l10n.checkingForUpdates),
+                    duration: const Duration(seconds: 1),
                   ),
                 );
 
@@ -73,14 +83,14 @@ class AboutScreen extends ConsumerWidget {
 
                 if (!hasUpdate && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('当前已是最新版本')),
+                    SnackBar(content: Text(l10n.isLatestVersion)),
                   );
                 }
               },
             ),
             _AboutActionItem(
               icon: Icons.code_rounded,
-              title: 'GitHub 仓库',
+              title: l10n.githubRepository,
               onTap: () => launchUrl(
                 Uri.parse('https://github.com/AOE20000/Essenmelia'),
                 mode: LaunchMode.externalApplication,
@@ -102,7 +112,7 @@ class AboutScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isSidePanel ? Colors.transparent : null,
       appBar: AppBar(
-        title: const Text('关于'),
+        title: Text(l10n.about),
         centerTitle: isSidePanel ? false : null,
         elevation: 0,
         backgroundColor: Colors.transparent,

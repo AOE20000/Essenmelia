@@ -388,7 +388,7 @@ class SettingsSheet extends ConsumerWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.info_outline_rounded),
-                    title: const Text('关于'),
+                    title: Text(l10n.about),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       if (screenWidth >= 1024) {

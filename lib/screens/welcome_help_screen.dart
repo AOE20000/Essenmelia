@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/ui_state_provider.dart';
 
@@ -163,13 +164,11 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
     final colorScheme = theme.colorScheme;
     final steps = [
       _GuideStep(
-        title: 'Essenmelia',
+        title: l10n.appTitle,
         subtitle: l10n.welcomeSubtitle1,
         content: l10n.welcomeContent1,
         icon: Icons.auto_awesome_rounded,
         color: colorScheme.primary,
-        image:
-            'assets/images/welcome_1.png', // Optional: could use illustration
       ),
       _GuideStep(
         title: l10n.privacyFirst,
@@ -182,8 +181,15 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
         title: l10n.highlyCustomizable,
         subtitle: l10n.welcomeSubtitle3,
         content: l10n.welcomeContent3,
-        icon: Icons.dashboard_customize_rounded,
+        icon: Icons.track_changes_rounded,
         color: colorScheme.tertiary,
+      ),
+      _GuideStep(
+        title: l10n.powerfulExtensions,
+        subtitle: l10n.welcomeSubtitle4,
+        content: l10n.welcomeContent4,
+        icon: Icons.extension_rounded,
+        color: Colors.orange,
       ),
     ];
 
@@ -210,87 +216,95 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(milliseconds: 1000),
-                          curve: Curves.elasticOut,
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: value,
-                              child: Transform.rotate(
-                                angle: (1.0 - value) * 0.2,
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: isLandscape ? 100 : 180,
-                            height: isLandscape ? 100 : 180,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  step.color.withValues(alpha: 0.2),
-                                  step.color.withValues(alpha: 0.05),
+                        Container(
+                              width: isLandscape ? 100 : 180,
+                              height: isLandscape ? 100 : 180,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    step.color.withValues(alpha: 0.2),
+                                    step.color.withValues(alpha: 0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(48),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: step.color.withValues(alpha: 0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(48),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: step.color.withValues(alpha: 0.1),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              step.icon,
-                              color: step.color,
-                              size: isLandscape ? 48 : 80,
-                            ),
-                          ),
-                        ),
+                              child: Icon(
+                                step.icon,
+                                color: step.color,
+                                size: isLandscape ? 48 : 80,
+                              ),
+                            )
+                            .animate(key: ValueKey(index))
+                            .scale(duration: 800.ms, curve: Curves.elasticOut)
+                            .rotate(
+                              begin: 0.2,
+                              end: 0,
+                              duration: 800.ms,
+                              curve: Curves.elasticOut,
+                            )
+                            .fadeIn(duration: 400.ms),
                         SizedBox(height: isLandscape ? 24 : 64),
                         Text(
-                          step.title,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: theme.colorScheme.onSurface,
-                            letterSpacing: -1,
-                            fontSize: isLandscape ? 28 : null,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                              step.title,
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: theme.colorScheme.onSurface,
+                                letterSpacing: -1,
+                                fontSize: isLandscape ? 28 : null,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                            .animate(key: ValueKey('title_$index'))
+                            .fadeIn(delay: 200.ms, duration: 400.ms)
+                            .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
                         SizedBox(height: isLandscape ? 8 : 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: step.color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            step.subtitle,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: step.color,
-                              fontWeight: FontWeight.bold,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: step.color.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                step.subtitle,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: step.color,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                            .animate(key: ValueKey('subtitle_$index'))
+                            .fadeIn(delay: 300.ms, duration: 400.ms)
+                            .scale(
+                              begin: const Offset(0.8, 0.8),
+                              end: const Offset(1, 1),
+                              curve: Curves.easeOut,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
                         SizedBox(height: isLandscape ? 16 : 32),
                         Text(
-                          step.content,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            height: 1.6,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontSize: 17,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                              step.content,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                height: 1.6,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontSize: 17,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                            .animate(key: ValueKey('content_$index'))
+                            .fadeIn(delay: 400.ms, duration: 400.ms)
+                            .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
                       ],
                     ),
                   ),
@@ -875,7 +889,6 @@ class _GuideStep {
   final String content;
   final IconData icon;
   final Color color;
-  final String? image;
 
   _GuideStep({
     required this.title,
@@ -883,7 +896,6 @@ class _GuideStep {
     required this.content,
     required this.icon,
     required this.color,
-    this.image,
   });
 }
 

@@ -6,16 +6,18 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'notification_service.dart';
+import '../l10n/l10n_provider.dart';
 
 /// Service to check for app updates from GitHub repository description
 class UpdateCheckService {
+  final Ref _ref;
   static const String _repoUrl = 'https://github.com/AOE20000/Essenmelia';
   static const String _apiUrl =
       'https://api.github.com/repos/AOE20000/Essenmelia';
   static const String _lastCheckKey = 'lastUpdateCheckTimestamp';
   static const int _checkIntervalDays = 14;
 
-  UpdateCheckService();
+  UpdateCheckService(this._ref);
 
   /// Initialize and check for updates if interval has passed
   Future<void> init() async {
@@ -107,13 +109,14 @@ class UpdateCheckService {
   }
 
   void _showUpdateNotification(String version) {
+    final l10n = _ref.read(l10nProvider);
     NotificationService().showNotification(
       id: 999, // Unique ID for update notification
-      title: '发现新版本: $version',
-      body: '点击前往 GitHub 仓库下载更新',
+      title: l10n.newVersionAvailable(version),
+      body: l10n.clickToDownload,
       payload: 'app_update_available',
-      channelName: '应用更新',
-      channelDescription: '提醒应用版本更新',
+      channelName: l10n.updateChannelName,
+      channelDescription: l10n.updateChannelDescription,
     );
   }
 
@@ -126,5 +129,5 @@ class UpdateCheckService {
 }
 
 final updateCheckServiceProvider = Provider<UpdateCheckService>((ref) {
-  return UpdateCheckService();
+  return UpdateCheckService(ref);
 });

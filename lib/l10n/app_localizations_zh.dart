@@ -1134,6 +1134,38 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get about => '关于';
+
+  @override
+  String get checkForUpdates => '检查应用更新';
+
+  @override
+  String get checkingForUpdates => '正在检查更新...';
+
+  @override
+  String get isLatestVersion => '当前已是最新版本';
+
+  @override
+  String get githubRepository => 'GitHub 仓库';
+
+  @override
+  String get appDescription => '你的全能进度追踪与扩展枢纽';
+
+  @override
+  String newVersionAvailable(String version) {
+    return '发现新版本: $version';
+  }
+
+  @override
+  String get clickToDownload => '点击前往 GitHub 仓库下载更新';
+
+  @override
+  String get updateChannelName => '应用更新';
+
+  @override
+  String get updateChannelDescription => '提醒应用版本更新';
+
+  @override
   String get dataMaintenance => '数据维护';
 
   @override
@@ -1306,28 +1338,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get helpAndDocs => '帮助与文档';
 
   @override
-  String get welcomeSubtitle1 => '您的个人日程与灵感管理专家';
+  String get welcomeSubtitle1 => '“你的全能进度追踪与扩展枢纽”';
 
   @override
-  String get welcomeContent1 => '高效组织生活中的每一个精彩瞬间。无论是琐碎的日常，还是宏大的计划，都能在这里找到归宿。';
+  String get welcomeContent1 => 'Essenmelia 是一个高度可定制、隐私安全且跨平台的个人记录与追踪工具。';
 
   @override
-  String get privacyFirst => '隐私优先';
+  String get privacyFirst => '隐私安全与离线优先';
 
   @override
-  String get welcomeSubtitle2 => '安全、透明、可控';
+  String get welcomeSubtitle2 => '数据私有，不受干涉';
 
   @override
-  String get welcomeContent2 => '所有数据本地存储，严格权限管理，多种限制方案。';
+  String get welcomeContent2 =>
+      'Essenmelia 诞生于对“伪离线”软件的反抗——即便是本地数据，也绝不强制联网，拒绝捆绑服务。';
 
   @override
-  String get highlyCustomizable => '高度自定义';
+  String get highlyCustomizable => '万物皆可记录';
 
   @override
-  String get welcomeSubtitle3 => '随心而动，无限可能';
+  String get welcomeSubtitle3 => '凡有进展，皆可留痕';
 
   @override
-  String get welcomeContent3 => '通过强大、可控的扩展系统，您可以轻松扩展应用功能。';
+  String get welcomeContent3 => '无论是番剧电影，还是小说游戏，一切为了打造最契合你的进度展示。愿为你悉心收藏每一份热爱。';
+
+  @override
+  String get powerfulExtensions => '强大的扩展生态';
+
+  @override
+  String get welcomeSubtitle4 => '打破能力的边界';
+
+  @override
+  String get welcomeContent4 =>
+      '通过强大的插件化架构，支持自动抓取信息、应用内播放、导入第三方记录，将应用升华为个性化的媒体枢纽。';
 
   @override
   String get startExperience => '开始体验';
