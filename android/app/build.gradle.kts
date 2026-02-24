@@ -40,7 +40,7 @@ android {
         // Flutter 3.38.9 (Preview) 建议 minSdk 至少为 24
         minSdk = 24
         targetSdk = 36
-        versionCode = 30200
+        versionCode = 30300
         versionName = "3.3.0"
         
         ndk {
