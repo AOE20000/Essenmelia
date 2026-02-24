@@ -6,6 +6,7 @@ import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import 'db_manager_screen.dart';
 import '../providers/ui_state_provider.dart';
+import 'about_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SettingsSheet extends ConsumerWidget {
@@ -383,6 +384,24 @@ class SettingsSheet extends ConsumerWidget {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       ref.read(uiStateProvider.notifier).showHelp();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.info_outline_rounded),
+                    title: const Text('关于'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      if (screenWidth >= 1024) {
+                        ref.read(leftPanelContentProvider.notifier).state =
+                            LeftPanelContent.about;
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AboutScreen(),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ]),

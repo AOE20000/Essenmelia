@@ -1,7 +1,7 @@
 name: essenmelia_flutter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 3.3.0+1
+version: 3.4.0+1
 
 environment:
   sdk: ^3.10.8
@@ -57,6 +57,7 @@ dependencies:
   app_links: ^7.0.0
   video_player: ^2.11.0
   chewie: ^1.13.0
+  package_info_plus: ^9.0.0
   # receive_intent: ^0.2.7
 
 dev_dependencies:

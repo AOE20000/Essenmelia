@@ -156,6 +156,7 @@ enum LeftPanelContent {
   extensionManager,
   extensionDetails,
   extensionLogs,
+  about,
 }
 
 final leftPanelContentProvider = StateProvider<LeftPanelContent>(

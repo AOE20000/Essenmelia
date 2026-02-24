@@ -147,16 +147,18 @@ class ManageTagsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
+      backgroundColor: isSidePanel ? Colors.transparent : null,
       body: CustomScrollView(
         slivers: [
           if (isSidePanel)
             SliverAppBar(
               floating: true,
               pinned: true,
+              backgroundColor: Colors.transparent,
               title: Text(l10n.manageTags),
               actions: const [],
               leading: IconButton(
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
                 onPressed: () =>
                     ref.read(leftPanelContentProvider.notifier).state =
                         LeftPanelContent.none,

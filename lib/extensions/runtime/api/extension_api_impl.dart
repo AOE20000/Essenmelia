@@ -308,6 +308,26 @@ class ExtensionApiImpl implements ExtensionApi {
   }
 
   @override
+  void log(String message, {bool isError = false}) {
+    try {
+      _ref.read(extensionLogProvider.notifier).addLog(
+            ExtensionLogEntry(
+              extensionId: _metadata.id,
+              extensionName: _metadata.name,
+              method: isError ? 'Console Error' : 'Console Log',
+              params: {'message': message},
+              timestamp: DateTime.now(),
+              success: !isError,
+              error: isError ? message : null,
+              isUntrusted: false, // Internal log
+            ),
+          );
+    } catch (e) {
+      print('ExtensionApi: Failed to record console log: $e');
+    }
+  }
+
+  @override
   Future<dynamic> call(String method, Map<String, dynamic> params) async {
     // Automatically route based on registry metadata, removing hardcoded switch
     return await _invokeApi(method, params: params);

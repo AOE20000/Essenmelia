@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../providers/db_provider.dart';
 import '../extensions/manager/extension_manager.dart';
+import 'update_check_service.dart';
 
 /// Service to handle app-wide initialization logic
 /// Ensures extensions are loaded only after the database is ready
@@ -28,6 +29,10 @@ class AppInitializationService {
                 'AppInitializationService: Initializing Extensions (Staggered)...',
               );
               _ref.read(extensionManagerProvider);
+              
+              // Initialize update check service
+              _ref.read(updateCheckServiceProvider).init();
+              
               _extensionsInitialized = true;
             }
           });

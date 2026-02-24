@@ -106,13 +106,40 @@ class ExtensionJsEngine {
         }
         _addLog('JS: $logMessage');
         debugPrint('JS Log: $logMessage');
+
+        // Forward to system logs via API
+        try {
+          bool isError = logMessage.startsWith("ERROR:");
+          bool isWarn = logMessage.startsWith("WARN:");
+
+          String cleanMessage = logMessage;
+          if (logMessage.startsWith("LOG: ")) {
+            cleanMessage = logMessage.substring(5);
+          }
+          if (logMessage.startsWith("ERROR: ")) {
+            cleanMessage = logMessage.substring(7);
+          }
+          if (logMessage.startsWith("WARN: ")) {
+            cleanMessage = logMessage.substring(6);
+          }
+          if (logMessage.startsWith("INFO: ")) {
+            cleanMessage = logMessage.substring(6);
+          }
+
+          api.log(cleanMessage, isError: isError || isWarn);
+        } catch (_) {
+          // Ignore if API doesn't support log or other error
+        }
       });
 
       _jsRuntime.evaluate('''
         var originalLog = console.log;
-        console.log = function() {
-          var args = Array.prototype.slice.call(arguments);
-          var message = args.map(a => {
+        var originalError = console.error;
+        var originalWarn = console.warn;
+        var originalInfo = console.info;
+
+        function formatArgs(args) {
+          return args.map(a => {
             if (a === null) return "null";
             if (a === undefined) return "undefined";
             if (typeof a === 'object') {
@@ -120,8 +147,30 @@ class ExtensionJsEngine {
             }
             return String(a);
           }).join(' ');
+        }
+
+        console.log = function() {
+          var message = formatArgs(Array.prototype.slice.call(arguments));
           sendMessage('console_log', JSON.stringify(message));
           originalLog.apply(console, arguments);
+        };
+
+        console.error = function() {
+          var message = formatArgs(Array.prototype.slice.call(arguments));
+          sendMessage('console_log', JSON.stringify("ERROR: " + message));
+          originalError.apply(console, arguments);
+        };
+
+        console.warn = function() {
+          var message = formatArgs(Array.prototype.slice.call(arguments));
+          sendMessage('console_log', JSON.stringify("WARN: " + message));
+          originalWarn.apply(console, arguments);
+        };
+
+        console.info = function() {
+          var message = formatArgs(Array.prototype.slice.call(arguments));
+          sendMessage('console_log', JSON.stringify("INFO: " + message));
+          originalInfo.apply(console, arguments);
         };
       ''');
 
@@ -253,8 +302,14 @@ class ExtensionJsEngine {
           final method = payload['method'];
           final params = payload['params'] as Map<String, dynamic>? ?? {};
 
-          _addLog('API Call ($id): $method');
-          debugPrint('ExtensionJsEngine: Invoking API $method ($id)');
+          final paramsStr = params.toString();
+          final truncatedParams = paramsStr.length > 200
+              ? '${paramsStr.substring(0, 200)}...'
+              : paramsStr;
+          _addLog('API Call ($id): $method params: $truncatedParams');
+          debugPrint(
+            'ExtensionJsEngine: Invoking API $method ($id) params: $truncatedParams',
+          );
 
           try {
             dynamic result;

@@ -30,6 +30,7 @@ import 'steps_editor_screen.dart';
 import 'db_manager_screen.dart';
 import 'manage_tags_screen.dart';
 import 'extension_management_screen.dart';
+import 'about_screen.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -1669,6 +1670,9 @@ class _SideLeftPanel extends ConsumerWidget {
         break;
       case LeftPanelContent.extensionLogs:
         child = const ExtensionLogsPage(isSidePanel: true);
+        break;
+      case LeftPanelContent.about:
+        child = const AboutScreen(isSidePanel: true);
         break;
       case LeftPanelContent.none:
         return const SizedBox.shrink();

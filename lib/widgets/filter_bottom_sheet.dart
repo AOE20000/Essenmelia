@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/filtered_events_provider.dart';
 import '../providers/tags_provider.dart';
+import '../providers/ui_state_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/manage_tags_screen.dart';
 
@@ -14,6 +15,9 @@ class FilterBottomSheet extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final tagsAsync = ref.watch(tagsProvider);
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 1024;
 
     return Container(
       padding: EdgeInsets.only(
@@ -149,12 +153,18 @@ class FilterBottomSheet extends ConsumerWidget {
                       IconButton(
                         icon: const Icon(Icons.settings_outlined, size: 20),
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManageTagsScreen(),
-                            ),
-                          );
+                          if (isLargeScreen) {
+                            Navigator.pop(context); // Close filter bottom sheet
+                            ref.read(leftPanelContentProvider.notifier).state =
+                                LeftPanelContent.manageTags;
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManageTagsScreen(),
+                              ),
+                            );
+                          }
                         },
                         tooltip: l10n.manageTags,
                         visualDensity: VisualDensity.compact,

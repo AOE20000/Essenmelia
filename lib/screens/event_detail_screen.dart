@@ -170,7 +170,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
-                if (extensionContents.isNotEmpty)
+                if (extensionContents.isNotEmpty && event.imageUrl == null)
                   IconButton(
                     icon: const Icon(Icons.auto_awesome_outlined),
                     onPressed: () => _jumpToPage(1),
@@ -209,6 +209,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           Expanded(
             child: PageView(
               controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
               onPageChanged: _onPageChanged,
               children: pages,
             ),
@@ -224,6 +225,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           Expanded(
             child: PageView(
               controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
               onPageChanged: _onPageChanged,
               children: pages,
             ),
@@ -286,7 +288,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
               centerTitle: false,
               actions: [
-                if (extensionContents.isNotEmpty)
+                if (extensionContents.isNotEmpty && event.imageUrl == null)
                   IconButton(
                     icon: const Icon(Icons.auto_awesome_outlined),
                     onPressed: onImageTap,

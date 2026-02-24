@@ -113,6 +113,9 @@ abstract class ExtensionApi {
   Future<T?> getSetting<T>(String key);
   Future<void> saveSetting<T>(String key, T value);
 
+  /// Log message to system logs
+  void log(String message, {bool isError = false});
+
   /// General API call method (routed by logic engine)
   Future<dynamic> call(String method, Map<String, dynamic> params);
 
