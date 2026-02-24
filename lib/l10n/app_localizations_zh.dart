@@ -1347,11 +1347,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get privacyFirst => '隐私安全与离线优先';
 
   @override
-  String get welcomeSubtitle2 => '数据私有，不受干涉';
+  String get welcomeSubtitle2 => '打破“伪离线”的桎梏';
 
   @override
-  String get welcomeContent2 =>
-      'Essenmelia 诞生于对“伪离线”软件的反抗——即便是本地数据，也绝不强制联网，拒绝捆绑服务。';
+  String get welcomeContent2 => '坚持本地数据私有，杜绝强制联网与捆绑服务，将纯粹的离线体验还给用户。';
 
   @override
   String get highlyCustomizable => '万物皆可记录';
@@ -1377,30 +1376,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get nextStep => '下一步';
-
-  @override
-  String get archDesign => '架构设计';
-
-  @override
-  String get archDesignDesc => '系统分层、隐私黑盒与权限模型';
-
-  @override
-  String get apiGuide => 'API 使用指南';
-
-  @override
-  String get apiGuideDesc => '核心方法、通知方案与外部集成';
-
-  @override
-  String get extDevSpecs => '扩展开发规范';
-
-  @override
-  String get extDevSpecsDesc => '信息、UI 组件库与逻辑引擎';
-
-  @override
-  String get createRepoGuide => '扩展仓库创建指南';
-
-  @override
-  String get createRepoGuideDesc => '清单文件、结构与 GitHub 发现机制';
 
   @override
   String get selectDocToRead => '请选择一个文档进行阅读';

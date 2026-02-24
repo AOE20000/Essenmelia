@@ -1421,32 +1421,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nextStep => 'Next Step';
 
   @override
-  String get archDesign => 'Architecture Design';
-
-  @override
-  String get archDesignDesc =>
-      'System layering, privacy black box & permission model';
-
-  @override
-  String get apiGuide => 'API Usage Guide';
-
-  @override
-  String get apiGuideDesc =>
-      'Core methods, notification schemes & external integration';
-
-  @override
-  String get extDevSpecs => 'Extension Development Specs';
-
-  @override
-  String get extDevSpecsDesc => 'Metadata, UI component library & logic engine';
-
-  @override
-  String get createRepoGuide => 'Extension Repository Guide';
-
-  @override
-  String get createRepoGuideDesc => 'Manifest, structure & GitHub discovery';
-
-  @override
   String get selectDocToRead => 'Please select a document to read';
 
   @override

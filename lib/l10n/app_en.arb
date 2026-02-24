@@ -1931,38 +1931,6 @@
   "@nextStep": {
     "description": "Button label for next step in tour"
   },
-  "archDesign": "Architecture Design",
-  "@archDesign": {
-    "description": "Title for architecture design doc"
-  },
-  "archDesignDesc": "System layering, privacy black box & permission model",
-  "@archDesignDesc": {
-    "description": "Description for architecture design doc"
-  },
-  "apiGuide": "API Usage Guide",
-  "@apiGuide": {
-    "description": "Title for API guide doc"
-  },
-  "apiGuideDesc": "Core methods, notification schemes & external integration",
-  "@apiGuideDesc": {
-    "description": "Description for API guide doc"
-  },
-  "extDevSpecs": "Extension Development Specs",
-  "@extDevSpecs": {
-    "description": "Title for extension development doc"
-  },
-  "extDevSpecsDesc": "Metadata, UI component library & logic engine",
-  "@extDevSpecsDesc": {
-    "description": "Description for extension development doc"
-  },
-  "createRepoGuide": "Extension Repository Guide",
-  "@createRepoGuide": {
-    "description": "Title for extension repository creation guide doc"
-  },
-  "createRepoGuideDesc": "Manifest, structure & GitHub discovery",
-  "@createRepoGuideDesc": {
-    "description": "Description for extension repository creation guide doc"
-  },
   "selectDocToRead": "Please select a document to read",
   "@selectDocToRead": {
     "description": "Placeholder when no doc is selected"

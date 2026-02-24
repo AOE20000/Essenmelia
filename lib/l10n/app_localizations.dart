@@ -2660,54 +2660,6 @@ abstract class AppLocalizations {
   /// **'Next Step'**
   String get nextStep;
 
-  /// Title for architecture design doc
-  ///
-  /// In en, this message translates to:
-  /// **'Architecture Design'**
-  String get archDesign;
-
-  /// Description for architecture design doc
-  ///
-  /// In en, this message translates to:
-  /// **'System layering, privacy black box & permission model'**
-  String get archDesignDesc;
-
-  /// Title for API guide doc
-  ///
-  /// In en, this message translates to:
-  /// **'API Usage Guide'**
-  String get apiGuide;
-
-  /// Description for API guide doc
-  ///
-  /// In en, this message translates to:
-  /// **'Core methods, notification schemes & external integration'**
-  String get apiGuideDesc;
-
-  /// Title for extension development doc
-  ///
-  /// In en, this message translates to:
-  /// **'Extension Development Specs'**
-  String get extDevSpecs;
-
-  /// Description for extension development doc
-  ///
-  /// In en, this message translates to:
-  /// **'Metadata, UI component library & logic engine'**
-  String get extDevSpecsDesc;
-
-  /// Title for extension repository creation guide doc
-  ///
-  /// In en, this message translates to:
-  /// **'Extension Repository Guide'**
-  String get createRepoGuide;
-
-  /// Description for extension repository creation guide doc
-  ///
-  /// In en, this message translates to:
-  /// **'Manifest, structure & GitHub discovery'**
-  String get createRepoGuideDesc;
-
   /// Placeholder when no doc is selected
   ///
   /// In en, this message translates to:
