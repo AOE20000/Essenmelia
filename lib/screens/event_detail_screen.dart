@@ -86,21 +86,33 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       );
     }
 
-    final extensionContents =
-        ref.watch(eventDetailContentProvider)[widget.eventId] ?? [];
-    final hasExtensions = extensionContents.isNotEmpty;
+    final allExtensionContents = ref.watch(eventDetailContentProvider);
+    final eventSpecificContents = allExtensionContents[widget.eventId] ?? [];
+    final globalContents = allExtensionContents['*'] ?? [];
+
+    // Merge specific and global contents, ensuring no duplicates from same extension
+    final Map<String, Map<String, dynamic>> mergedMap = {};
+    for (var content in globalContents) {
+      mergedMap[content['extensionId']] = content;
+    }
+    for (var content in eventSpecificContents) {
+      mergedMap[content['extensionId']] = content;
+    }
+
+    final extensionContents = mergedMap.values.toList();
 
     final mainPage = _buildMainPage(
       context,
       event,
       theme,
       l10n,
-      onImageTap: hasExtensions ? () => _jumpToPage(1) : null,
+      extensionContents: extensionContents,
+      onImageTap: () => _jumpToPage(1),
     );
 
     final pages = [
       mainPage,
-      ...extensionContents.map((data) => _buildExtensionPage(data)),
+      ...extensionContents.map((data) => _buildExtensionPage(data, event.id)),
     ];
 
     if (_currentPage >= pages.length) {
@@ -113,7 +125,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
 
     Widget? bottomBar;
-    if (hasExtensions && _currentPage > 0) {
+    if (_currentPage > 0) {
       bottomBar = Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
@@ -158,6 +170,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
+                if (extensionContents.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    onPressed: () => _jumpToPage(1),
+                    tooltip: extensionContents.first['title'] as String?,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _showEditSheet(context, event, ref),
@@ -194,7 +213,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               children: pages,
             ),
           ),
-          if (hasExtensions && _currentPage > 0) bottomBar!,
+          if (_currentPage > 0) bottomBar!,
         ],
       );
     }
@@ -215,22 +234,34 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  Widget _buildExtensionPage(Map<String, dynamic> data) {
+  Widget _buildExtensionPage(Map<String, dynamic> data, String eventId) {
     final extensionId = data['extensionId'] as String;
     final content = data['content'] as Map<String, dynamic>;
 
-    final manager = ref.watch(extensionManagerProvider);
-    final extension = manager.getExtension(extensionId);
+    return Consumer(
+      builder: (context, ref, child) {
+        final manager = ref.watch(extensionManagerProvider);
+        final extension = manager.getExtension(extensionId);
 
-    if (extension is ProxyExtension && extension.engine != null) {
-      return DynamicEngine(
-        engine: extension.engine!,
-        viewOverride: content,
-        isEmbedded: true,
-      );
-    }
+        if (extension is ProxyExtension && extension.engine != null) {
+          // Inject eventId into state silently before rendering
+          if (extension.engine!.state['eventId'] != eventId) {
+            extension.engine!.updateStateSilent('eventId', eventId);
+            // Notify JS of context change
+            extension.engine!.callFunction('onContextChanged', {
+              'eventId': eventId,
+            });
+          }
+          return DynamicEngine(
+            engine: extension.engine!,
+            viewOverride: content,
+            isEmbedded: true,
+          );
+        }
 
-    return Center(child: Text('Extension $extensionId not ready'));
+        return Center(child: Text('Extension $extensionId not ready'));
+      },
+    );
   }
 
   Widget _buildMainPage(
@@ -238,6 +269,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     Event event,
     ThemeData theme,
     AppLocalizations l10n, {
+    required List<Map<String, dynamic>> extensionContents,
     VoidCallback? onImageTap,
   }) {
     return SafeArea(
@@ -254,6 +286,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
               centerTitle: false,
               actions: [
+                if (extensionContents.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    onPressed: onImageTap,
+                    tooltip: extensionContents.first['title'] as String?,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _showEditSheet(context, event, ref),
@@ -1019,9 +1058,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         iconSize: 18,
         icon: Icon(icon),
         style: IconButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     );
@@ -1120,8 +1157,9 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                       values: _sliderValues!,
                       min: 0,
                       max: effectiveMax,
-                      divisions:
-                          effectiveMax.toInt() > 0 ? effectiveMax.toInt() : 1,
+                      divisions: effectiveMax.toInt() > 0
+                          ? effectiveMax.toInt()
+                          : 1,
                       labels: RangeLabels(
                         _sliderValues!.start.round().toString(),
                         _sliderValues!.end.round().toString(),
@@ -1141,31 +1179,31 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                   const SizedBox(width: 8),
                   Column(
                     children: [
-                      _buildMicroAdjustButton(
-                        theme,
-                        Icons.add_rounded,
-                        () {
-                          final newStart = (_sliderValues!.start + 1)
-                              .clamp(0.0, _sliderValues!.end);
-                          final newValues =
-                              RangeValues(newStart, _sliderValues!.end);
-                          setState(() => _sliderValues = newValues);
-                          _updateFromSlider(newValues);
-                        },
-                      ),
+                      _buildMicroAdjustButton(theme, Icons.add_rounded, () {
+                        final newStart = (_sliderValues!.start + 1).clamp(
+                          0.0,
+                          _sliderValues!.end,
+                        );
+                        final newValues = RangeValues(
+                          newStart,
+                          _sliderValues!.end,
+                        );
+                        setState(() => _sliderValues = newValues);
+                        _updateFromSlider(newValues);
+                      }),
                       const SizedBox(height: 8),
-                      _buildMicroAdjustButton(
-                        theme,
-                        Icons.remove_rounded,
-                        () {
-                          final newStart = (_sliderValues!.start - 1)
-                              .clamp(0.0, _sliderValues!.end);
-                          final newValues =
-                              RangeValues(newStart, _sliderValues!.end);
-                          setState(() => _sliderValues = newValues);
-                          _updateFromSlider(newValues);
-                        },
-                      ),
+                      _buildMicroAdjustButton(theme, Icons.remove_rounded, () {
+                        final newStart = (_sliderValues!.start - 1).clamp(
+                          0.0,
+                          _sliderValues!.end,
+                        );
+                        final newValues = RangeValues(
+                          newStart,
+                          _sliderValues!.end,
+                        );
+                        setState(() => _sliderValues = newValues);
+                        _updateFromSlider(newValues);
+                      }),
                     ],
                   ),
                 ],
@@ -1188,10 +1226,9 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         ),
         child: InkWell(
           onTap: () {
-            ref.read(eventsProvider.notifier).updateEvent(
-                  id: widget.event.id,
-                  stepDisplayMode: 'slider',
-                );
+            ref
+                .read(eventsProvider.notifier)
+                .updateEvent(id: widget.event.id, stepDisplayMode: 'slider');
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
@@ -1204,8 +1241,11 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.speed_rounded,
-                      color: theme.colorScheme.primary, size: 24),
+                  child: Icon(
+                    Icons.speed_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1214,8 +1254,9 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                     children: [
                       Text(
                         "步骤过多 ($stepCount)",
-                        style: theme.textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -1283,7 +1324,8 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                   runSpacing: 12,
                   alignment: WrapAlignment.center,
                   children: List.generate(widget.event.steps.length, (index) {
-                    final isBeingDragged = _startDragIndex != null &&
+                    final isBeingDragged =
+                        _startDragIndex != null &&
                         _startDragIndex != 999 &&
                         ((index >= _startDragIndex! &&
                                 index <=

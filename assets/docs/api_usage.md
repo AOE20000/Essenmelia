@@ -32,7 +32,27 @@ state.isLoading = true;
 // 界面中绑定了 $state.counter 的文本会自动变为 "1"
 ```
 
-### 0.3 参数自动转换 (Type Coercion)
+### 0.3 隐式上下文注入 (Implicit Context)
+在某些特定页面（如事件详情页的内容 Tab）中，系统会自动向扩展的 `state` 对象中注入上下文变量。开发者无需手动获取即可直接使用：
+
+- `state.eventId`: 当前事件的唯一标识符。
+- `state.locale`: 当前系统的语言区域（如 `zh_CN`）。
+
+### 0.4 生命周期与钩子函数 (Lifecycle Hooks)
+扩展可以定义特定的函数来响应宿主环境的生命周期事件：
+
+- **onLoad()**: 脚本加载完成并初始化完成后调用。建议将核心初始化逻辑放在此处。
+- **onContextChanged(params)**: 仅适用于全局内容页（`eventId: "*"`）。当用户在详情页间切换时调用。
+  - `params.eventId`: 新进入的事件 ID。
+
+```javascript
+globalThis.onContextChanged = function(params) {
+    console.log("Switched to event: " + params.eventId);
+    // 重新获取数据并更新 UI
+};
+```
+
+### 0.5 参数自动转换 (Type Coercion)
 得益于宿主环境的 `ApiParams` 升级，API 调用时的参数类型更加宽松。系统会自动尝试将字符串转换为所需的类型。
 
 ```javascript

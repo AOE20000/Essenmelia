@@ -102,7 +102,7 @@ class UIExtensionApiHandler {
     required bool isUntrusted,
   }) async {
     final extensionId = params['extensionId'] as String;
-    final eventId = params['eventId'] as String;
+    final eventId = params['eventId'] as String; // "*" represents all events
     final content = params['content'] as Map<String, dynamic>;
     final title = params['title'] as String? ?? 'Extension';
 

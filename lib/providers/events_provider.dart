@@ -11,6 +11,8 @@ import '../services/calendar_service.dart';
 import 'tags_provider.dart';
 import '../l10n/l10n_provider.dart';
 
+const _undefined = Object();
+
 class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   final Ref ref;
   final String activePrefix;
@@ -133,12 +135,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     String? title,
     String? description,
     List<String>? tags,
-    String? imageUrl,
-    String? stepDisplayMode,
-    String? stepSuffix,
-    DateTime? reminderTime,
-    String? reminderRecurrence,
-    String? reminderScheme,
+    dynamic imageUrl = _undefined,
+    dynamic stepDisplayMode = _undefined,
+    dynamic stepSuffix = _undefined,
+    dynamic reminderTime = _undefined,
+    dynamic reminderRecurrence = _undefined,
+    dynamic reminderScheme = _undefined,
     List<EventStep>? steps,
   }) async {
     if (_box == null) {
@@ -155,50 +157,72 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           _syncTags(tags);
         }
       }
-      if (imageUrl != null) {
-        if (imageUrl.startsWith('http')) {
-          event.imageUrl = await StorageService.downloadAndSaveImage(imageUrl);
+
+      if (imageUrl != _undefined) {
+        final String? url = imageUrl as String?;
+        if (url != null && url.startsWith('http')) {
+          event.imageUrl = await StorageService.downloadAndSaveImage(url);
         } else {
-          event.imageUrl = imageUrl;
+          event.imageUrl = url;
         }
       }
-      if (stepDisplayMode != null) event.stepDisplayMode = stepDisplayMode;
-      if (stepSuffix != null) event.stepSuffix = stepSuffix;
+
+      if (stepDisplayMode != _undefined) {
+        event.stepDisplayMode = stepDisplayMode as String?;
+      }
+      if (stepSuffix != _undefined) {
+        event.stepSuffix = stepSuffix as String?;
+      }
 
       // Handle reminder updates
-      if (reminderTime != event.reminderTime ||
-          reminderRecurrence != event.reminderRecurrence ||
-          reminderScheme != event.reminderScheme ||
+      final bool hasReminderChanges = (reminderTime != _undefined &&
+              reminderTime != event.reminderTime) ||
+          (reminderRecurrence != _undefined &&
+              reminderRecurrence != event.reminderRecurrence) ||
+          (reminderScheme != _undefined &&
+              reminderScheme != event.reminderScheme) ||
           title != null ||
-          description != null) {
+          description != null;
+
+      if (hasReminderChanges) {
         // 1. If scheme switches from calendar, or time/title changes and it was calendar, we need to handle it
         // Note: if it was calendar and still is, addEvent(existingEventId) will perform update
 
         // If new scheme is not calendar, and old scheme was calendar, delete old calendar entry
-        if (reminderScheme != 'calendar' && event.calendarEventId != null) {
+        final String? newScheme = reminderScheme != _undefined
+            ? reminderScheme as String?
+            : event.reminderScheme;
+
+        if (newScheme != 'calendar' && event.calendarEventId != null) {
           await CalendarService().deleteEvent(event.calendarEventId!);
           event.calendarEventId = null;
         }
 
         // If new scheme is not notification, and old scheme was notification, cancel old notification
-        if (reminderScheme != 'notification' && event.reminderId != null) {
+        if (newScheme != 'notification' && event.reminderId != null) {
           await NotificationService().cancelReminder(event.reminderId!);
           event.reminderId = null;
         }
 
-        event.reminderTime = reminderTime;
-        event.reminderRecurrence = reminderRecurrence;
-        event.reminderScheme = reminderScheme;
+        if (reminderTime != _undefined) {
+          event.reminderTime = reminderTime as DateTime?;
+        }
+        if (reminderRecurrence != _undefined) {
+          event.reminderRecurrence = reminderRecurrence as String?;
+        }
+        if (reminderScheme != _undefined) {
+          event.reminderScheme = reminderScheme as String?;
+        }
 
         // 2. Schedule or Update reminder if provided
-        if (reminderTime != null) {
-          if (reminderScheme == 'calendar') {
+        if (event.reminderTime != null) {
+          if (event.reminderScheme == 'calendar') {
             // Use addEvent's existingEventId parameter for overwrite or create
             final calId = await CalendarService().addEvent(
               title: title ?? event.title,
               description: description ?? event.description ?? '',
-              startTime: reminderTime,
-              recurrence: reminderRecurrence,
+              startTime: event.reminderTime!,
+              recurrence: event.reminderRecurrence,
               existingEventId: event.calendarEventId,
             );
             event.calendarEventId = calId;

@@ -103,13 +103,57 @@ children:
 ```
 
 ### 3.2 组件库 (Components)
-支持的组件包括但不限于：
-- 布局: `column`, `row`, `stack`, `expanded`, `sized_box`, `container`, `card`
-- 基础: `text`, `image`, `icon`, `button`, `html`
-- 输入: `text_field`
-- 列表: `list_view`, `grid_view`
+支持的组件包括：
 
-#### 3.2.1 多媒体与阅读组件 (Multimedia & Reader)
+#### 3.2.1 布局组件 (Layout)
+- **column / row**: 垂直/水平布局
+  - `mainAxisAlignment`: 主轴对齐 (`start`, `end`, `center`, `spaceBetween`, `spaceAround`, `spaceEvenly`)
+  - `crossAxisAlignment`: 交叉轴对齐 (`start`, `end`, `center`, `stretch`)
+  - `padding`: 内边距 (数字或 [top, left, bottom, right])
+- **wrap**: 流式布局
+  - `spacing`: 子组件间距
+  - `runSpacing`: 行间距
+- **container**: 通用容器
+  - `width / height`: 尺寸
+  - `color`: 背景颜色 (十六进制如 `0xFF...` 或预定义颜色名如 `primary`)
+  - `borderRadius`: 圆角大小
+  - `padding / margin`: 边距
+- **card**: 卡片容器
+  - `variant`: 样式 (`elevated`, `filled`, `outlined`)
+  - `elevation`: 阴影高度
+- **center**: 居中容器
+- **padding**: 专门的边距容器
+  - `padding`: 必须提供，定义内部边距
+- **sized_box**: 固定尺寸占位
+  - `width / height`: 尺寸
+
+#### 3.2.2 基础组件 (Basic)
+- **text**: 文本展示
+  - `text`: 文本内容 (支持 `$state.key` 绑定)
+  - `textStyle`: 预定义样式名 (如 `titleLarge`, `bodyMedium`, `labelSmall`)
+  - `bold`: 是否加粗
+  - `fontSize`: 字体大小
+  - `textColor`: 文本颜色
+- **icon**: 图标
+  - `icon`: Material Icons 代码 (整数)
+  - `size`: 图标大小
+  - `color`: 图标颜色
+- **image**: 图片
+  - `url`: 图片链接
+  - `borderRadius`: 圆角
+  - `fit`: 缩放模式 (`cover`, `contain`, `fill`)
+- **button**: 按钮
+  - `label`: 按钮文字
+  - `icon`: 图标代码 (可选)
+  - `variant`: 样式 (`filled`, `tonal`, `outlined`, `text`)
+  - `onTap`: 点击触发的 JS 函数名
+- **ink_well**: 点击水波纹容器
+  - `onTap`: 点击事件
+  - `borderRadius`: 点击反馈的圆角范围
+- **circular_progress_indicator**: 圆形加载进度条
+  - `size`: 控件尺寸
+
+#### 3.2.3 多媒体与阅读组件 (Multimedia & Reader)
 - **video**: 视频播放器
   - `url`: 视频链接 (支持网络 URL)
   - `autoPlay`: 是否自动播放 (默认 false)
@@ -125,16 +169,64 @@ children:
   - `backgroundColor`: 背景颜色
   - `padding`: 内边距
 
-### 3.3 交互与状态绑定
-- **onTap**: 支持 JS 函数名 (如 `handleClick`) 或 URL (如 `https://...`)。
-- **stateKey**: 双向绑定 `text_field` 到 JS `state` 变量。
-- **$variable**: 在 YAML 中引用 JS `state` 变量。
+#### 3.2.4 输入组件 (Input)
+- **text_field**: 文本输入框
+  - `label`: 标签文字
+  - `hintText`: 占位提示
+  - `stateKey`: **核心功能**。双向绑定到 JS `state` 中的指定键值。输入内容会实时同步，无需手动处理事件。
+  - `onChanged`: 可选。内容改变时的回调函数。
 
-### 3.4 事件详情页集成 (Event Detail Integration)
-扩展可以向事件详情页注入自定义内容（如多媒体、图表等）。
-- **API**: `essenmelia.registerEventDetailContent(eventId, extensionId, content, title)`
-- **content**: 遵循 DynamicEngine 组件规范的 JSON 对象。
-- **title**: 在详情页 Tab 中显示的标题。
+### 3.3 状态绑定与上下文注入 (State & Context)
+
+#### 3.3.1 状态绑定
+- **$variable**: 在 YAML 中通过前缀 `$` 引用 JS `state` 中的变量。例如 `text: "$title"`。
+- **Reactive UI**: 当 JS 中的 `state` 发生改变时，绑定了该变量的 UI 组件会自动触发局部刷新和动画过渡。
+
+#### 3.3.2 自动上下文注入 (Context Injection)
+在特定场景下，系统会自动向扩展的 `state` 中注入上下文信息，开发者可直接使用：
+
+- **事件详情页 (Event Detail Page)**:
+  - `eventId`: 当前正在查看的事件 ID。
+  - `locale`: 当前应用的语言代码 (如 `zh_CN`, `en_US`)。
+
+> **示例**：在 Bangumi 预览扩展中，通过 `state.eventId` 即可知道当前需要为哪个任务搜索信息，而无需用户手动输入。
+
+### 3.4 交互处理
+- **onTap**: 支持直接指定 JS 函数名。
+- **参数传递**: 在 `onTap` 中支持传递 Map 参数。
+  ```yaml
+  onTap:
+    call: "handleAction"
+    params: { id: 123, type: "update" }
+  ```
+
+## 4. 常见问题与最佳实践 (Pitfalls & Best Practices)
+
+### 4.1 布局崩溃：避免在滚动容器中使用弹性组件
+- **现象**：报错 `RenderFlex children have non-zero flex but incoming height constraints are unbounded`。
+- **原因**：扩展内容页通常被包裹在 `SingleChildScrollView` 中。在滚动容器内使用 `expanded` 或 `spacer` 会导致它们试图占据“无限”的剩余空间，从而引发崩溃。
+- **对策**：使用 `sized_box` (固定尺寸) 或 `padding` 来代替 `spacer` 进行占位。
+
+### 4.2 JS 兼容性：遵循标准语法
+- **现象**：脚本加载失败或报错 `SyntaxError`。
+- **原因**：内置 JS 引擎可能不支持过于超前的 ES 语法。
+- **对策**：
+  - 避免使用 **可选链** (`?.`)，改为传统的 `&&` 检查。
+  - 避免在全局作用域使用 **顶层 await**，改为在 `onLoad` 中使用 `.then().catch()`。
+  - 尽量使用 `var` 或 `let` 声明变量以保证兼容性。
+
+### 4.3 全局扩展：处理上下文切换
+- **现象**：在事件 A 中加载了内容，切换到事件 B 后内容依然显示 A 的信息。
+- **原因**：全局扩展（`eventId: "*"`）的脚本只会加载一次，不会随页面切换重载。
+- **对策**：实现 `globalThis.onContextChanged` 钩子。系统在切换事件详情页时会主动调用此函数，传入新的 `eventId`。
+
+### 4.4 列表绑定：正确的 children 语法
+- **现象**：动态生成的列表无法显示。
+- **原因**：错误地将变量绑定到了 `type` 而非 `children`。
+- **对策**：
+  - **正确**：`children: "$myList"`。
+  - **错误**：`type: "$myList"`。
+  - 确保 JS 端的 `state.myList` 是一个有效的组件数组。
 
 ---
 

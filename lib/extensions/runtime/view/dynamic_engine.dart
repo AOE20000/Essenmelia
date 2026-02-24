@@ -931,6 +931,67 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
         );
         break;
 
+      case 'ink_well':
+        current = InkWell(
+          key: key,
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(
+            (props['borderRadius'] as num?)?.toDouble() ?? 0,
+          ),
+          child: resolvedChildren.isNotEmpty
+              ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
+              : null,
+        );
+        break;
+
+      case 'padding':
+        current = Padding(
+          key: key,
+          padding: _parsePadding(props['padding']) ?? EdgeInsets.zero,
+          child: resolvedChildren.isNotEmpty
+              ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
+              : null,
+        );
+        break;
+
+      case 'icon':
+        current = Icon(
+          IconData(props['icon'] as int, fontFamily: 'MaterialIcons'),
+          key: key,
+          size: (props['size'] as num?)?.toDouble(),
+          color: _parseColor(props['color'], context),
+        );
+        break;
+
+      case 'center':
+        current = Center(
+          key: key,
+          child: resolvedChildren.isNotEmpty
+              ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
+              : null,
+        );
+        break;
+
+      case 'circular_progress_indicator':
+        current = SizedBox(
+          key: key,
+          width: (props['size'] as num?)?.toDouble(),
+          height: (props['size'] as num?)?.toDouble(),
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        );
+        break;
+
+      case 'sized_box':
+        current = SizedBox(
+          key: key,
+          width: (props['width'] as num?)?.toDouble(),
+          height: (props['height'] as num?)?.toDouble(),
+          child: resolvedChildren.isNotEmpty
+              ? _buildWidget(resolvedChildren.first as Map<String, dynamic>)
+              : null,
+        );
+        break;
+
       case 'container':
       default:
         current = Container(
