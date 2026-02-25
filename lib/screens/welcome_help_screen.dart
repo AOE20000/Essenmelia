@@ -217,50 +217,64 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                              width: isLandscape ? 100 : 180,
-                              height: isLandscape ? 100 : 180,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    step.color.withValues(alpha: 0.2),
-                                    step.color.withValues(alpha: 0.05),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(48),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: step.color.withValues(alpha: 0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: index == 0
-                                  ? Center(
+                        (index == 0
+                                ? SizedBox(
+                                    width: isLandscape ? 120 : 200,
+                                    height: isLandscape ? 120 : 200,
+                                    child: Center(
                                       child: SvgPicture.asset(
-                                        'assets/images/launcher_icon.svg',
-                                        width: isLandscape ? 80 : 160,
-                                        height: isLandscape ? 80 : 160,
+                                        'assets/images/app_logo.svg',
+                                        width: isLandscape ? 100 : 180,
+                                        height: isLandscape ? 100 : 180,
                                       ),
+                                    ),
+                                  )
+                                    .animate(key: ValueKey(index))
+                                    .scale(
+                                      duration: 800.ms,
+                                      curve: Curves.elasticOut,
                                     )
-                                  : Icon(
+                                    .fadeIn(duration: 400.ms)
+                                : Container(
+                                    width: isLandscape ? 100 : 180,
+                                    height: isLandscape ? 100 : 180,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          step.color.withValues(alpha: 0.2),
+                                          step.color.withValues(alpha: 0.05),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(48),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: step.color
+                                              .withValues(alpha: 0.1),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
                                       step.icon,
                                       color: step.color,
                                       size: isLandscape ? 48 : 80,
                                     ),
-                            )
-                            .animate(key: ValueKey(index))
-                            .scale(duration: 800.ms, curve: Curves.elasticOut)
-                            .rotate(
-                              begin: 0.2,
-                              end: 0,
-                              duration: 800.ms,
-                              curve: Curves.elasticOut,
-                            )
-                            .fadeIn(duration: 400.ms),
+                                  )
+                                    .animate(key: ValueKey(index))
+                                    .scale(
+                                      duration: 800.ms,
+                                      curve: Curves.elasticOut,
+                                    )
+                                    .rotate(
+                                      begin: 0.2,
+                                      end: 0,
+                                      duration: 800.ms,
+                                      curve: Curves.elasticOut,
+                                    )
+                                    .fadeIn(duration: 400.ms)),
                         SizedBox(height: isLandscape ? 24 : 64),
                         Text(
                               step.title,

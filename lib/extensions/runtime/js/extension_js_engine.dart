@@ -109,26 +109,34 @@ class ExtensionJsEngine {
 
         // Forward to system logs via API
         try {
-          bool isError = logMessage.startsWith("ERROR:");
-          bool isWarn = logMessage.startsWith("WARN:");
+          bool isError = logMessage.contains("ERROR: ");
+          bool isWarn = logMessage.contains("WARN: ");
+          // bool isInfo = logMessage.contains("INFO: "); // isInfo 目前未被使用，暂时注释
 
           String cleanMessage = logMessage;
-          if (logMessage.startsWith("LOG: ")) {
-            cleanMessage = logMessage.substring(5);
+          if (logMessage.contains("LOG: ")) {
+            cleanMessage = logMessage.replaceAll(RegExp(r'.*LOG: '), '');
           }
-          if (logMessage.startsWith("ERROR: ")) {
-            cleanMessage = logMessage.substring(7);
+          if (logMessage.contains("ERROR: ")) {
+            cleanMessage = logMessage.replaceAll(RegExp(r'.*ERROR: '), '');
           }
-          if (logMessage.startsWith("WARN: ")) {
-            cleanMessage = logMessage.substring(6);
+          if (logMessage.contains("WARN: ")) {
+            cleanMessage = logMessage.replaceAll(RegExp(r'.*WARN: '), '');
           }
-          if (logMessage.startsWith("INFO: ")) {
-            cleanMessage = logMessage.substring(6);
+          if (logMessage.contains("INFO: ")) {
+            cleanMessage = logMessage.replaceAll(RegExp(r'.*INFO: '), '');
+          }
+
+          // 去除 JSON 序列化可能引入的多余引号
+          if (cleanMessage.startsWith('"') && cleanMessage.endsWith('"')) {
+            try {
+              cleanMessage = jsonDecode(cleanMessage);
+            } catch (_) {}
           }
 
           api.log(cleanMessage, isError: isError || isWarn);
-        } catch (_) {
-          // Ignore if API doesn't support log or other error
+        } catch (e) {
+          debugPrint('Error forwarding JS log to system logs: $e');
         }
       });
 

@@ -27,7 +27,7 @@ class AboutScreen extends ConsumerWidget {
             height: 120,
             child: Center(
               child: SvgPicture.asset(
-                'assets/images/launcher_icon.svg',
+                'assets/images/app_logo.svg',
                 width: 100,
                 height: 100,
               ),

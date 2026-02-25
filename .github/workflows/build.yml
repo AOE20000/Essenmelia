@@ -62,14 +62,14 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
       - name: Run Build Runner
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --delete-conflicting-outputs
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons --verbose
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
-          path: android/app/build/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
   build-windows:
     needs: analyze-and-test
@@ -91,7 +91,7 @@ jobs:
           choco install innosetup --no-progress
           echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
       - name: Build Windows and Installer
-        run: dart run inno_build --release --verbose
+        run: dart run inno_build --release --verbose --app-build-args="--no-tree-shake-icons"
       - name: Zip Windows Build
         shell: pwsh
         run: |
@@ -131,7 +131,7 @@ jobs:
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs
       - name: Build Linux
-        run: flutter build linux --release
+        run: flutter build linux --release --no-tree-shake-icons
       - name: Install Flatpak Builder
         run: |
           sudo apt-get update -y

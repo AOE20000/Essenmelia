@@ -1,7 +1,7 @@
 name: essenmelia_flutter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 3.4.0+1
+version: 3.4.5+1
 
 environment:
   sdk: ^3.10.8
@@ -93,16 +93,21 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/images/Essenmelia.png"
-  adaptive_icon_background: "#ffffff"
+  min_sdk_android: 24
+  
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/Essenmelia.png"
-  # Use the same PNG for monochrome to let the tool generate the resource structure
-  # Then we will manually replace it with the correct Vector Drawable XML
-  monochrome_android: "assets/images/Essenmelia.png"
-  min_sdk_android: 21
+  adaptive_icon_monochrome: "assets/images/Essenmelia.png" # 临时占位，生成后手动替换 XML
+
   windows:
     generate: true
+    icon_size: 256 # min:48, max:256, default:48
+
+  web:
+    generate: true
     image_path: "assets/images/Essenmelia.png"
-    icon_size: 48
+    background_color: "#FFFFFF"
+    theme_color: "#6750A4"
   linux:
     generate: true
     image_path: "assets/images/Essenmelia.png"

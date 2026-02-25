@@ -101,13 +101,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     final extensionContents = mergedMap.values.toList();
 
+    // 仅当有实际可用的扩展内容时才显示指示器
+    final hasActiveExtensions = extensionContents.isNotEmpty;
+
     final mainPage = _buildMainPage(
       context,
       event,
       theme,
       l10n,
       extensionContents: extensionContents,
-      onImageTap: () => _jumpToPage(1),
+      onImageTap: hasActiveExtensions ? () => _jumpToPage(1) : null,
     );
 
     final pages = [
@@ -288,7 +291,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
               centerTitle: false,
               actions: [
-                if (extensionContents.isNotEmpty && event.imageUrl == null)
+                // 仅当 extensionContents 非空且回调有效时显示指示器图标
+                if (extensionContents.isNotEmpty &&
+                    event.imageUrl == null &&
+                    onImageTap != null)
                   IconButton(
                     icon: const Icon(Icons.auto_awesome_outlined),
                     onPressed: onImageTap,
