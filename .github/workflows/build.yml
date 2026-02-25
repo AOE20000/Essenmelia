@@ -91,7 +91,7 @@ jobs:
           choco install innosetup --no-progress
           echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
       - name: Build Windows and Installer
-        run: dart run inno_build --release --verbose --app-arguments="--no-tree-shake-icons"
+        run: dart run inno_build --release --verbose -- --no-tree-shake-icons
       - name: Zip Windows Build
         shell: pwsh
         run: |
