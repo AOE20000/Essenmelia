@@ -330,7 +330,49 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
               child: Text(l10n.cancel),
             ),
             FilledButton(
-              onPressed: canDelete ? () => Navigator.pop(context, true) : null,
+              onPressed: canDelete
+                  ? () async {
+                      Navigator.pop(context, true);
+
+                      // Show loading indicator
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      try {
+                        await ref
+                            .read(dbControllerProvider.notifier)
+                            .resetAll();
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close loading
+                          Navigator.of(context).pop(); // Close DB Manager
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('App Reset Successfully'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close loading
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.resetFailedDetailed(e.toString()),
+                              ),
+                              backgroundColor: theme.colorScheme.error,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  : null,
               style: FilledButton.styleFrom(
                 backgroundColor: theme.colorScheme.error,
                 foregroundColor: theme.colorScheme.onError,
@@ -779,7 +821,8 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
             context,
             icon: Icons.delete_forever_rounded,
             title: l10n.deleteAllDataTitle,
-            onTap: _deleteAllData,
+            onTap:
+                _deleteAllData, // Revert to using the function reference which now handles logic internally
             isDestructive: true,
           ),
         ),

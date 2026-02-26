@@ -5,6 +5,7 @@ import '../providers/ui_state_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/events_provider.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../models/event.dart';
 
@@ -178,10 +179,20 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
 
       // 6. Refresh UI state providers that depend on the database
       // Note: Must be called after _init() because reinit() calls internally await ref.read(dbProvider.future)
-      await _ref.read(uiStateProvider.notifier).reinit();
-      await _ref.read(themeProvider.notifier).reinit();
-      await _ref.read(localeProvider.notifier).reinit();
-      await _ref.read(displaySettingsProvider.notifier).reinit();
+      
+      // Use Future.microtask to avoid "setState() or markNeedsBuild() called during build"
+      // and ensure state updates are propagated after the current frame
+      await Future.microtask(() async {
+        await _ref.read(uiStateProvider.notifier).reinit();
+        await _ref.read(themeProvider.notifier).reinit();
+        await _ref.read(localeProvider.notifier).reinit();
+        await _ref.read(displaySettingsProvider.notifier).reinit();
+        
+        // Force refresh providers that might be caching old data
+        _ref.invalidate(eventsProvider);
+        _ref.invalidate(extensionManagerProvider);
+      });
+      
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow;

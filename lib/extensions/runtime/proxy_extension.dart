@@ -34,8 +34,14 @@ class ProxyExtension extends BaseExtension {
 
   @override
   Future<void> onDispose() async {
-    _engine?.dispose();
-    _engine = null;
+    // 确保在销毁时调用 engine.dispose() 释放资源
+    if (_engine != null) {
+      debugPrint('ProxyExtension.onDispose: Disposing engine for ${metadata.id}');
+      _engine!.dispose();
+      _engine = null;
+    } else {
+      debugPrint('ProxyExtension.onDispose: Engine already null for ${metadata.id}');
+    }
   }
 
   @override

@@ -266,12 +266,21 @@ class ExtensionJsEngine {
 
   void dispose() {
     _isInitialized = false;
-    try {
-      _jsRuntime.dispose();
-    } catch (_) {}
+    // 强制清理回调，防止持有外部引用
+    _onStateChanged = null;
+
+    // 清理日志和状态监听器
+    logs.clear();
     logsNotifier.dispose();
     for (var v in stateNotifiers.values) {
       v.dispose();
+    }
+    stateNotifiers.clear();
+
+    try {
+      _jsRuntime.dispose();
+    } catch (e) {
+      debugPrint('ExtensionJsEngine.dispose error: $e');
     }
   }
 

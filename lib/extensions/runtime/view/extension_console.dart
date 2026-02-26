@@ -66,6 +66,25 @@ class ExtensionConsole extends StatelessWidget {
           ),
           actions: [
             IconButton(
+              icon: const Icon(Icons.cleaning_services_rounded),
+              tooltip: 'Clear Cache & Memory',
+              onPressed: () {
+                // Clear state and force GC hint (by resetting state)
+                engine.updateStateSilent('collectionList', []);
+                engine.updateStateSilent('cachedItems', []);
+                
+                // Clear console logs
+                engine.logs.clear();
+                engine.logsNotifier.value = [];
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Memory Cleared')),
+                  );
+                }
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh_rounded),
               onPressed: () => engine.init(),
               tooltip: l10n.restartEngine,

@@ -14,6 +14,7 @@ import '../extensions/services/ui_extension_service.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../extensions/runtime/proxy_extension.dart';
 import '../extensions/runtime/view/dynamic_engine.dart';
+import '../extensions/security/extension_auth_notifier.dart';
 
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -89,14 +90,24 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allExtensionContents = ref.watch(eventDetailContentProvider);
     final eventSpecificContents = allExtensionContents[widget.eventId] ?? [];
     final globalContents = allExtensionContents['*'] ?? [];
+    final authNotifier = ref.watch(extensionAuthStateProvider.notifier);
 
     // Merge specific and global contents, ensuring no duplicates from same extension
+    // And filter out extensions that are NOT running
     final Map<String, Map<String, dynamic>> mergedMap = {};
+    
     for (var content in globalContents) {
-      mergedMap[content['extensionId']] = content;
+      final extId = content['extensionId'] as String;
+      if (authNotifier.isRunning(extId)) {
+        mergedMap[extId] = content;
+      }
     }
+    
     for (var content in eventSpecificContents) {
-      mergedMap[content['extensionId']] = content;
+      final extId = content['extensionId'] as String;
+      if (authNotifier.isRunning(extId)) {
+        mergedMap[extId] = content;
+      }
     }
 
     final extensionContents = mergedMap.values.toList();

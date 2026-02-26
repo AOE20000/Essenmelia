@@ -155,18 +155,25 @@ class ExtensionManager extends ChangeNotifier
           final prevPerms = previous[extId] ?? [];
           final nextPerms = next[extId] ?? [];
 
-          if (nextPerms.length > prevPerms.length) {
-            final addedNames = nextPerms
-                .where((p) => !prevPerms.contains(p))
-                .toList();
-            for (var name in addedNames) {
-              try {
-                final perm = ExtensionPermission.values.firstWhere(
-                  (p) => p.name == name,
-                );
-                notifyPermissionGranted(extId, perm);
-              } catch (_) {}
-            }
+          // Detect permission changes
+          if (nextPerms.length != prevPerms.length) {
+             // 1. Granted
+             if (nextPerms.length > prevPerms.length) {
+                final addedNames = nextPerms
+                    .where((p) => !prevPerms.contains(p))
+                    .toList();
+                for (var name in addedNames) {
+                  try {
+                    final perm = ExtensionPermission.values.firstWhere(
+                      (p) => p.name == name,
+                    );
+                    notifyPermissionGranted(extId, perm);
+                  } catch (_) {}
+                }
+             }
+             // 2. Revoked - Force notify listeners to update UI/API checks
+             // The API implementation checks permission on every call, so simple UI refresh is enough
+             Future.microtask(() => notifyListeners());
           }
         }
 
@@ -182,7 +189,26 @@ class ExtensionManager extends ChangeNotifier
               final isRunning = next[id]?.firstOrNull != 'false';
               if (isRunning) {
                 // Fire and forget, notify when done
-                _loadExtension(extId).whenComplete(() => notifyListeners());
+                _loadExtension(extId).then((_) {
+                  // After reloading, we might need to re-register UI components if they were cleared
+                  // or if the extension relies on init to register them.
+                  // For now, _loadExtension calls onInit which should handle registration.
+                  notifyListeners();
+                });
+              } else {
+                // Extension stopped, notify listeners immediately to update UI
+                // Optionally unload/dispose resources if needed (currently we keep installed blueprint)
+                
+                // Clear UI registrations for this extension
+                _ref.read(eventDetailContentProvider.notifier).update((state) {
+                  final newState = <String, List<Map<String, dynamic>>>{};
+                  state.forEach((key, list) {
+                    newState[key] = list.where((item) => item['extensionId'] != extId).toList();
+                  });
+                  return newState;
+                });
+                
+                notifyListeners();
               }
               break;
             }
@@ -271,21 +297,36 @@ class ExtensionManager extends ChangeNotifier
   }
 
   Future<void> _verifyIntegrityAsync(String extId, String json) async {
-    if (kDebugMode) return;
+    // 强制执行完整性检查，移除 debug 模式的例外
+    // if (kDebugMode) return; 
     try {
       final auth = _ref.read(extensionAuthStateProvider.notifier);
       final storedHash = auth.getManifestHash(extId);
+      
+      // 如果没有存储的哈希值（首次安装或升级前），则跳过比对，但会记录当前哈希
+      // 注意：安装流程中应确保存储哈希，此处仅作为运行时检查
       if (storedHash == null) return;
 
       await Future.delayed(Duration.zero);
       final currentHash = sha256.convert(utf8.encode(json)).toString();
 
       if (currentHash != storedHash) {
+        // 允许更新操作（通常更新后哈希会变，但安装流程会更新存储的哈希）
+        // 这里主要检测的是安装后的静默篡改
+        // 如果是在更新流程中，storedHash 应该已经被 InstallationConfirmDialog 更新了
+        // 所以这里的不匹配确实意味着文件被意外修改
+        
         debugPrint(
           'Security Alert: Extension $extId manifest integrity check failed! Hash mismatch.',
         );
+        debugPrint('Expected: $storedHash');
+        debugPrint('Actual:   $currentHash');
+        
+        // 立即停用并标记为不可信
         await auth.setUntrusted(extId, true);
         await auth.setRunning(extId, false);
+        
+        // 通知 UI 刷新（通过 ExtensionManager 的监听器）
         notifyListeners();
       }
     } catch (e) {
@@ -315,6 +356,10 @@ class ExtensionManager extends ChangeNotifier
       debugPrint('Initializing extension $id...');
       // Create API implementation with SecurityShield
       final api = ExtensionApiImpl(_ref, blueprint.metadata, _securityShield);
+
+      // Force cleanup of old engine if it exists (e.g. from previous run or partial init)
+      // This is crucial for re-enabling an extension to ensure a fresh JS environment
+      await blueprint.onDispose();
 
       // Initialize extension (ProxyExtension will create JS engine)
       await blueprint.onInit(api);
