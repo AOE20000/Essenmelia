@@ -333,6 +333,54 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
   }
 
   /// Internal build logic without state binding
+  Widget _buildLazyList(
+      Key? key,
+      String type,
+      Map<String, dynamic> props,
+      EdgeInsetsGeometry? padding,
+      EdgeInsetsGeometry? margin,
+      double? width,
+      double? height,
+      Color? color,
+      List<dynamic> children,
+  ) {
+      // final crossAxisAlignment = _parseCrossAxisAlignment(props['crossAxisAlignment']);
+      // final mainAxisAlignment = _parseMainAxisAlignment(props['mainAxisAlignment']);
+      
+      // If it was a column, wrap in SingleChildScrollView + Column logic is usually expected,
+      // but for performance we switch to ListView.builder.
+      // However, ListView inside another scrollable (like the main body) might crash.
+      // The main body is already a SingleChildScrollView.
+      // So we should use SliverList or just ListView with shrinkWrap: true + physics: NeverScrollableScrollPhysics.
+      
+      Widget current = ListView.builder(
+          key: key,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: padding ?? EdgeInsets.zero,
+          itemCount: children.length,
+          itemBuilder: (context, index) {
+              final childDef = children[index];
+              if (childDef is Map<String, dynamic>) {
+                  return _buildWidget(childDef);
+              }
+              return const SizedBox.shrink();
+          },
+      );
+
+      if (width != null || height != null || color != null || margin != null) {
+          current = Container(
+              width: width,
+              height: height,
+              color: color,
+              margin: margin,
+              child: current,
+          );
+      }
+      
+      return current;
+  }
+
   Widget _buildWidgetInternal(Map<String, dynamic> def, {Key? key}) {
     final type = def['type'] as String? ?? 'container';
     final props = def['props'] as Map<String, dynamic>? ?? {};
@@ -355,6 +403,24 @@ class _DynamicEngineState extends ConsumerState<DynamicEngine> {
       if (val is List) {
         resolvedChildren = val;
       }
+    }
+
+    // Apply lazy loading for long lists (e.g. collection lists)
+    // If the widget is a Column or ListView and has many children,
+    // we should use ListView.builder instead of rendering all at once.
+    if ((type == 'column' || type == 'list_view') && resolvedChildren.length > 20) {
+        // Force switch to ListView.builder logic
+        return _buildLazyList(
+            key,
+            type,
+            props,
+            padding,
+            margin,
+            width,
+            height,
+            color,
+            resolvedChildren
+        );
     }
 
     // Tap handling

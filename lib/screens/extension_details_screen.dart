@@ -467,119 +467,125 @@ class _ExtensionDetailsScreenState
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          maxChildSize: 0.9,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) => Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  l10n.allSystemPermissions,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+        return Consumer(
+          builder: (context, ref, _) {
+            final l10n = AppLocalizations.of(context)!;
+            final currentAuthState = ref.watch(extensionAuthStateProvider);
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              maxChildSize: 0.9,
+              minChildSize: 0.5,
+              expand: false,
+              builder: (context, scrollController) => Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: ExtensionPermission.values.length,
-                  itemBuilder: (context, index) {
-                    final perm = ExtensionPermission.values[index];
-                    final isGranted =
-                        authState[metadata.id]?.contains(perm.name) ?? false;
-                    final isRequested = metadata.requiredPermissions.contains(
-                      perm,
-                    );
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      l10n.allSystemPermissions,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: ExtensionPermission.values.length,
+                      itemBuilder: (context, index) {
+                        final perm = ExtensionPermission.values[index];
+                        final isGranted =
+                            currentAuthState[metadata.id]?.contains(perm.name) ?? false;
+                        final isRequested = metadata.requiredPermissions.contains(
+                          perm,
+                        );
 
-                    final registry = ref.read(extensionApiRegistryProvider);
-                    final permApis =
-                        registry.getRequiredPermissions()[perm] ?? [];
+                        final registry = ref.read(extensionApiRegistryProvider);
+                        final permApis =
+                            registry.getRequiredPermissions()[perm] ?? [];
 
-                    return SwitchListTile(
-                      value: isGranted,
-                      onChanged: (val) =>
-                          authNotifier.togglePermission(metadata.id, perm),
-                      title: Row(
-                        children: [
-                          Icon(
-                            perm.icon,
-                            size: 20,
-                            color: isGranted
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.outline,
+                        return SwitchListTile(
+                          value: isGranted,
+                          onChanged: (val) =>
+                              authNotifier.togglePermission(metadata.id, perm),
+                          title: Row(
+                            children: [
+                              Icon(
+                                perm.icon,
+                                size: 20,
+                                color: isGranted
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.outline,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(perm.getLabel(l10n)),
+                              if (isRequested)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    l10n.extensionRequested,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text(perm.getLabel(l10n)),
-                          if (isRequested)
-                            Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                l10n.extensionRequested,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(perm.getDescription(l10n)),
-                          if (permApis.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            ...permApis.map(
-                              (api) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      '• ',
-                                      style: TextStyle(color: Colors.grey),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(perm.getDescription(l10n)),
+                              if (permApis.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                ...permApis.map(
+                                  (api) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          '• ',
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            api.getOperation(l10n) ??
+                                                api.methodName,
+                                            style: theme.textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Text(
-                                        api.getOperation(l10n) ??
-                                            api.methodName,
-                                        style: theme.textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
