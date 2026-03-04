@@ -78,7 +78,7 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
         'events': eventBox.values.map((e) => e.toJson()).toList(),
         'templates': templateBox.values.map((t) => t.toJson()).toList(),
         'set_templates': setTemplateBox.values.map((t) => t.toJson()).toList(),
-        'version': 1,
+        'version': 2,
       };
 
       final jsonString = jsonEncode(data);

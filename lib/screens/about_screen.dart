@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/ui_state_provider.dart';
+import '../providers/package_info_provider.dart';
 import '../services/update_check_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -41,18 +41,28 @@ class AboutScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder: (context, snapshot) {
-              final version = snapshot.data?.version ?? '...';
-              return Text(
-                l10n.extensionVersion(version),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
+          ref
+              .watch(packageInfoProvider)
+              .when(
+                data: (info) => Text(
+                  l10n.extensionVersion(info.version),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
                 ),
-              );
-            },
-          ),
+                loading: () => Text(
+                  l10n.extensionVersion('...'),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+                error: (error, stackTrace) => Text(
+                  l10n.extensionVersion('unknown'),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ),
           const SizedBox(height: 12),
           Text(
             l10n.appDescription,

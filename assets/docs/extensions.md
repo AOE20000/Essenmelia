@@ -188,6 +188,10 @@ children:
 - **事件详情页 (Event Detail Page)**:
   - `eventId`: 当前正在查看的事件 ID。
   - `locale`: 当前应用的语言代码 (如 `zh_CN`, `en_US`)。
+- **onContextChanged(params)**: 仅适用于全局内容页（`eventId: "*"`）。当用户在详情页间切换时调用。
+  - `params.eventId`: 新进入的事件 ID。
+- **onPause()**: 当应用进入后台、屏幕关闭或系统进入“空闲模式”（长时间无操作）时调用。建议在此处暂停定时器、网络轮询等高耗能任务。
+- **onResume()**: 当应用恢复到前台或用户恢复操作时调用。
 
 > **示例**：在 Bangumi 预览扩展中，通过 `state.eventId` 即可知道当前需要为哪个任务搜索信息，而无需用户手动输入。
 
@@ -200,14 +204,35 @@ children:
     params: { id: 123, type: "update" }
   ```
 
-## 4. 常见问题与最佳实践 (Pitfalls & Best Practices)
+## 4. 性能优化 (Performance Optimization)
 
-### 4.1 布局崩溃：避免在滚动容器中使用弹性组件
+### 4.1 智能生命周期管理
+系统会自动管理扩展的活跃状态。当应用处于后台或用户长时间未操作（空闲）时，JS 引擎会进入“挂起”状态：
+- 所有的 `essenmelia_bridge` 消息将被忽略。
+- 系统会触发扩展的 `onPause` 钩子。
+- 开发者应主动在 `onPause` 中清理 `setInterval` 或未完成的请求，以降低 CPU 和内存占用。
+
+### 4.2 避免高频 API 调用
+系统会对扩展的 API 调用频率进行监测。
+- **警告阈值**：
+  - UI 操作（如 `showSnackBar`）：约 30次/分
+  - 网络请求：约 60次/分
+- **后果**：
+  - 触发阈值后，系统会弹出**警告通知**。
+  - 用户可在通知中点击**“阻止”**，该扩展将被永久屏蔽。
+- **建议**：
+  - 避免在循环中直接调用 `showSnackBar` 或 `render`。
+  - 使用 `updateProgress` 替代频繁的 UI 反馈。
+  - 批量处理数据，减少细碎的 API 调用。
+
+## 5. 常见问题与最佳实践 (Pitfalls & Best Practices)
+
+### 5.1 布局崩溃：避免在滚动容器中使用弹性组件
 - **现象**：报错 `RenderFlex children have non-zero flex but incoming height constraints are unbounded`。
 - **原因**：扩展内容页通常被包裹在 `SingleChildScrollView` 中。在滚动容器内使用 `expanded` 或 `spacer` 会导致它们试图占据“无限”的剩余空间，从而引发崩溃。
 - **对策**：使用 `sized_box` (固定尺寸) 或 `padding` 来代替 `spacer` 进行占位。
 
-### 4.2 JS 兼容性：遵循标准语法
+### 5.2 JS 兼容性：遵循标准语法
 - **现象**：脚本加载失败或报错 `SyntaxError`。
 - **原因**：内置 JS 引擎可能不支持过于超前的 ES 语法。
 - **对策**：
@@ -215,12 +240,12 @@ children:
   - 避免在全局作用域使用 **顶层 await**，改为在 `onLoad` 中使用 `.then().catch()`。
   - 尽量使用 `var` 或 `let` 声明变量以保证兼容性。
 
-### 4.3 全局扩展：处理上下文切换
+### 5.3 全局扩展：处理上下文切换
 - **现象**：在事件 A 中加载了内容，切换到事件 B 后内容依然显示 A 的信息。
 - **原因**：全局扩展（`eventId: "*"`）的脚本只会加载一次，不会随页面切换重载。
 - **对策**：实现 `globalThis.onContextChanged` 钩子。系统在切换事件详情页时会主动调用此函数，传入新的 `eventId`。
 
-### 4.4 列表绑定：正确的 children 语法
+### 5.4 列表绑定：正确的 children 语法
 - **现象**：动态生成的列表无法显示。
 - **原因**：错误地将变量绑定到了 `type` 而非 `children`。
 - **对策**：
@@ -230,9 +255,9 @@ children:
 
 ---
 
-## 4. JS 逻辑引擎 (ExtensionJsEngine)
+## 6. JS 逻辑引擎 (ExtensionJsEngine)
 
-### 4.1 异步与 Promise
+### 6.1 异步与 Promise
 Essenmelia 提供了完整的 `Promise` 支持。所有 API 调用均为异步。
 
 ```javascript
@@ -251,22 +276,9 @@ async function fetchData() {
   - 避免因频繁 `render` 导致的 UI 卡顿。
   - 进度完成后自动消失。
 
-### 4.2 避免高频 API 调用
-系统会对扩展的 API 调用频率进行监测。
-- **警告阈值**：
-  - UI 操作（如 `showSnackBar`）：约 30次/分
-  - 网络请求：约 60次/分
-- **后果**：
-  - 触发阈值后，系统会弹出**警告通知**。
-  - 用户可在通知中点击**“阻止”**，该扩展将被永久屏蔽。
-- **建议**：
-  - 避免在循环中直接调用 `showSnackBar` 或 `render`。
-  - 使用 `updateProgress` 替代频繁的 UI 反馈。
-  - 批量处理数据，减少细碎的 API 调用。
-
 ---
 
-## 5. 实战案例：Bangumi 收藏扩展 (Case Study)
+## 7. 实战案例：Bangumi 收藏扩展 (Case Study)
 
 本节以 `bangumi_collection` 扩展为例，解析如何构建一个包含**表单输入、网络请求、动态列表渲染**的完整应用。
 
@@ -484,7 +496,7 @@ async function fetchCollections() {
 
 ---
 
-## 6. JS API 参考 (API Reference)
+## 8. JS API 参考 (API Reference)
 
 在 `main.js` 中，你可以通过全局对象 `essenmelia` 访问以下方法：
 
@@ -507,7 +519,7 @@ async function fetchCollections() {
 
 ---
 
-## 7. 实战案例：多媒体与阅读 (Multimedia & Reading)
+## 9. 实战案例：多媒体与阅读 (Multimedia & Reading)
 
 本节展示如何构建包含**视频播放**、**Markdown 渲染**和**小说阅读器**的富媒体扩展。
 

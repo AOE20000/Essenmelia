@@ -430,6 +430,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addStep => 'Add Step';
 
   @override
+  String get stepDescription => 'Step Description';
+
+  @override
   String get addNewStepPlaceholder => 'Add new step...';
 
   @override
@@ -1362,6 +1365,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthly => 'Monthly';
 
   @override
+  String get yearly => 'Yearly';
+
+  @override
+  String get custom => 'Custom';
+
+  @override
+  String get repeatEvery => 'Repeat every';
+
+  @override
   String get recurrenceDaily => ' (Daily)';
 
   @override
@@ -1799,4 +1811,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get disabledInBookMode => 'Unavailable in book mode';
+
+  @override
+  String get customDuration => 'Custom Duration';
+
+  @override
+  String get days => 'Days';
+
+  @override
+  String get hours => 'Hours';
+
+  @override
+  String get minutes => 'Minutes';
+
+  @override
+  String get weeks => 'Weeks';
+
+  @override
+  String get months => 'Months';
+
+  @override
+  String get years => 'Years';
+
+  @override
+  String get reminderRule => 'Reminder Rule';
+
+  @override
+  String get cycleCount => 'Cycle Count';
+
+  @override
+  String get infinite => 'Infinite';
+
+  @override
+  String get addReminder => 'Add Reminder';
+
+  @override
+  String reminderStartingAt(String time) {
+    return 'Starting from $time';
+  }
+
+  @override
+  String repeatEveryXUnit(int value, String unit) {
+    return 'Repeat every $value $unit';
+  }
 }

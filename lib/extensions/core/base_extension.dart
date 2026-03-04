@@ -25,6 +25,12 @@ abstract class BaseExtension {
   /// Callback for receiving cross-extension events
   void onExtensionEvent(String name, Map<String, dynamic> data) {}
 
+  /// Triggered when the app enters background or becomes idle
+  void onPause() {}
+
+  /// Triggered when the app resumes from background or idle
+  void onResume() {}
+
   /// Main UI build method for the extension
   Widget build(BuildContext context, ExtensionApi api);
 }

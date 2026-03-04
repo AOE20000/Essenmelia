@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../providers/ui_state_provider.dart';
@@ -6,8 +7,10 @@ import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/events_provider.dart';
+import '../providers/app_lifecycle_provider.dart';
 import '../extensions/manager/extension_manager.dart';
 import '../models/event.dart';
+import '../services/notification_service.dart';
 
 // Meta box to store app-wide settings like list of DBs and active DB
 const String kMetaBoxName = 'essenmelia_meta';
@@ -56,6 +59,14 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
 
       await _openDbBoxes(activeDb);
 
+      // Listen to app lifecycle to optimize background performance
+      _ref.listen<AppLifecycleState>(appLifecycleProvider, (previous, next) {
+        final isInBackground =
+            next == AppLifecycleState.paused ||
+            next == AppLifecycleState.inactive;
+        NotificationService().setAppInBackground(isInBackground);
+      });
+
       state = AsyncValue.data(
         DbState(activeDbPrefix: activeDb, availableDbs: dbs),
       );
@@ -73,6 +84,9 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
     await Hive.openBox<StepTemplate>('${prefix}_templates');
     await Hive.openBox<StepSetTemplate>('${prefix}_set_templates');
     await Hive.openBox<String>('${prefix}_tags');
+
+    // Start reminder polling for the active database
+    NotificationService().startPolling(prefix);
   }
 
   Future<void> switchDb(String dbName) async {
@@ -179,7 +193,7 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
 
       // 6. Refresh UI state providers that depend on the database
       // Note: Must be called after _init() because reinit() calls internally await ref.read(dbProvider.future)
-      
+
       // Use Future.microtask to avoid "setState() or markNeedsBuild() called during build"
       // and ensure state updates are propagated after the current frame
       await Future.microtask(() async {
@@ -187,12 +201,11 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
         await _ref.read(themeProvider.notifier).reinit();
         await _ref.read(localeProvider.notifier).reinit();
         await _ref.read(displaySettingsProvider.notifier).reinit();
-        
+
         // Force refresh providers that might be caching old data
         _ref.invalidate(eventsProvider);
         _ref.invalidate(extensionManagerProvider);
       });
-      
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow;

@@ -161,6 +161,10 @@ class EventsExtensionApiHandler {
         : null;
     final reminderRecurrence = params['reminderRecurrence'] as String?;
     final reminderScheme = params['reminderScheme'] as String?;
+    final reminderRepeatValue = params['reminderRepeatValue'] as int?;
+    final reminderRepeatUnit = params['reminderRepeatUnit'] as String?;
+    final remindersJson = (params['reminders'] as List?)?.cast<Map<String, dynamic>>();
+    final reminders = remindersJson?.map((r) => EventReminder.fromJson(r)).toList();
     final stepsJson = (params['steps'] as List?)?.cast<Map<String, dynamic>>();
     final steps = stepsJson?.map((s) => EventStep.fromJson(s)).toList();
 
@@ -175,8 +179,11 @@ class EventsExtensionApiHandler {
         ..stepSuffix = stepSuffix
         ..reminderTime = reminderTime
         ..reminderRecurrence = reminderRecurrence
-        ..reminderScheme = reminderScheme;
+        ..reminderScheme = reminderScheme
+        ..reminderRepeatValue = reminderRepeatValue
+        ..reminderRepeatUnit = reminderRepeatUnit;
 
+      if (reminders != null) virtualEvent.reminders = reminders;
       if (steps != null) virtualEvent.steps = steps;
 
       final sandboxId = _getSandboxId(params);
@@ -199,6 +206,9 @@ class EventsExtensionApiHandler {
           reminderTime: reminderTime,
           reminderRecurrence: reminderRecurrence,
           reminderScheme: reminderScheme,
+          reminderRepeatValue: reminderRepeatValue,
+          reminderRepeatUnit: reminderRepeatUnit,
+          reminders: reminders,
           steps: steps,
         );
   }
@@ -247,6 +257,11 @@ class EventsExtensionApiHandler {
         if (eventJson.containsKey('description')) existing.description = eventJson['description'];
         if (eventJson.containsKey('tags')) existing.tags = (eventJson['tags'] as List?)?.cast<String>();
         if (eventJson.containsKey('imageUrl')) existing.imageUrl = eventJson['imageUrl'];
+        if (eventJson.containsKey('reminders')) {
+          existing.reminders = (eventJson['reminders'] as List)
+              .map((r) => EventReminder.fromJson(r as Map<String, dynamic>))
+              .toList();
+        }
         if (eventJson.containsKey('steps')) {
           existing.steps = (eventJson['steps'] as List)
               .map((s) => EventStep.fromJson(s as Map<String, dynamic>))
@@ -264,6 +279,14 @@ class EventsExtensionApiHandler {
           .toList();
     }
 
+    // 处理 Reminders 反序列化
+    List<EventReminder>? reminders;
+    if (eventJson.containsKey('reminders') && eventJson['reminders'] != null) {
+      reminders = (eventJson['reminders'] as List)
+          .map((r) => EventReminder.fromJson(r as Map<String, dynamic>))
+          .toList();
+    }
+
     await _ref.read(eventsProvider.notifier).updateEvent(
           id: id,
           title: eventJson['title'] as String?,
@@ -277,6 +300,9 @@ class EventsExtensionApiHandler {
               : null,
           reminderRecurrence: eventJson['reminderRecurrence'] as String?,
           reminderScheme: eventJson['reminderScheme'] as String?,
+          reminderRepeatValue: eventJson['reminderRepeatValue'] as int?,
+          reminderRepeatUnit: eventJson['reminderRepeatUnit'] as String?,
+          reminders: reminders,
           steps: steps,
         );
   }

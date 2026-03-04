@@ -1,3 +1,9 @@
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -13,15 +19,8 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
-}
-
 android {
     namespace = "org.essenmelia"
-    // 升级到 SDK 36，用户已修复本地环境
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -37,7 +36,6 @@ android {
 
     defaultConfig {
         applicationId = "org.essenmelia"
-        // Flutter 3.38.9 (Preview) 建议 minSdk 至少为 24
         minSdk = 24
         targetSdk = 36
         versionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
@@ -48,14 +46,12 @@ android {
         }
     }
 
-    val isRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
-
     splits {
         abi {
-            isEnable = isRelease
+            isEnable = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86_64")
-            isUniversalApk = isRelease
+            isUniversalApk = isEnable
         }
     }
 
@@ -71,7 +67,6 @@ android {
     buildTypes {
         release {
             signingConfig = if (keystoreProperties.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
-            // 禁用混淆和资源压缩以确保扩展兼容性
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

@@ -21,7 +21,9 @@ Future<void> saveJsonFile(String jsonContent, String fileName) async {
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/$fileName');
     await file.writeAsString(jsonContent);
-    await Share.shareXFiles([XFile(file.path)], text: 'Essenmelia Backup');
+    await SharePlus.instance.share(
+      ShareParams(text: 'Essenmelia Backup', files: [XFile(file.path)]),
+    );
   }
 }
 
@@ -42,7 +44,9 @@ Future<void> saveZipFile(Uint8List bytes, String fileName) async {
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/$fileName');
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: 'Essenmelia Full Backup');
+    await SharePlus.instance.share(
+      ShareParams(text: 'Essenmelia Full Backup', files: [XFile(file.path)]),
+    );
   }
 }
 

@@ -878,6 +878,12 @@ abstract class AppLocalizations {
   /// **'Add Step'**
   String get addStep;
 
+  /// Label for step description input
+  ///
+  /// In en, this message translates to:
+  /// **'Step Description'**
+  String get stepDescription;
+
   /// Hint text for adding a new step
   ///
   /// In en, this message translates to:
@@ -2552,6 +2558,24 @@ abstract class AppLocalizations {
   /// **'Monthly'**
   String get monthly;
 
+  /// Recurrence option: Yearly
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get yearly;
+
+  /// Recurrence option: Custom
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get custom;
+
+  /// Label for custom recurrence frequency
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat every'**
+  String get repeatEvery;
+
   /// Label for daily recurrence
   ///
   /// In en, this message translates to:
@@ -3337,6 +3361,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unavailable in book mode'**
   String get disabledInBookMode;
+
+  /// Label for custom duration settings
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Duration'**
+  String get customDuration;
+
+  /// Plural label for days
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get days;
+
+  /// Plural label for hours
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get hours;
+
+  /// Plural label for minutes
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes'**
+  String get minutes;
+
+  /// Plural label for weeks
+  ///
+  /// In en, this message translates to:
+  /// **'Weeks'**
+  String get weeks;
+
+  /// Plural label for months
+  ///
+  /// In en, this message translates to:
+  /// **'Months'**
+  String get months;
+
+  /// Plural label for years
+  ///
+  /// In en, this message translates to:
+  /// **'Years'**
+  String get years;
+
+  /// Label for reminder rule section
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Rule'**
+  String get reminderRule;
+
+  /// Label for the number of reminder cycles
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle Count'**
+  String get cycleCount;
+
+  /// Label for infinite cycles
+  ///
+  /// In en, this message translates to:
+  /// **'Infinite'**
+  String get infinite;
+
+  /// Label for adding a new reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Add Reminder'**
+  String get addReminder;
+
+  /// No description provided for @reminderStartingAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting from {time}'**
+  String reminderStartingAt(String time);
+
+  /// No description provided for @repeatEveryXUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat every {value} {unit}'**
+  String repeatEveryXUnit(int value, String unit);
 }
 
 class _AppLocalizationsDelegate

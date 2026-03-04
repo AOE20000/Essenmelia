@@ -49,6 +49,16 @@ class ProxyExtension extends BaseExtension {
     _engine?.handleEvent(name, data);
   }
 
+  @override
+  void onPause() {
+    _engine?.pause();
+  }
+
+  @override
+  void onResume() {
+    _engine?.resume();
+  }
+
   /// Allow external JS function calls
   Future<dynamic> callJsFunction(String name, [dynamic params]) async {
     return await _engine?.callFunction(name, params);

@@ -9,7 +9,6 @@ import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/calendar_service.dart';
 import 'tags_provider.dart';
-import '../l10n/l10n_provider.dart';
 
 const _undefined = Object();
 
@@ -62,6 +61,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     DateTime? reminderTime,
     String? reminderRecurrence,
     String? reminderScheme,
+    int? reminderRepeatValue,
+    String? reminderRepeatUnit,
+    List<EventReminder>? reminders,
     List<EventStep>? steps,
   }) async {
     if (_box == null) {
@@ -84,7 +86,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       ..stepSuffix = stepSuffix
       ..reminderTime = reminderTime
       ..reminderRecurrence = reminderRecurrence
-      ..reminderScheme = reminderScheme;
+      ..reminderScheme = reminderScheme
+      ..reminderRepeatValue = reminderRepeatValue
+      ..reminderRepeatUnit = reminderRepeatUnit
+      ..reminders = reminders ?? [];
 
     if (steps != null) {
       event.steps = steps;
@@ -97,28 +102,20 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           description: description ?? '',
           startTime: reminderTime,
           recurrence: reminderRecurrence,
+          repeatValue: reminderRepeatValue,
+          repeatUnit: reminderRepeatUnit,
         );
         event.calendarEventId = calId;
       } else {
         event.reminderId =
             DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
-        final l10n = ref.read(l10nProvider);
-        try {
-          await NotificationService().scheduleEventReminder(
-            event,
-            channelName: l10n.eventReminder,
-            channelDescription: l10n.eventReminderChannelDesc,
-            notificationTitle: l10n.eventReminder,
-          );
-        } catch (e) {
-          debugPrint(
-            'EventsNotifier: Failed to schedule reminder for new event: $e',
-          );
-        }
       }
     }
 
     await _box!.put(event.id, event);
+
+    // Notify data changed for reminder polling
+    NotificationService().notifyDataChanged();
 
     // Auto-sync tags to global library
     if (tags != null && tags.isNotEmpty) {
@@ -141,6 +138,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     dynamic reminderTime = _undefined,
     dynamic reminderRecurrence = _undefined,
     dynamic reminderScheme = _undefined,
+    dynamic reminderRepeatValue = _undefined,
+    dynamic reminderRepeatUnit = _undefined,
+    dynamic reminders = _undefined,
     List<EventStep>? steps,
   }) async {
     if (_box == null) {
@@ -174,13 +174,28 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         event.stepSuffix = stepSuffix as String?;
       }
 
+      if (reminderRepeatValue != _undefined) {
+        event.reminderRepeatValue = reminderRepeatValue as int?;
+      }
+      if (reminderRepeatUnit != _undefined) {
+        event.reminderRepeatUnit = reminderRepeatUnit as String?;
+      }
+      if (reminders != _undefined) {
+        event.reminders = reminders as List<EventReminder>? ?? [];
+      }
+
       // Handle reminder updates
-      final bool hasReminderChanges = (reminderTime != _undefined &&
-              reminderTime != event.reminderTime) ||
+      final bool hasReminderChanges =
+          (reminderTime != _undefined && reminderTime != event.reminderTime) ||
           (reminderRecurrence != _undefined &&
               reminderRecurrence != event.reminderRecurrence) ||
           (reminderScheme != _undefined &&
               reminderScheme != event.reminderScheme) ||
+          (reminderRepeatValue != _undefined &&
+              reminderRepeatValue != event.reminderRepeatValue) ||
+          (reminderRepeatUnit != _undefined &&
+              reminderRepeatUnit != event.reminderRepeatUnit) ||
+          reminders != _undefined ||
           title != null ||
           description != null;
 
@@ -200,7 +215,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
         // If new scheme is not notification, and old scheme was notification, cancel old notification
         if (newScheme != 'notification' && event.reminderId != null) {
-          await NotificationService().cancelReminder(event.reminderId!);
+          await NotificationService().cancel(event.reminderId!);
           event.reminderId = null;
         }
 
@@ -223,6 +238,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
               description: description ?? event.description ?? '',
               startTime: event.reminderTime!,
               recurrence: event.reminderRecurrence,
+              repeatValue: event.reminderRepeatValue,
+              repeatUnit: event.reminderRepeatUnit,
               existingEventId: event.calendarEventId,
             );
             event.calendarEventId = calId;
@@ -230,24 +247,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
             // For notification scheme, usually re-generate ID and schedule
             event.reminderId =
                 DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
-            final l10n = ref.read(l10nProvider);
-            try {
-              await NotificationService().scheduleEventReminder(
-                event,
-                channelName: l10n.eventReminder,
-                channelDescription: l10n.eventReminderChannelDesc,
-                notificationTitle: l10n.eventReminder,
-              );
-            } catch (e) {
-              debugPrint(
-                'EventsNotifier: Failed to schedule reminder for updated event: $e',
-              );
-            }
           }
         }
       }
 
       await event.save();
+      NotificationService().notifyDataChanged();
     }
   }
 
@@ -256,7 +261,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       await _init();
     }
     final event = _box!.get(id);
-    if (event != null) {
+    if (event != null && event.isInBox) {
       // 1. If there's a local image, try to delete file to save space
       if (event.imageUrl != null &&
           event.imageUrl!.isNotEmpty &&
@@ -276,7 +281,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       }
       // 2. If there's a scheduled reminder, cancel it
       if (event.reminderId != null) {
-        await NotificationService().cancelReminder(event.reminderId!);
+        await NotificationService().cancel(event.reminderId!);
+      }
+      for (final r in event.reminders ?? []) {
+        await NotificationService().cancel(r.id);
       }
 
       // Critical fix: delete calendar event first, wait for completion before deleting local DB record
@@ -285,23 +293,31 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         debugPrint(
           'EventsNotifier: Starting cleanup for calendar event ${event.calendarEventId}',
         );
-        final success = await CalendarService().deleteEvent(
-          event.calendarEventId!,
-        );
-        if (success) {
-          debugPrint(
-            'EventsNotifier: Successfully cleaned up calendar event ${event.calendarEventId}',
+        try {
+          final success = await CalendarService().deleteEvent(
+            event.calendarEventId!,
           );
-        } else {
-          debugPrint(
-            'EventsNotifier: Failed to clean up calendar event ${event.calendarEventId} - it might persist in system calendar',
-          );
+          if (success) {
+            debugPrint(
+              'EventsNotifier: Successfully cleaned up calendar event ${event.calendarEventId}',
+            );
+          } else {
+            debugPrint(
+              'EventsNotifier: Failed to clean up calendar event ${event.calendarEventId} - it might persist in system calendar',
+            );
+          }
+        } catch (e) {
+          debugPrint('EventsNotifier: Error cleaning up calendar event: $e');
         }
       }
 
       // 3. Finally delete from local database
       await event.delete();
+      NotificationService().notifyDataChanged();
       debugPrint('EventsNotifier: Deleted local event record $id');
+    } else if (event == null) {
+      // If it's not in the main box, check if it's in any sandbox (handled by handler)
+      debugPrint('EventsNotifier: Attempted to delete non-existent event $id');
     }
   }
 
@@ -316,6 +332,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         _syncTags(tags);
       }
       await event.save();
+      NotificationService().notifyDataChanged();
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:path/path.dart' as path;
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../runtime/api/extension_api_registry.dart';
 import '../core/extension_permission.dart';
 import '../utils/mock_data_generator.dart';
@@ -197,10 +198,12 @@ class SystemExtensionApiHandler extends BaseExtensionService {
         final file = File('${tempDir.path}/$safeFileName');
         await file.writeAsString(content);
 
-        final result = await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Exported from Essenmelia',
-          subject: fileName,
+        final result = await SharePlus.instance.share(
+          ShareParams(
+            text: 'Exported from Essenmelia',
+            files: [XFile(file.path)],
+            subject: fileName,
+          ),
         );
         return result.status == ShareResultStatus.success;
       } catch (e) {
@@ -243,11 +246,12 @@ class SystemExtensionApiHandler extends BaseExtensionService {
       if (isUntrusted) {
         return MockDataGenerator.generateSystemInfo();
       }
+      final packageInfo = await PackageInfo.fromPlatform();
       return {
         'platform': Platform.operatingSystem,
         'version': Platform.operatingSystemVersion,
         'locale': Platform.localeName,
-        'sdkVersion': '3.38.9-preview',
+        'sdkVersion': packageInfo.version,
       };
     });
   }

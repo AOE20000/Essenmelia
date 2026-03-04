@@ -95,11 +95,41 @@ Essenmelia 扩展系统旨在提供一个高度解耦、隐私安全且易于扩
   - **异常检测**：若调用频率极高（如网络请求 > 60次/分，UI操作 > 30次/分），系统会判定为异常行为。
   - **用户干预**：通过系统通知发送警告，并提供**“一键阻止”**按钮。一旦用户点击阻止，该扩展将被加入黑名单，所有 API 调用均会被永久拦截。
   - 这种机制在保障高性能扩展体验的同时，防止恶意扩展滥用资源或造成 UI 卡顿。
-- **代码参考**：[security_shield.dart](Flutter-New/lib/extensions/security/security_shield.dart)
+- **后台与空闲挂起 (Background & Idle Suspension)**：
+  - 系统集成全局生命周期监听与空闲检测。
+  - **自动挂起**：当应用进入后台或用户超过 5 分钟未操作时，系统会向所有活跃扩展发送 `onPause` 指令，并忽略后续的所有桥接消息。
+  - **自动恢复**：当应用返回前台或用户恢复操作时，发送 `onResume` 指令恢复正常通信。
+- **代码参考**：
+  - [security_shield.dart](Flutter-New/lib/extensions/security/security_shield.dart)
+  - [app_lifecycle_provider.dart](Flutter-New/lib/providers/app_lifecycle_provider.dart)
 
 ---
 
-## 3. 安全与权限模型
+## 4. 提醒系统架构 (Reminder System)
+
+Essenmelia 采用**应用内轮询 + 系统日历同步**的双重提醒架构。
+
+### 4.1 核心机制：每分钟轮询 (Per-minute Polling)
+为了降低对系统原生权限（如 Android 的 Exact Alarm）的依赖，系统采用基于 `Timer.periodic` 的轻量级轮询方案。
+
+- **工作流程**：
+  1. **数据绑定**：`NotificationService` 在数据库初始化后启动，绑定到当前活跃的数据库前缀。
+  2. **智能缓存**：系统会缓存所有具有提醒设置的事件，仅在数据发生变动（增删改）时刷新缓存，避免每分钟全量扫描数据库。
+  3. **时间匹配**：每 60 秒触发一次检查，对比当前时间与缓存中事件的 `reminderTime`、`recurrence`（重复周期）和 `customRepeat`（自定义频率）。
+  4. **防重触发**：内置 `_triggeredInLastMinute` 缓存，确保在同一分钟内不会重复弹出通知。
+- **后台表现**：
+  - 当应用进入后台但进程未被杀死时，轮询持续工作。
+  - 从后台恢复时，系统会自动补查一次提醒，防止因系统挂起导致的通知遗漏。
+
+### 4.2 增强型重复规则
+支持复杂的重复逻辑计算：
+- **标准周期**：每天、每周、每月、每年。
+- **自定义频率**：支持“每隔 X 分钟/小时/天/周/月/年”。
+- **计算逻辑**：基于 `DateTime.difference` 和模运算判断当前时间是否处于触发周期点。
+
+---
+
+## 5. 安全与权限模型
 
 ### 信任级别
 1. **已信任 (Trusted)**：用户显式授予完整权限，API 调用直达真实数据。

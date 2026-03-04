@@ -18,6 +18,7 @@ import '../models/event.dart';
 import '../providers/events_provider.dart';
 import '../providers/tags_provider.dart';
 import '../widgets/tag_input.dart';
+import '../widgets/batch_edit_tags_sheet.dart';
 import '../widgets/universal_image.dart';
 import '../providers/ui_state_provider.dart';
 import '../features/quick_action/ocr_service.dart';
@@ -36,14 +37,13 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
   late TextEditingController _suffixController;
+  late TextEditingController _reminderRepeatController;
   String? _currentImageUrl;
   List<String> _selectedTags = [];
   List<String> _recommendedTags = [];
   bool _isSaving = false;
   String _stepDisplayMode = 'number';
-  DateTime? _reminderTime;
-  String? _reminderRecurrence;
-  String? _reminderScheme;
+  List<EventReminder> _reminders = [];
 
   // ML 状态
   final OcrService _ocrService = OcrService();
@@ -63,12 +63,31 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     _suffixController = TextEditingController(
       text: widget.event?.stepSuffix ?? '',
     );
+    _reminderRepeatController = TextEditingController(
+      text: '${widget.event?.reminderRepeatValue ?? 1}',
+    );
     _currentImageUrl = widget.event?.imageUrl;
     _selectedTags = widget.event?.tags ?? [];
     _stepDisplayMode = widget.event?.stepDisplayMode ?? 'number';
-    _reminderTime = widget.event?.reminderTime;
-    _reminderRecurrence = widget.event?.reminderRecurrence ?? 'none';
-    _reminderScheme = widget.event?.reminderScheme ?? 'notification';
+
+    // Initialize reminders from event
+    if (widget.event != null) {
+      if ((widget.event!.reminders ?? []).isNotEmpty) {
+        _reminders = widget.event!.reminders!
+            .map((r) => EventReminder.fromJson(r.toJson()))
+            .toList();
+      } else if (widget.event!.reminderTime != null) {
+        // Migration: convert old single reminder to new list
+        final r = EventReminder()
+          ..time = widget.event!.reminderTime!
+          ..recurrence = widget.event!.reminderRecurrence ?? 'none'
+          ..scheme = widget.event!.reminderScheme ?? 'notification'
+          ..repeatValue = widget.event!.reminderRepeatValue
+          ..repeatUnit = widget.event!.reminderRepeatUnit
+          ..calendarEventId = widget.event!.calendarEventId;
+        _reminders = [r];
+      }
+    }
 
     _titleController.addListener(_updateRecommendations);
     _descController.addListener(_updateRecommendations);
@@ -125,21 +144,26 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                   ],
                 ),
               ),
-              if (_reminderTime != null)
+              if (_reminders.isNotEmpty)
                 Badge(
                   backgroundColor: theme.colorScheme.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                  label: const Icon(
-                    Icons.notifications_active,
-                    size: 10,
-                    color: Colors.white,
+                  label: Text(
+                    '${_reminders.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 14,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
               ),
             ],
           ),
@@ -155,67 +179,72 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.75,
-            minChildSize: 0.5,
-            maxChildSize: 1.0,
-            expand: false,
-            builder: (context, scrollController) => Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  child: Row(
-                    children: [
-                      Text(
-                        l10n.advancedSettings,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.5,
+              maxChildSize: 1.0,
+              expand: false,
+              builder: (context, scrollController) => Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                    child: Row(
+                      children: [
+                        Text(
+                          l10n.advancedSettings,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        _buildStepDisplaySettingsInModal(theme, setModalState),
+                        const SizedBox(height: 32),
+                        _buildReminderSectionInModal(theme, setModalState),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      12,
+                      24,
+                      12 + MediaQuery.of(context).viewPadding.bottom,
+                    ),
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(24),
-                    children: [
-                      _buildStepDisplaySettingsInModal(theme, setModalState),
-                      const SizedBox(height: 32),
-                      _buildReminderSectionInModal(theme, setModalState),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    24,
-                    12,
-                    24,
-                    12 + MediaQuery.of(context).viewPadding.bottom,
-                  ),
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      child: Text(l10n.finishSettings),
                     ),
-                    child: Text(l10n.finishSettings),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -302,7 +331,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Autocomplete<String>(
-                    initialValue: TextEditingValue(text: _suffixController.text),
+                    initialValue: TextEditingValue(
+                      text: _suffixController.text,
+                    ),
                     optionsBuilder: (TextEditingValue textEditingValue) {
                       final events = ref.read(eventsProvider).value ?? [];
                       final suffixes = events
@@ -325,35 +356,36 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                       _suffixController.text = selection;
                       setState(() {});
                     },
-                    fieldViewBuilder: (
-                      BuildContext context,
-                      TextEditingController fieldTextEditingController,
-                      FocusNode fieldFocusNode,
-                      VoidCallback onFieldSubmitted,
-                    ) {
-                      return TextField(
-                        controller: fieldTextEditingController,
-                        focusNode: fieldFocusNode,
-                        onChanged: (value) {
-                          _suffixController.text = value;
-                          setState(() {});
+                    fieldViewBuilder:
+                        (
+                          BuildContext context,
+                          TextEditingController fieldTextEditingController,
+                          FocusNode fieldFocusNode,
+                          VoidCallback onFieldSubmitted,
+                        ) {
+                          return TextField(
+                            controller: fieldTextEditingController,
+                            focusNode: fieldFocusNode,
+                            onChanged: (value) {
+                              _suffixController.text = value;
+                              setState(() {});
+                            },
+                            decoration: InputDecoration(
+                              hintText: l10n.suffixHint,
+                              prefixIcon: const Icon(Icons.label_outline),
+                              filled: true,
+                              fillColor: theme.colorScheme.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                          );
                         },
-                        decoration: InputDecoration(
-                          hintText: l10n.suffixHint,
-                          prefixIcon: const Icon(Icons.label_outline),
-                          filled: true,
-                          fillColor: theme.colorScheme.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                      );
-                    },
                     optionsViewBuilder: (context, onSelected, options) {
                       return Align(
                         alignment: Alignment.topLeft,
@@ -414,6 +446,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     StateSetter setModalState,
   ) {
     final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,224 +458,499 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               color: theme.colorScheme.primary,
             ),
             const SizedBox(width: 12),
-            Text(
-              l10n.scheduledReminders,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                l10n.scheduledReminders,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+            ),
+            IconButton.filledTonal(
+              onPressed: () => _addReminder(setModalState),
+              icon: const Icon(Icons.add, size: 20),
+              tooltip: l10n.addReminder,
             ),
           ],
         ),
         const SizedBox(height: 16),
-        Card(
-          elevation: 0,
-          color: theme.colorScheme.surfaceContainerLow,
-          margin: EdgeInsets.zero,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: InkWell(
-            onTap: () => _pickReminderTimeInModal(theme, setModalState),
+        if (_reminders.isEmpty)
+          Center(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                l10n.noReminderSet,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ),
+          )
+        else
+          ..._reminders.asMap().entries.map((entry) {
+            final index = entry.key;
+            final reminder = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Card(
+                elevation: 0,
+                color: theme.colorScheme.surfaceContainerLow,
+                margin: EdgeInsets.zero,
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () => _editReminder(index, setModalState),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
-                        Text(
-                          _reminderTime == null
-                              ? l10n.noReminderSet
-                              : DateFormat.yMMMd(
-                                  Localizations.localeOf(context).toString(),
-                                ).add_Hm().format(_reminderTime!),
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: _reminderTime == null
-                                ? theme.colorScheme.onSurfaceVariant
-                                : theme.colorScheme.onSurface,
-                            fontWeight: _reminderTime == null
-                                ? FontWeight.normal
-                                : FontWeight.bold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getReminderDescription(l10n, reminder),
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                reminder.scheme == 'calendar'
+                                    ? l10n.systemCalendar
+                                    : l10n.inAppNotification,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        if (_reminderTime != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _reminderScheme == 'calendar'
-                                ? l10n.calendarReminderDesc
-                                : l10n.notificationReminderDesc,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                            ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 20,
                           ),
-                        ],
+                          onPressed: () {
+                            setModalState(() {
+                              _reminders.removeAt(index);
+                            });
+                            setState(() {});
+                          },
+                          color: theme.colorScheme.error,
+                        ),
                       ],
                     ),
                   ),
-                  if (_reminderTime != null)
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20),
-                      onPressed: () {
-                        setModalState(() {
-                          _reminderTime = null;
-                          _reminderRecurrence = 'none';
-                          _reminderScheme = 'notification';
-                        });
-                        setState(() {}); // 同步到外部状态
-                      },
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                      ),
-                    )
-                  else
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
-        if (_reminderTime != null) ...[
-          const SizedBox(height: 24),
-          Text(
-            l10n.reminderScheme,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'notification',
-                  label: Text(l10n.inAppNotification),
-                  icon: const Icon(Icons.notifications_outlined),
-                ),
-                ButtonSegment(
-                  value: 'calendar',
-                  label: Text(l10n.systemCalendar),
-                  icon: const Icon(Icons.calendar_today_outlined),
-                ),
-              ],
-              selected: {_reminderScheme ?? 'notification'},
-              onSelectionChanged: (Set<String> newSelection) {
-                setModalState(() {
-                  _reminderScheme = newSelection.first;
-                });
-                setState(() {}); // 同步到外部状态
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            l10n.repeatCycle,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'none',
-                  label: Text(l10n.noRepeat),
-                  icon: const Icon(Icons.timer_outlined),
-                ),
-                ButtonSegment(
-                  value: 'daily',
-                  label: Text(l10n.daily),
-                  icon: const Icon(Icons.today_outlined),
-                ),
-                ButtonSegment(
-                  value: 'weekly',
-                  label: Text(l10n.weekly),
-                  icon: const Icon(Icons.calendar_view_week_outlined),
-                ),
-                ButtonSegment(
-                  value: 'monthly',
-                  label: Text(l10n.monthly),
-                  icon: const Icon(Icons.calendar_month_outlined),
-                ),
-              ],
-              selected: {_reminderRecurrence ?? 'none'},
-              onSelectionChanged: (Set<String> newSelection) {
-                setModalState(() {
-                  _reminderRecurrence = newSelection.first;
-                });
-                setState(() {}); // 同步到外部状态
-              },
-            ),
-          ),
-        ],
+            );
+          }),
       ],
     );
   }
 
-  Future<void> _pickReminderTimeInModal(
-    ThemeData theme,
-    StateSetter setModalState,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final now = DateTime.now();
-    final initialDate = _reminderTime?.isAfter(now) == true
-        ? _reminderTime!
-        : now;
-
-    final date = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: theme.copyWith(
-            colorScheme: theme.colorScheme.copyWith(
-              primary: theme.colorScheme.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+  void _addReminder(StateSetter setModalState) {
+    final newReminder = EventReminder()
+      ..time = DateTime.now().add(const Duration(minutes: 30));
+    // Round to next 5 minutes
+    newReminder.time = newReminder.time.subtract(
+      Duration(
+        minutes: newReminder.time.minute % 5,
+        seconds: newReminder.time.second,
+      ),
     );
 
-    if (date != null && mounted) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(initialDate),
-      );
+    _showReminderEditor(newReminder, (updated) {
+      setModalState(() {
+        _reminders.add(updated);
+      });
+      setState(() {});
+    });
+  }
 
-      if (time != null && mounted) {
-        final selectedDateTime = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        );
+  void _editReminder(int index, StateSetter setModalState) {
+    final reminder = _reminders[index];
+    // Create a copy for editing
+    final copy = EventReminder.fromJson(reminder.toJson());
 
-        if (selectedDateTime.isBefore(DateTime.now())) {
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(l10n.reminderTimeError)));
-          }
-          return;
-        }
+    _showReminderEditor(copy, (updated) {
+      setModalState(() {
+        _reminders[index] = updated;
+      });
+      setState(() {});
+    });
+  }
 
-        setModalState(() {
-          _reminderTime = selectedDateTime;
-        });
-        setState(() {}); // 同步到外部状态
-      }
+  void _showReminderEditor(
+    EventReminder reminder,
+    Function(EventReminder) onSave,
+  ) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    // Local state for the editor
+    DateTime editTime = reminder.time;
+    String editRecurrence = reminder.recurrence;
+    String editScheme = reminder.scheme;
+    int? editRepeatValue = reminder.repeatValue ?? 1;
+    String? editRepeatUnit = reminder.repeatUnit ?? 'day';
+    int? editTotalCycles = reminder.totalCycles;
+
+    final repeatController = TextEditingController(text: '$editRepeatValue');
+    final cycleController = TextEditingController(
+      text: editTotalCycles != null ? '$editTotalCycles' : '',
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (modalContext) => StatefulBuilder(
+        builder: (context, setEditorState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.editEvent,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Time Picker
+                  Card(
+                    elevation: 0,
+                    color: theme.colorScheme.surfaceContainerLow,
+                    margin: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: InkWell(
+                      onTap: () async {
+                        final picked = await _pickDateTime(editTime);
+                        if (picked != null) {
+                          setEditorState(() => editTime = picked);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                DateFormat.yMMMd(
+                                  Localizations.localeOf(
+                                    modalContext,
+                                  ).toString(),
+                                ).add_Hm().format(editTime),
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.edit_calendar_rounded,
+                              size: 20,
+                              color: theme.colorScheme.outline,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  Text(l10n.reminderScheme, style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(
+                          value: 'notification',
+                          label: Text(l10n.inAppNotification),
+                          icon: const Icon(Icons.notifications_outlined),
+                        ),
+                        ButtonSegment(
+                          value: 'calendar',
+                          label: Text(l10n.systemCalendar),
+                          icon: const Icon(Icons.calendar_today_outlined),
+                        ),
+                      ],
+                      selected: {editScheme},
+                      onSelectionChanged: (val) =>
+                          setEditorState(() => editScheme = val.first),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  Text(l10n.repeatCycle, style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 12),
+                  // Standard Recurrence (SegmentedButton as requested)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(
+                          value: 'none',
+                          label: Text(l10n.noRepeat),
+                        ),
+                        ButtonSegment(value: 'daily', label: Text(l10n.daily)),
+                        ButtonSegment(
+                          value: 'weekly',
+                          label: Text(l10n.weekly),
+                        ),
+                        ButtonSegment(
+                          value: 'monthly',
+                          label: Text(l10n.monthly),
+                        ),
+                        ButtonSegment(
+                          value: 'yearly',
+                          label: Text(l10n.yearly),
+                        ),
+                        ButtonSegment(
+                          value: 'custom',
+                          label: Text(l10n.custom),
+                        ),
+                      ],
+                      selected: {editRecurrence},
+                      onSelectionChanged: (val) =>
+                          setEditorState(() => editRecurrence = val.first),
+                    ),
+                  ),
+
+                  if (editRecurrence == 'custom') ...[
+                    const SizedBox(height: 16),
+                    // Custom Interval Row (requested to be on its own row)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(l10n.repeatEvery),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 60,
+                            child: TextField(
+                              controller: repeatController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                              ),
+                              onChanged: (val) =>
+                                  editRepeatValue = int.tryParse(val) ?? 1,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButton<String>(
+                              value: editRepeatUnit,
+                              underline: const SizedBox(),
+                              isExpanded: true,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'minute',
+                                  child: Text(l10n.minutes),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'hour',
+                                  child: Text(l10n.hours),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'day',
+                                  child: Text(l10n.days),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'week',
+                                  child: Text(l10n.weeks),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'month',
+                                  child: Text(l10n.months),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'year',
+                                  child: Text(l10n.years),
+                                ),
+                              ],
+                              onChanged: (val) =>
+                                  setEditorState(() => editRepeatUnit = val),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  if (editRecurrence != 'none') ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      '${l10n.cycleCount} (${l10n.infinite})',
+                      style: theme.textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: cycleController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: '例如: 10',
+                        filled: true,
+                        fillColor: theme.colorScheme.surfaceContainerHigh,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        prefixIcon: const Icon(Icons.loop_rounded),
+                      ),
+                      onChanged: (val) => editTotalCycles = int.tryParse(val),
+                    ),
+                  ],
+
+                  const SizedBox(height: 32),
+                  FilledButton(
+                    onPressed: () {
+                      reminder.time = editTime;
+                      reminder.recurrence = editRecurrence;
+                      reminder.scheme = editScheme;
+                      reminder.repeatValue = editRepeatValue;
+                      reminder.repeatUnit = editRepeatUnit;
+                      reminder.totalCycles = editTotalCycles;
+                      onSave(reminder);
+                      Navigator.pop(modalContext);
+                    },
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(l10n.confirm),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<DateTime?> _pickDateTime(DateTime initial) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (date == null) return null;
+
+    if (!mounted) return null;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return null;
+
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  String _getReminderDescription(
+    AppLocalizations l10n,
+    EventReminder reminder,
+  ) {
+    final timeStr = DateFormat.yMMMd(
+      Localizations.localeOf(context).toString(),
+    ).add_Hm().format(reminder.time);
+
+    if (reminder.recurrence == 'none') {
+      return timeStr;
     }
+
+    String recurrenceStr = '';
+    switch (reminder.recurrence) {
+      case 'daily':
+        recurrenceStr = l10n.daily;
+        break;
+      case 'weekly':
+        recurrenceStr = l10n.weekly;
+        break;
+      case 'monthly':
+        recurrenceStr = l10n.monthly;
+        break;
+      case 'yearly':
+        recurrenceStr = l10n.yearly;
+        break;
+      case 'custom':
+        if (reminder.repeatValue != null && reminder.repeatUnit != null) {
+          String unitLabel = '';
+          switch (reminder.repeatUnit) {
+            case 'minute':
+              unitLabel = l10n.minutes;
+              break;
+            case 'hour':
+              unitLabel = l10n.hours;
+              break;
+            case 'day':
+              unitLabel = l10n.days;
+              break;
+            case 'week':
+              unitLabel = l10n.weeks;
+              break;
+            case 'month':
+              unitLabel = l10n.months;
+              break;
+            case 'year':
+              unitLabel = l10n.years;
+              break;
+          }
+          recurrenceStr =
+              '${l10n.repeatEvery} ${reminder.repeatValue} $unitLabel';
+        } else {
+          recurrenceStr = l10n.custom;
+        }
+        break;
+    }
+
+    String result = '$timeStr ($recurrenceStr)';
+    if (reminder.totalCycles != null && reminder.totalCycles! > 0) {
+      result += ' · ${reminder.currentCycle ?? 0}/${reminder.totalCycles}';
+    }
+    return result;
   }
 
   @override
@@ -652,6 +960,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     _titleController.dispose();
     _descController.dispose();
     _suffixController.dispose();
+    _reminderRepeatController.dispose();
     _ocrService.dispose();
     _contourService.dispose();
     super.dispose();
@@ -1395,8 +1704,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
           final uri = Uri.parse(_currentImageUrl!);
           String extension = p.extension(uri.path);
           if (extension.isEmpty) extension = '.jpg';
-          
-          final fileName = 'exported_${DateTime.now().millisecondsSinceEpoch}$extension';
+
+          final fileName =
+              'exported_${DateTime.now().millisecondsSinceEpoch}$extension';
           final file = File(p.join(tempDir.path, fileName));
           await file.writeAsBytes(response.bodyBytes);
           filePath = file.path;
@@ -1409,7 +1719,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
       final file = File(filePath);
       if (await file.exists()) {
-        await Share.shareXFiles([XFile(file.path)], text: l10n.exportImage);
+        await SharePlus.instance.share(
+          ShareParams(text: l10n.exportImage, files: [XFile(file.path)]),
+        );
       } else {
         throw 'File not found';
       }
@@ -1518,6 +1830,22 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     setState(() => _isSaving = true);
 
     try {
+      // Sync legacy fields with the first reminder for backward compatibility
+      DateTime? legacyTime;
+      String? legacyRecurrence;
+      String? legacyScheme;
+      int? legacyRepeatValue;
+      String? legacyRepeatUnit;
+
+      if (_reminders.isNotEmpty) {
+        final r = _reminders.first;
+        legacyTime = r.time;
+        legacyRecurrence = r.recurrence;
+        legacyScheme = r.scheme;
+        legacyRepeatValue = r.repeatValue;
+        legacyRepeatUnit = r.repeatUnit;
+      }
+
       if (widget.event != null) {
         await ref
             .read(eventsProvider.notifier)
@@ -1531,9 +1859,12 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               stepSuffix: _suffixController.text.trim().isEmpty
                   ? null
                   : _suffixController.text.trim(),
-              reminderTime: _reminderTime,
-              reminderRecurrence: _reminderRecurrence,
-              reminderScheme: _reminderScheme,
+              reminderTime: legacyTime,
+              reminderRecurrence: legacyRecurrence,
+              reminderScheme: legacyScheme,
+              reminderRepeatValue: legacyRepeatValue,
+              reminderRepeatUnit: legacyRepeatUnit,
+              reminders: _reminders,
             );
       } else {
         await ref
@@ -1547,9 +1878,12 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               stepSuffix: _suffixController.text.trim().isEmpty
                   ? null
                   : _suffixController.text.trim(),
-              reminderTime: _reminderTime,
-              reminderRecurrence: _reminderRecurrence,
-              reminderScheme: _reminderScheme,
+              reminderTime: legacyTime,
+              reminderRecurrence: legacyRecurrence,
+              reminderScheme: legacyScheme,
+              reminderRepeatValue: legacyRepeatValue,
+              reminderRepeatUnit: legacyRepeatUnit,
+              reminders: _reminders,
             );
       }
 
@@ -1791,19 +2125,25 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             filled: true,
             fillColor: theme.colorScheme.surfaceContainerLowest,
             border: OutlineInputBorder(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
               borderSide: BorderSide(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
               borderSide: BorderSide(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
               borderSide: BorderSide(
                 color: theme.colorScheme.primary.withValues(alpha: 0.5),
                 width: 2,
@@ -1825,7 +2165,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 : null,
           ),
         ),
-        
+
         // Description Field - Integrated with title via border
         TextField(
           controller: _descController,
@@ -1852,19 +2192,25 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
             filled: true,
             fillColor: theme.colorScheme.surfaceContainerLowest,
             border: OutlineInputBorder(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(20),
+              ),
               borderSide: BorderSide(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(20),
+              ),
               borderSide: BorderSide(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(20),
+              ),
               borderSide: BorderSide(
                 color: theme.colorScheme.primary.withValues(alpha: 0.5),
                 width: 2,
@@ -1890,13 +2236,25 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               color: theme.colorScheme.primary,
             ),
             const SizedBox(width: 12),
-            Text(
-              l10n.tags,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                l10n.tags,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            if (widget.event != null)
+              TextButton.icon(
+                onPressed: () => _showBatchEditTags(context),
+                icon: const Icon(Icons.edit_note_rounded, size: 18),
+                label: Text(l10n.batchEditTags),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
@@ -1910,6 +2268,32 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         ),
       ],
     );
+  }
+
+  void _showBatchEditTags(BuildContext context) async {
+    if (widget.event == null) return;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BatchEditTagsSheet(selectedIds: {widget.event!.id}),
+    );
+
+    // After closing, refresh local tags from the updated event in the database
+    if (mounted) {
+      final events = ref.read(eventsProvider).value ?? [];
+      final updatedEvent = events.cast<Event?>().firstWhere(
+        (e) => e?.id == widget.event!.id,
+        orElse: () => null,
+      );
+      if (updatedEvent != null) {
+        setState(() {
+          _selectedTags = List<String>.from(updatedEvent.tags ?? []);
+        });
+        _updateRecommendations();
+      }
+    }
   }
 
   @override

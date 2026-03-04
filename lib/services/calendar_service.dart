@@ -22,6 +22,8 @@ class CalendarService {
     required String description,
     required DateTime startTime,
     String? recurrence,
+    int? repeatValue,
+    String? repeatUnit,
     String? existingEventId,
   }) async {
     try {
@@ -31,24 +33,16 @@ class CalendarService {
       }
 
       final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
-      // Find the best writable calendar based on Android Provider best practices:
-      // 1. Prefer cloud-synced accounts (Google, Xiaomi, etc.)
-      // 2. Avoid "LOCAL" account types if a synced one exists
-      // 3. Prefer "Primary" or "Default" calendars
       final calendars = calendarsResult.data ?? [];
 
-      // Sort calendars to put preferred ones at the top
       final sortedCalendars = List<Calendar>.from(calendars)
         ..sort((a, b) {
-          // Helper to check if an account is likely cloud-synced
           bool isSynced(Calendar c) {
             final name = c.accountName?.toLowerCase() ?? '';
-            final type =
-                c.accountType?.toLowerCase() ??
-                ''; // Note: accountType might not be in all plugin versions
+            final type = c.accountType?.toLowerCase() ?? '';
             return name.contains('google') ||
                 name.contains('xiaomi') ||
-                name.contains('@') || // Likely an email account
+                name.contains('@') ||
                 (type != 'local' && type.isNotEmpty);
           }
 
@@ -97,19 +91,27 @@ class CalendarService {
 
       if (recurrence != null && recurrence != 'none') {
         RecurrenceFrequency? frequency;
-        switch (recurrence) {
-          case 'daily':
-            frequency = RecurrenceFrequency.Daily;
-            break;
-          case 'weekly':
-            frequency = RecurrenceFrequency.Weekly;
-            break;
-          case 'monthly':
-            frequency = RecurrenceFrequency.Monthly;
-            break;
+        int interval = 1;
+
+        if (recurrence == 'custom' && repeatValue != null && repeatUnit != null) {
+          interval = repeatValue;
+          switch (repeatUnit) {
+            case 'day': frequency = RecurrenceFrequency.Daily; break;
+            case 'week': frequency = RecurrenceFrequency.Weekly; break;
+            case 'month': frequency = RecurrenceFrequency.Monthly; break;
+            case 'year': frequency = RecurrenceFrequency.Yearly; break;
+          }
+        } else {
+          switch (recurrence) {
+            case 'daily': frequency = RecurrenceFrequency.Daily; break;
+            case 'weekly': frequency = RecurrenceFrequency.Weekly; break;
+            case 'monthly': frequency = RecurrenceFrequency.Monthly; break;
+            case 'yearly': frequency = RecurrenceFrequency.Yearly; break;
+          }
         }
+
         if (frequency != null) {
-          event.recurrenceRule = RecurrenceRule(frequency);
+          event.recurrenceRule = RecurrenceRule(frequency, interval: interval);
         }
       }
 

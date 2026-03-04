@@ -4,17 +4,19 @@ alwaysApply: true
 
 # 项目构建与环境维护注意事项
 
-本项目运行在 Flutter 3.38.9 环境下，由于涉及 Gradle 8.x 的 Lazy Property 特性以及 Windows 中文路径兼容性，构建环境相对敏感。后续维护请务必参考以下说明。
+本项目运行在 Flutter 3.41.3 环境下，由于涉及 Gradle 8.x 的 Lazy Property 特性以及 Windows 中文路径兼容性，构建环境相对敏感。后续维护请务必参考以下说明。
 扩展架构文档：assets\docs\architecture.md
 其他文档：assets\docs\
 ---
 
 ## 1. 核心构建环境
-- **Flutter SDK**: `3.38.9` (Stable channel)
+- **Flutter SDK**: `3.41.3` (Stable channel)
+- **Dart SDK**: `3.11.1`
 - **Gradle**: `8.12`
 - **Android Gradle Plugin (AGP)**: `8.9.1`
 - **Kotlin**: `2.1.0`
 - **NDK Version**: `28.2.13676358` (必须显式指定)
+- **Settings**: 使用 Groovy 版本的 `settings.gradle` 以确保 Flutter 插件加载稳定性。
 
 ---
 
@@ -30,7 +32,21 @@ alwaysApply: true
 
 ---
 
-### B. Windows 中文路径兼容性
+### B. 依赖版本维护 (Package Maintenance)
+**状态**：由于 Flutter SDK 升级，部分核心包需要进行大版本更新。
+
+**对策**：
+- **Riverpod**: **严禁升级至 3.x**。锁定在 `^2.5.1` (Resolvable: `2.6.1`)。项目目前大量使用 `StateNotifier`，不支持 Riverpod 3.0 的破坏性更新。
+- **建议升级的包**：
+    - `android_alarm_manager_plus`: `^5.0.0` (支持最新的 Android 系统调度)
+    - `file_picker`: `^10.3.10`
+    - `go_router`: `^17.1.0`
+    - `google_fonts`: `^8.0.2`
+    - `share_plus`: `^12.0.1`
+- **构建工具**: `build_runner` 由于 `hive_generator` 兼容性限制，**必须保持在 `^2.4.13`**。
+- **Gradle 结构**: 项目已切换至 Flutter Gradle Plugin (FGP) 结构。如果遇到 `Cannot run Project.afterEvaluate` 错误，请确保 `settings.gradle` 使用 Groovy 编写且插件声明顺序正确。
+
+### C. Windows 中文路径兼容性
 **问题**：如果项目位于含有中文的路径下（例如用户名为 `阿哈`），Kotlin 增量编译会因路径编码问题崩溃。
 
 **对策**：
@@ -42,7 +58,27 @@ alwaysApply: true
 - **Riverpod**: 锁定在 `^2.5.1`。项目目前大量使用 `StateNotifier`，不支持 Riverpod 3.0 的破坏性更新。
 - **compileSdk / targetSdk**: 统一锁定在 `36`。
 
-### D. 国际化 (i18n) 维护
+### D. 增强型常规提醒 (Enhanced Reminders)
+**状态**：已移除先前复杂的高级提醒方案，改为增强常规提醒。
+
+**功能**：
+- **重复周期**：支持 `每天`, `每周`, `每月`, `每年` 以及 `自定义` 周期。
+- **自定义频率**：支持 “每隔 X 分钟/小时/天/周/月/年” 的灵活配置。
+- **实现逻辑**：
+    - **轮询机制**：移除了 `AndroidAlarmManager`，改用应用内每分钟轮询检查（基于 `NotificationService` 的 `Timer`）。
+    - **触发逻辑**：当应用运行时，每分钟会自动检查所有事件的提醒设置，并在匹配的时间点发送本地通知。
+    - **性能优化**：系统会缓存具有提醒设置的事件，仅在数据变动时刷新缓存，避免每分钟全量扫描数据库。
+    - **系统日历**：同步支持增强后的重复规则（基于 `device_calendar` 的 RecurrenceRule）。
+
+### E. 性能与生命周期优化 (Performance & Lifecycle)
+**状态**：已实施全局生命周期管理与空闲检测。
+
+**对策**：
+- **生命周期监听**：通过 `appLifecycleProvider` 监听应用前后台切换。进入后台时，会自动暂停非必要的扩展活动和高频轮询优化。
+- **空闲检测**：通过 `IdleDetector` 监听用户操作。若超过 5 分钟无操作，应用进入“空闲模式”，进一步降低 CPU 占用。
+- **扩展管理**：在后台或空闲时，所有运行中的扩展（JS 引擎）会收到 `onPause` 回调并停止与宿主的非必要通信。
+
+### F. 国际化 (i18n) 维护
 **状态**：项目已完成全量 ARB 国际化迁移。
 
 **对策**：
@@ -91,12 +127,19 @@ alwaysApply: true
 
 ---
 
-## 4. 建议的开发流程
-1. **添加插件**：`flutter pub add <plugin_name>`
-2. **检查构建**：`flutter build apk --release`
-3. **若失败**：
-   - 检查控制台输出。
-   - `flutter clean` 后重试。
+## 4. 标准化打包流程
+为了确保 APK 路径正确且与 GitHub Actions 脚本保持一致，请按照以下步骤打包：
+
+1. **环境清理**（可选）：`flutter clean`
+2. **依赖获取**：`flutter pub get`
+3. **代码生成**：`dart run build_runner build --delete-conflicting-outputs`
+4. **执行打包**：
+   - **Debug**: `flutter build apk --debug`
+   - **Release**: `flutter build apk --release --no-tree-shake-icons`
+
+**注意**：
+- 项目已在 `android/build.gradle.kts` 中配置 `rootProject.buildDir = file("../build")`。这是 Flutter 标准配置，确保 APK 生成在根目录的 `build/` 文件夹下，以便 Flutter 工具链和 GitHub 脚本能正确识别。
+- 若需更新图标，请手动运行 `dart run flutter_launcher_icons`。该步骤未包含在 GitHub 自动打包流程中。
 
 ---
-*最后更新日期：2026-02-15*
+*最后更新日期：2026-03-04*

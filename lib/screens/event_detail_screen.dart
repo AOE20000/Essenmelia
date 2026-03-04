@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../models/event.dart';
 import '../providers/events_provider.dart';
+import '../providers/selection_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../widgets/universal_image.dart';
 import 'edit_event_sheet.dart';
@@ -52,6 +53,127 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
+  List<Widget> _buildRemindersList(
+    BuildContext context,
+    ThemeData theme,
+    Event event,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toString();
+    final List<EventReminder> reminders = [];
+
+    if ((event.reminders ?? []).isNotEmpty) {
+      reminders.addAll(event.reminders!);
+    } else if (event.reminderTime != null) {
+      reminders.add(
+        EventReminder()
+          ..time = event.reminderTime!
+          ..recurrence = event.reminderRecurrence ?? 'none'
+          ..repeatValue = event.reminderRepeatValue
+          ..repeatUnit = event.reminderRepeatUnit,
+      );
+    }
+
+    return reminders.map((reminder) {
+      String recurrenceStr = '';
+      if (reminder.recurrence != 'none') {
+        switch (reminder.recurrence) {
+          case 'daily':
+            recurrenceStr = l10n.daily;
+            break;
+          case 'weekly':
+            recurrenceStr = l10n.weekly;
+            break;
+          case 'monthly':
+            recurrenceStr = l10n.monthly;
+            break;
+          case 'yearly':
+            recurrenceStr = l10n.yearly;
+            break;
+          case 'custom':
+            if (reminder.repeatValue != null && reminder.repeatUnit != null) {
+              String unitLabel = '';
+              switch (reminder.repeatUnit) {
+                case 'minute':
+                  unitLabel = l10n.minutes;
+                  break;
+                case 'hour':
+                  unitLabel = l10n.hours;
+                  break;
+                case 'day':
+                  unitLabel = l10n.days;
+                  break;
+                case 'week':
+                  unitLabel = l10n.weeks;
+                  break;
+                case 'month':
+                  unitLabel = l10n.months;
+                  break;
+                case 'year':
+                  unitLabel = l10n.years;
+                  break;
+              }
+              recurrenceStr =
+                  '${l10n.repeatEvery} ${reminder.repeatValue} $unitLabel';
+            } else {
+              recurrenceStr = l10n.custom;
+            }
+            break;
+        }
+      }
+
+      String description = DateFormat.MMMd(
+        locale,
+      ).add_Hm().format(reminder.time);
+      if (recurrenceStr.isNotEmpty) {
+        description += ' ($recurrenceStr)';
+      }
+
+      if (reminder.totalCycles != null && reminder.totalCycles! > 0) {
+        description +=
+            ' · ${reminder.currentCycle ?? 0}/${reminder.totalCycles}';
+      }
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainer,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  reminder.recurrence == 'none'
+                      ? Icons.notifications_active_rounded
+                      : Icons.update_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Handle small to large screen transition
@@ -95,14 +217,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     // Merge specific and global contents, ensuring no duplicates from same extension
     // And filter out extensions that are NOT running
     final Map<String, Map<String, dynamic>> mergedMap = {};
-    
+
     for (var content in globalContents) {
       final extId = content['extensionId'] as String;
       if (authNotifier.isRunning(extId)) {
         mergedMap[extId] = content;
       }
     }
-    
+
     for (var content in eventSpecificContents) {
       final extId = content['extensionId'] as String;
       if (authNotifier.isRunning(extId)) {
@@ -469,44 +591,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         }).toList(),
                       ),
                     ],
-                    if (event.reminderTime != null) ...[
+                    if ((event.reminders ?? []).isNotEmpty ||
+                        event.reminderTime != null) ...[
                       const SizedBox(height: 16),
-                      Card(
-                        elevation: 0,
-                        color: theme.colorScheme.surfaceContainer,
-                        margin: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: theme.colorScheme.outlineVariant,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.notifications_active_rounded,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                l10n.reminderAt(
-                                  DateFormat.MMMd(
-                                    Localizations.localeOf(context).toString(),
-                                  ).add_Hm().format(event.reminderTime!),
-                                ),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      ..._buildRemindersList(context, theme, event),
                     ],
                     if (event.description != null &&
                         event.description!.isNotEmpty) ...[
@@ -661,6 +749,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             child: InkWell(
               onTap: () =>
                   ref.read(eventsProvider.notifier).toggleStep(event.id, index),
+              onLongPress: () => _showEditStepDialog(context, ref, event, index),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -825,12 +914,130 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ),
     );
     if (confirm == true) {
-      ref.read(eventsProvider.notifier).deleteEvent(event.id);
+      // 1. Remove from selection if exists
+      if (ref.read(selectionProvider).contains(event.id)) {
+        ref.read(selectionProvider.notifier).toggle(event.id);
+      }
+
+      // 2. Clear focus/selection in Large Screen
       ref.read(selectedEventIdProvider.notifier).state = null;
+
+      // 3. Perform actual deletion
+      await ref.read(eventsProvider.notifier).deleteEvent(event.id);
+
+      // 4. Navigate back on Mobile
       if (!widget.isSidePanel && context.mounted) {
         context.pop();
       }
     }
+  }
+
+  Future<void> _showEditStepDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Event event,
+    int index,
+  ) async {
+    final step = event.steps[index];
+    final controller = TextEditingController(text: step.description);
+    // Position cursor at end
+    controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: controller.text.length),
+    );
+
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  Icons.edit_note_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(l10n.edit),
+              ],
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l10n.stepDescription,
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHigh,
+                prefixIcon: const Icon(Icons.checklist_rounded, size: 20),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 20),
+                        onPressed: () {
+                          controller.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              maxLines: 5,
+              minLines: 1,
+              onChanged: (_) => setState(() {}),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () {
+                  final steps = List<EventStep>.from(event.steps);
+                  steps.removeAt(index);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: Text(l10n.delete),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final newDescription = controller.text.trim();
+                  if (newDescription.isNotEmpty) {
+                    final steps = List<EventStep>.from(event.steps);
+                    steps[index] = steps[index].copyWith(
+                      description: newDescription,
+                    );
+                    ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  }
+                  Navigator.pop(context);
+                },
+                child: Text(l10n.confirm),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 

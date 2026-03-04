@@ -17,6 +17,7 @@ import '../core/extension_metadata.dart';
 import '../core/extension_permission.dart';
 import '../core/extension_api.dart';
 import '../core/globals.dart';
+import '../../providers/app_lifecycle_provider.dart';
 import '../../models/event.dart';
 import '../runtime/api/extension_api_impl.dart';
 import '../runtime/proxy_extension.dart';
@@ -223,7 +224,37 @@ class ExtensionManager extends ChangeNotifier
       }
     });
 
+    _ref.listen(appLifecycleProvider, (previous, next) {
+      if (next == AppLifecycleState.paused || next == AppLifecycleState.inactive) {
+        _pauseAllExtensions();
+      } else if (next == AppLifecycleState.resumed) {
+        _resumeAllExtensions();
+      }
+    });
+
+    _ref.listen(appIdleProvider, (previous, next) {
+      if (next == true) {
+        debugPrint('ExtensionManager: System idle, pausing extensions');
+        _pauseAllExtensions();
+      } else {
+        debugPrint('ExtensionManager: System active, resuming extensions');
+        _resumeAllExtensions();
+      }
+    });
+
     await _loadDynamicExtensions();
+  }
+
+  void _pauseAllExtensions() {
+    for (final ext in _activeExtensions.values) {
+      ext.onPause();
+    }
+  }
+
+  void _resumeAllExtensions() {
+    for (final ext in _activeExtensions.values) {
+      ext.onResume();
+    }
   }
 
   // --- Dynamic Extensions Loading ---
@@ -482,9 +513,11 @@ class ExtensionManager extends ChangeNotifier
         final file = File('${tempDir.path}/$fileName');
         await file.writeAsBytes(zipData);
 
-        await Share.shareXFiles([
-          XFile(file.path),
-        ], subject: 'Extension Source: ${metadata.name}');
+        await SharePlus.instance.share(ShareParams(
+          text: '',
+          files: [XFile(file.path)],
+          subject: 'Extension Source: ${metadata.name}',
+        ));
       }
     } catch (e) {
       debugPrint('Export failed: $e');

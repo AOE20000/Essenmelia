@@ -428,6 +428,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addStep => '添加步骤';
 
   @override
+  String get stepDescription => '步骤描述';
+
+  @override
   String get addNewStepPlaceholder => '添加新步骤...';
 
   @override
@@ -1323,6 +1326,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get monthly => '每月';
 
   @override
+  String get yearly => '每年';
+
+  @override
+  String get custom => '自定义';
+
+  @override
+  String get repeatEvery => '每隔';
+
+  @override
   String get recurrenceDaily => ' (每天)';
 
   @override
@@ -1749,4 +1761,47 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get disabledInBookMode => '在书籍模式下不可用';
+
+  @override
+  String get customDuration => '自定义时长';
+
+  @override
+  String get days => '天';
+
+  @override
+  String get hours => '小时';
+
+  @override
+  String get minutes => '分钟';
+
+  @override
+  String get weeks => '周';
+
+  @override
+  String get months => '个月';
+
+  @override
+  String get years => '年';
+
+  @override
+  String get reminderRule => '提醒规则';
+
+  @override
+  String get cycleCount => '周期数';
+
+  @override
+  String get infinite => '无限';
+
+  @override
+  String get addReminder => '添加提醒';
+
+  @override
+  String reminderStartingAt(String time) {
+    return '从 $time 开始';
+  }
+
+  @override
+  String repeatEveryXUnit(int value, String unit) {
+    return '每隔 $value $unit';
+  }
 }

@@ -39,13 +39,22 @@ class Event extends HiveObject {
   int? reminderId;
 
   @HiveField(11)
-  String? reminderRecurrence; // 'none', 'daily', 'weekly', 'monthly'
+  String? reminderRecurrence; // 'none', 'daily', 'weekly', 'monthly', 'yearly', 'custom'
 
   @HiveField(12)
   String? reminderScheme; // 'notification' or 'calendar'
 
   @HiveField(13)
   String? calendarEventId;
+
+  @HiveField(14)
+  int? reminderRepeatValue;
+
+  @HiveField(15)
+  String? reminderRepeatUnit; // 'minute', 'hour', 'day', 'week', 'month', 'year'
+
+  @HiveField(16)
+  List<EventReminder>? reminders;
 
   bool get isCompleted => steps.isNotEmpty && steps.every((s) => s.completed);
 
@@ -73,6 +82,9 @@ class Event extends HiveObject {
       'reminderRecurrence': reminderRecurrence,
       'reminderScheme': reminderScheme,
       'calendarEventId': calendarEventId,
+      'reminderRepeatValue': reminderRepeatValue,
+      'reminderRepeatUnit': reminderRepeatUnit,
+      'reminders': (reminders ?? []).map((r) => r.toJson()).toList(),
       'isCompleted': isCompleted,
       'completionRate': completionRate,
     };
@@ -96,14 +108,83 @@ class Event extends HiveObject {
       ..reminderId = json['reminderId']
       ..reminderRecurrence = json['reminderRecurrence']
       ..reminderScheme = json['reminderScheme']
-      ..calendarEventId = json['calendarEventId'];
+      ..calendarEventId = json['calendarEventId']
+      ..reminderRepeatValue = json['reminderRepeatValue']
+      ..reminderRepeatUnit = json['reminderRepeatUnit'];
 
     if (json['steps'] != null) {
       event.steps = (json['steps'] as List)
           .map((s) => EventStep.fromJson(s as Map<String, dynamic>))
           .toList();
     }
+
+    if (json['reminders'] != null) {
+      event.reminders = (json['reminders'] as List)
+          .map((r) => EventReminder.fromJson(r as Map<String, dynamic>))
+          .toList();
+    }
     return event;
+  }
+}
+
+@HiveType(typeId: 10)
+class EventReminder extends HiveObject {
+  @HiveField(0)
+  late DateTime time;
+
+  @HiveField(1)
+  late int id;
+
+  @HiveField(2)
+  String recurrence = 'none'; // 'none', 'daily', 'weekly', 'monthly', 'yearly', 'custom'
+
+  @HiveField(3)
+  String scheme = 'notification'; // 'notification' or 'calendar'
+
+  @HiveField(4)
+  int? repeatValue;
+
+  @HiveField(5)
+  String? repeatUnit; // 'minute', 'hour', 'day', 'week', 'month', 'year'
+
+  @HiveField(6)
+  int? totalCycles; // 周期数
+
+  @HiveField(7)
+  int? currentCycle = 0;
+
+  @HiveField(8)
+  String? calendarEventId;
+
+  EventReminder() {
+    id = DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'time': time.toIso8601String(),
+      'id': id,
+      'recurrence': recurrence,
+      'scheme': scheme,
+      'repeatValue': repeatValue,
+      'repeatUnit': repeatUnit,
+      'totalCycles': totalCycles,
+      'currentCycle': currentCycle,
+      'calendarEventId': calendarEventId,
+    };
+  }
+
+  factory EventReminder.fromJson(Map<String, dynamic> json) {
+    return EventReminder()
+      ..time = DateTime.parse(json['time'])
+      ..id = json['id']
+      ..recurrence = json['recurrence'] ?? 'none'
+      ..scheme = json['scheme'] ?? 'notification'
+      ..repeatValue = json['repeatValue']
+      ..repeatUnit = json['repeatUnit']
+      ..totalCycles = json['totalCycles']
+      ..currentCycle = json['currentCycle'] ?? 0
+      ..calendarEventId = json['calendarEventId'];
   }
 }
 
@@ -170,11 +251,7 @@ class StepTemplate extends HiveObject {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'description': description,
-      'order': order,
-    };
+    return {'id': id, 'description': description, 'order': order};
   }
 
   factory StepTemplate.fromJson(Map<String, dynamic> json) {
@@ -227,15 +304,19 @@ class StepSetTemplateStep extends HiveObject {
   @HiveField(0)
   late String description;
 
+  @HiveField(1)
+  int order = 0;
+
   StepSetTemplateStep();
 
   Map<String, dynamic> toJson() {
-    return {
-      'description': description,
-    };
+    return {'description': description, 'order': order};
   }
 
   factory StepSetTemplateStep.fromJson(Map<String, dynamic> json) {
-    return StepSetTemplateStep()..description = json['description'] ?? '';
+    return StepSetTemplateStep()
+      ..description = json['description'] ?? ''
+      ..order = json['order'] ?? 0;
   }
 }
+

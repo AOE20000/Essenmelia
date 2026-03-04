@@ -589,6 +589,10 @@
   "@addStep": {
     "description": "Label for adding a new step"
   },
+  "stepDescription": "Step Description",
+  "@stepDescription": {
+    "description": "Label for step description input"
+  },
   "addNewStepPlaceholder": "Add new step...",
   "@addNewStepPlaceholder": {
     "description": "Hint text for adding a new step"
@@ -1859,6 +1863,18 @@
   "@monthly": {
     "description": "Recurrence option: Monthly"
   },
+  "yearly": "Yearly",
+  "@yearly": {
+    "description": "Recurrence option: Yearly"
+  },
+  "custom": "Custom",
+  "@custom": {
+    "description": "Recurrence option: Custom"
+  },
+  "repeatEvery": "Repeat every",
+  "@repeatEvery": {
+    "description": "Label for custom recurrence frequency"
+  },
   "recurrenceDaily": " (Daily)",
   "@recurrenceDaily": {
     "description": "Label for daily recurrence"
@@ -2445,5 +2461,68 @@
   "disabledInBookMode": "Unavailable in book mode",
   "@disabledInBookMode": {
     "description": "Message shown when a setting is disabled because book mode (3* density) is active"
+  },
+  "customDuration": "Custom Duration",
+  "@customDuration": {
+    "description": "Label for custom duration settings"
+  },
+  "days": "Days",
+  "@days": {
+    "description": "Plural label for days"
+  },
+  "hours": "Hours",
+  "@hours": {
+    "description": "Plural label for hours"
+  },
+  "minutes": "Minutes",
+  "@minutes": {
+    "description": "Plural label for minutes"
+  },
+  "weeks": "Weeks",
+  "@weeks": {
+    "description": "Plural label for weeks"
+  },
+  "months": "Months",
+  "@months": {
+    "description": "Plural label for months"
+  },
+  "years": "Years",
+  "@years": {
+    "description": "Plural label for years"
+  },
+  "reminderRule": "Reminder Rule",
+  "cycleCount": "Cycle Count",
+  "@cycleCount": {
+    "description": "Label for the number of reminder cycles"
+  },
+  "infinite": "Infinite",
+  "@infinite": {
+    "description": "Label for infinite cycles"
+  },
+  "addReminder": "Add Reminder",
+  "@addReminder": {
+    "description": "Label for adding a new reminder"
+  },
+  "@reminderRule": {
+    "description": "Label for reminder rule section"
+  },
+  "reminderStartingAt": "Starting from {time}",
+  "@reminderStartingAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatEveryXUnit": "Repeat every {value} {unit}",
+  "@repeatEveryXUnit": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
   }
 }

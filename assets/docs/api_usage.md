@@ -44,11 +44,18 @@ state.isLoading = true;
 - **onLoad()**: 脚本加载完成并初始化完成后调用。建议将核心初始化逻辑放在此处。
 - **onContextChanged(params)**: 仅适用于全局内容页（`eventId: "*"`）。当用户在详情页间切换时调用。
   - `params.eventId`: 新进入的事件 ID。
+- **onPause()**: 当应用进入后台、屏幕关闭或进入空闲模式时调用。
+- **onResume()**: 当应用恢复到前台或用户恢复操作时调用。
 
 ```javascript
 globalThis.onContextChanged = function(params) {
     console.log("Switched to event: " + params.eventId);
     // 重新获取数据并更新 UI
+};
+
+globalThis.onPause = function() {
+    console.log("App paused, stopping timers...");
+    clearInterval(myTimer);
 };
 ```
 
@@ -91,21 +98,26 @@ await essenmelia.call('enableFeature', { active: "true" }); // 自动转为 true
 | 方法名 | 权限 | 说明 | 参数示例 |
 | :--- | :--- | :--- | :--- |
 | `getEvents` | `readEvents` | 获取所有任务事件 | 无 |
-| `addEvent` | `addEvents` | 添加新任务 | `{ title: "买牛奶", description: "记得买脱脂的", tags: ["生活"] }` |
+| `addEvent` | `addEvents` | 添加新任务 | `{ title: "买牛奶", description: "...", reminders: [{ time: "2024-03-20T10:00:00", recurrence: "daily" }] }` |
 | `deleteEvent` | `deleteEvents` | 删除任务 | `{ id: "event-uuid-123" }` |
-| `updateEvent` | `updateEvents` | 更新任务详情 | `{ event: eventObject }` |
+| `updateEvent` | `updateEvents` | 更新任务详情 | `{ event: { id: "...", title: "新标题", reminders: [...] } }` |
 | `addStep` | `updateEvents` | 为任务添加子步骤 | `{ eventId: "...", description: "第一步..." }` |
 
-> **提示：关于 `stepDisplayMode` (高级选项)**
-> 系统支持多种步骤显示模式，默认为 `number`。
-> - `number`: 步骤以 1, 2, 3... 序号显示。
-> - `firstChar`: 步骤以描述的首字符显示。
-> - `slider`: **条型模式 (特殊用途)**。在详情页显示为双控制柄滑动条，适用于书籍进度或超长线性任务。配合 `stepSuffix` (如 "页") 使用。
+### 1.4 提醒模型 (Reminder Object)
+`addEvent` 和 `updateEvent` 中的 `reminders` 数组包含以下结构的对象：
 
-| `setSearchQuery` | `navigation` | 触发全局搜索过滤 | `{ query: "关键字" }` |
-| `publishEvent` | `systemInfo` | 发送系统广播 (跨扩展通信) | `{ name: "custom_event", data: {}, extensionId: "..." }` |
+| 字段 | 类型 | 说明 | 示例 |
+| :--- | :--- | :--- | :--- |
+| `time` | String | ISO8601 格式的时间字符串 | `"2024-03-20T10:00:00"` |
+| `recurrence` | String | 重复周期 (`none`, `daily`, `weekly`, `monthly`, `yearly`, `custom`) | `"daily"` |
+| `scheme` | String | 提醒方案 (`notification`, `calendar`) | `"notification"` |
+| `repeatValue`| int | 自定义频率的数值 (仅 `custom` 有效) | `2` |
+| `repeatUnit` | String | 自定义频率的单位 (`minute`, `hour`, `day`, `week`, `month`, `year`) | `"week"` |
+| `totalCycles`| int | 总周期数。达到该次数后提醒自动失效 (可选) | `10` |
 
-### 1.4 标签管理 (Tags)
+> **注意**：为了保持向前兼容，`addEvent` 仍支持顶层的 `reminderTime`、`reminderRecurrence` 等字段，但系统会优先处理 `reminders` 列表。
+
+### 1.5 标签管理 (Tags)
 
 | 方法名 | 权限 | 说明 | 参数示例 |
 | :--- | :--- | :--- | :--- |
@@ -132,6 +144,19 @@ await essenmelia.call('enableFeature', { active: "true" }); // 自动转为 true
 | :--- | :--- | :--- | :--- |
 | `getSetting` | `systemInfo` | 读取扩展私有配置 | `{ key: "apiKey" }` |
 | `saveSetting` | `systemInfo` | 保存扩展私有配置 | `{ key: "apiKey", value: "123456" }` |
+
+### 1.7 其它功能 (Others)
+
+| 方法名 | 权限 | 说明 | 参数示例 |
+| :--- | :--- | :--- | :--- |
+| `setSearchQuery` | `navigation` | 触发全局搜索过滤 | `{ query: "关键字" }` |
+| `publishEvent` | `systemInfo` | 发送系统广播 (跨扩展通信) | `{ name: "custom_event", data: {}, extensionId: "..." }` |
+
+> **提示：关于 `stepDisplayMode` (高级选项)**
+> 系统支持多种步骤显示模式，默认为 `number`。
+> - `number`: 步骤以 1, 2, 3... 序号显示。
+> - `firstChar`: 步骤以描述的首字符显示。
+> - `slider`: **条型模式 (特殊用途)**。在详情页显示为双控制柄滑动条，适用于书籍进度或超长线性任务。配合 `stepSuffix` (如 "页") 使用。
 
 ---
 

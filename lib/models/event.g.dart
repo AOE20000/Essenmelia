@@ -30,13 +30,16 @@ class EventAdapter extends TypeAdapter<Event> {
       ..reminderId = fields[10] as int?
       ..reminderRecurrence = fields[11] as String?
       ..reminderScheme = fields[12] as String?
-      ..calendarEventId = fields[13] as String?;
+      ..calendarEventId = fields[13] as String?
+      ..reminderRepeatValue = fields[14] as int?
+      ..reminderRepeatUnit = fields[15] as String?
+      ..reminders = (fields[16] as List?)?.cast<EventReminder>();
   }
 
   @override
   void write(BinaryWriter writer, Event obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -64,7 +67,13 @@ class EventAdapter extends TypeAdapter<Event> {
       ..writeByte(12)
       ..write(obj.reminderScheme)
       ..writeByte(13)
-      ..write(obj.calendarEventId);
+      ..write(obj.calendarEventId)
+      ..writeByte(14)
+      ..write(obj.reminderRepeatValue)
+      ..writeByte(15)
+      ..write(obj.reminderRepeatUnit)
+      ..writeByte(16)
+      ..write(obj.reminders);
   }
 
   @override
@@ -74,6 +83,63 @@ class EventAdapter extends TypeAdapter<Event> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is EventAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class EventReminderAdapter extends TypeAdapter<EventReminder> {
+  @override
+  final int typeId = 10;
+
+  @override
+  EventReminder read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return EventReminder()
+      ..time = fields[0] as DateTime
+      ..id = fields[1] as int
+      ..recurrence = fields[2] as String
+      ..scheme = fields[3] as String
+      ..repeatValue = fields[4] as int?
+      ..repeatUnit = fields[5] as String?
+      ..totalCycles = fields[6] as int?
+      ..currentCycle = fields[7] as int?
+      ..calendarEventId = fields[8] as String?;
+  }
+
+  @override
+  void write(BinaryWriter writer, EventReminder obj) {
+    writer
+      ..writeByte(9)
+      ..writeByte(0)
+      ..write(obj.time)
+      ..writeByte(1)
+      ..write(obj.id)
+      ..writeByte(2)
+      ..write(obj.recurrence)
+      ..writeByte(3)
+      ..write(obj.scheme)
+      ..writeByte(4)
+      ..write(obj.repeatValue)
+      ..writeByte(5)
+      ..write(obj.repeatUnit)
+      ..writeByte(6)
+      ..write(obj.totalCycles)
+      ..writeByte(7)
+      ..write(obj.currentCycle)
+      ..writeByte(8)
+      ..write(obj.calendarEventId);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventReminderAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
@@ -205,15 +271,19 @@ class StepSetTemplateStepAdapter extends TypeAdapter<StepSetTemplateStep> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return StepSetTemplateStep()..description = fields[0] as String;
+    return StepSetTemplateStep()
+      ..description = fields[0] as String
+      ..order = fields[1] as int;
   }
 
   @override
   void write(BinaryWriter writer, StepSetTemplateStep obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.description);
+      ..write(obj.description)
+      ..writeByte(1)
+      ..write(obj.order);
   }
 
   @override

@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
+import 'providers/app_lifecycle_provider.dart';
 import 'services/notification_service.dart';
 import 'services/command_gateway_service.dart';
 import 'services/app_initialization_service.dart';
@@ -40,8 +41,9 @@ void main() async {
     Hive.registerAdapter(StepTemplateAdapter());
     Hive.registerAdapter(StepSetTemplateAdapter());
     Hive.registerAdapter(StepSetTemplateStepAdapter());
+    Hive.registerAdapter(EventReminderAdapter());
 
-    runApp(const ProviderScope(child: MyApp()));
+    runApp(const ProviderScope(child: IdleDetector(child: MyApp())));
   } catch (e, stackTrace) {
     debugPrint('Critical Initialization Error: $e\n$stackTrace');
     runApp(

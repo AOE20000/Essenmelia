@@ -196,6 +196,7 @@
   "manageSteps": "管理步骤",
   "noStepsYet": "暂无步骤。",
   "addStep": "添加步骤",
+  "stepDescription": "步骤描述",
   "newStepPlaceholder": "新步骤...",
   "editSteps": "编辑步骤",
   "quickEdit": "快速编辑 (长按滑动)",
@@ -751,8 +752,29 @@
   "dontShowAgain": "不再显示",
   "longPressToManageExtension": "长按扩展进入管理页面",
   "daily": "每天",
+  "@daily": {
+    "description": "重复选项：每天"
+  },
   "weekly": "每周",
+  "@weekly": {
+    "description": "重复选项：每周"
+  },
   "monthly": "每月",
+  "@monthly": {
+    "description": "重复选项：每月"
+  },
+  "yearly": "每年",
+  "@yearly": {
+    "description": "重复选项：每年"
+  },
+  "custom": "自定义",
+  "@custom": {
+    "description": "重复选项：自定义"
+  },
+  "repeatEvery": "每隔",
+  "@repeatEvery": {
+    "description": "自定义重复频率标签"
+  },
   "recurrenceDaily": " (每天)",
   "recurrenceWeekly": " (每周)",
   "recurrenceMonthly": " (每月)",
@@ -896,5 +918,59 @@
   },
   "clickToDownload": "点击前往 GitHub 仓库下载更新",
   "updateChannelName": "应用更新",
-  "updateChannelDescription": "提醒应用版本更新"
+  "updateChannelDescription": "提醒应用版本更新",
+  "customDuration": "自定义时长",
+  "@customDuration": {
+    "description": "自定义时长设置标签"
+  },
+  "days": "天",
+  "@days": {
+    "description": "天的复数标签"
+  },
+  "hours": "小时",
+  "@hours": {
+    "description": "小时的复数标签"
+  },
+  "minutes": "分钟",
+  "@minutes": {
+    "description": "分钟的复数标签"
+  },
+  "weeks": "周",
+  "@weeks": {
+    "description": "周的复数标签"
+  },
+  "months": "个月",
+  "@months": {
+    "description": "个月的复数标签"
+  },
+  "years": "年",
+  "@years": {
+    "description": "年的复数标签"
+  },
+  "reminderRule": "提醒规则",
+  "cycleCount": "周期数",
+  "infinite": "无限",
+  "addReminder": "添加提醒",
+  "@reminderRule": {
+    "description": "提醒规则部分标签"
+  },
+  "reminderStartingAt": "从 {time} 开始",
+  "@reminderStartingAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatEveryXUnit": "每隔 {value} {unit}",
+  "@repeatEveryXUnit": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  }
 }

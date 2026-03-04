@@ -22,6 +22,7 @@ class ExtensionJsEngine {
 
   late JavascriptRuntime _jsRuntime;
   bool _isInitialized = false;
+  bool _isPaused = false;
   Future<void>? _initFuture;
   String? _error;
 
@@ -30,7 +31,22 @@ class ExtensionJsEngine {
   ExtensionJsEngine({required this.metadata, required this.api});
 
   bool get isInitialized => _isInitialized;
+  bool get isPaused => _isPaused;
   String? get error => _error;
+
+  void pause() {
+    if (!_isInitialized || _isPaused) return;
+    _isPaused = true;
+    _addLog('Engine Paused');
+    callFunction('onPause').catchError((_) {});
+  }
+
+  void resume() {
+    if (!_isInitialized || !_isPaused) return;
+    _isPaused = false;
+    _addLog('Engine Resumed');
+    callFunction('onResume').catchError((_) {});
+  }
 
   void setOnStateChanged(VoidCallback? callback) => _onStateChanged = callback;
 
@@ -288,6 +304,10 @@ class ExtensionJsEngine {
     // Unified Bridge: JS -> Dart
     // JS calls `sendMessage('essenmelia_bridge', {type, payload})`
     _jsRuntime.onMessage('essenmelia_bridge', (dynamic args) async {
+      if (_isPaused) {
+        debugPrint('ExtensionJsEngine: Ignored message while paused: $args');
+        return;
+      }
       debugPrint(
         'ExtensionJsEngine: Received message on essenmelia_bridge: $args',
       );
