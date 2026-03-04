@@ -1,6 +1,7 @@
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 class CalendarService {
   static final CalendarService _instance = CalendarService._internal();
@@ -9,12 +10,20 @@ class CalendarService {
 
   final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
 
+  bool get isSupported => Platform.isAndroid || Platform.isIOS;
+
   Future<bool> requestPermissions() async {
-    var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
-    if (permissionsGranted.isSuccess && !permissionsGranted.data!) {
-      permissionsGranted = await _deviceCalendarPlugin.requestPermissions();
+    if (!isSupported) return false;
+    try {
+      var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
+      if (permissionsGranted.isSuccess && !permissionsGranted.data!) {
+        permissionsGranted = await _deviceCalendarPlugin.requestPermissions();
+      }
+      return permissionsGranted.isSuccess && permissionsGranted.data!;
+    } catch (e) {
+      debugPrint('CalendarService: Error requesting permissions: $e');
+      return false;
     }
-    return permissionsGranted.isSuccess && permissionsGranted.data!;
   }
 
   Future<String?> addEvent({
@@ -26,6 +35,10 @@ class CalendarService {
     String? repeatUnit,
     String? existingEventId,
   }) async {
+    if (!isSupported) {
+      debugPrint('CalendarService: Calendar is not supported on this platform.');
+      return null;
+    }
     try {
       if (!await requestPermissions()) {
         debugPrint('CalendarService: No permissions to add/update event.');
@@ -34,6 +47,11 @@ class CalendarService {
 
       final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
       final calendars = calendarsResult.data ?? [];
+
+      if (calendars.isEmpty) {
+        debugPrint('CalendarService: No writable calendars found.');
+        return null;
+      }
 
       final sortedCalendars = List<Calendar>.from(calendars)
         ..sort((a, b) {
@@ -134,6 +152,7 @@ class CalendarService {
   }
 
   Future<bool> deleteEvent(String eventId) async {
+    if (!isSupported) return false;
     try {
       if (!await requestPermissions()) {
         debugPrint('CalendarService: No permissions to delete event.');
@@ -153,16 +172,20 @@ class CalendarService {
       bool anySuccess = false;
       for (var calendar in calendars) {
         if (calendar.isReadOnly == false) {
-          final result = await _deviceCalendarPlugin.deleteEvent(
-            calendar.id,
-            eventId,
-          );
-          if (result.isSuccess && result.data == true) {
-            debugPrint(
-              'CalendarService: Successfully deleted event $eventId from calendar ${calendar.name}',
+          try {
+            final result = await _deviceCalendarPlugin.deleteEvent(
+              calendar.id,
+              eventId,
             );
-            anySuccess = true;
-            break; // Stop if we found it and deleted it
+            if (result.isSuccess && result.data == true) {
+              debugPrint(
+                'CalendarService: Successfully deleted event $eventId from calendar ${calendar.name}',
+              );
+              anySuccess = true;
+              break; // Stop if we found it and deleted it
+            }
+          } catch (e) {
+            debugPrint('CalendarService: Error deleting from calendar ${calendar.name}: $e');
           }
         }
       }

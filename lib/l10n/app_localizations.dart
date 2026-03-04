@@ -3439,6 +3439,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeat every {value} {unit}'**
   String repeatEveryXUnit(int value, String unit);
+
+  /// Title for the database launch failure screen
+  ///
+  /// In en, this message translates to:
+  /// **'Database Launch Failed'**
+  String get dbLoadFailed;
+
+  /// Description for the database launch failure screen
+  ///
+  /// In en, this message translates to:
+  /// **'Database corruption or file lock detected. It is recommended to export a backup first, then attempt auto-repair.'**
+  String get dbLoadFailedDesc;
+
+  /// Button label to force export a backup when DB fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Force Export Backup (Recommended)'**
+  String get forceExportBackup;
+
+  /// Button label to perform auto-repair when DB fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Direct Auto-Repair & Reset'**
+  String get directAutoRepair;
+
+  /// Label for the error details section
+  ///
+  /// In en, this message translates to:
+  /// **'Error Details'**
+  String get errorDetails;
+
+  /// Title for the repair confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Repair?'**
+  String get confirmRepairTitle;
+
+  /// Description for the repair confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-repair will attempt to delete all local database files and reset the app. All unbacked-up data will be lost.'**
+  String get confirmRepairDesc;
+
+  /// Button label to confirm and reset the app
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm & Reset'**
+  String get confirmAndReset;
+
+  /// Title for the repair completion dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Repair Complete'**
+  String get repairComplete;
+
+  /// Description for the repair completion dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Database cleaned. Please restart the app to apply changes.'**
+  String get repairCompleteDesc;
+
+  /// Button label to close the app after repair
+  ///
+  /// In en, this message translates to:
+  /// **'Close App'**
+  String get closeApp;
+
+  /// Snackbar message when backup is exported
+  ///
+  /// In en, this message translates to:
+  /// **'Backup Exported'**
+  String get backupComplete;
+
+  /// Text for emergency backup sharing
+  ///
+  /// In en, this message translates to:
+  /// **'Essenmelia Emergency Backup'**
+  String get emergencyBackup;
+
+  /// No description provided for @repairFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair failed: {error}'**
+  String repairFailed(String error);
+
+  /// Advice to manually clean up storage if auto-repair fails
+  ///
+  /// In en, this message translates to:
+  /// **'Manual cleanup of app storage is recommended.'**
+  String get manualCleanupAdvice;
 }
 
 class _AppLocalizationsDelegate

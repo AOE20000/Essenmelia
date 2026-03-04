@@ -20,6 +20,10 @@ import 'services/notification_service.dart';
 import 'services/command_gateway_service.dart';
 import 'services/app_initialization_service.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as p;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,33 +51,244 @@ void main() async {
   } catch (e, stackTrace) {
     debugPrint('Critical Initialization Error: $e\n$stackTrace');
     runApp(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _DbErrorRecoveryScreen(error: e.toString()),
+        ),
+      ),
+    );
+  }
+}
+
+class _DbErrorRecoveryScreen extends ConsumerWidget {
+  final String error;
+  const _DbErrorRecoveryScreen({required this.error});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.storage_rounded, size: 64, color: Colors.orange),
+              const SizedBox(height: 24),
+              Text(
+                l10n.dbLoadFailed,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.dbLoadFailedDesc,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600], height: 1.5),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _handleExportBackup(context, ref),
+                  icon: const Icon(Icons.backup_rounded),
+                  label: Text(l10n.forceExportBackup),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleAutoRepair(context, ref),
+                  icon: const Icon(Icons.build_circle_rounded),
+                  label: Text(l10n.directAutoRepair),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                ),
+              ),
+              const SizedBox(height: 48),
+              ExpansionTile(
+                title: Text(
+                  l10n.errorDetails,
+                  style: const TextStyle(fontSize: 14),
+                ),
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'App Initialization Failed',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Error: $e\n\nPlease try restarting the app or contact developers.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      error,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        color: Colors.red,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleExportBackup(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Attempt to read data directly from Hive files if possible
+      final metaBox = await Hive.openBox('essenmelia_meta');
+      final dbs = List<String>.from(
+        metaBox.get('db_list', defaultValue: ['main']),
+      );
+
+      Map<String, dynamic> allData = {
+        'version': 2,
+        'exported_at': DateTime.now().toIso8601String(),
+      };
+
+      for (final db in dbs) {
+        try {
+          final eventBox = await Hive.openBox<Event>('${db}_events');
+          allData['${db}_events'] = eventBox.values
+              .map((e) => e.toJson())
+              .toList();
+        } catch (e) {
+          debugPrint('Recovery: Failed to read $db events: $e');
+        }
+      }
+
+      final jsonString = jsonEncode(allData);
+      final bytes = utf8.encode(jsonString);
+
+      if (context.mounted) {
+        // Close loading
+        Navigator.pop(context);
+
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+          p.join(tempDir.path, 'essenmelia_emergency_backup.json'),
+        );
+        await file.writeAsBytes(bytes);
+
+        await SharePlus.instance.share(
+          ShareParams(text: l10n.emergencyBackup, files: [XFile(file.path)]),
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.backupComplete)));
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.error(e.toString()))));
+      }
+    }
+  }
+
+  Future<void> _handleAutoRepair(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.confirmRepairTitle),
+        content: Text(l10n.confirmRepairDesc),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(l10n.confirmAndReset),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        await Hive.close();
+
+        final appDir = await getApplicationDocumentsDirectory();
+
+        if (Platform.isWindows) {
+          final dir = Directory(p.join(appDir.path, 'essenmelia'));
+          if (await dir.exists()) await dir.delete(recursive: true);
+        } else {
+          final hiveDir = Directory(appDir.path);
+          final files = hiveDir.listSync();
+          for (final file in files) {
+            if (file is File &&
+                (file.path.endsWith('.hive') || file.path.endsWith('.lock'))) {
+              try {
+                await file.delete();
+              } catch (_) {}
+            }
+          }
+        }
+
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.repairComplete),
+              content: Text(l10n.repairCompleteDesc),
+              actions: [
+                FilledButton(
+                  onPressed: () => exit(0),
+                  child: Text(l10n.closeApp),
+                ),
+              ],
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${l10n.repairFailed(e.toString())}\n${l10n.manualCleanupAdvice}',
+              ),
+            ),
+          );
+        }
+      }
+    }
   }
 }
 

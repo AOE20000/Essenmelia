@@ -1864,7 +1864,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               reminderScheme: legacyScheme,
               reminderRepeatValue: legacyRepeatValue,
               reminderRepeatUnit: legacyRepeatUnit,
-              reminders: _reminders,
+              reminders: _reminders.isEmpty ? null : _reminders,
             );
       } else {
         await ref
@@ -1883,7 +1883,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
               reminderScheme: legacyScheme,
               reminderRepeatValue: legacyRepeatValue,
               reminderRepeatUnit: legacyRepeatUnit,
-              reminders: _reminders,
+              reminders: _reminders.isEmpty ? null : _reminders,
             );
       }
 
@@ -1894,6 +1894,14 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
         } else {
           Navigator.of(context).pop();
         }
+      }
+    } catch (e) {
+      debugPrint('EditEventSheet: Save failed: $e');
+      if (mounted) {
+        final localL10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(localL10n.error(e.toString()))),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

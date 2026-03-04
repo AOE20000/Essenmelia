@@ -24,7 +24,10 @@ class Event extends HiveObject {
   List<String>? tags;
 
   @HiveField(6)
-  List<EventStep> steps = [];
+  List<EventStep>? _steps;
+
+  List<EventStep> get steps => _steps ?? [];
+  set steps(List<EventStep> value) => _steps = value;
 
   @HiveField(7)
   String? stepDisplayMode; // 'number' or 'firstChar'
@@ -130,16 +133,28 @@ class Event extends HiveObject {
 @HiveType(typeId: 10)
 class EventReminder extends HiveObject {
   @HiveField(0)
-  late DateTime time;
+  DateTime? _time;
+
+  DateTime get time => _time ?? DateTime.now();
+  set time(DateTime value) => _time = value;
 
   @HiveField(1)
-  late int id;
+  int? _id;
+
+  int get id => _id ?? 0;
+  set id(int value) => _id = value;
 
   @HiveField(2)
-  String recurrence = 'none'; // 'none', 'daily', 'weekly', 'monthly', 'yearly', 'custom'
+  String? _recurrence;
+
+  String get recurrence => _recurrence ?? 'none';
+  set recurrence(String value) => _recurrence = value;
 
   @HiveField(3)
-  String scheme = 'notification'; // 'notification' or 'calendar'
+  String? _scheme;
+
+  String get scheme => _scheme ?? 'notification';
+  set scheme(String value) => _scheme = value;
 
   @HiveField(4)
   int? repeatValue;
@@ -157,7 +172,10 @@ class EventReminder extends HiveObject {
   String? calendarEventId;
 
   EventReminder() {
-    id = DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
+    _id = DateTime.now().millisecondsSinceEpoch.toInt() % 1000000;
+    _time = DateTime.now();
+    _recurrence = 'none';
+    _scheme = 'notification';
   }
 
   Map<String, dynamic> toJson() {
@@ -197,7 +215,10 @@ class EventStep extends HiveObject {
   late DateTime timestamp;
 
   @HiveField(2)
-  bool completed = false;
+  bool? _completed;
+
+  bool get completed => _completed ?? false;
+  set completed(bool value) => _completed = value;
 
   EventStep();
 
@@ -271,7 +292,10 @@ class StepSetTemplate extends HiveObject {
   late String name;
 
   @HiveField(2)
-  List<StepSetTemplateStep> steps = [];
+  List<StepSetTemplateStep>? _steps;
+
+  List<StepSetTemplateStep> get steps => _steps ?? [];
+  set steps(List<StepSetTemplateStep> value) => _steps = value;
 
   StepSetTemplate() {
     id = const Uuid().v4();
@@ -305,7 +329,10 @@ class StepSetTemplateStep extends HiveObject {
   late String description;
 
   @HiveField(1)
-  int order = 0;
+  int? _order;
+
+  int get order => _order ?? 0;
+  set order(int value) => _order = value;
 
   StepSetTemplateStep();
 
@@ -319,4 +346,3 @@ class StepSetTemplateStep extends HiveObject {
       ..order = json['order'] ?? 0;
   }
 }
-

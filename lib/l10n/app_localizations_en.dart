@@ -1854,4 +1854,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String repeatEveryXUnit(int value, String unit) {
     return 'Repeat every $value $unit';
   }
+
+  @override
+  String get dbLoadFailed => 'Database Launch Failed';
+
+  @override
+  String get dbLoadFailedDesc =>
+      'Database corruption or file lock detected. It is recommended to export a backup first, then attempt auto-repair.';
+
+  @override
+  String get forceExportBackup => 'Force Export Backup (Recommended)';
+
+  @override
+  String get directAutoRepair => 'Direct Auto-Repair & Reset';
+
+  @override
+  String get errorDetails => 'Error Details';
+
+  @override
+  String get confirmRepairTitle => 'Confirm Repair?';
+
+  @override
+  String get confirmRepairDesc =>
+      'Auto-repair will attempt to delete all local database files and reset the app. All unbacked-up data will be lost.';
+
+  @override
+  String get confirmAndReset => 'Confirm & Reset';
+
+  @override
+  String get repairComplete => 'Repair Complete';
+
+  @override
+  String get repairCompleteDesc =>
+      'Database cleaned. Please restart the app to apply changes.';
+
+  @override
+  String get closeApp => 'Close App';
+
+  @override
+  String get backupComplete => 'Backup Exported';
+
+  @override
+  String get emergencyBackup => 'Essenmelia Emergency Backup';
+
+  @override
+  String repairFailed(String error) {
+    return 'Repair failed: $error';
+  }
+
+  @override
+  String get manualCleanupAdvice =>
+      'Manual cleanup of app storage is recommended.';
 }

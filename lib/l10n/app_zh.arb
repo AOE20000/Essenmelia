@@ -697,6 +697,70 @@
       }
     }
   },
+  "dbLoadFailed": "数据库启动失败",
+  "@dbLoadFailed": {
+    "description": "数据库加载失败页面的标题"
+  },
+  "dbLoadFailedDesc": "检测到数据库损坏或文件占用，建议先导出备份，然后尝试自动修复。",
+  "@dbLoadFailedDesc": {
+    "description": "数据库加载失败页面的说明"
+  },
+  "forceExportBackup": "强制导出备份 (推荐)",
+  "@forceExportBackup": {
+    "description": "数据库加载失败时，强制导出备份的按钮标签"
+  },
+  "directAutoRepair": "直接自动修复并重置",
+  "@directAutoRepair": {
+    "description": "数据库加载失败时，执行自动修复的按钮标签"
+  },
+  "errorDetails": "错误详情",
+  "@errorDetails": {
+    "description": "错误详情部分的标签"
+  },
+  "confirmRepairTitle": "确认修复？",
+  "@confirmRepairTitle": {
+    "description": "确认修复对话框的标题"
+  },
+  "confirmRepairDesc": "自动修复将尝试删除所有本地数据库文件并重置应用。所有未备份的数据都将丢失。",
+  "@confirmRepairDesc": {
+    "description": "确认修复对话框的说明"
+  },
+  "confirmAndReset": "确认并重置",
+  "@confirmAndReset": {
+    "description": "确认并重置应用的按钮标签"
+  },
+  "repairComplete": "修复完成",
+  "@repairComplete": {
+    "description": "修复完成对话框的标题"
+  },
+  "repairCompleteDesc": "数据库已清理，请重新启动应用以应用更改。",
+  "@repairCompleteDesc": {
+    "description": "修复完成对话框的说明"
+  },
+  "closeApp": "关闭应用",
+  "@closeApp": {
+    "description": "修复完成后关闭应用的按钮标签"
+  },
+  "backupComplete": "备份导出完成",
+  "@backupComplete": {
+    "description": "备份导出完成时的提示"
+  },
+  "emergencyBackup": "Essenmelia 紧急备份",
+  "@emergencyBackup": {
+    "description": "紧急备份分享时的文本"
+  },
+  "repairFailed": "修复失败：{error}",
+  "@repairFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "manualCleanupAdvice": "建议手动清理应用存储。",
+  "@manualCleanupAdvice": {
+    "description": "自动修复失败时建议手动清理的说明"
+  },
   "extensionRuntimeSection": "运行与安全",
   "extensionEnable": "启用扩展",
   "extensionRunning": "运行中",

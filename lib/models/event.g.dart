@@ -23,7 +23,7 @@ class EventAdapter extends TypeAdapter<Event> {
       ..createdAt = fields[3] as DateTime
       ..imageUrl = fields[4] as String?
       ..tags = (fields[5] as List?)?.cast<String>()
-      ..steps = (fields[6] as List).cast<EventStep>()
+      .._steps = (fields[6] as List?)?.cast<EventStep>()
       ..stepDisplayMode = fields[7] as String?
       ..stepSuffix = fields[8] as String?
       ..reminderTime = fields[9] as DateTime?
@@ -53,7 +53,7 @@ class EventAdapter extends TypeAdapter<Event> {
       ..writeByte(5)
       ..write(obj.tags)
       ..writeByte(6)
-      ..write(obj.steps)
+      ..write(obj._steps)
       ..writeByte(7)
       ..write(obj.stepDisplayMode)
       ..writeByte(8)
@@ -98,10 +98,10 @@ class EventReminderAdapter extends TypeAdapter<EventReminder> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return EventReminder()
-      ..time = fields[0] as DateTime
-      ..id = fields[1] as int
-      ..recurrence = fields[2] as String
-      ..scheme = fields[3] as String
+      .._time = fields[0] as DateTime?
+      .._id = fields[1] as int?
+      .._recurrence = fields[2] as String?
+      .._scheme = fields[3] as String?
       ..repeatValue = fields[4] as int?
       ..repeatUnit = fields[5] as String?
       ..totalCycles = fields[6] as int?
@@ -114,13 +114,13 @@ class EventReminderAdapter extends TypeAdapter<EventReminder> {
     writer
       ..writeByte(9)
       ..writeByte(0)
-      ..write(obj.time)
+      ..write(obj._time)
       ..writeByte(1)
-      ..write(obj.id)
+      ..write(obj._id)
       ..writeByte(2)
-      ..write(obj.recurrence)
+      ..write(obj._recurrence)
       ..writeByte(3)
-      ..write(obj.scheme)
+      ..write(obj._scheme)
       ..writeByte(4)
       ..write(obj.repeatValue)
       ..writeByte(5)
@@ -157,7 +157,7 @@ class EventStepAdapter extends TypeAdapter<EventStep> {
     return EventStep()
       ..description = fields[0] as String
       ..timestamp = fields[1] as DateTime
-      ..completed = fields[2] as bool;
+      .._completed = fields[2] as bool?;
   }
 
   @override
@@ -169,7 +169,7 @@ class EventStepAdapter extends TypeAdapter<EventStep> {
       ..writeByte(1)
       ..write(obj.timestamp)
       ..writeByte(2)
-      ..write(obj.completed);
+      ..write(obj._completed);
   }
 
   @override
@@ -235,7 +235,7 @@ class StepSetTemplateAdapter extends TypeAdapter<StepSetTemplate> {
     return StepSetTemplate()
       ..id = fields[0] as String
       ..name = fields[1] as String
-      ..steps = (fields[2] as List).cast<StepSetTemplateStep>();
+      .._steps = (fields[2] as List?)?.cast<StepSetTemplateStep>();
   }
 
   @override
@@ -247,7 +247,7 @@ class StepSetTemplateAdapter extends TypeAdapter<StepSetTemplate> {
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.steps);
+      ..write(obj._steps);
   }
 
   @override
@@ -273,7 +273,7 @@ class StepSetTemplateStepAdapter extends TypeAdapter<StepSetTemplateStep> {
     };
     return StepSetTemplateStep()
       ..description = fields[0] as String
-      ..order = fields[1] as int;
+      .._order = fields[1] as int?;
   }
 
   @override
@@ -283,7 +283,7 @@ class StepSetTemplateStepAdapter extends TypeAdapter<StepSetTemplateStep> {
       ..writeByte(0)
       ..write(obj.description)
       ..writeByte(1)
-      ..write(obj.order);
+      ..write(obj._order);
   }
 
   @override

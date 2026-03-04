@@ -174,16 +174,6 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         event.stepSuffix = stepSuffix as String?;
       }
 
-      if (reminderRepeatValue != _undefined) {
-        event.reminderRepeatValue = reminderRepeatValue as int?;
-      }
-      if (reminderRepeatUnit != _undefined) {
-        event.reminderRepeatUnit = reminderRepeatUnit as String?;
-      }
-      if (reminders != _undefined) {
-        event.reminders = reminders as List<EventReminder>? ?? [];
-      }
-
       // Handle reminder updates
       final bool hasReminderChanges =
           (reminderTime != _undefined && reminderTime != event.reminderTime) ||
@@ -200,25 +190,66 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           description != null;
 
       if (hasReminderChanges) {
-        // 1. If scheme switches from calendar, or time/title changes and it was calendar, we need to handle it
-        // Note: if it was calendar and still is, addEvent(existingEventId) will perform update
+        // 1. Handle legacy reminder cancellation
+        final String? oldScheme = event.reminderScheme;
+        final DateTime? oldTime = event.reminderTime;
+        final String? oldCalendarId = event.calendarEventId;
+        final int? oldReminderId = event.reminderId;
 
-        // If new scheme is not calendar, and old scheme was calendar, delete old calendar entry
         final String? newScheme = reminderScheme != _undefined
             ? reminderScheme as String?
-            : event.reminderScheme;
+            : oldScheme;
+        final DateTime? newTime = reminderTime != _undefined
+            ? reminderTime as DateTime?
+            : oldTime;
 
-        if (newScheme != 'calendar' && event.calendarEventId != null) {
-          await CalendarService().deleteEvent(event.calendarEventId!);
-          event.calendarEventId = null;
+        // If reminder is being removed (newTime is null) OR scheme changed
+        try {
+          if (oldCalendarId != null &&
+              (newTime == null || newScheme != 'calendar')) {
+            // Don't block saving if calendar delete fails
+            CalendarService().deleteEvent(oldCalendarId).catchError((e) {
+              debugPrint(
+                'EventsNotifier: Non-blocking calendar delete failed: $e',
+              );
+              return false;
+            });
+            event.calendarEventId = null;
+          }
+
+          if (oldReminderId != null &&
+              (newTime == null || newScheme != 'notification')) {
+            NotificationService().cancel(oldReminderId).catchError((e) {
+              debugPrint(
+                'EventsNotifier: Non-blocking notification cancel failed: $e',
+              );
+            });
+            event.reminderId = null;
+          }
+        } catch (e) {
+          debugPrint('EventsNotifier: Error during reminder cleanup: $e');
         }
 
-        // If new scheme is not notification, and old scheme was notification, cancel old notification
-        if (newScheme != 'notification' && event.reminderId != null) {
-          await NotificationService().cancel(event.reminderId!);
-          event.reminderId = null;
+        // 2. Handle multi-reminder cancellation
+        if (reminders != _undefined && reminders != event.reminders) {
+          final oldReminders = List<EventReminder>.from(event.reminders ?? []);
+          for (final r in oldReminders) {
+            try {
+              NotificationService().cancel(r.id).catchError((e) => null);
+              if (r.calendarEventId != null) {
+                CalendarService()
+                    .deleteEvent(r.calendarEventId!)
+                    .catchError((e) => false);
+              }
+            } catch (e) {
+              // Ignore loop errors
+            }
+          }
+          // Now safe to update the list
+          event.reminders = reminders as List<EventReminder>? ?? [];
         }
 
+        // 3. Update fields
         if (reminderTime != _undefined) {
           event.reminderTime = reminderTime as DateTime?;
         }
@@ -228,21 +259,31 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         if (reminderScheme != _undefined) {
           event.reminderScheme = reminderScheme as String?;
         }
+        if (reminderRepeatValue != _undefined) {
+          event.reminderRepeatValue = reminderRepeatValue as int?;
+        }
+        if (reminderRepeatUnit != _undefined) {
+          event.reminderRepeatUnit = reminderRepeatUnit as String?;
+        }
 
-        // 2. Schedule or Update reminder if provided
+        // 4. Schedule or Update reminder if provided
         if (event.reminderTime != null) {
           if (event.reminderScheme == 'calendar') {
-            // Use addEvent's existingEventId parameter for overwrite or create
-            final calId = await CalendarService().addEvent(
-              title: title ?? event.title,
-              description: description ?? event.description ?? '',
-              startTime: event.reminderTime!,
-              recurrence: event.reminderRecurrence,
-              repeatValue: event.reminderRepeatValue,
-              repeatUnit: event.reminderRepeatUnit,
-              existingEventId: event.calendarEventId,
-            );
-            event.calendarEventId = calId;
+            try {
+              // We await this as we need the ID, but with a catch
+              final calId = await CalendarService().addEvent(
+                title: title ?? event.title,
+                description: description ?? event.description ?? '',
+                startTime: event.reminderTime!,
+                recurrence: event.reminderRecurrence,
+                repeatValue: event.reminderRepeatValue,
+                repeatUnit: event.reminderRepeatUnit,
+                existingEventId: event.calendarEventId,
+              );
+              event.calendarEventId = calId;
+            } catch (e) {
+              debugPrint('EventsNotifier: Calendar add failed: $e');
+            }
           } else {
             // For notification scheme, usually re-generate ID and schedule
             event.reminderId =
@@ -279,40 +320,66 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
           debugPrint('Storage Service: Failed to delete image file: $e');
         }
       }
-      // 2. If there's a scheduled reminder, cancel it
-      if (event.reminderId != null) {
-        await NotificationService().cancel(event.reminderId!);
-      }
-      for (final r in event.reminders ?? []) {
-        await NotificationService().cancel(r.id);
+      // 2. If there's a scheduled reminder, cancel it (Don't let failures block local deletion)
+      try {
+        if (event.reminderId != null) {
+          NotificationService()
+              .cancel(event.reminderId!)
+              .catchError((e) => null);
+        }
+        for (final r in event.reminders ?? []) {
+          NotificationService().cancel(r.id).catchError((e) => null);
+          if (r.calendarEventId != null) {
+            CalendarService()
+                .deleteEvent(r.calendarEventId!)
+                .catchError((e) => false);
+          }
+        }
+      } catch (e) {
+        debugPrint('EventsNotifier: Error cancelling notifications: $e');
       }
 
-      // Critical fix: delete calendar event first, wait for completion before deleting local DB record
-      // Avoids UI refresh losing calendarEventId and failing to clean up system calendar
+      // Critical fix: delete calendar event first
       if (event.calendarEventId != null) {
         debugPrint(
           'EventsNotifier: Starting cleanup for calendar event ${event.calendarEventId}',
         );
         try {
-          final success = await CalendarService().deleteEvent(
-            event.calendarEventId!,
-          );
-          if (success) {
-            debugPrint(
-              'EventsNotifier: Successfully cleaned up calendar event ${event.calendarEventId}',
-            );
-          } else {
-            debugPrint(
-              'EventsNotifier: Failed to clean up calendar event ${event.calendarEventId} - it might persist in system calendar',
-            );
-          }
+          // Use a timeout to prevent hanging on unsupported platforms or slow services
+          await CalendarService()
+              .deleteEvent(event.calendarEventId!)
+              .timeout(
+                const Duration(seconds: 2),
+                onTimeout: () {
+                  debugPrint('EventsNotifier: Calendar cleanup timed out');
+                  return false;
+                },
+              )
+              .catchError((e) {
+                debugPrint(
+                  'EventsNotifier: Error cleaning up calendar event: $e',
+                );
+                return false;
+              });
         } catch (e) {
           debugPrint('EventsNotifier: Error cleaning up calendar event: $e');
         }
       }
 
       // 3. Finally delete from local database
-      await event.delete();
+      try {
+        // Ensure state is updated even if delete() has issues
+        final currentList = state.value ?? [];
+        state = AsyncValue.data(currentList.where((e) => e.id != id).toList());
+
+        await event.delete();
+      } catch (e) {
+        // Fallback for Windows or other issues where delete might fail due to unexpected locks
+        final key = event.key;
+        if (key != null) {
+          await _box!.delete(key);
+        }
+      }
       NotificationService().notifyDataChanged();
       debugPrint('EventsNotifier: Deleted local event record $id');
     } else if (event == null) {

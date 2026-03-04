@@ -160,23 +160,31 @@ class DbController extends StateNotifier<AsyncValue<DbState>> {
       // 2. Close and delete all related database boxes
       for (final dbName in dbs) {
         // Close boxes before deleting to ensure file handles are released
-        if (Hive.isBoxOpen('${dbName}_events')) {
-          await Hive.box<Event>('${dbName}_events').close();
-        }
-        if (Hive.isBoxOpen('${dbName}_templates')) {
-          await Hive.box<StepTemplate>('${dbName}_templates').close();
-        }
-        if (Hive.isBoxOpen('${dbName}_set_templates')) {
-          await Hive.box<StepSetTemplate>('${dbName}_set_templates').close();
-        }
-        if (Hive.isBoxOpen('${dbName}_tags')) {
-          await Hive.box<String>('${dbName}_tags').close();
+        try {
+          if (Hive.isBoxOpen('${dbName}_events')) {
+            await Hive.box<Event>('${dbName}_events').close();
+          }
+          if (Hive.isBoxOpen('${dbName}_templates')) {
+            await Hive.box<StepTemplate>('${dbName}_templates').close();
+          }
+          if (Hive.isBoxOpen('${dbName}_set_templates')) {
+            await Hive.box<StepSetTemplate>('${dbName}_set_templates').close();
+          }
+          if (Hive.isBoxOpen('${dbName}_tags')) {
+            await Hive.box<String>('${dbName}_tags').close();
+          }
+        } catch (e) {
+          debugPrint('ResetAll: Failed to close boxes for $dbName: $e');
         }
 
-        await Hive.deleteBoxFromDisk('${dbName}_events');
-        await Hive.deleteBoxFromDisk('${dbName}_templates');
-        await Hive.deleteBoxFromDisk('${dbName}_set_templates');
-        await Hive.deleteBoxFromDisk('${dbName}_tags');
+        try {
+          await Hive.deleteBoxFromDisk('${dbName}_events');
+          await Hive.deleteBoxFromDisk('${dbName}_templates');
+          await Hive.deleteBoxFromDisk('${dbName}_set_templates');
+          await Hive.deleteBoxFromDisk('${dbName}_tags');
+        } catch (e) {
+          debugPrint('ResetAll: Failed to delete boxes for $dbName from disk: $e');
+        }
       }
 
       // 3. Reset extension framework

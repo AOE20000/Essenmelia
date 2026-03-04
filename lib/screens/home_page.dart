@@ -897,9 +897,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               Expanded(
                 child: CustomScrollView(
                   controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
+                  physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     // The Grid
                     if (filteredEvents.isEmpty)

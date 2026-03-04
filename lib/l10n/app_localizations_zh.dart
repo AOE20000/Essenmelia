@@ -1804,4 +1804,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String repeatEveryXUnit(int value, String unit) {
     return '每隔 $value $unit';
   }
+
+  @override
+  String get dbLoadFailed => '数据库启动失败';
+
+  @override
+  String get dbLoadFailedDesc => '检测到数据库损坏或文件占用，建议先导出备份，然后尝试自动修复。';
+
+  @override
+  String get forceExportBackup => '强制导出备份 (推荐)';
+
+  @override
+  String get directAutoRepair => '直接自动修复并重置';
+
+  @override
+  String get errorDetails => '错误详情';
+
+  @override
+  String get confirmRepairTitle => '确认修复？';
+
+  @override
+  String get confirmRepairDesc => '自动修复将尝试删除所有本地数据库文件并重置应用。所有未备份的数据都将丢失。';
+
+  @override
+  String get confirmAndReset => '确认并重置';
+
+  @override
+  String get repairComplete => '修复完成';
+
+  @override
+  String get repairCompleteDesc => '数据库已清理，请重新启动应用以应用更改。';
+
+  @override
+  String get closeApp => '关闭应用';
+
+  @override
+  String get backupComplete => '备份导出完成';
+
+  @override
+  String get emergencyBackup => 'Essenmelia 紧急备份';
+
+  @override
+  String repairFailed(String error) {
+    return '修复失败：$error';
+  }
+
+  @override
+  String get manualCleanupAdvice => '建议手动清理应用存储。';
 }

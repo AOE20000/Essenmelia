@@ -2524,5 +2524,69 @@
         "type": "String"
       }
     }
+  },
+  "dbLoadFailed": "Database Launch Failed",
+  "@dbLoadFailed": {
+    "description": "Title for the database launch failure screen"
+  },
+  "dbLoadFailedDesc": "Database corruption or file lock detected. It is recommended to export a backup first, then attempt auto-repair.",
+  "@dbLoadFailedDesc": {
+    "description": "Description for the database launch failure screen"
+  },
+  "forceExportBackup": "Force Export Backup (Recommended)",
+  "@forceExportBackup": {
+    "description": "Button label to force export a backup when DB fails to load"
+  },
+  "directAutoRepair": "Direct Auto-Repair & Reset",
+  "@directAutoRepair": {
+    "description": "Button label to perform auto-repair when DB fails to load"
+  },
+  "errorDetails": "Error Details",
+  "@errorDetails": {
+    "description": "Label for the error details section"
+  },
+  "confirmRepairTitle": "Confirm Repair?",
+  "@confirmRepairTitle": {
+    "description": "Title for the repair confirmation dialog"
+  },
+  "confirmRepairDesc": "Auto-repair will attempt to delete all local database files and reset the app. All unbacked-up data will be lost.",
+  "@confirmRepairDesc": {
+    "description": "Description for the repair confirmation dialog"
+  },
+  "confirmAndReset": "Confirm & Reset",
+  "@confirmAndReset": {
+    "description": "Button label to confirm and reset the app"
+  },
+  "repairComplete": "Repair Complete",
+  "@repairComplete": {
+    "description": "Title for the repair completion dialog"
+  },
+  "repairCompleteDesc": "Database cleaned. Please restart the app to apply changes.",
+  "@repairCompleteDesc": {
+    "description": "Description for the repair completion dialog"
+  },
+  "closeApp": "Close App",
+  "@closeApp": {
+    "description": "Button label to close the app after repair"
+  },
+  "backupComplete": "Backup Exported",
+  "@backupComplete": {
+    "description": "Snackbar message when backup is exported"
+  },
+  "emergencyBackup": "Essenmelia Emergency Backup",
+  "@emergencyBackup": {
+    "description": "Text for emergency backup sharing"
+  },
+  "repairFailed": "Repair failed: {error}",
+  "@repairFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "manualCleanupAdvice": "Manual cleanup of app storage is recommended.",
+  "@manualCleanupAdvice": {
+    "description": "Advice to manually clean up storage if auto-repair fails"
   }
 }
