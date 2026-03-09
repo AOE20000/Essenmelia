@@ -1203,7 +1203,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     return result;
   }
 
-  /// 计算初始视图栈：默认展开到包含“当前进度”的叶子组
+  /// 计算初始视图栈：默认展开到包含“当前进度”的叶子组；若当前层只能分出一组则停止，避免死循环（如 800 步→80 步时只有 1 组）
   List<({int start, int end})> _computeInitialStack(int stepCount) {
     if (stepCount <= 0) return [];
     final steps = widget.event.steps;
@@ -1216,6 +1216,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     var range = stack.last;
     while (range.end - range.start > minSize) {
       final groups = _groupsForRange(range.start, range.end);
+      if (groups.length <= 1) break;
       ({int start, int end})? next;
       for (final g in groups) {
         if (g.start <= progressIndex && progressIndex < g.end) {
@@ -1224,6 +1225,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         }
       }
       if (next == null) break;
+      if (next.start == range.start && next.end == range.end) break;
       stack = [...stack, next];
       range = next;
     }
