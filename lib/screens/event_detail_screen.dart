@@ -1128,14 +1128,11 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
   }
 }
 
-/// 树状图模式：每组步数阈值，低于此值则展开为序号网格
+/// 树状图模式：每组步数阈值，低于此值则展开为序号/首字网格
 const int _kTreeMinGroupSize = 50;
 
 /// 树状图模式：每层默认分组数量（可视为“最小组”的另一种表达）
 const int _kTreeDefaultGroupCount = 10;
-
-/// 启用树状图的最小步骤数，超过则用树状图替代平铺序号
-const int _kTreeModeStepThreshold = 50;
 
 class _QuickOverview extends ConsumerStatefulWidget {
   final Event event;
@@ -1159,10 +1156,31 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   // 为条型模式添加本地状态以保证拖动流畅
   RangeValues? _sliderValues;
 
-  /// 树状图：当前查看的层级栈，每项为 [start, end) 步下标
+  /// 树状图：当前查看的层级栈，每项为 [start, end) 步下标（仅在 initState/didUpdateWidget 中更新，避免 build 内写状态导致卡死）
   List<({int start, int end})> _viewStack = [];
 
   int get _effectiveMinGroupSize => widget.minGroupSize ?? _kTreeMinGroupSize;
+
+  @override
+  void initState() {
+    super.initState();
+    final n = widget.event.steps.length;
+    if (n > 0) _viewStack = _computeInitialStack(n);
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuickOverview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final n = widget.event.steps.length;
+    if (n != oldWidget.event.steps.length ||
+        widget.event.id != oldWidget.event.id) {
+      if (n > 0) {
+        _viewStack = _computeInitialStack(n);
+      } else {
+        _viewStack = [];
+      }
+    }
+  }
 
   /// 将 [start, end) 划分为若干组，用于树状图一层
   List<({int start, int end})> _groupsForRange(int start, int end) {
@@ -1573,67 +1591,6 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     );
   }
 
-  void _handleDragStart(DragStartDetails details) {
-    _calculateBounds();
-    final index = _findHitIndex(details.globalPosition);
-    if (index != null) {
-      setState(() {
-        _startDragIndex = index;
-        _currentDragIndex = index;
-        _dragTargetState = !widget.event.steps[index].completed;
-      });
-    }
-  }
-
-  void _handleDragUpdate(DragUpdateDetails details) {
-    if (_startDragIndex == null) return;
-
-    final index = _findHitIndex(details.globalPosition);
-    if (index != null && index != _currentDragIndex) {
-      setState(() {
-        _currentDragIndex = index;
-      });
-    }
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    if (_startDragIndex != null && _currentDragIndex != null) {
-      final start = _startDragIndex! < _currentDragIndex!
-          ? _startDragIndex!
-          : _currentDragIndex!;
-      final end = _startDragIndex! > _currentDragIndex!
-          ? _startDragIndex!
-          : _currentDragIndex!;
-
-      final currentSteps = widget.event.steps;
-      bool changed = false;
-      final newSteps = currentSteps.asMap().entries.map((entry) {
-        final idx = entry.key;
-        final step = entry.value;
-        if (idx >= start && idx <= end) {
-          if (step.completed != _dragTargetState) {
-            changed = true;
-            return EventStep()
-              ..description = step.description
-              ..timestamp = step.timestamp
-              ..completed = _dragTargetState;
-          }
-        }
-        return step;
-      }).toList();
-
-      if (changed) {
-        ref
-            .read(eventsProvider.notifier)
-            .updateSteps(widget.event.id, newSteps);
-      }
-    }
-    setState(() {
-      _startDragIndex = null;
-      _currentDragIndex = null;
-    });
-  }
-
   void _updateFromSlider(RangeValues values) {
     final progress = values.start.round();
     final total = values.end.round();
@@ -1835,140 +1792,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
       );
     }
 
-    // 树状图模式：步骤数超过阈值时用分组 + 可展开的序号网格
-    if (stepCount > _kTreeModeStepThreshold) {
-      if (_viewStack.isEmpty || _viewStack.first.end != stepCount) {
-        _viewStack = _computeInitialStack(stepCount);
-      }
-      return _buildTreeModeCard(context, theme, l10n, stepCount);
-    }
-
-    _updateItemKeys(widget.event.steps.length);
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainer,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.bolt_rounded,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.quickEdit,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onPanStart: _handleDragStart,
-              onPanUpdate: _handleDragUpdate,
-              onPanEnd: _handleDragEnd,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.center,
-                  children: List.generate(widget.event.steps.length, (index) {
-                    final isBeingDragged =
-                        _startDragIndex != null &&
-                        _startDragIndex != 999 &&
-                        ((index >= _startDragIndex! &&
-                                index <=
-                                    (_currentDragIndex ?? _startDragIndex!)) ||
-                            (index <= _startDragIndex! &&
-                                index >=
-                                    (_currentDragIndex ?? _startDragIndex!)));
-
-                    final effectiveCompleted = isBeingDragged
-                        ? _dragTargetState
-                        : widget.event.steps[index].completed;
-
-                    final step = widget.event.steps[index];
-                    String stepMarker;
-                    if (widget.event.stepDisplayMode == 'firstChar' &&
-                        step.description.trim().isNotEmpty) {
-                      stepMarker = step.description.trim()[0];
-                    } else {
-                      stepMarker = '${index + 1}';
-                    }
-
-                    return MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        key: _itemKeys[index],
-                        onTap: () => _handleTap(index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: effectiveCompleted
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: effectiveCompleted
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outlineVariant,
-                              width: isBeingDragged ? 2.5 : 1,
-                            ),
-                            boxShadow: isBeingDragged
-                                ? [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withValues(alpha: 0.3),
-                                      blurRadius: 12,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Center(
-                            child: effectiveCompleted
-                                ? Icon(
-                                    Icons.check_rounded,
-                                    size: 20,
-                                    color: theme.colorScheme.onPrimary,
-                                  )
-                                : Text(
-                                    stepMarker,
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          color: theme
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // 非条形时统一为树状图（叶子层为序号/首字）；不在 build 内写 _viewStack
+    return _buildTreeModeCard(context, theme, l10n, stepCount);
   }
 }
