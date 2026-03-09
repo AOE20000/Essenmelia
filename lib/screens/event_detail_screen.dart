@@ -1161,6 +1161,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
 
   /// 树状图：当前查看的层级栈，每项为 [start, end) 步下标（仅在 initState/didUpdateWidget 中更新，避免 build 内写状态导致卡死）
   List<({int start, int end})> _viewStack = [];
+  bool _normalizeScheduled = false;
 
   int get _effectiveMinGroupSize => widget.minGroupSize ?? _kTreeMinGroupSize;
 
@@ -1168,7 +1169,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   void initState() {
     super.initState();
     final n = widget.event.steps.length;
-    if (n > 0) _viewStack = _computeInitialStack(n);
+    if (n > 0) _viewStack = _normalizeStack(_computeInitialStack(n), n);
   }
 
   @override
@@ -1178,11 +1179,94 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     if (n != oldWidget.event.steps.length ||
         widget.event.id != oldWidget.event.id) {
       if (n > 0) {
-        _viewStack = _computeInitialStack(n);
+        _viewStack = _normalizeStack(_computeInitialStack(n), n);
       } else {
         _viewStack = [];
       }
     }
+  }
+
+  ({int start, int end}) _rootRange(int stepCount) =>
+      (start: 0, end: stepCount);
+
+  bool _sameRange(({int start, int end}) a, ({int start, int end}) b) =>
+      a.start == b.start && a.end == b.end;
+
+  bool _isValidChildRange(
+    ({int start, int end}) parent,
+    ({int start, int end}) child,
+  ) {
+    if (child.start < parent.start || child.end > parent.end) return false;
+    if (child.start >= child.end) return false;
+    final groups = _groupsForRange(parent.start, parent.end);
+    for (final g in groups) {
+      if (_sameRange(g, child)) return true;
+    }
+    return false;
+  }
+
+  /// 强约束规范化：root -> child -> ... 严格嵌套且每层必须来自上一层分组结果
+  List<({int start, int end})> _normalizeStack(
+    List<({int start, int end})> stack,
+    int stepCount,
+  ) {
+    if (stepCount <= 0) return [];
+    final root = _rootRange(stepCount);
+    final List<({int start, int end})> normalized = [root];
+    if (stack.isEmpty) return normalized;
+
+    for (final candidate in stack.skip(1)) {
+      final parent = normalized.last;
+      if (!_isValidChildRange(parent, candidate)) break;
+      if (_sameRange(parent, candidate)) break;
+      normalized.add(candidate);
+
+      final size = candidate.end - candidate.start;
+      final groups = _groupsForRange(candidate.start, candidate.end);
+      if (size <= _effectiveMinGroupSize || groups.length <= 1) break;
+    }
+    return normalized;
+  }
+
+  /// build 安全兜底：若 stack 被污染/过期，使用规范化 stack 渲染，并在下一帧修正内部状态（一次性）
+  List<({int start, int end})> _safeViewStackForBuild(int stepCount) {
+    if (stepCount <= 0) return [];
+    final base = _viewStack.isEmpty
+        ? _computeInitialStack(stepCount)
+        : _viewStack;
+    final normalized = _normalizeStack(base, stepCount);
+    final different =
+        normalized.length != _viewStack.length ||
+        (normalized.isNotEmpty &&
+            _viewStack.isNotEmpty &&
+            !_sameRange(normalized.last, _viewStack.last));
+    if (mounted && different && !_normalizeScheduled) {
+      _normalizeScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _viewStack = normalized;
+          _normalizeScheduled = false;
+        });
+      });
+    }
+    return normalized;
+  }
+
+  void _pushRange(({int start, int end}) range, int stepCount) {
+    setState(
+      () => _viewStack = _normalizeStack([..._viewStack, range], stepCount),
+    );
+  }
+
+  void _popRange(int stepCount) {
+    if (_viewStack.length <= 1) return;
+    setState(
+      () => _viewStack = _normalizeStack(
+        _viewStack.sublist(0, _viewStack.length - 1),
+        stepCount,
+      ),
+    );
   }
 
   /// 将 [start, end) 划分为若干组，用于树状图一层
@@ -1290,9 +1374,10 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     AppLocalizations l10n,
     int stepCount,
   ) {
-    final range = _viewStack.isEmpty
+    final safeStack = _safeViewStackForBuild(stepCount);
+    final range = safeStack.isEmpty
         ? (start: 0, end: stepCount)
-        : _viewStack.last;
+        : safeStack.last;
     final rangeSize = range.end - range.start;
     final minSize = _effectiveMinGroupSize;
     final currentGroups = _groupsForRange(range.start, range.end);
@@ -1301,12 +1386,12 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     final bool showParentRow;
     final List<({int start, int end})> parentGroups;
     final String backLabel;
-    if (_viewStack.length >= 2) {
-      final parentRange = _viewStack[_viewStack.length - 2];
+    if (safeStack.length >= 2) {
+      final parentRange = safeStack[safeStack.length - 2];
       parentGroups = _groupsForRange(parentRange.start, parentRange.end);
       backLabel = '${parentRange.start + 1}–${parentRange.end}';
       showParentRow = currentGroups.length < _kTreeCollapseParentThreshold;
-    } else if (_viewStack.length == 1) {
+    } else if (safeStack.length == 1) {
       parentGroups = [];
       backLabel = '1–$stepCount';
       showParentRow = false;
@@ -1394,10 +1479,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
             padding: const EdgeInsets.only(bottom: 8),
             child: InkWell(
               onTap: () {
-                setState(
-                  () =>
-                      _viewStack = _viewStack.sublist(0, _viewStack.length - 1),
-                );
+                _popRange(stepCount);
               },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
@@ -1445,11 +1527,12 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                   completed,
                   highlighted: isCurrent,
                   onTap: () {
+                    final base = _viewStack.length >= 2
+                        ? _viewStack.sublist(0, _viewStack.length - 1)
+                        : _viewStack;
                     setState(
-                      () => _viewStack = [
-                        ..._viewStack.sublist(0, _viewStack.length - 1),
-                        g,
-                      ],
+                      () =>
+                          _viewStack = _normalizeStack([...base, g], stepCount),
                     );
                   },
                 );
@@ -1474,7 +1557,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                 completed,
                 highlighted: false,
                 onTap: () {
-                  setState(() => _viewStack = [..._viewStack, g]);
+                  _pushRange(g, stepCount);
                 },
               );
             }).toList(),
