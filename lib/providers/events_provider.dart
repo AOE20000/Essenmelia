@@ -41,11 +41,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       });
 
       // Watch for changes
-      _box!.listenable().addListener(() {
-        if (mounted) {
-          state = AsyncValue.data(_box!.values.toList());
-        }
-      });
+      _box!.listenable().addListener(_refreshState);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -426,6 +422,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
   }
 
+  void _refreshState() {
+    if (mounted && _box != null) {
+      state = AsyncValue.data(_box!.values.toList());
+    }
+  }
+
   Future<void> toggleStep(String eventId, int stepIndex) async {
     if (_box == null) {
       await _init();
@@ -436,6 +438,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       steps[stepIndex].completed = !steps[stepIndex].completed;
       event.steps = steps;
       await event.save();
+      _refreshState();
     }
   }
 
@@ -447,6 +450,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     if (event != null) {
       event.steps = newSteps;
       await event.save();
+      _refreshState();
     }
   }
 

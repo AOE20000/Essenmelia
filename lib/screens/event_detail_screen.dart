@@ -1134,6 +1134,9 @@ const int _kTreeMinGroupSize = 50;
 /// 树状图模式：每层默认分组数量（可视为“最小组”的另一种表达）
 const int _kTreeDefaultGroupCount = 10;
 
+/// 当前层组数超过此值时折叠上一级，只显示当前层 + 返回，点击返回后再显示上级
+const int _kTreeCollapseParentThreshold = 6;
+
 class _QuickOverview extends ConsumerStatefulWidget {
   final Event event;
 
@@ -1278,7 +1281,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     ref.read(eventsProvider.notifier).updateSteps(widget.event.id, newSteps);
   }
 
-  /// 树状图：构建整张卡片（带返回、组块或序号网格）
+  /// 树状图：构建整张卡片 — 上方组区、下方步骤区；组过多时折叠上一级
   Widget _buildTreeModeCard(
     BuildContext context,
     ThemeData theme,
@@ -1290,8 +1293,26 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         : _viewStack.last;
     final rangeSize = range.end - range.start;
     final minSize = _effectiveMinGroupSize;
-    final groups = _groupsForRange(range.start, range.end);
-    final isLeaf = rangeSize <= minSize || groups.length <= 1;
+    final currentGroups = _groupsForRange(range.start, range.end);
+    final isLeaf = rangeSize <= minSize || currentGroups.length <= 1;
+
+    final bool showParentRow;
+    final List<({int start, int end})> parentGroups;
+    final String backLabel;
+    if (_viewStack.length >= 2) {
+      final parentRange = _viewStack[_viewStack.length - 2];
+      parentGroups = _groupsForRange(parentRange.start, parentRange.end);
+      backLabel = '${parentRange.start + 1}–${parentRange.end}';
+      showParentRow = currentGroups.length < _kTreeCollapseParentThreshold;
+    } else if (_viewStack.length == 1) {
+      parentGroups = [];
+      backLabel = '1–$stepCount';
+      showParentRow = false;
+    } else {
+      parentGroups = [];
+      backLabel = '';
+      showParentRow = false;
+    }
 
     return Card(
       elevation: 0,
@@ -1308,29 +1329,6 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
           children: [
             Row(
               children: [
-                if (_viewStack.length > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: IconButton(
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(36, 36),
-                        padding: EdgeInsets.zero,
-                      ),
-                      onPressed: () {
-                        setState(
-                          () => _viewStack = _viewStack.sublist(
-                            0,
-                            _viewStack.length - 1,
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
                 Icon(
                   Icons.bolt_rounded,
                   size: 20,
@@ -1347,11 +1345,209 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
               ],
             ),
             const SizedBox(height: 12),
-            if (isLeaf)
-              _buildTreeLeafGrid(context, theme, range.start, range.end)
-            else
-              _buildTreeGroupGrid(context, theme, l10n, range.start, range.end),
+            _buildTreeGroupZone(
+              context,
+              theme,
+              l10n,
+              stepCount,
+              range,
+              currentGroups,
+              isLeaf,
+              showParentRow,
+              parentGroups,
+              backLabel,
+            ),
+            if (isLeaf) ...[
+              const SizedBox(height: 12),
+              _buildTreeLeafGrid(context, theme, range.start, range.end),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 组区：上一级行（可选，过多时折叠）+ 当前级行 + 返回按钮
+  Widget _buildTreeGroupZone(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    int stepCount,
+    ({int start, int end}) currentRange,
+    List<({int start, int end})> currentGroups,
+    bool isLeaf,
+    bool showParentRow,
+    List<({int start, int end})> parentGroups,
+    String backLabel,
+  ) {
+    final steps = widget.event.steps;
+    final canPop = _viewStack.length > 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (canPop)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap: () {
+                setState(
+                  () =>
+                      _viewStack = _viewStack.sublist(0, _viewStack.length - 1),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.subdirectory_arrow_left_rounded,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      backLabel.isNotEmpty ? '↑ $backLabel' : '↑',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (showParentRow && parentGroups.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: parentGroups.map((g) {
+                final total = g.end - g.start;
+                final completed = steps
+                    .sublist(g.start, g.end)
+                    .where((s) => s.completed)
+                    .length;
+                final isCurrent =
+                    g.start == currentRange.start && g.end == currentRange.end;
+                return _buildTreeGroupChip(
+                  theme,
+                  l10n,
+                  g,
+                  total,
+                  completed,
+                  highlighted: isCurrent,
+                  onTap: () {
+                    setState(
+                      () => _viewStack = [
+                        ..._viewStack.sublist(0, _viewStack.length - 1),
+                        g,
+                      ],
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        if (!isLeaf)
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: currentGroups.map((g) {
+              final total = g.end - g.start;
+              final completed = steps
+                  .sublist(g.start, g.end)
+                  .where((s) => s.completed)
+                  .length;
+              return _buildTreeGroupChip(
+                theme,
+                l10n,
+                g,
+                total,
+                completed,
+                highlighted: false,
+                onTap: () {
+                  setState(() => _viewStack = [..._viewStack, g]);
+                },
+              );
+            }).toList(),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              '${currentRange.start + 1}–${currentRange.end}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTreeGroupChip(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ({int start, int end}) g,
+    int total,
+    int completed, {
+    required bool highlighted,
+    required VoidCallback onTap,
+  }) {
+    final showAsComplete = completed == total;
+    return Tooltip(
+      message: l10n.quickEditCompleteGroup,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: () => _completeStepRange(g.start, g.end, true),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: highlighted
+                  ? theme.colorScheme.primaryContainer
+                  : (showAsComplete
+                        ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                        : theme.colorScheme.surfaceContainerHighest),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: highlighted
+                    ? theme.colorScheme.primary
+                    : (showAsComplete
+                          ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                          : theme.colorScheme.outlineVariant),
+                width: highlighted ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${g.start + 1}–${g.end}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$completed/$total',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1509,85 +1705,6 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
           }),
         ),
       ),
-    );
-  }
-
-  /// 树状图：当前范围非叶子时，显示组块（支持组进度、点击展开、一键完成组）
-  Widget _buildTreeGroupGrid(
-    BuildContext context,
-    ThemeData theme,
-    AppLocalizations l10n,
-    int rangeStart,
-    int rangeEnd,
-  ) {
-    final groups = _groupsForRange(rangeStart, rangeEnd);
-    final steps = widget.event.steps;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 12,
-      alignment: WrapAlignment.center,
-      children: List.generate(groups.length, (i) {
-        final g = groups[i];
-        final total = g.end - g.start;
-        final completed = steps
-            .sublist(g.start, g.end)
-            .where((s) => s.completed)
-            .length;
-        final showAsComplete = completed == total;
-
-        return Tooltip(
-          message: l10n.quickEditCompleteGroup,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                setState(() => _viewStack = [..._viewStack, g]);
-              },
-              onLongPress: () => _completeStepRange(g.start, g.end, true),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: showAsComplete
-                      ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                      : theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: showAsComplete
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outlineVariant,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${g.start + 1}–${g.end}',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$completed/$total',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
     );
   }
 
