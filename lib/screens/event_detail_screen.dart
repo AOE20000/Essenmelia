@@ -626,7 +626,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 const SizedBox(height: 32),
 
                 if (event.steps.isNotEmpty) ...[
-                  _QuickOverview(event: event),
+                  _QuickOverview(event: event, minGroupSize: null),
                   const SizedBox(height: 32),
                 ],
 
@@ -749,7 +749,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             child: InkWell(
               onTap: () =>
                   ref.read(eventsProvider.notifier).toggleStep(event.id, index),
-              onLongPress: () => _showEditStepDialog(context, ref, event, index),
+              onLongPress: () =>
+                  _showEditStepDialog(context, ref, event, index),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -955,10 +956,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           return AlertDialog(
             title: Row(
               children: [
-                Icon(
-                  Icons.edit_note_rounded,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.edit_note_rounded, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Text(l10n.edit),
               ],
@@ -1005,7 +1003,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 onPressed: () {
                   final steps = List<EventStep>.from(event.steps);
                   steps.removeAt(index);
-                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  ref
+                      .read(eventsProvider.notifier)
+                      .updateSteps(event.id, steps);
                   Navigator.pop(context);
                 },
                 icon: const Icon(Icons.delete_outline_rounded, size: 18),
@@ -1027,7 +1027,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     steps[index] = steps[index].copyWith(
                       description: newDescription,
                     );
-                    ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                    ref
+                        .read(eventsProvider.notifier)
+                        .updateSteps(event.id, steps);
                   }
                   Navigator.pop(context);
                 },
@@ -1126,9 +1128,22 @@ class _AddStepButtonState extends ConsumerState<_AddStepButton> {
   }
 }
 
+/// 树状图模式：每组步数阈值，低于此值则展开为序号网格
+const int _kTreeMinGroupSize = 50;
+
+/// 树状图模式：每层默认分组数量（可视为“最小组”的另一种表达）
+const int _kTreeDefaultGroupCount = 10;
+
+/// 启用树状图的最小步骤数，超过则用树状图替代平铺序号
+const int _kTreeModeStepThreshold = 50;
+
 class _QuickOverview extends ConsumerStatefulWidget {
   final Event event;
-  const _QuickOverview({required this.event});
+
+  /// 最小组大小（步数），低于此值的组直接展开为矩形网格；null 表示使用默认 _kTreeMinGroupSize。
+  /// 可从设置或事件编辑中传入以实现“自定义最小组”。
+  final int? minGroupSize;
+  const _QuickOverview({required this.event, this.minGroupSize});
 
   @override
   ConsumerState<_QuickOverview> createState() => _QuickOverviewState();
@@ -1143,6 +1158,56 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
 
   // 为条型模式添加本地状态以保证拖动流畅
   RangeValues? _sliderValues;
+
+  /// 树状图：当前查看的层级栈，每项为 [start, end) 步下标
+  List<({int start, int end})> _viewStack = [];
+
+  int get _effectiveMinGroupSize => widget.minGroupSize ?? _kTreeMinGroupSize;
+
+  /// 将 [start, end) 划分为若干组，用于树状图一层
+  List<({int start, int end})> _groupsForRange(int start, int end) {
+    final total = end - start;
+    if (total <= 0) return [];
+    final minSize = _effectiveMinGroupSize;
+    final groupCount = total <= minSize
+        ? 1
+        : min(_kTreeDefaultGroupCount, max(1, total ~/ minSize));
+    final step = (total / groupCount).ceil();
+    final List<({int start, int end})> result = [];
+    for (int i = 0; i < groupCount; i++) {
+      final s = start + i * step;
+      final e = i == groupCount - 1 ? end : start + (i + 1) * step;
+      result.add((start: s, end: e));
+    }
+    return result;
+  }
+
+  /// 计算初始视图栈：默认展开到包含“当前进度”的叶子组
+  List<({int start, int end})> _computeInitialStack(int stepCount) {
+    if (stepCount <= 0) return [];
+    final steps = widget.event.steps;
+    final progressIndex = steps
+        .take(stepCount)
+        .where((s) => s.completed)
+        .length;
+    final minSize = _effectiveMinGroupSize;
+    List<({int start, int end})> stack = [(start: 0, end: stepCount)];
+    var range = stack.last;
+    while (range.end - range.start > minSize) {
+      final groups = _groupsForRange(range.start, range.end);
+      ({int start, int end})? next;
+      for (final g in groups) {
+        if (g.start <= progressIndex && progressIndex < g.end) {
+          next = g;
+          break;
+        }
+      }
+      if (next == null) break;
+      stack = [...stack, next];
+      range = next;
+    }
+    return stack;
+  }
 
   void _updateItemKeys(int count) {
     if (_itemKeys.length != count) {
@@ -1176,6 +1241,336 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
 
   void _handleTap(int index) {
     ref.read(eventsProvider.notifier).toggleStep(widget.event.id, index);
+  }
+
+  void _completeStepRange(int start, int end, bool completed) {
+    final currentSteps = widget.event.steps;
+    if (start < 0 || end > currentSteps.length) return;
+    final newSteps = currentSteps.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final step = entry.value;
+      if (idx >= start && idx < end) {
+        return EventStep()
+          ..description = step.description
+          ..timestamp = step.timestamp
+          ..completed = completed;
+      }
+      return step;
+    }).toList();
+    ref.read(eventsProvider.notifier).updateSteps(widget.event.id, newSteps);
+  }
+
+  /// 树状图：构建整张卡片（带返回、组块或序号网格）
+  Widget _buildTreeModeCard(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    int stepCount,
+  ) {
+    final range = _viewStack.isEmpty
+        ? (start: 0, end: stepCount)
+        : _viewStack.last;
+    final rangeSize = range.end - range.start;
+    final minSize = _effectiveMinGroupSize;
+    final groups = _groupsForRange(range.start, range.end);
+    final isLeaf = rangeSize <= minSize || groups.length <= 1;
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (_viewStack.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(36, 36),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () {
+                        setState(
+                          () => _viewStack = _viewStack.sublist(
+                            0,
+                            _viewStack.length - 1,
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                Icon(
+                  Icons.bolt_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.quickEdit,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (isLeaf)
+              _buildTreeLeafGrid(context, theme, range.start, range.end)
+            else
+              _buildTreeGroupGrid(context, theme, l10n, range.start, range.end),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 树状图：当前范围是叶子时，显示序号模式矩形网格（支持滑动更新）
+  Widget _buildTreeLeafGrid(
+    BuildContext context,
+    ThemeData theme,
+    int rangeStart,
+    int rangeEnd,
+  ) {
+    final stepCount = rangeEnd - rangeStart;
+    _updateItemKeys(stepCount);
+    final steps = widget.event.steps;
+
+    return GestureDetector(
+      onPanStart: (d) {
+        _calculateBounds();
+        final localIndex = _findHitIndex(d.globalPosition);
+        if (localIndex != null && localIndex < stepCount) {
+          final index = rangeStart + localIndex;
+          setState(() {
+            _startDragIndex = index;
+            _currentDragIndex = index;
+            _dragTargetState = !steps[index].completed;
+          });
+        }
+      },
+      onPanUpdate: (d) {
+        if (_startDragIndex == null) return;
+        final localIndex = _findHitIndex(d.globalPosition);
+        if (localIndex != null && localIndex < stepCount) {
+          final index = rangeStart + localIndex;
+          if (index != _currentDragIndex) {
+            setState(() => _currentDragIndex = index);
+          }
+        }
+      },
+      onPanEnd: (d) {
+        if (_startDragIndex != null && _currentDragIndex != null) {
+          int start = _startDragIndex! < _currentDragIndex!
+              ? _startDragIndex!
+              : _currentDragIndex!;
+          int end = _startDragIndex! > _currentDragIndex!
+              ? _startDragIndex!
+              : _currentDragIndex!;
+          if (start < rangeStart) start = rangeStart;
+          if (end >= rangeEnd) end = rangeEnd - 1;
+          end += 1;
+          final currentSteps = widget.event.steps;
+          bool changed = false;
+          final newSteps = currentSteps.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final step = entry.value;
+            if (idx >= start && idx < end) {
+              if (step.completed != _dragTargetState) {
+                changed = true;
+                return EventStep()
+                  ..description = step.description
+                  ..timestamp = step.timestamp
+                  ..completed = _dragTargetState;
+              }
+            }
+            return step;
+          }).toList();
+          if (changed) {
+            ref
+                .read(eventsProvider.notifier)
+                .updateSteps(widget.event.id, newSteps);
+          }
+        }
+        setState(() {
+          _startDragIndex = null;
+          _currentDragIndex = null;
+        });
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: List.generate(stepCount, (localIndex) {
+            final index = rangeStart + localIndex;
+            final isBeingDragged =
+                _startDragIndex != null &&
+                _startDragIndex != 999 &&
+                ((index >= _startDragIndex! &&
+                        index <= (_currentDragIndex ?? _startDragIndex!)) ||
+                    (index <= _startDragIndex! &&
+                        index >= (_currentDragIndex ?? _startDragIndex!)));
+            final effectiveCompleted = isBeingDragged
+                ? _dragTargetState
+                : steps[index].completed;
+            final step = steps[index];
+            String stepMarker;
+            if (widget.event.stepDisplayMode == 'firstChar' &&
+                step.description.trim().isNotEmpty) {
+              stepMarker = step.description.trim()[0];
+            } else {
+              stepMarker = '${index + 1}';
+            }
+            return MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                key: _itemKeys[localIndex],
+                onTap: () => _handleTap(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: effectiveCompleted
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: effectiveCompleted
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outlineVariant,
+                      width: isBeingDragged ? 2.5 : 1,
+                    ),
+                    boxShadow: isBeingDragged
+                        ? [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.3,
+                              ),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Center(
+                    child: effectiveCompleted
+                        ? Icon(
+                            Icons.check_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onPrimary,
+                          )
+                        : Text(
+                            stepMarker,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  /// 树状图：当前范围非叶子时，显示组块（支持组进度、点击展开、一键完成组）
+  Widget _buildTreeGroupGrid(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    int rangeStart,
+    int rangeEnd,
+  ) {
+    final groups = _groupsForRange(rangeStart, rangeEnd);
+    final steps = widget.event.steps;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 12,
+      alignment: WrapAlignment.center,
+      children: List.generate(groups.length, (i) {
+        final g = groups[i];
+        final total = g.end - g.start;
+        final completed = steps
+            .sublist(g.start, g.end)
+            .where((s) => s.completed)
+            .length;
+        final showAsComplete = completed == total;
+
+        return Tooltip(
+          message: l10n.quickEditCompleteGroup,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                setState(() => _viewStack = [..._viewStack, g]);
+              },
+              onLongPress: () => _completeStepRange(g.start, g.end, true),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: showAsComplete
+                      ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                      : theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: showAsComplete
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outlineVariant,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${g.start + 1}–${g.end}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$completed/$total',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   void _handleDragStart(DragStartDetails details) {
@@ -1440,70 +1835,12 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
       );
     }
 
-    // 性能优化：如果步骤过多（> 120），在常规模式下引导切换到条型模式
-    if (stepCount > 120) {
-      return Card(
-        elevation: 0,
-        color: theme.colorScheme.surfaceContainer,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-        child: InkWell(
-          onTap: () {
-            ref
-                .read(eventsProvider.notifier)
-                .updateEvent(id: widget.event.id, stepDisplayMode: 'slider');
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.speed_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "步骤过多 ($stepCount)",
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "建议切换到“条型”模式以获得更流畅的体验",
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+    // 树状图模式：步骤数超过阈值时用分组 + 可展开的序号网格
+    if (stepCount > _kTreeModeStepThreshold) {
+      if (_viewStack.isEmpty || _viewStack.first.end != stepCount) {
+        _viewStack = _computeInitialStack(stepCount);
+      }
+      return _buildTreeModeCard(context, theme, l10n, stepCount);
     }
 
     _updateItemKeys(widget.event.steps.length);

@@ -1594,6 +1594,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickEdit => 'Quick Edit (Long press to slide)';
 
   @override
+  String get quickEditCompleteGroup => 'Long press to complete this group';
+
+  @override
   String get extensionConsole => 'Extension Console';
 
   @override

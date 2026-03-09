@@ -2978,6 +2978,9 @@ abstract class AppLocalizations {
   /// **'Quick Edit (Long press to slide)'**
   String get quickEdit;
 
+  /// Long press to complete this group (tree quick edit)
+  String get quickEditCompleteGroup;
+
   /// Title for the extension debug console
   ///
   /// In en, this message translates to:

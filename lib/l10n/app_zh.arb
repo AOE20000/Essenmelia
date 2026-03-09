@@ -200,6 +200,7 @@
   "newStepPlaceholder": "新步骤...",
   "editSteps": "编辑步骤",
   "quickEdit": "快速编辑 (长按滑动)",
+  "quickEditCompleteGroup": "长按一键完成本组",
   "reminderAt": "提醒：{time}",
   "@reminderAt": {
     "placeholders": {

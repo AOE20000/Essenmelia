@@ -1545,6 +1545,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickEdit => '快速编辑 (长按滑动)';
 
   @override
+  String get quickEditCompleteGroup => '长按一键完成本组';
+
+  @override
   String get extensionConsole => '扩展控制台';
 
   @override

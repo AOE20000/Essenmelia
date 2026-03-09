@@ -2163,6 +2163,7 @@
   "@quickEdit": {
     "description": "Label for quick edit feature"
   },
+  "quickEditCompleteGroup": "Long press to complete this group",
   "extensionConsole": "Extension Console",
   "@extensionConsole": {
     "description": "Title for the extension debug console"
