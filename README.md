@@ -70,3 +70,7 @@ Essenmelia 最初诞生于一个简单的诉求：打造一款不受外界干涉
 - [创建仓库指南](assets/docs/create_repository_guide.md) - 了解如何分发你的扩展。
 - [扩展示例](https://github.com/AOE20000/Export-from-Bangumi-to-Essenmelia) - **Bangumi 收藏导入** 扩展的实现代码。
 - [项目主页](https://github.com/AOE20000/Essenmelia) - 访问 GitHub 仓库。
+
+---
+# Keep Android Open
+- https://keepandroidopen.org
