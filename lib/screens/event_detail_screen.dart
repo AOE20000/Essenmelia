@@ -630,35 +630,44 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   const SizedBox(height: 32),
                 ],
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      l10n.steps,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "${event.steps.where((s) => s.completed).length}/${event.steps.length}",
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
+                Builder(
+                  builder: (_) {
+                    final suffixText =
+                        (event.stepSuffix?.trim().isNotEmpty ?? false)
+                        ? event.stepSuffix!.trim()
+                        : l10n.steps;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '单位：$suffixText',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "${event.steps.where((s) => s.completed).length}/${event.steps.length}",
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
+
                 const SizedBox(height: 16),
                 // _StepsList(event: event), // Removed: moving to SliverList for performance
               ]),
@@ -1014,7 +1023,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   foregroundColor: theme.colorScheme.error,
                 ),
               ),
-              const Spacer(),
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(l10n.cancel),
@@ -1143,6 +1151,8 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
 
   // 为条型模式添加本地状态以保证拖动流畅
   RangeValues? _sliderValues;
+  final Map<int, int> _hierarchySelections = {};
+  int _hierarchyVisibleBaseStart = 0;
 
   void _updateItemKeys(int count) {
     if (_itemKeys.length != count) {
@@ -1182,10 +1192,17 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     _calculateBounds();
     final index = _findHitIndex(details.globalPosition);
     if (index != null) {
+      final normalizedMode = _normalizeStepDisplayMode(widget.event.stepDisplayMode);
+      final isHierarchy =
+          normalizedMode == 'hierarchy' || normalizedMode == 'hierarchyFirstChar';
+      int targetIndex = index;
+      if (isHierarchy) {
+        targetIndex = _hierarchyVisibleBaseStart + index;
+      }
       setState(() {
         _startDragIndex = index;
         _currentDragIndex = index;
-        _dragTargetState = !widget.event.steps[index].completed;
+        _dragTargetState = !widget.event.steps[targetIndex].completed;
       });
     }
   }
@@ -1203,12 +1220,21 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
 
   void _handleDragEnd(DragEndDetails details) {
     if (_startDragIndex != null && _currentDragIndex != null) {
-      final start = _startDragIndex! < _currentDragIndex!
+      int start = _startDragIndex! < _currentDragIndex!
           ? _startDragIndex!
           : _currentDragIndex!;
-      final end = _startDragIndex! > _currentDragIndex!
+      int end = _startDragIndex! > _currentDragIndex!
           ? _startDragIndex!
           : _currentDragIndex!;
+
+      final normalizedMode = _normalizeStepDisplayMode(widget.event.stepDisplayMode);
+      final isHierarchy =
+          normalizedMode == 'hierarchy' || normalizedMode == 'hierarchyFirstChar';
+      if (isHierarchy) {
+        final baseOffset = _hierarchyVisibleBaseStart;
+        start += baseOffset;
+        end += baseOffset;
+      }
 
       final currentSteps = widget.event.steps;
       bool changed = false;
@@ -1290,11 +1316,459 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     );
   }
 
+  List<int> _buildHierarchyCapacities(int totalCount) {
+    // L1=50, L2=10x, L3=2x, L4=10x, Ln 默认 10x 递归扩展
+    const multipliers = [10, 2, 10];
+    final caps = <int>[50];
+    var multIndex = 0;
+    while (caps.last < totalCount) {
+      final mult = multIndex < multipliers.length ? multipliers[multIndex] : 10;
+      caps.add(caps.last * mult);
+      multIndex++;
+    }
+    return caps;
+  }
+
+  String _levelLabel(int level) {
+    return switch (level) {
+      1 => 'L1 Base',
+      2 => 'L2 B',
+      3 => 'L3 C',
+      4 => 'L4 D',
+      _ => 'L$level',
+    };
+  }
+
+  Widget _buildHierarchyGroupSelector({
+    required ThemeData theme,
+    required String title,
+    required List<int> groupIndices,
+    required int selectedGroupIndex,
+    required void Function(int groupIndex) onSelect,
+    required void Function(int groupIndex) onGroupLongPress,
+    required String Function(int groupIndex) labelBuilder,
+  }) {
+    if (groupIndices.length <= 1) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: groupIndices.map((groupIndex) {
+            final selected = groupIndex == selectedGroupIndex;
+            return GestureDetector(
+              onLongPress: () => onGroupLongPress(groupIndex),
+              child: ChoiceChip(
+                label: Text(labelBuilder(groupIndex)),
+                selected: selected,
+                onSelected: (_) => onSelect(groupIndex),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _toggleGroupCompletion(int startInclusive, int endExclusive) async {
+    final currentSteps = widget.event.steps;
+    if (startInclusive < 0 ||
+        endExclusive > currentSteps.length ||
+        startInclusive >= endExclusive) {
+      return;
+    }
+
+    final allCompleted = currentSteps
+        .sublist(startInclusive, endExclusive)
+        .every((s) => s.completed);
+    final targetCompleted = !allCompleted;
+
+    bool changed = false;
+    final newSteps = currentSteps.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final step = entry.value;
+      if (idx >= startInclusive && idx < endExclusive) {
+        if (step.completed != targetCompleted) {
+          changed = true;
+          return EventStep()
+            ..description = step.description
+            ..timestamp = step.timestamp
+            ..completed = targetCompleted;
+        }
+      }
+      return step;
+    }).toList();
+
+    if (changed) {
+      await ref.read(eventsProvider.notifier).updateSteps(widget.event.id, newSteps);
+    }
+  }
+
+  Future<void> _showEditStepDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Event event,
+    int index,
+  ) async {
+    final step = event.steps[index];
+    final controller = TextEditingController(text: step.description);
+    controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: controller.text.length),
+    );
+
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  Icons.edit_note_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(l10n.edit),
+              ],
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l10n.stepDescription,
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHigh,
+                prefixIcon: const Icon(Icons.checklist_rounded, size: 20),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 20),
+                        onPressed: () {
+                          controller.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              maxLines: 5,
+              minLines: 1,
+              onChanged: (_) => setState(() {}),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () {
+                  final steps = List<EventStep>.from(event.steps);
+                  steps.removeAt(index);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: Text(l10n.delete),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final newDescription = controller.text.trim();
+                  if (newDescription.isNotEmpty) {
+                    final steps = List<EventStep>.from(event.steps);
+                    steps[index] = steps[index].copyWith(
+                      description: newDescription,
+                    );
+                    ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  }
+                  Navigator.pop(context);
+                },
+                child: Text(l10n.confirm),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHierarchyQuickEdit(
+    ThemeData theme,
+    AppLocalizations l10n, {
+    required bool useFirstChar,
+  }) {
+    final steps = widget.event.steps;
+    final totalCount = steps.length;
+    if (totalCount == 0) return const SizedBox.shrink();
+    final totalCompleted = steps.where((s) => s.completed).length;
+    final capacities = _buildHierarchyCapacities(totalCount);
+    final topLevel = capacities.length;
+
+    var rangeStart = 0;
+    var rangeEndExclusive = totalCount;
+    final selectors = <Widget>[];
+
+    // 从顶层向下递归选择，直到 L2；L1 直接用网格展示
+    for (int level = topLevel; level >= 2; level--) {
+      final childSpan = capacities[level - 2];
+      final groupStart = rangeStart ~/ childSpan;
+      final groupEndExclusive = (rangeEndExclusive / childSpan).ceil();
+      final groups = List<int>.generate(
+        max(0, groupEndExclusive - groupStart),
+        (i) => groupStart + i,
+      );
+
+      final keepVisible = level == topLevel;
+      if (groups.length <= 1 && !keepVisible) {
+        if (groups.isNotEmpty) {
+          final only = groups.first;
+          rangeStart = only * childSpan;
+          rangeEndExclusive = min(rangeStart + childSpan, totalCount);
+        }
+        continue;
+      }
+
+      final minIdx = groups.isEmpty ? 0 : groups.first;
+      final maxIdx = groups.isEmpty ? 0 : groups.last;
+      final current = (_hierarchySelections[level] ?? minIdx).clamp(minIdx, maxIdx);
+      _hierarchySelections[level] = current;
+
+      rangeStart = current * childSpan;
+      rangeEndExclusive = min(rangeStart + childSpan, totalCount);
+
+      selectors.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _buildHierarchyGroupSelector(
+            theme: theme,
+            title: _levelLabel(level),
+            groupIndices: groups,
+            selectedGroupIndex: current,
+            onSelect: (groupIndex) {
+              setState(() {
+                _hierarchySelections[level] = groupIndex;
+              });
+            },
+            onGroupLongPress: (groupIndex) {
+              final start = groupIndex * childSpan;
+              final end = min(start + childSpan, totalCount);
+              _toggleGroupCompletion(start, end);
+            },
+            // 各层统一：该组已完成 / 组序号（全局绝对组编号）
+            labelBuilder: (groupIndex) {
+              final start = groupIndex * childSpan;
+              final end = min(start + childSpan, totalCount);
+              final completedInGroup = steps
+                  .sublist(start, end)
+                  .where((s) => s.completed)
+                  .length;
+              // 仅“最顶层可见单选标签”使用：该组已完成 / 该组最大数
+              if (level == topLevel) {
+                return '$completedInGroup / $end';
+              }
+              return '$completedInGroup / ${groupIndex + 1}';
+            },
+          ),
+        ),
+      );
+    }
+
+    final activeGroupSteps = steps.sublist(rangeStart, rangeEndExclusive);
+    _hierarchyVisibleBaseStart = rangeStart;
+
+    _updateItemKeys(activeGroupSteps.length);
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.account_tree_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.quickEdit,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // 当前最顶层：统一展示全局完成数 / 总项数
+            Text(
+              '$totalCompleted / $totalCount',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            ...selectors,
+            const SizedBox(height: 16),
+            GestureDetector(
+              onPanStart: _handleDragStart,
+              onPanUpdate: _handleDragUpdate,
+              onPanEnd: _handleDragEnd,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: List.generate(activeGroupSteps.length, (localIndex) {
+                    final globalIndex = rangeStart + localIndex;
+                    final isBeingDragged =
+                        _startDragIndex != null &&
+                        _startDragIndex != 999 &&
+                        ((localIndex >= _startDragIndex! &&
+                                localIndex <=
+                                    (_currentDragIndex ?? _startDragIndex!)) ||
+                            (localIndex <= _startDragIndex! &&
+                                localIndex >=
+                                    (_currentDragIndex ?? _startDragIndex!)));
+
+                    final effectiveCompleted = isBeingDragged
+                        ? _dragTargetState
+                        : activeGroupSteps[localIndex].completed;
+
+                    String markerText;
+                    if (useFirstChar &&
+                        activeGroupSteps[localIndex].description.trim().isNotEmpty) {
+                      markerText = activeGroupSteps[localIndex].description
+                          .trim()[0];
+                    } else {
+                      // 绝对值计数：取消组内局部编号
+                      markerText = '${globalIndex + 1}';
+                    }
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        key: _itemKeys[localIndex],
+                        onTap: () => _handleTap(globalIndex),
+                        onLongPress: () => _showEditStepDialog(
+                          context,
+                          ref,
+                          widget.event,
+                          globalIndex,
+                        ),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: effectiveCompleted
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: effectiveCompleted
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
+                              width: isBeingDragged ? 2.5 : 1,
+                            ),
+                            boxShadow: isBeingDragged
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          child: Center(
+                            child: effectiveCompleted
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    size: 20,
+                                    color: theme.colorScheme.onPrimary,
+                                  )
+                                : Text(
+                                    markerText,
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _normalizeStepDisplayMode(String? mode) {
+    return switch (mode) {
+      null => 'hierarchy',
+      'number' => 'hierarchy',
+      'firstChar' => 'hierarchyFirstChar',
+      'slider' => 'slider',
+      'hierarchy' => 'hierarchy',
+      'hierarchyFirstChar' => 'hierarchyFirstChar',
+      _ => 'hierarchy',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final isSlider = widget.event.stepDisplayMode == 'slider';
+    final normalizedMode = _normalizeStepDisplayMode(widget.event.stepDisplayMode);
+    final isSlider = normalizedMode == 'slider';
+    final isHierarchy =
+        normalizedMode == 'hierarchy' || normalizedMode == 'hierarchyFirstChar';
+    final hierarchyUseFirstChar = normalizedMode == 'hierarchyFirstChar';
     final stepCount = widget.event.steps.length;
 
     if (isSlider) {
@@ -1440,6 +1914,10 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
       );
     }
 
+    if (isHierarchy) {
+      return _buildHierarchyQuickEdit(theme, l10n, useFirstChar: hierarchyUseFirstChar);
+    }
+
     // 性能优化：如果步骤过多（> 120），在常规模式下引导切换到条型模式
     if (stepCount > 120) {
       return Card(
@@ -1578,6 +2056,8 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                       child: GestureDetector(
                         key: _itemKeys[index],
                         onTap: () => _handleTap(index),
+                        onLongPress: () =>
+                            _showEditStepDialog(context, ref, widget.event, index),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           width: 44,

@@ -1469,6 +1469,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markerSlider => 'Slider';
 
   @override
+  String get markerHierarchy => 'Hierarchy';
+
+  @override
+  String get hierarchyFirstCharSubtitle =>
+      'Use first-character markers in hierarchy mode';
+
+  @override
   String get customCountSuffix => 'Custom Count Suffix';
 
   @override

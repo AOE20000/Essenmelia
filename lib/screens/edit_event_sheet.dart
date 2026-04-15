@@ -42,7 +42,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   List<String> _selectedTags = [];
   List<String> _recommendedTags = [];
   bool _isSaving = false;
-  String _stepDisplayMode = 'number';
+  String _stepDisplayMode = 'hierarchy';
   List<EventReminder> _reminders = [];
 
   // ML 状态
@@ -68,7 +68,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     );
     _currentImageUrl = widget.event?.imageUrl;
     _selectedTags = widget.event?.tags ?? [];
-    _stepDisplayMode = widget.event?.stepDisplayMode ?? 'number';
+    _stepDisplayMode = _normalizeStepDisplayMode(widget.event?.stepDisplayMode);
 
     // Initialize reminders from event
     if (widget.event != null) {
@@ -96,6 +96,18 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _updateRecommendations(),
     );
+  }
+
+  String _normalizeStepDisplayMode(String? mode) {
+    return switch (mode) {
+      null => 'hierarchy',
+      'number' => 'hierarchy',
+      'firstChar' => 'hierarchyFirstChar',
+      'slider' => 'slider',
+      'hierarchy' => 'hierarchy',
+      'hierarchyFirstChar' => 'hierarchyFirstChar',
+      _ => 'hierarchy',
+    };
   }
 
   Widget _buildAdvancedSettingsButton(ThemeData theme) {
@@ -296,14 +308,9 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 child: SegmentedButton<String>(
                   segments: [
                     ButtonSegment(
-                      value: 'number',
-                      label: Text(l10n.markerNumber),
-                      icon: const Icon(Icons.format_list_numbered),
-                    ),
-                    ButtonSegment(
-                      value: 'firstChar',
-                      label: Text(l10n.markerFirstChar),
-                      icon: const Icon(Icons.sort_by_alpha),
+                      value: 'hierarchy',
+                      label: Text(l10n.markerHierarchy),
+                      icon: const Icon(Icons.account_tree_outlined),
                     ),
                     ButtonSegment(
                       value: 'slider',
@@ -311,15 +318,45 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                       icon: const Icon(Icons.linear_scale),
                     ),
                   ],
-                  selected: {_stepDisplayMode},
+                  selected: {
+                    _stepDisplayMode == 'hierarchyFirstChar'
+                        ? 'hierarchy'
+                        : _stepDisplayMode,
+                  },
                   onSelectionChanged: (Set<String> newSelection) {
                     setModalState(() {
-                      _stepDisplayMode = newSelection.first;
+                      final selectedMode = newSelection.first;
+                      if (selectedMode == 'hierarchy') {
+                        // 保留“分层+首字”子模式，不在切回分层时丢失
+                        _stepDisplayMode = _stepDisplayMode == 'hierarchyFirstChar'
+                            ? 'hierarchyFirstChar'
+                            : 'hierarchy';
+                      } else {
+                        _stepDisplayMode = selectedMode;
+                      }
                     });
                     setState(() {}); // 同步到外部状态
                   },
                 ),
               ),
+              if (_stepDisplayMode == 'hierarchy' ||
+                  _stepDisplayMode == 'hierarchyFirstChar') ...[
+                const SizedBox(height: 12),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.markerFirstChar),
+                  subtitle: Text(l10n.hierarchyFirstCharSubtitle),
+                  value: _stepDisplayMode == 'hierarchyFirstChar',
+                  onChanged: (enabled) {
+                    setModalState(() {
+                      _stepDisplayMode = enabled
+                          ? 'hierarchyFirstChar'
+                          : 'hierarchy';
+                    });
+                    setState(() {});
+                  },
+                ),
+              ],
               const SizedBox(height: 20),
               Text(
                 l10n.customCountSuffix,

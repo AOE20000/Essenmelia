@@ -2750,6 +2750,18 @@ abstract class AppLocalizations {
   /// **'Slider'**
   String get markerSlider;
 
+  /// Option for hierarchy-based step markers
+  ///
+  /// In en, this message translates to:
+  /// **'Hierarchy'**
+  String get markerHierarchy;
+
+  /// Subtitle for first-character toggle under hierarchy mode
+  ///
+  /// In en, this message translates to:
+  /// **'Use first-character markers in hierarchy mode'**
+  String get hierarchyFirstCharSubtitle;
+
   /// Label for custom count suffix setting
   ///
   /// In en, this message translates to:

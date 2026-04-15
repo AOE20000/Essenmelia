@@ -117,6 +117,16 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                           children: [
                             if (_tabController.index == 0) ...[
                               IconButton(
+                                tooltip: '全选',
+                                icon: const Icon(Icons.select_all_rounded),
+                                onPressed: () => _selectAllSteps(event),
+                              ),
+                              IconButton(
+                                tooltip: '反选',
+                                icon: const Icon(Icons.swap_horiz_rounded),
+                                onPressed: () => _invertSelectSteps(event),
+                              ),
+                              IconButton(
                                 tooltip: l10n.batchArchive,
                                 icon: const Icon(Icons.archive_outlined),
                                 onPressed: () => _handleBatchArchive(event),
@@ -153,6 +163,12 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                         )
                       : const SizedBox.shrink(key: ValueKey('no_actions')),
                 ),
+                if (!isSelectionMode && _tabController.index == 0)
+                  IconButton(
+                    tooltip: '数字调整',
+                    icon: const Icon(Icons.pin_outlined),
+                    onPressed: () => _showNumericAdjustDialog(event),
+                  ),
               ],
               bottom: TabBar(
                 controller: _tabController,
@@ -465,6 +481,109 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
         ],
       ),
     );
+  }
+
+  void _selectAllSteps(Event event) {
+    setState(() {
+      _selectedStepIndices
+        ..clear()
+        ..addAll(List.generate(event.steps.length, (i) => i));
+    });
+  }
+
+  void _invertSelectSteps(Event event) {
+    final inverted = <int>{};
+    for (int i = 0; i < event.steps.length; i++) {
+      if (!_selectedStepIndices.contains(i)) {
+        inverted.add(i);
+      }
+    }
+    setState(() {
+      _selectedStepIndices
+        ..clear()
+        ..addAll(inverted);
+    });
+  }
+
+  Future<void> _showNumericAdjustDialog(Event event) async {
+    final completed = event.steps.where((s) => s.completed).length;
+    final total = event.steps.length;
+    final progressController = TextEditingController(text: '$completed');
+    final totalController = TextEditingController(text: '$total');
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('数字调整'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: progressController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '已完成数量',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: totalController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '总步骤数量',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final parsedProgress = int.tryParse(progressController.text.trim());
+    final parsedTotal = int.tryParse(totalController.text.trim());
+    if (parsedProgress == null || parsedTotal == null || parsedTotal < 0) return;
+
+    final targetTotal = parsedTotal;
+    final targetProgress = parsedProgress.clamp(0, targetTotal);
+    final suffix = event.stepSuffix ?? l10n.steps;
+    final now = DateTime.now();
+    final currentSteps = event.steps;
+
+    final List<EventStep> newSteps = [];
+    for (int i = 0; i < targetTotal; i++) {
+      if (i < currentSteps.length) {
+        final old = currentSteps[i];
+        newSteps.add(
+          EventStep()
+            ..description = old.description
+            ..timestamp = old.timestamp
+            ..completed = i < targetProgress,
+        );
+      } else {
+        newSteps.add(
+          EventStep()
+            ..description = '${i + 1} $suffix'
+            ..timestamp = now
+            ..completed = i < targetProgress,
+        );
+      }
+    }
+
+    await ref.read(eventsProvider.notifier).updateSteps(event.id, newSteps);
   }
 
   Widget _buildCurrentStepsTab(Event event) {

@@ -1425,6 +1425,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get markerSlider => '条型';
 
   @override
+  String get markerHierarchy => '分层';
+
+  @override
+  String get hierarchyFirstCharSubtitle => '分层模式下使用首字显示';
+
+  @override
   String get customCountSuffix => '自定义事件后缀';
 
   @override

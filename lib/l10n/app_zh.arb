@@ -875,6 +875,8 @@
   "markerNumber": "序号",
   "markerFirstChar": "首字",
   "markerSlider": "条型",
+  "markerHierarchy": "分层",
+  "hierarchyFirstCharSubtitle": "分层模式下使用首字显示",
   "customCountSuffix": "自定义事件后缀",
   "suffixHint": "例如：任务、步骤、个",
   "suffixDefaultTip": "留空则使用默认后缀",

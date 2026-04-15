@@ -1996,6 +1996,14 @@
   "@markerSlider": {
     "description": "Option for slider-based step markers"
   },
+  "markerHierarchy": "Hierarchy",
+  "@markerHierarchy": {
+    "description": "Option for hierarchy-based step markers"
+  },
+  "hierarchyFirstCharSubtitle": "Use first-character markers in hierarchy mode",
+  "@hierarchyFirstCharSubtitle": {
+    "description": "Subtitle for first-character toggle under hierarchy mode"
+  },
   "customCountSuffix": "Custom Count Suffix",
   "@customCountSuffix": {
     "description": "Label for custom count suffix setting"
