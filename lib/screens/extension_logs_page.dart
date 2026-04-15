@@ -6,19 +6,106 @@ import '../l10n/app_localizations.dart';
 import '../extensions/services/system_health_check_service.dart';
 import '../providers/ui_state_provider.dart';
 
-class ExtensionLogsPage extends ConsumerWidget {
+enum _LogViewFilter { all, errorOnly, apiOnly }
+
+class ExtensionLogsPage extends ConsumerStatefulWidget {
   final bool isSidePanel;
 
   const ExtensionLogsPage({super.key, this.isSidePanel = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExtensionLogsPage> createState() => _ExtensionLogsPageState();
+}
+
+class _ExtensionLogsPageState extends ConsumerState<ExtensionLogsPage> {
+  _LogViewFilter _activeFilter = _LogViewFilter.all;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final logs = ref.watch(extensionLogProvider);
+    final allLogs = ref
+        .watch(extensionLogProvider)
+        .where((log) => log.method != 'Console Log')
+        .toList();
     final l10n = AppLocalizations.of(context)!;
+    final logs = allLogs.where((log) {
+      final matchFilter = switch (_activeFilter) {
+        _LogViewFilter.all => true,
+        _LogViewFilter.errorOnly => !log.success || log.error != null,
+        _LogViewFilter.apiOnly =>
+          log.method != 'Console Error' &&
+              log.method != 'Console Warn' &&
+              log.method != 'Console Warning',
+      };
+      if (!matchFilter) return false;
+
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      return log.extensionName.toLowerCase().contains(q) ||
+          log.extensionId.toLowerCase().contains(q);
+    }).toList();
 
     final contentSlivers = [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            children: [
+              SegmentedButton<_LogViewFilter>(
+                segments: const [
+                  ButtonSegment<_LogViewFilter>(
+                    value: _LogViewFilter.all,
+                    label: Text('全部'),
+                  ),
+                  ButtonSegment<_LogViewFilter>(
+                    value: _LogViewFilter.errorOnly,
+                    label: Text('仅错误'),
+                  ),
+                  ButtonSegment<_LogViewFilter>(
+                    value: _LogViewFilter.apiOnly,
+                    label: Text('仅API'),
+                  ),
+                ],
+                selected: {_activeFilter},
+                onSelectionChanged: (selection) {
+                  setState(() => _activeFilter = selection.first);
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: '按扩展名或扩展ID筛选',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  isDense: true,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value.trim()),
+              ),
+            ],
+          ),
+        ),
+      ),
       if (logs.isEmpty)
         SliverFillRemaining(
           child: Center(
@@ -53,7 +140,7 @@ class ExtensionLogsPage extends ConsumerWidget {
         ),
     ];
 
-    if (isSidePanel) {
+    if (widget.isSidePanel) {
       return Column(
         children: [
           Padding(

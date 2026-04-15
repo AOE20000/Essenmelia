@@ -10,7 +10,7 @@ import '../../core/globals.dart';
 import '../../security/extension_auth_notifier.dart';
 import '../../security/security_providers.dart';
 import '../../security/security_shield.dart';
-import '../../utils/extension_logger.dart';
+import '../../extension_log_manager.dart';
 import 'extension_api_registry.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_provider.dart';

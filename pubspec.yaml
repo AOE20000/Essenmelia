@@ -1,7 +1,7 @@
 name: essenmelia_flutter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 4.1.3+1
+version: 4.2.8+1
 
 environment:
   sdk: ^3.10.8
