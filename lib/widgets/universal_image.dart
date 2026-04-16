@@ -8,6 +8,8 @@ class UniversalImage extends StatelessWidget {
   final double? height;
   final BoxFit? fit;
   final BorderRadius? borderRadius;
+  final int? cacheWidth;
+  final int? cacheHeight;
 
   const UniversalImage({
     super.key,
@@ -16,6 +18,8 @@ class UniversalImage extends StatelessWidget {
     this.height,
     this.fit,
     this.borderRadius,
+    this.cacheWidth,
+    this.cacheHeight,
   });
 
   @override
@@ -23,47 +27,10 @@ class UniversalImage extends StatelessWidget {
     Widget imageWidget;
 
     if (imageUrl.startsWith('data:image')) {
-      try {
-        final base64String = imageUrl.split(',').last;
-        final bytes = base64Decode(base64String);
-        imageWidget = Image.memory(
-          bytes,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) => _errorWidget(context),
-        );
-      } catch (e) {
-        imageWidget = _errorWidget(context);
-      }
+      imageWidget = _buildMemoryImage(context);
     } else if (imageUrl.startsWith('http')) {
-      imageWidget = Image.network(
-        imageUrl,
-        width: width,
-        height: height,
-        fit: fit,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: width,
-            height: height,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                    : null,
-                strokeWidth: 2,
-              ),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) => _errorWidget(context),
-      );
-    } else if (imageUrl.isNotEmpty &&
-        (imageUrl.startsWith('/') || imageUrl.contains(':'))) {
-      // 尝试作为本地文件加载 (Android/iOS 路径通常以 / 开头，Windows 包含 :)
+      imageWidget = _buildNetworkImage(context);
+    } else if (imageUrl.isNotEmpty) {
       final file = File(imageUrl);
       if (file.existsSync()) {
         imageWidget = Image.file(
@@ -71,21 +38,89 @@ class UniversalImage extends StatelessWidget {
           width: width,
           height: height,
           fit: fit,
+          cacheWidth: cacheWidth,
+          cacheHeight: cacheHeight,
+          // 优化快速滑动时的体验：淡入效果
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded) return child;
+            return AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              child: child,
+            );
+          },
           errorBuilder: (context, error, stackTrace) => _errorWidget(context),
         );
       } else {
-        debugPrint('UniversalImage: Local file does not exist: $imageUrl');
         imageWidget = _errorWidget(context);
       }
     } else {
       imageWidget = _errorWidget(context);
     }
 
-    if (borderRadius != null) {
-      return ClipRRect(borderRadius: borderRadius!, child: imageWidget);
-    }
+    return _applyBorderRadius(imageWidget);
+  }
 
-    return imageWidget;
+  Widget _buildMemoryImage(BuildContext context) {
+    try {
+      final base64String = imageUrl.split(',').last;
+      final bytes = base64Decode(base64String);
+      return Image.memory(
+        bytes,
+        width: width,
+        height: height,
+        fit: fit,
+        cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight,
+        errorBuilder: (context, error, stackTrace) => _errorWidget(context),
+      );
+    } catch (e) {
+      return _errorWidget(context);
+    }
+  }
+
+  Widget _buildNetworkImage(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      cacheWidth: cacheWidth,
+      cacheHeight: cacheHeight,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return _loadingPlaceholder(context, loadingProgress);
+      },
+      errorBuilder: (context, error, stackTrace) => _errorWidget(context),
+    );
+  }
+
+  Widget _loadingPlaceholder(
+    BuildContext context,
+    ImageChunkEvent? loadingProgress,
+  ) {
+    return Container(
+      width: width,
+      height: height,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: CircularProgressIndicator(
+          value: loadingProgress?.expectedTotalBytes != null
+              ? loadingProgress!.cumulativeBytesLoaded /
+                  loadingProgress.expectedTotalBytes!
+              : null,
+          strokeWidth: 2,
+        ),
+      ),
+    );
+  }
+
+  Widget _applyBorderRadius(Widget child) {
+    if (borderRadius != null) {
+      return ClipRRect(borderRadius: borderRadius!, child: child);
+    }
+    return child;
   }
 
   Widget _errorWidget(BuildContext context) {

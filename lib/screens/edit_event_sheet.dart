@@ -1097,7 +1097,12 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
       if (baseImage != null) {
         baseImage = img.bakeOrientation(baseImage);
-        final tempDir = await getTemporaryDirectory();
+        final appDir = await getApplicationDocumentsDirectory();
+        final imagesDir = Directory(p.join(appDir.path, 'event_images'));
+        if (!await imagesDir.exists()) {
+          await imagesDir.create(recursive: true);
+        }
+
         final objects = objectsResult['objects'] as List<Map<String, dynamic>>;
 
         for (int i = 0; i < objects.length; i++) {
@@ -1121,7 +1126,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
 
             final croppedFile = File(
               p.join(
-                tempDir.path,
+                imagesDir.path,
                 'crop_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
               ),
             );

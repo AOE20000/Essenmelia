@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -357,29 +359,28 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ).animate().fadeIn(duration: 200.ms),
 
                   // Top Layer: Left Floating Side Panel (Large Screen)
-                  if (isLargeScreen &&
-                      leftPanelContent != LeftPanelContent.none)
+                  if (isLargeScreen)
                     Positioned(
-                          left: 0,
-                          top: 16,
-                          bottom: 16,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 16),
-                            child: _SideLeftPanel(
-                              screenWidth: screenWidth,
-                              content: leftPanelContent,
-                              eventId: leftPanelEventId,
-                            ),
-                          ),
-                        )
-                        .animate()
-                        .fadeIn(duration: 200.ms)
-                        .slideX(
-                          begin: -0.2,
-                          end: 0,
-                          duration: 400.ms,
-                          curve: Curves.easeOutCubic,
-                        ),
+                      left: 0,
+                      top: 16,
+                      bottom: 16,
+                      child: _SidebarTransition(
+                        direction: -1,
+                        child: leftPanelContent != LeftPanelContent.none
+                            ? Padding(
+                                key: ValueKey(leftPanelContent),
+                                padding: const EdgeInsets.only(left: 16),
+                                child: _SideLeftPanel(
+                                  screenWidth: screenWidth,
+                                  content: leftPanelContent,
+                                  eventId: leftPanelEventId,
+                                ),
+                              )
+                            : const SizedBox.shrink(
+                                key: ValueKey(LeftPanelContent.none),
+                              ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -825,10 +826,20 @@ class _HomePageState extends ConsumerState<HomePage> {
           body: Row(
             children: [
               Expanded(child: mainContent),
-              if (isLargeScreen && runningExt != null)
-                _SideExtensionPanel(
-                  extension: runningExt,
-                  screenWidth: screenWidth,
+              if (isLargeScreen)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutCubic,
+                  child: _SidebarTransition(
+                    direction: 1,
+                    child: runningExt != null
+                        ? _SideExtensionPanel(
+                            key: ValueKey(runningExt.metadata.id),
+                            extension: runningExt,
+                            screenWidth: screenWidth,
+                          )
+                        : const SizedBox.shrink(key: ValueKey('none')),
+                  ),
                 ),
             ],
           ),
@@ -846,6 +857,51 @@ class _HomePageState extends ConsumerState<HomePage> {
     final selectedEventId = ref.watch(selectedEventIdProvider);
     final searchState = ref.watch(searchProvider);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 1024;
+    final isSmallScreen = screenWidth < 600;
+
+    // Adaptive column count
+    final itemsPerRow = displaySettings.itemsPerRow.clamp(
+      1,
+      isSmallScreen ? 3 : 5,
+    );
+
+    // 计算卡片估算宽度以优化图片缓存大小
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    double availableWidth = screenWidth;
+    if (isLargeScreen && selectedEventId != null) {
+      availableWidth *= 0.65; // 侧边栏占用 35%
+    }
+    // 减去外边距和间距 (16px padding + (items-1)*12px spacing)
+    final gridPadding = 16.0 * 2;
+    final gridSpacing = (itemsPerRow - 1) * 12.0;
+    final estimatedCardWidth = (availableWidth - gridPadding - gridSpacing) / itemsPerRow;
+    final cacheWidth = (estimatedCardWidth * devicePixelRatio).toInt();
+
+    // 预加载前几个可见项的图片以优化滑动体验
+    ref.listen<List<Event>>(filteredEventsProvider, (previous, next) {
+      if (next.isNotEmpty) {
+        final imagesToPrecache = next
+            .where((e) => e.imageUrl != null && e.imageUrl!.isNotEmpty)
+            .take(10);
+        for (final event in imagesToPrecache) {
+          final imageUrl = event.imageUrl!;
+          ImageProvider provider;
+          if (imageUrl.startsWith('data:image')) {
+            final base64String = imageUrl.split(',').last;
+            provider = MemoryImage(base64Decode(base64String));
+          } else if (imageUrl.startsWith('http')) {
+            provider = NetworkImage(imageUrl);
+          } else {
+            provider = FileImage(File(imageUrl));
+          }
+          // 预加载缩略图版本的缓存
+          precacheImage(ResizeImage(provider, width: cacheWidth), context);
+        }
+      }
+    });
+
     // Reset scroll when sort order changes to prevent unscrollable states
     ref.listen(searchProvider.select((s) => s.sortOrder), (previous, next) {
       if (previous != next && _scrollController.hasClients) {
@@ -856,10 +912,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         );
       }
     });
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth >= 1024;
-    final isSmallScreen = screenWidth < 600;
 
     // Handle cross-screen detail navigation logic
     if (selectedEventId != null) {
@@ -872,12 +924,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         }
       });
     }
-
-    // Adaptive column count
-    final itemsPerRow = displaySettings.itemsPerRow.clamp(
-      1,
-      isSmallScreen ? 3 : 5,
-    );
 
     return Row(
       children: [
@@ -924,6 +970,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               isSelected: selectedIds.contains(event.id),
                               isSelectionMode: isSelectionMode,
                               isBookMode: isSmallScreen && itemsPerRow == 3,
+                              cacheWidth: cacheWidth,
                             );
                           },
                         ),
@@ -936,10 +983,20 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
 
         // Right Side Panel (Large Screen Details) - Stays in Row
-        if (isLargeScreen && selectedEventId != null)
-          _SideDetailPanel(
-            screenWidth: screenWidth,
-            selectedEventId: selectedEventId,
+        if (isLargeScreen)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            child: _SidebarTransition(
+              direction: 1,
+              child: selectedEventId != null
+                  ? _SideDetailPanel(
+                      key: ValueKey(selectedEventId),
+                      screenWidth: screenWidth,
+                      selectedEventId: selectedEventId,
+                    )
+                  : const SizedBox.shrink(key: ValueKey('none')),
+            ),
           ),
       ],
     );
@@ -1256,11 +1313,52 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
+class _SidebarTransition extends StatelessWidget {
+  final Widget child;
+  final double direction; // -1 for left, 1 for right
+
+  const _SidebarTransition({required this.child, this.direction = 1});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      reverseDuration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+        return Stack(
+          alignment:
+              direction < 0 ? Alignment.centerLeft : Alignment.centerRight,
+          children: <Widget>[
+            ...previousChildren,
+            currentChild ?? const SizedBox.shrink(),
+          ],
+        );
+      },
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        final offsetAnimation = Tween<Offset>(
+          begin: Offset(direction * 0.1, 0),
+          end: Offset.zero,
+        ).animate(animation);
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: offsetAnimation, child: child),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+
 class _SideExtensionPanel extends ConsumerWidget {
   final BaseExtension extension;
   final double screenWidth;
 
   const _SideExtensionPanel({
+    super.key,
     required this.extension,
     required this.screenWidth,
   });
@@ -1539,6 +1637,7 @@ class _SideDetailPanel extends StatelessWidget {
   final String selectedEventId;
 
   const _SideDetailPanel({
+    super.key,
     required this.screenWidth,
     required this.selectedEventId,
   });
@@ -1569,6 +1668,7 @@ class _EventCard extends ConsumerWidget {
   final bool isSelected;
   final bool isSelectionMode;
   final bool isBookMode;
+  final int? cacheWidth;
 
   const _EventCard({
     super.key,
@@ -1578,6 +1678,7 @@ class _EventCard extends ConsumerWidget {
     this.isSelected = false,
     this.isSelectionMode = false,
     this.isBookMode = false,
+    this.cacheWidth,
   });
 
   @override
@@ -1669,7 +1770,11 @@ class _EventCard extends ConsumerWidget {
           fit: StackFit.expand,
           children: [
             if (event.imageUrl != null)
-              UniversalImage(imageUrl: event.imageUrl!, fit: BoxFit.cover)
+              UniversalImage(
+                imageUrl: event.imageUrl!,
+                fit: BoxFit.cover,
+                cacheWidth: cacheWidth, // 使用动态计算的缓存宽度
+              )
             else
               Container(
                 color: theme.colorScheme.surfaceContainerHigh,
@@ -1740,7 +1845,11 @@ class _EventCard extends ConsumerWidget {
         if (event.imageUrl != null && !collapseImage)
           AspectRatio(
             aspectRatio: 16 / 9,
-            child: UniversalImage(imageUrl: event.imageUrl!, fit: BoxFit.cover),
+            child: UniversalImage(
+              imageUrl: event.imageUrl!,
+              fit: BoxFit.cover,
+              cacheWidth: cacheWidth, // 使用动态计算的缓存宽度
+            ),
           ),
         Padding(
           padding: const EdgeInsets.all(12),

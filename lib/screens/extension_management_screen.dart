@@ -546,7 +546,10 @@ class _StoreExtensionItem extends ConsumerWidget {
               child: extension.iconUrl != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: UniversalImage(imageUrl: extension.iconUrl!),
+                      child: UniversalImage(
+                        imageUrl: extension.iconUrl!,
+                        cacheWidth: 100, // 为图标设置缩略图
+                      ),
                     )
                   : Icon(
                       Icons.extension_rounded,

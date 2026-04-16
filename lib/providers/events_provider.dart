@@ -34,7 +34,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       state = AsyncValue.data(_box!.values.toList());
 
       // 后台执行存储清理
-      StorageService.cleanupOrphanImages(activePrefix).then((count) {
+      StorageService.cleanupOrphanImages().then((count) {
         if (count > 0) {
           debugPrint('Storage Service: Cleaned up $count orphan image(s)');
         }
@@ -303,7 +303,6 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
     final event = _box!.get(id);
     if (event != null && event.isInBox) {
-      // 1. If there's a local image, try to delete file to save space
       if (event.imageUrl != null &&
           event.imageUrl!.isNotEmpty &&
           !event.imageUrl!.startsWith('http') &&
