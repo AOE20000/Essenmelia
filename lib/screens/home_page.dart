@@ -236,9 +236,34 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (next.showWelcome && (previous == null || !previous.showWelcome)) {
         // 使用 rootNavigator 确保全屏，并防止重复弹窗
         Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const WelcomeHelpScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              const begin = Offset(0.0, 0.05);
+              const end = Offset.zero;
+              const curve = Curves.easeOutCubic;
+
+              var tween = Tween(begin: begin, end: end).chain(
+                CurveTween(curve: curve),
+              );
+
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: animation.drive(tween),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.98, end: 1.0).animate(
+                      CurvedAnimation(parent: animation, curve: curve),
+                    ),
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+            reverseTransitionDuration: const Duration(milliseconds: 300),
             fullscreenDialog: true,
-            builder: (context) => const WelcomeHelpScreen(),
           ),
         );
       }
@@ -251,140 +276,174 @@ class _HomePageState extends ConsumerState<HomePage> {
     final isSelectionMode = ref.watch(selectionProvider).isNotEmpty;
     final leftPanelContent = ref.watch(leftPanelContentProvider);
     final leftPanelEventId = ref.watch(leftPanelEventIdProvider);
+    final selectedEventId = ref.watch(selectedEventIdProvider);
 
-    return Scaffold(
-      floatingActionButton:
-          currentTab == HomeTab.events &&
-              (!isSelectionMode &&
-                  !(isLargeScreen &&
-                      leftPanelContent == LeftPanelContent.addEvent))
-          ? FloatingActionButton(
-              onPressed: () => _handleOpenAddEvent(context),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return ScaleTransition(scale: animation, child: child);
-                },
-                child: Icon(
-                  _showScrollToTop ? Icons.arrow_upward : Icons.add,
-                  key: ValueKey(_showScrollToTop),
+    final searchQuery = ref.watch(searchProvider).query;
+
+    return PopScope(
+      canPop: !isSelectionMode &&
+          leftPanelContent == LeftPanelContent.none &&
+          selectedEventId == null &&
+          searchQuery.isEmpty,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        if (isSelectionMode) {
+          ref.read(selectionProvider.notifier).clear();
+          return;
+        }
+
+        if (leftPanelContent != LeftPanelContent.none) {
+          ref.read(leftPanelContentProvider.notifier).state =
+              LeftPanelContent.none;
+          return;
+        }
+
+        if (selectedEventId != null) {
+          ref.read(selectedEventIdProvider.notifier).state = null;
+          return;
+        }
+
+        if (searchQuery.isNotEmpty) {
+          _searchController.clear();
+          ref.read(searchProvider.notifier).setQuery('');
+          return;
+        }
+      },
+      child: Scaffold(
+        floatingActionButton:
+            currentTab == HomeTab.events &&
+                (!isSelectionMode &&
+                    !(isLargeScreen &&
+                        leftPanelContent == LeftPanelContent.addEvent))
+            ? FloatingActionButton(
+                onPressed: () => _handleOpenAddEvent(context),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: Icon(
+                    _showScrollToTop ? Icons.arrow_upward : Icons.add,
+                    key: ValueKey(_showScrollToTop),
+                  ),
                 ),
-              ),
-            )
-          : null,
-      bottomNavigationBar: !showNavigationRail
-          ? NavigationBar(
-              selectedIndex: currentTab.index,
-              onDestinationSelected: (index) {
-                ref.read(homeTabProvider.notifier).state =
-                    HomeTab.values[index];
-              },
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.event_note_outlined),
-                  selectedIcon: const Icon(Icons.event_note),
-                  label: AppLocalizations.of(context)!.navEvents,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.extension_outlined),
-                  selectedIcon: const Icon(Icons.extension),
-                  label: AppLocalizations.of(context)!.navExtensions,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.settings_outlined),
-                  selectedIcon: const Icon(Icons.settings),
-                  label: AppLocalizations.of(context)!.settings,
-                ),
-              ],
-            )
-          : null,
-      body: SafeArea(
-        child: Row(
-          children: [
-            if (showNavigationRail)
-              NavigationRail(
-                extended: screenWidth >= 1200,
+              )
+            : null,
+        bottomNavigationBar: !showNavigationRail
+            ? NavigationBar(
                 selectedIndex: currentTab.index,
                 onDestinationSelected: (index) {
                   ref.read(homeTabProvider.notifier).state =
                       HomeTab.values[index];
                 },
-                labelType: screenWidth >= 1200
-                    ? NavigationRailLabelType.none
-                    : NavigationRailLabelType.all,
                 destinations: [
-                  NavigationRailDestination(
+                  NavigationDestination(
                     icon: const Icon(Icons.event_note_outlined),
                     selectedIcon: const Icon(Icons.event_note),
-                    label: Text(AppLocalizations.of(context)!.navEvents),
+                    label: AppLocalizations.of(context)!.navEvents,
                   ),
-                  NavigationRailDestination(
+                  NavigationDestination(
                     icon: const Icon(Icons.extension_outlined),
                     selectedIcon: const Icon(Icons.extension),
-                    label: Text(AppLocalizations.of(context)!.navExtensions),
+                    label: AppLocalizations.of(context)!.navExtensions,
                   ),
-                  NavigationRailDestination(
+                  NavigationDestination(
                     icon: const Icon(Icons.settings_outlined),
                     selectedIcon: const Icon(Icons.settings),
-                    label: Text(AppLocalizations.of(context)!.settings),
+                    label: AppLocalizations.of(context)!.settings,
                   ),
                 ],
-              ),
-            Expanded(
-              child: Stack(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTabContent(
-                          context,
-                          currentTab,
-                          isLargeScreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Scrim for Left Panel
-                  if (isLargeScreen &&
-                      leftPanelContent != LeftPanelContent.none)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: () =>
-                            ref.read(leftPanelContentProvider.notifier).state =
-                                LeftPanelContent.none,
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.3),
-                        ),
-                      ),
-                    ).animate().fadeIn(duration: 200.ms),
-
-                  // Top Layer: Left Floating Side Panel (Large Screen)
-                  if (isLargeScreen)
-                    Positioned(
-                      left: 0,
-                      top: 16,
-                      bottom: 16,
-                      child: _SidebarTransition(
-                        direction: -1,
-                        child: leftPanelContent != LeftPanelContent.none
-                            ? Padding(
-                                key: ValueKey(leftPanelContent),
-                                padding: const EdgeInsets.only(left: 16),
-                                child: _SideLeftPanel(
-                                  screenWidth: screenWidth,
-                                  content: leftPanelContent,
-                                  eventId: leftPanelEventId,
-                                ),
-                              )
-                            : const SizedBox.shrink(
-                                key: ValueKey(LeftPanelContent.none),
-                              ),
-                      ),
+              )
+            : null,
+        body: SafeArea(
+          child: Row(
+            children: [
+              if (showNavigationRail)
+                NavigationRail(
+                  extended: screenWidth >= 1200,
+                  selectedIndex: currentTab.index,
+                  onDestinationSelected: (index) {
+                    ref.read(homeTabProvider.notifier).state =
+                        HomeTab.values[index];
+                  },
+                  labelType: screenWidth >= 1200
+                      ? NavigationRailLabelType.none
+                      : NavigationRailLabelType.all,
+                  destinations: [
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.event_note_outlined),
+                      selectedIcon: const Icon(Icons.event_note),
+                      label: Text(AppLocalizations.of(context)!.navEvents),
                     ),
-                ],
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.extension_outlined),
+                      selectedIcon: const Icon(Icons.extension),
+                      label: Text(AppLocalizations.of(context)!.navExtensions),
+                    ),
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.settings_outlined),
+                      selectedIcon: const Icon(Icons.settings),
+                      label: Text(AppLocalizations.of(context)!.settings),
+                    ),
+                  ],
+                ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTabContent(
+                            context,
+                            currentTab,
+                            isLargeScreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Scrim for Left Panel
+                    if (isLargeScreen &&
+                        leftPanelContent != LeftPanelContent.none)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () =>
+                              ref.read(leftPanelContentProvider.notifier).state =
+                                  LeftPanelContent.none,
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.3),
+                          ),
+                        ),
+                      ).animate().fadeIn(duration: 200.ms),
+
+                    // Top Layer: Left Floating Side Panel (Large Screen)
+                    if (isLargeScreen)
+                      Positioned(
+                        left: 0,
+                        top: 16,
+                        bottom: 16,
+                        child: _SidebarTransition(
+                          direction: -1,
+                          child: leftPanelContent != LeftPanelContent.none
+                              ? Padding(
+                                  key: ValueKey(leftPanelContent),
+                                  padding: const EdgeInsets.only(left: 16),
+                                  child: _SideLeftPanel(
+                                    screenWidth: screenWidth,
+                                    content: leftPanelContent,
+                                    eventId: leftPanelEventId,
+                                  ),
+                                )
+                              : const SizedBox.shrink(
+                                  key: ValueKey(LeftPanelContent.none),
+                                ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -867,17 +926,17 @@ class _HomePageState extends ConsumerState<HomePage> {
       isSmallScreen ? 3 : 5,
     );
 
-    // 计算卡片估算宽度以优化图片缓存大小
+    // 计算卡片估算宽度以优化图片缓存大小（引入 1.2x 倍率以提高清晰度，并设置最小保底宽度）
     final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
     double availableWidth = screenWidth;
     if (isLargeScreen && selectedEventId != null) {
       availableWidth *= 0.65; // 侧边栏占用 35%
     }
-    // 减去外边距和间距 (16px padding + (items-1)*12px spacing)
     final gridPadding = 16.0 * 2;
     final gridSpacing = (itemsPerRow - 1) * 12.0;
     final estimatedCardWidth = (availableWidth - gridPadding - gridSpacing) / itemsPerRow;
-    final cacheWidth = (estimatedCardWidth * devicePixelRatio).toInt();
+    // 1.2x 超采样以提升视觉清晰度，同时确保最小解码宽度不低于 400px（除非容器本身极小）
+    final cacheWidth = (estimatedCardWidth * devicePixelRatio * 1.2).toInt().clamp(400, 2000);
 
     // 预加载前几个可见项的图片以优化滑动体验
     ref.listen<List<Event>>(filteredEventsProvider, (previous, next) {

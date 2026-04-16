@@ -40,6 +40,7 @@ class UniversalImage extends StatelessWidget {
           fit: fit,
           cacheWidth: cacheWidth,
           cacheHeight: cacheHeight,
+          filterQuality: FilterQuality.medium, // 提高缩放时的过滤质量
           // 优化快速滑动时的体验：淡入效果
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
             if (wasSynchronouslyLoaded) return child;
@@ -73,6 +74,7 @@ class UniversalImage extends StatelessWidget {
         fit: fit,
         cacheWidth: cacheWidth,
         cacheHeight: cacheHeight,
+        filterQuality: FilterQuality.medium,
         errorBuilder: (context, error, stackTrace) => _errorWidget(context),
       );
     } catch (e) {
@@ -88,6 +90,7 @@ class UniversalImage extends StatelessWidget {
       fit: fit,
       cacheWidth: cacheWidth,
       cacheHeight: cacheHeight,
+      filterQuality: FilterQuality.medium,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return _loadingPlaceholder(context, loadingProgress);

@@ -229,7 +229,7 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                                       ),
                                     ),
                                   )
-                                    .animate(key: ValueKey(index))
+                                    .animate(key: ValueKey('logo_$index'))
                                     .scale(
                                       duration: 800.ms,
                                       curve: Curves.elasticOut,
@@ -247,87 +247,55 @@ class _WelcomeHelpScreenState extends ConsumerState<WelcomeHelpScreen> {
                                           step.color.withValues(alpha: 0.05),
                                         ],
                                       ),
-                                      borderRadius: BorderRadius.circular(48),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: step.color
-                                              .withValues(alpha: 0.1),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
+                                      shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       step.icon,
-                                      color: step.color,
                                       size: isLandscape ? 48 : 80,
+                                      color: step.color,
                                     ),
                                   )
-                                    .animate(key: ValueKey(index))
+                                    .animate(key: ValueKey('icon_$index'))
                                     .scale(
-                                      duration: 800.ms,
-                                      curve: Curves.elasticOut,
-                                    )
-                                    .rotate(
-                                      begin: 0.2,
-                                      end: 0,
-                                      duration: 800.ms,
-                                      curve: Curves.elasticOut,
+                                      duration: 600.ms,
+                                      curve: Curves.easeOutBack,
                                     )
                                     .fadeIn(duration: 400.ms)),
-                        SizedBox(height: isLandscape ? 24 : 64),
+                        const SizedBox(height: 32),
                         Text(
-                              step.title,
-                              style: theme.textTheme.displaySmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: theme.colorScheme.onSurface,
-                                letterSpacing: -1,
-                                fontSize: isLandscape ? 28 : null,
-                              ),
-                              textAlign: TextAlign.center,
-                            )
+                          step.title,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        )
                             .animate(key: ValueKey('title_$index'))
-                            .fadeIn(delay: 200.ms, duration: 400.ms)
+                            .fadeIn(duration: 400.ms, delay: 200.ms)
                             .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
-                        SizedBox(height: isLandscape ? 8 : 16),
-                        Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: step.color.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                step.subtitle,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: step.color,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            )
-                            .animate(key: ValueKey('subtitle_$index'))
-                            .fadeIn(delay: 300.ms, duration: 400.ms)
-                            .scale(
-                              begin: const Offset(0.8, 0.8),
-                              end: const Offset(1, 1),
-                              curve: Curves.easeOut,
-                            ),
-                        SizedBox(height: isLandscape ? 16 : 32),
+                        const SizedBox(height: 12),
                         Text(
-                              step.content,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 17,
-                              ),
-                              textAlign: TextAlign.center,
-                            )
+                          step.subtitle,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: step.color,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                            .animate(key: ValueKey('subtitle_$index'))
+                            .fadeIn(duration: 400.ms, delay: 300.ms)
+                            .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
+                        const SizedBox(height: 24),
+                        Text(
+                          step.content,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.6,
+                          ),
+                        )
                             .animate(key: ValueKey('content_$index'))
-                            .fadeIn(delay: 400.ms, duration: 400.ms)
-                            .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
+                            .fadeIn(duration: 400.ms, delay: 400.ms)
                       ],
                     ),
                   ),
