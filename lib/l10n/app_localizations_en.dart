@@ -551,6 +551,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extensionCategoryNotifications => 'Notifications';
 
   @override
+  String get selectAll => 'Select All';
+
+  @override
+  String get invertSelection => 'Invert Selection';
+
+  @override
+  String get batchEditSuffix => 'Edit Suffix';
+
+  @override
+  String get pin => 'Pin';
+
+  @override
+  String get unpin => 'Unpin';
+
+  @override
   String get extensionUninstall => 'Uninstall';
 
   @override
@@ -817,7 +832,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToArchivePlaceholder => 'Add to archive...';
 
   @override
-  String get extensionLogsTitle => 'Extension Logs';
+  String unitLabel(Object unit) {
+    return 'Unit: $unit';
+  }
+
+  @override
+  String get enterNewStepSuffix =>
+      'Please enter new step suffix (e.g. Episode, Chapter, Section):';
+
+  @override
+  String get extensionLogsPage => 'Extension Logs Page';
 
   @override
   String get noApiLogs => 'No API call records';
@@ -1543,14 +1567,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmApply => 'Confirm Apply';
 
   @override
+  String get addProgress => 'Add Progress (+1)';
+
+  @override
+  String get subProgress => 'Decrease Progress (-1)';
+
+  @override
   String get analyzingContent => 'Analyzing content...';
 
   @override
   String get smartAnalysisTooltip => 'Smartly analyze content';
 
   @override
+  String get ocrLanguage => 'OCR Language';
+
+  @override
+  String get ocrLanguageChinese => 'Chinese/English';
+
+  @override
+  String get ocrLanguageJapanese => 'Japanese';
+
+  @override
+  String get ocrLanguageLatin => 'Latin/English';
+
+  @override
   String get featureNotSupportedOnDesktop =>
       'This feature is not supported on desktop yet';
+
+  @override
+  String get retryWithOtherLanguage => 'Retry with other language';
 
   @override
   String get autoFilledByAi => 'Auto-filled by AI Assistant';

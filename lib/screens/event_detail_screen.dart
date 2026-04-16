@@ -20,11 +20,13 @@ import '../extensions/security/extension_auth_notifier.dart';
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String eventId;
   final bool isSidePanel;
+  final ScrollController? scrollController;
 
   const EventDetailScreen({
     super.key,
     required this.eventId,
     this.isSidePanel = false,
+    this.scrollController,
   });
 
   @override
@@ -33,10 +35,50 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final PageController _pageController = PageController();
+  late final ScrollController _scrollController;
   int _currentPage = 0;
+  bool _showScrollToTop = false;
+  double _lastScrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = widget.scrollController ?? ScrollController();
+    if (!widget.isSidePanel) {
+      _scrollController.addListener(_scrollListener);
+    }
+  }
+
+  void _scrollListener() {
+    if (!_scrollController.hasClients) return;
+
+    final currentOffset = _scrollController.offset;
+    final delta = currentOffset - _lastScrollOffset;
+
+    if (currentOffset < 200) {
+      if (_showScrollToTop) {
+        setState(() => _showScrollToTop = false);
+      }
+    } else if (delta > 0) {
+      if (!_showScrollToTop) {
+        setState(() => _showScrollToTop = true);
+      }
+    } else if (delta < -10) {
+      if (_showScrollToTop) {
+        setState(() => _showScrollToTop = false);
+      }
+    }
+
+    _lastScrollOffset = currentOffset;
+  }
 
   @override
   void dispose() {
+    if (widget.scrollController == null) {
+      _scrollController.dispose();
+    } else if (!widget.isSidePanel) {
+      _scrollController.removeListener(_scrollListener);
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -368,6 +410,20 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ),
         ],
       ),
+      floatingActionButton: (_showScrollToTop && _currentPage == 0)
+          ? FloatingActionButton(
+              onPressed: () {
+                if (_scrollController.hasClients) {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOutCubic,
+                  );
+                }
+              },
+              child: const Icon(Icons.arrow_upward),
+            )
+          : null,
       bottomNavigationBar: _currentPage > 0 ? bottomBar : null,
     );
   }
@@ -413,6 +469,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return SafeArea(
       top: false,
       child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           if (!widget.isSidePanel)
             SliverAppBar(
@@ -640,7 +697,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '单位：$suffixText',
+                          l10n.unitLabel(suffixText),
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,

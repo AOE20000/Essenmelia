@@ -74,4 +74,15 @@ class BatchActionsController {
     // Keep selection active for repeated actions
     // ref.read(selectionProvider.notifier).clear();
   }
+
+  Future<void> togglePin() async {
+    final selectedIds = ref.read(selectionProvider);
+    final notifier = ref.read(eventsProvider.notifier);
+
+    for (final id in selectedIds) {
+      await notifier.togglePin(id);
+    }
+
+    ref.read(selectionProvider.notifier).clear();
+  }
 }

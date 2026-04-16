@@ -770,6 +770,26 @@
   "@extensionCategoryNotifications": {
     "description": "Category for extension notifications"
   },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Button label to select all items"
+  },
+  "invertSelection": "Invert Selection",
+  "@invertSelection": {
+    "description": "Button label to invert current selection"
+  },
+  "batchEditSuffix": "Edit Suffix",
+  "@batchEditSuffix": {
+    "description": "Button label to batch edit step suffixes"
+  },
+  "pin": "Pin",
+  "@pin": {
+    "description": "Button label to pin an item"
+  },
+  "unpin": "Unpin",
+  "@unpin": {
+    "description": "Button label to unpin an item"
+  },
   "extensionUninstall": "Uninstall",
   "@extensionUninstall": {
     "description": "Label for uninstalling an extension"
@@ -1104,7 +1124,9 @@
   "@addToArchivePlaceholder": {
     "description": "Hint text for adding to archive"
   },
-  "extensionLogsTitle": "Extension Logs",
+  "unitLabel": "Unit: {unit}",
+  "enterNewStepSuffix": "Please enter new step suffix (e.g. Episode, Chapter, Section):",
+  "extensionLogsPage": "Extension Logs Page",
   "@extensionLogsTitle": {
     "description": "Title for extension logs screen"
   },
@@ -2088,6 +2110,14 @@
   "@confirmApply": {
     "description": "Button label to confirm and apply AI results"
   },
+  "addProgress": "Add Progress (+1)",
+  "@addProgress": {
+    "description": "Button label to increase progress by 1"
+  },
+  "subProgress": "Decrease Progress (-1)",
+  "@subProgress": {
+    "description": "Button label to decrease progress by 1"
+  },
   "analyzingContent": "Analyzing content...",
   "@analyzingContent": {
     "description": "Loading message during image analysis"
@@ -2096,9 +2126,29 @@
   "@smartAnalysisTooltip": {
     "description": "Tooltip for smart analysis button"
   },
+  "ocrLanguage": "OCR Language",
+  "@ocrLanguage": {
+    "description": "Label for OCR language selection"
+  },
+  "ocrLanguageChinese": "Chinese/English",
+  "@ocrLanguageChinese": {
+    "description": "Option for Chinese (Simplified/Traditional) OCR"
+  },
+  "ocrLanguageJapanese": "Japanese",
+  "@ocrLanguageJapanese": {
+    "description": "Option for Japanese OCR"
+  },
+  "ocrLanguageLatin": "Latin/English",
+  "@ocrLanguageLatin": {
+    "description": "Option for Latin/English OCR"
+  },
   "featureNotSupportedOnDesktop": "This feature is not supported on desktop yet",
   "@featureNotSupportedOnDesktop": {
     "description": "Message shown when a feature is not supported on desktop"
+  },
+  "retryWithOtherLanguage": "Retry with other language",
+  "@retryWithOtherLanguage": {
+    "description": "Button label for retrying OCR with a different language"
   },
   "autoFilledByAi": "Auto-filled by AI Assistant",
   "@autoFilledByAi": {

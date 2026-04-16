@@ -68,7 +68,24 @@ class TagsNotifier extends StateNotifier<AsyncValue<List<String>>> {
       }
     }
   }
-  
+
+  Future<void> reorderTags(int oldIndex, int newIndex) async {
+    if (_box == null) await _init();
+
+    final tags = _box!.values.toList();
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final tag = tags.removeAt(oldIndex);
+    tags.insert(newIndex, tag);
+
+    // Re-save all tags in the new order
+    await _box!.clear();
+    await _box!.addAll(tags);
+    
+    // UI will update automatically via listenable
+  }
+
   Future<void> renameTag(String oldTag, String newTag) async {
     if (_box == null) await _init();
     

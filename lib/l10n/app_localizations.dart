@@ -1088,6 +1088,36 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get extensionCategoryNotifications;
 
+  /// Button label to select all items
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get selectAll;
+
+  /// Button label to invert current selection
+  ///
+  /// In en, this message translates to:
+  /// **'Invert Selection'**
+  String get invertSelection;
+
+  /// Button label to batch edit step suffixes
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Suffix'**
+  String get batchEditSuffix;
+
+  /// Button label to pin an item
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get pin;
+
+  /// Button label to unpin an item
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get unpin;
+
   /// Label for uninstalling an extension
   ///
   /// In en, this message translates to:
@@ -1562,11 +1592,23 @@ abstract class AppLocalizations {
   /// **'Add to archive...'**
   String get addToArchivePlaceholder;
 
-  /// Title for extension logs screen
+  /// No description provided for @unitLabel.
   ///
   /// In en, this message translates to:
-  /// **'Extension Logs'**
-  String get extensionLogsTitle;
+  /// **'Unit: {unit}'**
+  String unitLabel(Object unit);
+
+  /// No description provided for @enterNewStepSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter new step suffix (e.g. Episode, Chapter, Section):'**
+  String get enterNewStepSuffix;
+
+  /// No description provided for @extensionLogsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Logs Page'**
+  String get extensionLogsPage;
 
   /// Message shown when there are no API logs
   ///
@@ -2888,6 +2930,18 @@ abstract class AppLocalizations {
   /// **'Confirm Apply'**
   String get confirmApply;
 
+  /// Button label to increase progress by 1
+  ///
+  /// In en, this message translates to:
+  /// **'Add Progress (+1)'**
+  String get addProgress;
+
+  /// Button label to decrease progress by 1
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease Progress (-1)'**
+  String get subProgress;
+
   /// Loading message during image analysis
   ///
   /// In en, this message translates to:
@@ -2900,11 +2954,41 @@ abstract class AppLocalizations {
   /// **'Smartly analyze content'**
   String get smartAnalysisTooltip;
 
+  /// Label for OCR language selection
+  ///
+  /// In en, this message translates to:
+  /// **'OCR Language'**
+  String get ocrLanguage;
+
+  /// Option for Chinese (Simplified/Traditional) OCR
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese/English'**
+  String get ocrLanguageChinese;
+
+  /// Option for Japanese OCR
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get ocrLanguageJapanese;
+
+  /// Option for Latin/English OCR
+  ///
+  /// In en, this message translates to:
+  /// **'Latin/English'**
+  String get ocrLanguageLatin;
+
   /// Message shown when a feature is not supported on desktop
   ///
   /// In en, this message translates to:
   /// **'This feature is not supported on desktop yet'**
   String get featureNotSupportedOnDesktop;
+
+  /// Button label for retrying OCR with a different language
+  ///
+  /// In en, this message translates to:
+  /// **'Retry with other language'**
+  String get retryWithOtherLanguage;
 
   /// Message indicating AI auto-fill
   ///

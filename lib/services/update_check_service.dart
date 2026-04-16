@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -14,12 +13,10 @@ class UpdateCheckService {
   static const String _repoUrl = 'https://github.com/AOE20000/Essenmelia';
   static const String _apiUrl =
       'https://api.github.com/repos/AOE20000/Essenmelia';
-  static const String _lastCheckKey = 'lastUpdateCheckTimestamp';
-  static const int _checkIntervalDays = 14;
 
   UpdateCheckService(this._ref);
 
-  /// Initialize and check for updates if interval has passed
+  /// Initialize the service
   Future<void> init() async {
     // Listen to notification taps
     NotificationService().onResponse.listen((response) {
@@ -27,23 +24,6 @@ class UpdateCheckService {
         _openRepo();
       }
     });
-
-    final box = Hive.box('settings');
-    final lastCheck = box.get(_lastCheckKey) as int? ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    final daysSinceLastCheck = (now - lastCheck) / (1000 * 60 * 60 * 24);
-
-    if (daysSinceLastCheck >= _checkIntervalDays) {
-      debugPrint(
-        'UpdateCheckService: $daysSinceLastCheck days since last check. Checking now...',
-      );
-      await checkForUpdates();
-    } else {
-      debugPrint(
-        'UpdateCheckService: Next check in ${(_checkIntervalDays - daysSinceLastCheck).toStringAsFixed(1)} days',
-      );
-    }
   }
 
   /// Perform the update check
@@ -60,10 +40,6 @@ class UpdateCheckService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        // Record check time only on success
-        final box = Hive.box('settings');
-        box.put(_lastCheckKey, DateTime.now().millisecondsSinceEpoch);
-
         // Look for pattern like "-3.2.0" or similar in description
         // The user mentioned "-3.2.0" field in description
         final regExp = RegExp(r'-(\d+\.\d+\.\d+)');

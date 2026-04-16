@@ -547,6 +547,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get extensionCategoryNotifications => '系统通知';
 
   @override
+  String get selectAll => '全选';
+
+  @override
+  String get invertSelection => '反选';
+
+  @override
+  String get batchEditSuffix => '修改后缀';
+
+  @override
+  String get pin => '置顶';
+
+  @override
+  String get unpin => '取消置顶';
+
+  @override
   String get extensionUninstall => '卸载';
 
   @override
@@ -790,7 +805,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addToArchivePlaceholder => '添加到存档...';
 
   @override
-  String get extensionLogsTitle => '系统扩展日志';
+  String unitLabel(Object unit) {
+    return '单位：$unit';
+  }
+
+  @override
+  String get enterNewStepSuffix => '请输入新的步骤后缀（如：集、章、节）：';
+
+  @override
+  String get extensionLogsPage => '系统扩展日志页';
 
   @override
   String get noApiLogs => '暂无 API 调用记录';
@@ -1494,13 +1517,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get confirmApply => '确认应用';
 
   @override
+  String get addProgress => '增加进度 (+1)';
+
+  @override
+  String get subProgress => '减少进度 (-1)';
+
+  @override
   String get analyzingContent => '正在分析内容...';
 
   @override
   String get smartAnalysisTooltip => '智能分析内容';
 
   @override
+  String get ocrLanguage => '识别语言';
+
+  @override
+  String get ocrLanguageChinese => '中/繁/英';
+
+  @override
+  String get ocrLanguageJapanese => '日语';
+
+  @override
+  String get ocrLanguageLatin => '拉丁语/英文';
+
+  @override
   String get featureNotSupportedOnDesktop => '此功能暂不支持桌面端';
+
+  @override
+  String get retryWithOtherLanguage => '使用其他语言重试';
 
   @override
   String get autoFilledByAi => 'AI 助手已自动填充';

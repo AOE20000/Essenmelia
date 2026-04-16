@@ -175,7 +175,7 @@ class _ExtensionLogsPageState extends ConsumerState<ExtensionLogsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    l10n.extensionLogsTitle,
+                    l10n.extensionLogsPage,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -214,7 +214,7 @@ class _ExtensionLogsPageState extends ConsumerState<ExtensionLogsPage> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar.medium(
-            title: Text(l10n.extensionLogsTitle),
+            title: Text(l10n.extensionLogsPage),
             actions: [
               IconButton(
                 icon: const Icon(Icons.bug_report_outlined),

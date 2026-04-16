@@ -477,17 +477,40 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
     final event = _box!.get(eventId);
     if (event != null) {
-      // Create a new list to trigger change detection if needed, though modifying HiveObject fields usually requires save() on parent
       final steps = List<EventStep>.from(event.steps);
 
       if (delta > 0) {
-        // Mark first 'delta' uncompleted steps as completed
+        // 1. Find the last completed index to determine "latest progress"
+        int lastCompletedIndex = -1;
+        for (int i = steps.length - 1; i >= 0; i--) {
+          if (steps[i].completed) {
+            lastCompletedIndex = i;
+            break;
+          }
+        }
+
+        // 2. Try to complete steps starting from the one AFTER the latest progress
         int count = 0;
-        for (var step in steps) {
-          if (!step.completed) {
-            step.completed = true;
+        int startIndex = lastCompletedIndex + 1;
+        for (int i = startIndex; i < steps.length; i++) {
+          if (!steps[i].completed) {
+            steps[i].completed = true;
             count++;
             if (count >= delta) break;
+          }
+        }
+
+        // 3. If we still need to add more (or no steps were available after the latest), append new ones
+        if (count < delta) {
+          final remaining = delta - count;
+          final suffix = event.stepSuffix?.trim() ?? '步骤';
+          for (int i = 0; i < remaining; i++) {
+            final nextNumber = steps.length + 1;
+            final description = '第 $nextNumber $suffix';
+            steps.add(EventStep()
+              ..description = description
+              ..timestamp = DateTime.now()
+              ..completed = true);
           }
         }
       } else if (delta < 0) {
@@ -506,6 +529,19 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       // Assign back to trigger Hive update
       event.steps = steps;
       await event.save();
+      NotificationService().notifyDataChanged();
+    }
+  }
+
+  Future<void> togglePin(String eventId) async {
+    if (_box == null) {
+      await _init();
+    }
+    final event = _box!.get(eventId);
+    if (event != null) {
+      event.pinned = !event.pinned;
+      await event.save();
+      NotificationService().notifyDataChanged();
     }
   }
 }

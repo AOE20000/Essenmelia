@@ -46,95 +46,109 @@ class ManageTagsScreen extends ConsumerWidget {
           );
         }
 
-        final sortedTags = List<String>.from(tags)..sort();
+        final displayTags = List<String>.from(tags);
 
         return SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final tag = sortedTags[index];
-              return Dismissible(
-                key: Key(tag),
-                background: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(16),
+          sliver: SliverReorderableList(
+            itemCount: displayTags.length,
+            onReorder: (oldIndex, newIndex) {
+              ref.read(tagsProvider.notifier).reorderTags(oldIndex, newIndex);
+            },
+            itemBuilder: (context, index) {
+              final tag = displayTags[index];
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(tag),
+                index: index,
+                child: Dismissible(
+                  key: Key(tag),
+                  background: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
                   ),
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Icon(
-                    Icons.delete_outline,
-                    color: theme.colorScheme.onErrorContainer,
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: (direction) async {
+                    return await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog.adaptive(
+                        title: Text(l10n.deleteTagConfirmation),
+                        content: Text(l10n.deleteTagWarning(tag)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(l10n.cancel),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text(
+                              l10n.delete,
+                              style: TextStyle(color: theme.colorScheme.error),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onDismissed: (_) {
+                    ref.read(tagsProvider.notifier).deleteTag(tag);
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 0,
+                    color: theme.colorScheme.surfaceContainerLow,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer
+                              .withValues(alpha: 0.4),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.label_outlined,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      title: Text(
+                        tag,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            onPressed: () => _showEditDialog(context, ref, tag),
+                          ),
+                          const Icon(Icons.drag_indicator_rounded,
+                              size: 20, color: Colors.grey),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (direction) async {
-                  return await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog.adaptive(
-                      title: Text(l10n.deleteTagConfirmation),
-                      content: Text(l10n.deleteTagWarning(tag)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(l10n.cancel),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(
-                            l10n.delete,
-                            style: TextStyle(color: theme.colorScheme.error),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                onDismissed: (_) {
-                  ref.read(tagsProvider.notifier).deleteTag(tag);
-                },
-                child:
-                    Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 0,
-                          color: theme.colorScheme.surfaceContainerLow,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.4),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.label_outlined,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                            title: Text(
-                              tag,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20),
-                              onPressed: () =>
-                                  _showEditDialog(context, ref, tag),
-                            ),
-                          ),
-                        ),
-                      );
-                    }, childCount: tags.length),
+              );
+            },
           ),
         );
       },

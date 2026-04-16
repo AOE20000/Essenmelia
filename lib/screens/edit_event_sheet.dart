@@ -22,6 +22,7 @@ import '../widgets/batch_edit_tags_sheet.dart';
 import '../widgets/universal_image.dart';
 import '../providers/ui_state_provider.dart';
 import '../features/quick_action/ocr_service.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../features/quick_action/contour_service.dart';
 
 class EditEventSheet extends ConsumerStatefulWidget {
@@ -52,6 +53,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   List<String> _croppedImagePaths = [];
   String? _recognizedText;
   bool _wasAutoFilled = false; // 新增：标记是否发生了自动填充
+  TextRecognitionScript _selectedOcrScript = TextRecognitionScript.chinese;
 
   @override
   void initState() {
@@ -1071,7 +1073,10 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
     }
   }
 
-  Future<void> _processImageML(File imageFile) async {
+  Future<void> _processImageML(
+    File imageFile, {
+    TextRecognitionScript? script,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     if (!Platform.isAndroid && !Platform.isIOS) {
       if (mounted) {
@@ -1082,10 +1087,17 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
       return;
     }
 
+    if (script != null) {
+      _selectedOcrScript = script;
+    }
+
     setState(() => _isProcessingML = true);
     try {
       // 1. OCR 识别
-      final textResult = await _ocrService.recognizeDetailed(imageFile.path);
+      final textResult = await _ocrService.recognizeDetailed(
+        imageFile.path,
+        script: _selectedOcrScript,
+      );
       final blocks = textResult['blocks'] as List<Map<String, dynamic>>;
 
       // 2. 物体检测与裁切
@@ -1201,6 +1213,28 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                           ),
                         ),
                         actions: [
+                          PopupMenuButton<TextRecognitionScript>(
+                            tooltip: l10n.retryWithOtherLanguage,
+                            icon: const Icon(Icons.translate),
+                            onSelected: (script) {
+                              Navigator.pop(context);
+                              _processImageML(originalFile, script: script);
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: TextRecognitionScript.chinese,
+                                child: Text(l10n.ocrLanguageChinese),
+                              ),
+                              PopupMenuItem(
+                                value: TextRecognitionScript.japanese,
+                                child: Text(l10n.ocrLanguageJapanese),
+                              ),
+                              PopupMenuItem(
+                                value: TextRecognitionScript.latin,
+                                child: Text(l10n.ocrLanguageLatin),
+                              ),
+                            ],
+                          ),
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: IconButton(

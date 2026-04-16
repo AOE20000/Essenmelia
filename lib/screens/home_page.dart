@@ -44,13 +44,20 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   final SearchController _searchController = SearchController();
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _detailScrollController = ScrollController();
   bool _showScrollToTop = false;
+  bool _showDetailScrollToTop = false;
   double _lastScrollOffset = 0;
+  double _lastDetailScrollOffset = 0;
+
+  // Track which panel has focus: 'left' for event list, 'right' for detail panel
+  String _activeFocus = 'left';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
+    _detailScrollController.addListener(_detailScrollListener);
   }
 
   void _scrollListener() {
@@ -59,10 +66,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     final currentOffset = _scrollController.offset;
     final delta = currentOffset - _lastScrollOffset;
 
-    // 逻辑：
-    // 1. 如果在顶部附近 (< 200)，必须显示“新建”
-    // 2. 如果向下滚动 (delta > 0)，显示“回到顶部”
-    // 3. 如果向上滚动 (delta < -10)，恢复为“新建” (添加一点阈值防止抖动)
+    // Set focus to left when scrolling the list
+    if (_activeFocus != 'left' && currentOffset > 10) {
+      setState(() => _activeFocus = 'left');
+    }
 
     if (currentOffset < 200) {
       if (_showScrollToTop) {
@@ -81,11 +88,41 @@ class _HomePageState extends ConsumerState<HomePage> {
     _lastScrollOffset = currentOffset;
   }
 
+  void _detailScrollListener() {
+    if (!_detailScrollController.hasClients) return;
+
+    final currentOffset = _detailScrollController.offset;
+    final delta = currentOffset - _lastDetailScrollOffset;
+
+    // Set focus to right when scrolling the detail panel
+    if (_activeFocus != 'right' && currentOffset > 10) {
+      setState(() => _activeFocus = 'right');
+    }
+
+    if (currentOffset < 200) {
+      if (_showDetailScrollToTop) {
+        setState(() => _showDetailScrollToTop = false);
+      }
+    } else if (delta > 0) {
+      if (!_showDetailScrollToTop) {
+        setState(() => _showDetailScrollToTop = true);
+      }
+    } else if (delta < -10) {
+      if (_showDetailScrollToTop) {
+        setState(() => _showDetailScrollToTop = false);
+      }
+    }
+
+    _lastDetailScrollOffset = currentOffset;
+  }
+
   @override
   void dispose() {
     _scrollController.removeListener(_scrollListener);
+    _detailScrollController.removeListener(_detailScrollListener);
     _searchController.dispose();
     _scrollController.dispose();
+    _detailScrollController.dispose();
     super.dispose();
   }
 
@@ -316,19 +353,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                 (!isSelectionMode &&
                     !(isLargeScreen &&
                         leftPanelContent == LeftPanelContent.addEvent))
-            ? FloatingActionButton(
-                onPressed: () => _handleOpenAddEvent(context),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return ScaleTransition(scale: animation, child: child);
-                  },
-                  child: Icon(
-                    _showScrollToTop ? Icons.arrow_upward : Icons.add,
-                    key: ValueKey(_showScrollToTop),
+            ? () {
+                final currentShowScrollToTop =
+                    _activeFocus == 'left'
+                        ? _showScrollToTop
+                        : _showDetailScrollToTop;
+
+                return FloatingActionButton(
+                  onPressed: () => _handleOpenAddEvent(context),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      return ScaleTransition(scale: animation, child: child);
+                    },
+                    child: Icon(
+                      currentShowScrollToTop ? Icons.arrow_upward : Icons.add,
+                      key: ValueKey(currentShowScrollToTop),
+                    ),
                   ),
-                ),
-              )
+                );
+              }()
             : null,
         bottomNavigationBar: !showNavigationRail
             ? NavigationBar(
@@ -982,62 +1027,79 @@ class _HomePageState extends ConsumerState<HomePage> {
           context.push('/event/$id');
         }
       });
+    } else {
+      // If detail is closed, reset focus to left
+      if (_activeFocus != 'left') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _activeFocus != 'left') {
+            setState(() => _activeFocus = 'left');
+          }
+        });
+      }
     }
 
     return Row(
       children: [
         // Main Content Area
         Expanded(
-          child: Column(
-            children: [
-              // Fixed Top Bar
-              _buildFixedTopBar(
-                context,
-                isSelectionMode,
-                selectedIds,
-                isLargeScreen,
-              ),
-
-              // Scrolling Content
-              Expanded(
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // The Grid
-                    if (filteredEvents.isEmpty)
-                      const _EmptyStateSliver()
-                    else
-                      SliverPadding(
-                        padding: const EdgeInsets.all(16),
-                        sliver: SliverMasonryGrid.count(
-                          key: ValueKey(
-                            'grid_${searchState.sortOrder}_${searchState.statusFilter}_${searchState.query}_${searchState.selectedTags.length}_$itemsPerRow',
-                          ),
-                          crossAxisCount: itemsPerRow,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childCount: filteredEvents.length,
-                          itemBuilder: (context, index) {
-                            final event = filteredEvents[index];
-                            return _EventCard(
-                              key: ValueKey(event.id),
-                              event: event,
-                              collapseImage: displaySettings.collapseImages,
-                              isFocused:
-                                  isLargeScreen && selectedEventId == event.id,
-                              isSelected: selectedIds.contains(event.id),
-                              isSelectionMode: isSelectionMode,
-                              isBookMode: isSmallScreen && itemsPerRow == 3,
-                              cacheWidth: cacheWidth,
-                            );
-                          },
-                        ),
-                      ),
-                  ],
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTapDown: (_) {
+              if (_activeFocus != 'left') {
+                setState(() => _activeFocus = 'left');
+              }
+            },
+            child: Column(
+              children: [
+                // Fixed Top Bar
+                _buildFixedTopBar(
+                  context,
+                  isSelectionMode,
+                  selectedIds,
+                  isLargeScreen,
                 ),
-              ),
-            ],
+
+                // Scrolling Content
+                Expanded(
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      // The Grid
+                      if (filteredEvents.isEmpty)
+                        const _EmptyStateSliver()
+                      else
+                        SliverPadding(
+                          padding: const EdgeInsets.all(16),
+                          sliver: SliverMasonryGrid.count(
+                            key: ValueKey(
+                              'grid_${searchState.sortOrder}_${searchState.statusFilter}_${searchState.query}_${searchState.selectedTags.length}_$itemsPerRow',
+                            ),
+                            crossAxisCount: itemsPerRow,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childCount: filteredEvents.length,
+                            itemBuilder: (context, index) {
+                              final event = filteredEvents[index];
+                              return _EventCard(
+                                key: ValueKey(event.id),
+                                event: event,
+                                collapseImage: displaySettings.collapseImages,
+                                isFocused:
+                                    isLargeScreen && selectedEventId == event.id,
+                                isSelected: selectedIds.contains(event.id),
+                                isSelectionMode: isSelectionMode,
+                                isBookMode: isSmallScreen && itemsPerRow == 3,
+                                cacheWidth: cacheWidth,
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -1049,10 +1111,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: _SidebarTransition(
               direction: 1,
               child: selectedEventId != null
-                  ? _SideDetailPanel(
-                      key: ValueKey(selectedEventId),
-                      screenWidth: screenWidth,
-                      selectedEventId: selectedEventId,
+                  ? GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapDown: (_) {
+                        if (_activeFocus != 'right') {
+                          setState(() => _activeFocus = 'right');
+                        }
+                      },
+                      child: _SideDetailPanel(
+                        key: ValueKey(selectedEventId),
+                        screenWidth: screenWidth,
+                        selectedEventId: selectedEventId,
+                        scrollController: _detailScrollController,
+                      ),
                     )
                   : const SizedBox.shrink(key: ValueKey('none')),
             ),
@@ -1062,9 +1133,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _handleOpenAddEvent(BuildContext context) {
-    if (_showScrollToTop) {
+    if (_activeFocus == 'left' && _showScrollToTop) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+      return;
+    } else if (_activeFocus == 'right' && _showDetailScrollToTop) {
+      if (_detailScrollController.hasClients) {
+        _detailScrollController.animateTo(
           0,
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOutCubic,
@@ -1224,12 +1304,17 @@ class _HomePageState extends ConsumerState<HomePage> {
               onPressed: () => _showBatchEditTagsSheet(context, selectedIds),
               color: theme.colorScheme.onPrimaryContainer,
             ),
+            IconButton(
+              icon: const Icon(Icons.exposure_plus_1_rounded),
+              tooltip: l10n.addProgress,
+              onPressed: () => ref.read(batchActionsProvider).adjustProgress(1),
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
             PopupMenuButton<String>(
               icon: Icon(
                 Icons.more_vert_rounded,
                 color: theme.colorScheme.onPrimaryContainer,
               ),
-              tooltip: '更多操作',
               onSelected: (value) {
                 final filteredEvents = ref.read(filteredEventsProvider);
                 final allIds = filteredEvents.map((e) => e.id).toList();
@@ -1244,63 +1329,64 @@ class _HomePageState extends ConsumerState<HomePage> {
                   case 'suffix':
                     _showBatchEditSuffixSheet(context);
                     break;
-                  case 'addProgress':
-                    ref.read(batchActionsProvider).adjustProgress(1);
-                    break;
                   case 'subProgress':
                     ref.read(batchActionsProvider).adjustProgress(-1);
+                    break;
+                  case 'togglePin':
+                    ref.read(batchActionsProvider).togglePin();
                     break;
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'selectAll',
                   child: Row(
                     children: [
-                      Icon(Icons.select_all_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('全选'),
+                      const Icon(Icons.select_all_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.selectAll),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'invert',
                   child: Row(
                     children: [
-                      Icon(Icons.swap_horiz_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('反选'),
+                      const Icon(Icons.swap_horiz_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.invertSelection),
                     ],
                   ),
                 ),
                 const PopupMenuDivider(),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'suffix',
                   child: Row(
                     children: [
-                      Icon(Icons.edit_note_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('修改后缀'),
+                      const Icon(Icons.edit_note_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.batchEditSuffix),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
-                  value: 'addProgress',
-                  child: Row(
-                    children: [
-                      Icon(Icons.add_circle_outline_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('增加进度 (+1)'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'subProgress',
                   child: Row(
                     children: [
-                      Icon(Icons.remove_circle_outline_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('减少进度 (-1)'),
+                      const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.subProgress),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'togglePin',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.push_pin_outlined, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.pin),
                     ],
                   ),
                 ),
@@ -1694,11 +1780,13 @@ class _SideLeftPanel extends ConsumerWidget {
 class _SideDetailPanel extends StatelessWidget {
   final double screenWidth;
   final String selectedEventId;
+  final ScrollController? scrollController;
 
   const _SideDetailPanel({
     super.key,
     required this.screenWidth,
     required this.selectedEventId,
+    this.scrollController,
   });
 
   @override
@@ -1715,7 +1803,11 @@ class _SideDetailPanel extends StatelessWidget {
           ),
         ),
       ),
-      child: EventDetailScreen(eventId: selectedEventId, isSidePanel: true),
+      child: EventDetailScreen(
+        eventId: selectedEventId,
+        isSidePanel: true,
+        scrollController: scrollController,
+      ),
     );
   }
 }
@@ -1915,11 +2007,26 @@ class _EventCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                event.title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (event.pinned)
+                    Icon(
+                      Icons.push_pin,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                ],
               ),
               if (event.description?.isNotEmpty ?? false) ...[
                 const SizedBox(height: 4),
@@ -2122,7 +2229,7 @@ class _BatchEditSuffixSheetState extends ConsumerState<_BatchEditSuffixSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          Text('请输入新的步骤后缀（如：集、章、节）：', style: theme.textTheme.bodyMedium),
+          Text(l10n.enterNewStepSuffix, style: theme.textTheme.bodyMedium),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {

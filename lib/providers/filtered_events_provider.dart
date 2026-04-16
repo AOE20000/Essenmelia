@@ -163,8 +163,12 @@ final filteredEventsProvider = Provider<List<Event>>((ref) {
 
   final events = eventsAsync.value!;
 
-  // 1. Filter
-  var filtered = events.where((e) {
+  // 1. Separate Pinned and Unpinned events
+  final pinned = events.where((e) => e.pinned).toList();
+  final unpinned = events.where((e) => !e.pinned).toList();
+
+  // 2. Filter Unpinned events
+  var filteredUnpinned = unpinned.where((e) {
     // Status Filter
     if (searchState.statusFilter != EventStatusFilter.all) {
       final progress = _calculateProgress(e);
@@ -207,9 +211,19 @@ final filteredEventsProvider = Provider<List<Event>>((ref) {
     return true;
   }).toList();
 
-  // 2. Sort
-  filtered.sort((a, b) {
-    switch (searchState.sortOrder) {
+  // 3. Sort Unpinned
+  _sortEvents(filteredUnpinned, searchState.sortOrder);
+
+  // 4. Sort Pinned (Always sort pinned events too, maybe by createdAtDesc or same order)
+  _sortEvents(pinned, searchState.sortOrder);
+
+  // 5. Combine: Pinned first (ignore filters), then filtered Unpinned
+  return [...pinned, ...filteredUnpinned];
+});
+
+void _sortEvents(List<Event> list, SortOrder sortOrder) {
+  list.sort((a, b) {
+    switch (sortOrder) {
       case SortOrder.createdAtDesc:
         return b.createdAt.compareTo(a.createdAt);
       case SortOrder.createdAtAsc:
@@ -240,9 +254,7 @@ final filteredEventsProvider = Provider<List<Event>>((ref) {
         return lastA.compareTo(lastB);
     }
   });
-
-  return filtered;
-});
+}
 
 DateTime _getLastUpdated(Event e) {
   if (e.steps.isEmpty) return e.createdAt;

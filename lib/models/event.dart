@@ -59,6 +59,12 @@ class Event extends HiveObject {
   @HiveField(16)
   List<EventReminder>? reminders;
 
+  @HiveField(17)
+  bool? isPinned;
+
+  bool get pinned => isPinned ?? false;
+  set pinned(bool value) => isPinned = value;
+
   bool get isCompleted => steps.isNotEmpty && steps.every((s) => s.completed);
 
   double get completionRate => steps.isEmpty
@@ -88,6 +94,7 @@ class Event extends HiveObject {
       'reminderRepeatValue': reminderRepeatValue,
       'reminderRepeatUnit': reminderRepeatUnit,
       'reminders': (reminders ?? []).map((r) => r.toJson()).toList(),
+      'isPinned': pinned,
       'isCompleted': isCompleted,
       'completionRate': completionRate,
     };
@@ -113,7 +120,8 @@ class Event extends HiveObject {
       ..reminderScheme = json['reminderScheme']
       ..calendarEventId = json['calendarEventId']
       ..reminderRepeatValue = json['reminderRepeatValue']
-      ..reminderRepeatUnit = json['reminderRepeatUnit'];
+      ..reminderRepeatUnit = json['reminderRepeatUnit']
+      ..isPinned = json['isPinned'] ?? false;
 
     if (json['steps'] != null) {
       event.steps = (json['steps'] as List)
