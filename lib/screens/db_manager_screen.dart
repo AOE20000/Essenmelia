@@ -156,7 +156,9 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
               if (file.name == 'data.json') {
                 jsonString = utf8.decode(file.content as List<int>);
               } else if (file.name.startsWith('images/')) {
-                final imageName = p.basename(file.name);
+                // Use POSIX-style basename to handle ZIP's internal paths correctly
+                // ZIP always uses '/' as separator regardless of platform
+                final imageName = file.name.split('/').last;
                 imageMap[imageName] = file.content;
               }
             }
@@ -208,7 +210,10 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
                   finalImageUrl.isNotEmpty &&
                   !finalImageUrl.startsWith('http') &&
                   !finalImageUrl.startsWith('data:')) {
-                final imageName = p.basename(finalImageUrl);
+                // Handle cross-platform paths: Windows uses '\', Android uses '/'
+                // Replace backslashes with forward slashes for consistent basename extraction
+                final normalizedPath = finalImageUrl.replaceAll('\\', '/');
+                final imageName = normalizedPath.split('/').last;
                 if (imageMap.containsKey(imageName)) {
                   final newPath = p.join(imagesDir.path, imageName);
                   final imageFile = File(newPath);
