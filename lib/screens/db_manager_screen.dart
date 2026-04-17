@@ -202,8 +202,12 @@ class _DatabaseManagerScreenState extends ConsumerState<DatabaseManagerScreen> {
             for (var e in data['events']) {
               String? finalImageUrl = e['imageUrl'];
 
-              // If it's a ZIP import and has an image, restore it
-              if (isZip && finalImageUrl != null && finalImageUrl.isNotEmpty) {
+              // If it's a ZIP import and has a local image, restore it
+              if (isZip &&
+                  finalImageUrl != null &&
+                  finalImageUrl.isNotEmpty &&
+                  !finalImageUrl.startsWith('http') &&
+                  !finalImageUrl.startsWith('data:')) {
                 final imageName = p.basename(finalImageUrl);
                 if (imageMap.containsKey(imageName)) {
                   final newPath = p.join(imagesDir.path, imageName);
