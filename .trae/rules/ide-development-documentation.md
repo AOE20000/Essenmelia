@@ -165,5 +165,117 @@
 - 若需更新图标，请手动运行 `dart run flutter_launcher_icons`。该步骤未包含在 GitHub 自动打包流程中。
 
 ---
+### 🏷️ 项目概况
+
+| 项目 | 详情 |
+|------|------|
+| **名称** | Essenmelia（埃森梅莉亚） |
+| **版本** | `4.8.2+1` |
+| **定位** | 离线优先、高定制化的跨平台进度追踪器 + 扩展枢纽 |
+| **Flutter SDK** | `^3.10.8` |
+| **平台支持** | Android、iOS、Windows、macOS、Linux、Web |
+| **Android SDK** | compileSdk 36 / targetSdk 36 / minSdk 24 |
+
+---
+
+### 🏗️ 核心架构
+
+```
+lib/
+├── main.dart                          # 应用入口 + GoRouter 路由 + Material 3 主题
+├── models/
+│   └── event.dart                     # 核心数据模型 (Hive)
+├── providers/                         # Riverpod 状态管理
+│   ├── events_provider.dart           # 事件 CRUD (StateNotifier)
+│   ├── db_provider.dart               # 数据库生命周期管理
+│   ├── settings_provider.dart         # 应用设置
+│   ├── theme_provider.dart            # 亮/暗/跟随系统 主题
+│   ├── locale_provider.dart           # 中/英文国际化
+│   ├── tags_provider.dart             # 标签管理
+│   └── app_lifecycle_provider.dart    # 应用前后台/空闲检测
+├── screens/                           # 页面（HomePage、EventDetail、Settings 等）
+├── widgets/                           # 可复用组件（FilterChips、TagInput 等）
+├── services/                          # 基础设施服务
+│   ├── notification_service.dart      # 本地通知（分钟轮询）
+│   ├── calendar_service.dart          # 系统日历集成
+│   ├── storage_service.dart           # 文件/图片存储
+│   └── app_initialization_service.dart
+├── extensions/                        # 🧩 插件扩展系统（核心亮点）
+│   ├── core/                          # 基类、元数据、权限定义
+│   ├── manager/                       # ExtensionManager（生命周期 + 安全网关）
+│   ├── runtime/                       # JS 引擎 + YAML UI 动态渲染
+│   ├── security/                      # SecurityShield（隐私欺骗 + 沙箱）
+│   └── services/                      # 10+ 个扩展 API 服务
+├── l10n/                              # ARB 国际化（中文/英文）
+└── features/                          # 快速操作（OCR + 轮廓识别）
+```
+
+---
+
+### 🔑 六大核心特性
+
+#### 1. **事件进度追踪**（核心数据模型）
+- [Event](file:///d:/untitled/Essenmelia/Flutter-New/lib/models/event.dart) 模型基于 **Hive** 本地数据库，支持：
+  - 多步骤管理（自由排序、拖拽、模板复用）
+  - 标签系统（空格自动转标签）
+  - 图片/封面附件（自动下载远程图片）
+  - 置顶、排序、筛选、批量操作
+
+#### 2. **增强型提醒系统**
+- [NotificationService](file:///d:/untitled/Essenmelia/Flutter-New/lib/services/notification_service.dart) 使用 **每分钟轮询** 替代 AndroidAlarmManager
+- 支持每日/每周/每月/每年 和自定义周期
+- 双通道：**本地通知** + **系统日历**（`device_calendar`）
+- 前后台状态感知，后台时仍可触发通知
+
+#### 3. **🧩 插件扩展系统**（核心竞争力）
+- **JS 逻辑引擎** + **YAML 声明式 UI** 的混合架构
+- **隐私欺骗 (SecurityShield)**：非信任扩展看到的是伪造假数据，而非错误
+- 通过 GitHub API 发现和安装扩展
+- 完整性哈希校验（覆盖 `logicJs` + `viewYaml`）
+- JS 注入防护（`jsonEncode` 转义、Promise 桥接）
+- 前后台生命周期联动（后台/空闲自动暂停扩展）
+
+#### 4. **Material 3 + Dynamic Color**
+- 支持 Android 12+ 动态取色
+- 亮/暗/跟随系统 三模式
+- 自定义字体（Google Fonts / 系统字体）
+
+#### 5. **国际化 (i18n)**
+- ARB 文件驱动，支持中文 + 英文
+- Riverpod 提供非 Context 访问（`l10nProvider`）
+
+#### 6. **开放 API (Beta)**
+- Deep Link 支持 (`esml://` / `essenmelia://`)
+- ADB 命令行操作
+- Quick Settings Tile（快速记录磁贴）
+
+---
+
+### ⚠️ 关键约束（来自项目规则文件）
+
+| 约束 | 说明 |
+|------|------|
+| **Riverpod** | 锁定 `^2.5.1`，禁止升级到 3.x（依赖 StateNotifier） |
+| **Android SDK** | compileSdk/targetSdk 统一 36 |
+| **中文路径** | 禁用 Kotlin 增量编译（`kotlin.incremental=false`） |
+| **build_runner** | 锁定 `^2.4.13`（hive_generator 兼容性） |
+| **ARB 花括号** | 字面量需单引号包裹，如 `'{' "a": 1 '}'` |
+
+---
+
+### 📦 主要依赖一览
+
+| 分类 | 核心包 |
+|------|--------|
+| **状态管理** | `flutter_riverpod ^2.5.1` |
+| **数据库** | `hive ^2.2.3` + `hive_flutter` |
+| **路由** | `go_router ^17.1.0` |
+| **UI** | `flutter_staggered_grid_view`, `flutter_animate`, `google_fonts` |
+| **通知** | `flutter_local_notifications ^18.0.1` |
+| **日历** | `device_calendar ^4.3.3` |
+| **JS 引擎** | `flutter_js ^0.8.4` |
+| **ML Kit** | `google_mlkit_text_recognition` + `object_detection` |
+| **视频** | `video_player` + `chewie` |
+| **平台** | `package_info_plus`, `share_plus`, `file_picker`, `url_launcher` |
 
 *最后更新日期：2026-03-04*

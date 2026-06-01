@@ -174,12 +174,10 @@ class FilterBottomSheet extends ConsumerWidget {
                   const SizedBox(height: 4),
                   tagsAsync.when(
                     data: (tags) {
-                      final sortedTags = List<String>.from(tags)..sort();
-
                       return Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: sortedTags.map((tag) {
+                        children: tags.map((tag) {
                           final isSelected = searchState.selectedTags.contains(
                             tag,
                           );
