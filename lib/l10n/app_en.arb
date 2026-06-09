@@ -2217,9 +2217,13 @@
       }
     }
   },
-  "quickEdit": "Quick Edit (Long press to slide)",
+  "quickEdit": "Quick Edit",
   "@quickEdit": {
     "description": "Label for quick edit feature"
+  },
+  "quickEditHelp": "Instructions\n\n• Tap: Select a step to view details\n• Long press: Toggle completion status\n• Drag: Batch toggle multiple steps\n• Tap the selected step again to deselect",
+  "@quickEditHelp": {
+    "description": "Help dialog content explaining quick edit operations"
   },
   "extensionConsole": "Extension Console",
   "@extensionConsole": {

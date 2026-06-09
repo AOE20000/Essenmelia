@@ -199,7 +199,8 @@
   "stepDescription": "步骤描述",
   "newStepPlaceholder": "新步骤...",
   "editSteps": "编辑步骤",
-  "quickEdit": "快速编辑 (长按滑动)",
+  "quickEdit": "快速编辑",
+  "quickEditHelp": "操作说明\n\n• 点击：选中步骤查看详情\n• 长按：快速切换完成状态\n• 拖拽：批量切换多个步骤\n• 再次点击已选中步骤可取消选中",
   "reminderAt": "提醒：{time}",
   "@reminderAt": {
     "placeholders": {

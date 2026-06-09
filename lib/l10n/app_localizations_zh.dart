@@ -1592,7 +1592,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get quickEdit => '快速编辑 (长按滑动)';
+  String get quickEdit => '快速编辑';
+
+  @override
+  String get quickEditHelp => '操作说明\n\n• 点击：选中步骤查看详情\n• 长按：快速切换完成状态\n• 拖拽：批量切换多个步骤\n• 再次点击已选中步骤可取消选中';
 
   @override
   String get extensionConsole => '扩展控制台';

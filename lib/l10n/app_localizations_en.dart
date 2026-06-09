@@ -1643,7 +1643,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get quickEdit => 'Quick Edit (Long press to slide)';
+  String get quickEdit => 'Quick Edit';
+
+  @override
+  String get quickEditHelp => 'Instructions\n\n• Tap: Select a step to view details\n• Long press: Toggle completion status\n• Drag: Batch toggle multiple steps\n• Tap the selected step again to deselect';
 
   @override
   String get extensionConsole => 'Extension Console';

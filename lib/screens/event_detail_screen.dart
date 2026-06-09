@@ -9,6 +9,7 @@ import '../providers/events_provider.dart';
 import '../providers/selection_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../widgets/universal_image.dart';
+import '../widgets/step_edit_dialog.dart';
 import 'edit_event_sheet.dart';
 import 'steps_editor_screen.dart';
 import '../extensions/services/ui_extension_service.dart';
@@ -815,7 +816,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             child: InkWell(
               onTap: () =>
                   ref.read(eventsProvider.notifier).toggleStep(event.id, index),
-              onLongPress: () => _showEditStepDialog(context, ref, event, index),
+              onLongPress: () => showStepEditDialog(
+                context: context,
+                initialDescription: event.steps[index].description,
+                hintText: AppLocalizations.of(context)!.stepDescription,
+                onSaved: (newDescription) {
+                  final steps = List<EventStep>.from(event.steps);
+                  steps[index] = steps[index].copyWith(description: newDescription);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                },
+                onDeleted: () {
+                  final steps = List<EventStep>.from(event.steps);
+                  steps.removeAt(index);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                },
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -998,112 +1013,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
-  Future<void> _showEditStepDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Event event,
-    int index,
-  ) async {
-    final step = event.steps[index];
-    final controller = TextEditingController(text: step.description);
-    controller.selection = TextSelection.fromPosition(
-      TextPosition(offset: controller.text.length),
-    );
-
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Row(
-              children: [
-                Icon(
-                  Icons.edit_note_rounded,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Text(l10n.edit),
-              ],
-            ),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: l10n.stepDescription,
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHigh,
-                prefixIcon: const Icon(Icons.checklist_rounded, size: 20),
-                suffixIcon: controller.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, size: 20),
-                        onPressed: () {
-                          controller.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
-              maxLines: 5,
-              minLines: 1,
-              onChanged: (_) => setState(() {}),
-            ),
-            actions: [
-              TextButton.icon(
-                onPressed: () {
-                  final steps = List<EventStep>.from(event.steps);
-                  steps.removeAt(index);
-                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
-                  Navigator.pop(context);
-                },
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: Text(l10n.delete),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final newDescription = controller.text.trim();
-                  if (newDescription.isNotEmpty) {
-                    final steps = List<EventStep>.from(event.steps);
-                    steps[index] = steps[index].copyWith(
-                      description: newDescription,
-                    );
-                    ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
-                  }
-                  Navigator.pop(context);
-                },
-                child: Text(l10n.confirm),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
 }
 
 class _AddStepButton extends ConsumerStatefulWidget {
@@ -1264,6 +1173,23 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         _previewEditController = null;
       }
     });
+  }
+
+  void _showQuickEditHelp() {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.quickEdit),
+        content: Text(l10n.quickEditHelp),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleDragStart(DragStartDetails details) {
@@ -1606,6 +1532,19 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(width: 4),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _showQuickEditHelp,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1806,6 +1745,19 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: _showQuickEditHelp,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.help_outline_rounded,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   Text(
@@ -1990,6 +1942,19 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _showQuickEditHelp,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
                   ),
                 ),
               ],
@@ -2235,10 +2200,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
       color: theme.colorScheme.surfaceContainerLow,
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.primary.withValues(alpha: 0.4),
-        ),
+        borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -2251,76 +2213,11 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                margin: const EdgeInsets.only(top: 2),
-                decoration: BoxDecoration(
-                  color: step.completed
-                      ? theme.colorScheme.primary
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: step.completed
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                    width: 2,
-                  ),
-                ),
-                child: step.completed
-                    ? Icon(
-                        Icons.check,
-                        size: 16,
-                        color: theme.colorScheme.onPrimary,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      step.description,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        decoration: step.completed
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: step.completed
-                            ? theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7)
-                            : theme.colorScheme.onSurface,
-                        decorationColor: theme.colorScheme.outline,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.touch_app_rounded,
-                          size: 14,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          l10n.edit,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.6,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          child: Text(
+            step.description,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),

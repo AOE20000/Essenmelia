@@ -3071,8 +3071,12 @@ abstract class AppLocalizations {
   /// Label for quick edit feature
   ///
   /// In en, this message translates to:
-  /// **'Quick Edit (Long press to slide)'**
+  /// **'Quick Edit'**
   String get quickEdit;
+
+  /// In en, this message translates to:
+  /// **'Instructions\n\n• Tap: Select a step to view details\n• Long press: Toggle completion status\n• Drag: Batch toggle multiple steps\n• Tap the selected step again to deselect'**
+  String get quickEditHelp;
 
   /// Title for the extension debug console
   ///

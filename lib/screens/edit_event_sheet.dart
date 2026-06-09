@@ -2329,8 +2329,7 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
                 ),
               ),
             ),
-            if (widget.event != null)
-              TextButton.icon(
+            TextButton.icon(
                 onPressed: () => _showBatchEditTags(context),
                 icon: const Icon(Icons.edit_note_rounded, size: 18),
                 label: Text(l10n.batchEditTags),
@@ -2355,28 +2354,41 @@ class _EditEventSheetState extends ConsumerState<EditEventSheet> {
   }
 
   void _showBatchEditTags(BuildContext context) async {
-    if (widget.event == null) return;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => BatchEditTagsSheet(selectedIds: {widget.event!.id}),
-    );
-
-    // After closing, refresh local tags from the updated event in the database
-    if (mounted) {
-      final events = ref.read(eventsProvider).value ?? [];
-      final updatedEvent = events.cast<Event?>().firstWhere(
-        (e) => e?.id == widget.event!.id,
-        orElse: () => null,
+    if (widget.event != null) {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => BatchEditTagsSheet(selectedIds: {widget.event!.id}),
       );
-      if (updatedEvent != null) {
-        setState(() {
-          _selectedTags = List<String>.from(updatedEvent.tags ?? []);
-        });
-        _updateRecommendations();
+
+      if (mounted) {
+        final events = ref.read(eventsProvider).value ?? [];
+        final updatedEvent = events.cast<Event?>().firstWhere(
+          (e) => e?.id == widget.event!.id,
+          orElse: () => null,
+        );
+        if (updatedEvent != null) {
+          setState(() {
+            _selectedTags = List<String>.from(updatedEvent.tags ?? []);
+          });
+          _updateRecommendations();
+        }
       }
+    } else {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => BatchEditTagsSheet(
+          selectedIds: const {'__new__'},
+          localTags: _selectedTags,
+          onLocalTagsChanged: (updated) {
+            setState(() => _selectedTags = updated);
+            _updateRecommendations();
+          },
+        ),
+      );
     }
   }
 

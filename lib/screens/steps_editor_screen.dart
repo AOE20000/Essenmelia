@@ -6,6 +6,7 @@ import '../models/event.dart';
 import '../providers/events_provider.dart';
 import '../providers/ui_state_provider.dart';
 import '../widgets/keyboard_animation_handler.dart';
+import '../widgets/step_edit_dialog.dart';
 
 class StepsEditorScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -407,82 +408,6 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
     );
   }
 
-  void _showEditStepDialog(Event event, int index, EventStep step) {
-    final controller = TextEditingController(text: step.description);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.edit),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.description,
-            border: const OutlineInputBorder(),
-          ),
-          autofocus: true,
-          maxLines: null,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                final newSteps = List<EventStep>.from(event.steps);
-                newSteps[index] = step.copyWith(
-                  description: controller.text.trim(),
-                );
-                ref
-                    .read(eventsProvider.notifier)
-                    .updateSteps(event.id, newSteps);
-                Navigator.pop(context);
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.save),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditTemplateDialog(String id, String currentDescription) {
-    final controller = TextEditingController(text: currentDescription);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.edit),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.description,
-            border: const OutlineInputBorder(),
-          ),
-          autofocus: true,
-          maxLines: null,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                ref
-                    .read(templatesControllerProvider)
-                    .updateTemplate(id, controller.text.trim());
-                Navigator.pop(context);
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.save),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _selectAllSteps(Event event) {
     setState(() {
       _selectedStepIndices
@@ -706,7 +631,20 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                 }
               });
             } else {
-              _showEditStepDialog(event, index, step);
+              showStepEditDialog(
+                context: context,
+                initialDescription: step.description,
+                onSaved: (newDescription) {
+                  final newSteps = List<EventStep>.from(event.steps);
+                  newSteps[index] = step.copyWith(description: newDescription);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, newSteps);
+                },
+                onDeleted: () {
+                  final newSteps = List<EventStep>.from(event.steps);
+                  newSteps.removeAt(index);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, newSteps);
+                },
+              );
             }
           },
           onLongPress: () {
@@ -872,9 +810,12 @@ class _StepsEditorScreenState extends ConsumerState<StepsEditorScreen>
                                     }
                                   });
                                 } else {
-                                  _showEditTemplateDialog(
-                                    template.id,
-                                    template.description,
+                                  showStepEditDialog(
+                                    context: context,
+                                    initialDescription: template.description,
+                                    onSaved: (newDescription) {
+                                      ref.read(templatesControllerProvider).updateTemplate(template.id, newDescription);
+                                    },
                                   );
                                 }
                               },

@@ -6,8 +6,17 @@ import '../providers/tags_provider.dart';
 
 class BatchEditTagsSheet extends ConsumerWidget {
   final Set<String> selectedIds;
+  final List<String>? localTags;
+  final void Function(List<String>)? onLocalTagsChanged;
 
-  const BatchEditTagsSheet({super.key, required this.selectedIds});
+  const BatchEditTagsSheet({
+    super.key,
+    required this.selectedIds,
+    this.localTags,
+    this.onLocalTagsChanged,
+  });
+
+  bool get _isLocalMode => localTags != null && onLocalTagsChanged != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,6 +94,32 @@ class BatchEditTagsSheet extends ConsumerWidget {
                           ),
                         ],
                       ),
+                    );
+                  }
+
+                  if (_isLocalMode) {
+                    final tags = localTags!;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: allTags.map((tag) {
+                        final bool isAllSelected = tags.contains(tag);
+
+                        return TagBatchChip(
+                          label: tag,
+                          isAllSelected: isAllSelected,
+                          isPartialSelected: false,
+                          onTap: () {
+                            final updated = List<String>.from(tags);
+                            if (isAllSelected) {
+                              updated.remove(tag);
+                            } else {
+                              updated.add(tag);
+                            }
+                            onLocalTagsChanged!(updated);
+                          },
+                        );
+                      }).toList(),
                     );
                   }
 
