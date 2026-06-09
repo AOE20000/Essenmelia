@@ -39,9 +39,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   int _currentPage = 0;
   bool _showScrollToTop = false;
   double _lastScrollOffset = 0;
-  int? _selectedStepIndex;
-  bool _isEditingPreview = false;
-  TextEditingController? _previewEditController;
 
   @override
   void initState() {
@@ -77,7 +74,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   void dispose() {
-    _previewEditController?.dispose();
     if (widget.scrollController == null) {
       _scrollController.dispose();
     } else if (!widget.isSidePanel) {
@@ -735,16 +731,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
           ),
 
-          // Preview Area (show selected step content)
-          if (_selectedStepIndex != null &&
-              _selectedStepIndex! < event.steps.length)
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverToBoxAdapter(
-                child: _buildStepPreview(event, theme, l10n),
-              ),
-            ),
-
           // Steps List (Virtualized)
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -764,250 +750,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildStepPreview(
-    Event event,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
-    final index = _selectedStepIndex;
-    if (index == null || index >= event.steps.length) {
-      return const SizedBox.shrink();
-    }
-
-    final step = event.steps[index];
-
-    if (_isEditingPreview) {
-      if (_previewEditController == null) {
-        _previewEditController = TextEditingController(text: step.description);
-        _previewEditController!.selection = TextSelection.fromPosition(
-          TextPosition(offset: _previewEditController!.text.length),
-        );
-      }
-
-      return Card(
-        elevation: 2,
-        color: theme.colorScheme.surface,
-        margin: const EdgeInsets.only(bottom: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: theme.colorScheme.primary,
-            width: 2,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.edit_note_rounded,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.edit,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: theme.colorScheme.error,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    onPressed: () {
-                      final steps = List<EventStep>.from(event.steps);
-                      steps.removeAt(index);
-                      ref
-                          .read(eventsProvider.notifier)
-                          .updateSteps(event.id, steps);
-                      setState(() {
-                        _isEditingPreview = false;
-                        _previewEditController?.dispose();
-                        _previewEditController = null;
-                        _selectedStepIndex = null;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _previewEditController,
-                autofocus: true,
-                maxLines: 3,
-                minLines: 1,
-                decoration: InputDecoration(
-                  hintText: l10n.stepDescription,
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHigh,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: theme.colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-                onSubmitted: (_) => _submitPreviewEdit(event, index),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => _cancelPreviewEdit(),
-                    child: Text(l10n.cancel),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () => _submitPreviewEdit(event, index),
-                    child: Text(l10n.confirm),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerLow,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.primary.withValues(alpha: 0.4),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _isEditingPreview = true;
-            _previewEditController?.dispose();
-            _previewEditController = null;
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                margin: const EdgeInsets.only(top: 2),
-                decoration: BoxDecoration(
-                  color: step.completed
-                      ? theme.colorScheme.primary
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: step.completed
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                    width: 2,
-                  ),
-                ),
-                child: step.completed
-                    ? Icon(
-                        Icons.check,
-                        size: 16,
-                        color: theme.colorScheme.onPrimary,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      step.description,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        decoration: step.completed
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: step.completed
-                            ? theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7)
-                            : theme.colorScheme.onSurface,
-                        decorationColor: theme.colorScheme.outline,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.touch_app_rounded,
-                          size: 14,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          l10n.edit,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.6,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _submitPreviewEdit(Event event, int index) {
-    final newDescription = _previewEditController?.text.trim() ?? '';
-    if (newDescription.isNotEmpty) {
-      final steps = List<EventStep>.from(event.steps);
-      steps[index] = steps[index].copyWith(description: newDescription);
-      ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
-    }
-    setState(() {
-      _isEditingPreview = false;
-      _previewEditController?.dispose();
-      _previewEditController = null;
-    });
-  }
-
-  void _cancelPreviewEdit() {
-    setState(() {
-      _isEditingPreview = false;
-      _previewEditController?.dispose();
-      _previewEditController = null;
-    });
   }
 
   Widget _buildVirtualizedStepsList(
@@ -1050,7 +792,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       delegate: SliverChildBuilderDelegate((context, index) {
         final step = event.steps[index];
         final isCompleted = step.completed;
-        final isSelected = _selectedStepIndex == index;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -1060,40 +801,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ? theme.colorScheme.surfaceContainerHighest.withValues(
                     alpha: 0.5,
                   )
-                : isSelected
-                    ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                    : theme.colorScheme.surfaceContainerLow,
+                : theme.colorScheme.surfaceContainerLow,
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : isCompleted
-                        ? Colors.transparent
-                        : theme.colorScheme.outlineVariant,
-                width: isSelected ? 2 : 1,
+                color: isCompleted
+                    ? Colors.transparent
+                    : theme.colorScheme.outlineVariant,
               ),
             ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () {
-                setState(() {
-                  if (_selectedStepIndex == index) {
-                    _selectedStepIndex = null;
-                    _isEditingPreview = false;
-                    _previewEditController?.dispose();
-                    _previewEditController = null;
-                  } else {
-                    _selectedStepIndex = index;
-                    _isEditingPreview = false;
-                    _previewEditController?.dispose();
-                    _previewEditController = null;
-                  }
-                });
-              },
-              onLongPress: () =>
+              onTap: () =>
                   ref.read(eventsProvider.notifier).toggleStep(event.id, index),
+              onLongPress: () => _showEditStepDialog(context, ref, event, index),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -1138,12 +860,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         ),
                       ),
                     ),
-                    if (isSelected)
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
                   ],
                 ),
               ),
@@ -1282,6 +998,112 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
+  Future<void> _showEditStepDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Event event,
+    int index,
+  ) async {
+    final step = event.steps[index];
+    final controller = TextEditingController(text: step.description);
+    controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: controller.text.length),
+    );
+
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  Icons.edit_note_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(l10n.edit),
+              ],
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l10n.stepDescription,
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHigh,
+                prefixIcon: const Icon(Icons.checklist_rounded, size: 20),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 20),
+                        onPressed: () {
+                          controller.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              maxLines: 5,
+              minLines: 1,
+              onChanged: (_) => setState(() {}),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () {
+                  final steps = List<EventStep>.from(event.steps);
+                  steps.removeAt(index);
+                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: Text(l10n.delete),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final newDescription = controller.text.trim();
+                  if (newDescription.isNotEmpty) {
+                    final steps = List<EventStep>.from(event.steps);
+                    steps[index] = steps[index].copyWith(
+                      description: newDescription,
+                    );
+                    ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
+                  }
+                  Navigator.pop(context);
+                },
+                child: Text(l10n.confirm),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
 }
 
 class _AddStepButton extends ConsumerStatefulWidget {
@@ -1388,6 +1210,15 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   RangeValues? _sliderValues;
   final Map<int, int> _hierarchySelections = {};
   int _hierarchyVisibleBaseStart = 0;
+  int? _selectedStepIndex;
+  bool _isEditingPreview = false;
+  TextEditingController? _previewEditController;
+
+  @override
+  void dispose() {
+    _previewEditController?.dispose();
+    super.dispose();
+  }
 
   void _updateItemKeys(int count) {
     if (_itemKeys.length != count) {
@@ -1420,7 +1251,19 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
   }
 
   void _handleTap(int index) {
-    ref.read(eventsProvider.notifier).toggleStep(widget.event.id, index);
+    setState(() {
+      if (_selectedStepIndex == index) {
+        _selectedStepIndex = null;
+        _isEditingPreview = false;
+        _previewEditController?.dispose();
+        _previewEditController = null;
+      } else {
+        _selectedStepIndex = index;
+        _isEditingPreview = false;
+        _previewEditController?.dispose();
+        _previewEditController = null;
+      }
+    });
   }
 
   void _handleDragStart(DragStartDetails details) {
@@ -1649,112 +1492,6 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     }
   }
 
-  Future<void> _showEditStepDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Event event,
-    int index,
-  ) async {
-    final step = event.steps[index];
-    final controller = TextEditingController(text: step.description);
-    controller.selection = TextSelection.fromPosition(
-      TextPosition(offset: controller.text.length),
-    );
-
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Row(
-              children: [
-                Icon(
-                  Icons.edit_note_rounded,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Text(l10n.edit),
-              ],
-            ),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: l10n.stepDescription,
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHigh,
-                prefixIcon: const Icon(Icons.checklist_rounded, size: 20),
-                suffixIcon: controller.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, size: 20),
-                        onPressed: () {
-                          controller.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
-              maxLines: 5,
-              minLines: 1,
-              onChanged: (_) => setState(() {}),
-            ),
-            actions: [
-              TextButton.icon(
-                onPressed: () {
-                  final steps = List<EventStep>.from(event.steps);
-                  steps.removeAt(index);
-                  ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
-                  Navigator.pop(context);
-                },
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: Text(l10n.delete),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final newDescription = controller.text.trim();
-                  if (newDescription.isNotEmpty) {
-                    final steps = List<EventStep>.from(event.steps);
-                    steps[index] = steps[index].copyWith(
-                      description: newDescription,
-                    );
-                    ref.read(eventsProvider.notifier).updateSteps(event.id, steps);
-                  }
-                  Navigator.pop(context);
-                },
-                child: Text(l10n.confirm),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildHierarchyQuickEdit(
     ThemeData theme,
     AppLocalizations l10n, {
@@ -1923,12 +1660,8 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                       child: GestureDetector(
                         key: _itemKeys[localIndex],
                         onTap: () => _handleTap(globalIndex),
-                        onLongPress: () => _showEditStepDialog(
-                          context,
-                          ref,
-                          widget.event,
-                          globalIndex,
-                        ),
+                        onLongPress: () =>
+                            ref.read(eventsProvider.notifier).toggleStep(widget.event.id, globalIndex),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           width: 44,
@@ -2150,7 +1883,18 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     }
 
     if (isHierarchy) {
-      return _buildHierarchyQuickEdit(theme, l10n, useFirstChar: hierarchyUseFirstChar);
+      final quickEdit = _buildHierarchyQuickEdit(theme, l10n, useFirstChar: hierarchyUseFirstChar);
+      if (_selectedStepIndex != null && _selectedStepIndex! < widget.event.steps.length) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            quickEdit,
+            const SizedBox(height: 12),
+            _buildStepPreview(theme, l10n),
+          ],
+        );
+      }
+      return quickEdit;
     }
 
     // 性能优化：如果步骤过多（> 120），在常规模式下引导切换到条型模式
@@ -2220,7 +1964,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
     }
 
     _updateItemKeys(widget.event.steps.length);
-    return Card(
+    final quickEditCard = Card(
       elevation: 0,
       color: theme.colorScheme.surfaceContainer,
       margin: EdgeInsets.zero,
@@ -2292,7 +2036,7 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
                         key: _itemKeys[index],
                         onTap: () => _handleTap(index),
                         onLongPress: () =>
-                            _showEditStepDialog(context, ref, widget.event, index),
+                            ref.read(eventsProvider.notifier).toggleStep(widget.event.id, index),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           width: 44,
@@ -2348,5 +2092,260 @@ class _QuickOverviewState extends ConsumerState<_QuickOverview> {
         ),
       ),
     );
+
+    if (_selectedStepIndex != null && _selectedStepIndex! < widget.event.steps.length) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          quickEditCard,
+          const SizedBox(height: 12),
+          _buildStepPreview(theme, l10n),
+        ],
+      );
+    }
+    return quickEditCard;
+  }
+
+  Widget _buildStepPreview(
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final index = _selectedStepIndex;
+    if (index == null || index >= widget.event.steps.length) {
+      return const SizedBox.shrink();
+    }
+
+    final step = widget.event.steps[index];
+
+    if (_isEditingPreview) {
+      if (_previewEditController == null) {
+        _previewEditController = TextEditingController(text: step.description);
+        _previewEditController!.selection = TextSelection.fromPosition(
+          TextPosition(offset: _previewEditController!.text.length),
+        );
+      }
+
+      return Card(
+        elevation: 2,
+        color: theme.colorScheme.surface,
+        margin: const EdgeInsets.only(bottom: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.edit_note_rounded,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.edit,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    color: theme.colorScheme.error,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onPressed: () {
+                      final steps = List<EventStep>.from(widget.event.steps);
+                      steps.removeAt(index);
+                      ref
+                          .read(eventsProvider.notifier)
+                          .updateSteps(widget.event.id, steps);
+                      setState(() {
+                        _isEditingPreview = false;
+                        _previewEditController?.dispose();
+                        _previewEditController = null;
+                        _selectedStepIndex = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _previewEditController,
+                autofocus: true,
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: l10n.stepDescription,
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHigh,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.primary,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                ),
+                onSubmitted: (_) => _submitPreviewEdit(index),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _cancelPreviewEdit(),
+                    child: Text(l10n.cancel),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => _submitPreviewEdit(index),
+                    child: Text(l10n.confirm),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.4),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _isEditingPreview = true;
+            _previewEditController?.dispose();
+            _previewEditController = null;
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(top: 2),
+                decoration: BoxDecoration(
+                  color: step.completed
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: step.completed
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                    width: 2,
+                  ),
+                ),
+                child: step.completed
+                    ? Icon(
+                        Icons.check,
+                        size: 16,
+                        color: theme.colorScheme.onPrimary,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      step.description,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        decoration: step.completed
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: step.completed
+                            ? theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7)
+                            : theme.colorScheme.onSurface,
+                        decorationColor: theme.colorScheme.outline,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.touch_app_rounded,
+                          size: 14,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          l10n.edit,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.6,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _submitPreviewEdit(int index) {
+    final newDescription = _previewEditController?.text.trim() ?? '';
+    if (newDescription.isNotEmpty) {
+      final steps = List<EventStep>.from(widget.event.steps);
+      steps[index] = steps[index].copyWith(description: newDescription);
+      ref.read(eventsProvider.notifier).updateSteps(widget.event.id, steps);
+    }
+    setState(() {
+      _isEditingPreview = false;
+      _previewEditController?.dispose();
+      _previewEditController = null;
+    });
+  }
+
+  void _cancelPreviewEdit() {
+    setState(() {
+      _isEditingPreview = false;
+      _previewEditController?.dispose();
+      _previewEditController = null;
+    });
   }
 }
